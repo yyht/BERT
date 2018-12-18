@@ -77,11 +77,11 @@ flags.DEFINE_integer(
 	"Input TF example files (can be a glob or comma separated).")
 
 flags.DEFINE_integer(
-	"num_classes", 3,
+	"num_classes", 5,
 	"Input TF example files (can be a glob or comma separated).")
 
 flags.DEFINE_integer(
-	"train_size", 256434,
+	"train_size", 1402171,
 	"Input TF example files (can be a glob or comma separated).")
 
 flags.DEFINE_integer(
@@ -137,24 +137,9 @@ def main(_):
 		
 		opt_config = Bunch({"init_lr":init_lr/hvd.size(), 
 							"num_train_steps":num_train_steps,
-							"num_warmup_steps":num_warmup_steps,
-							"train_op":"adam"})
-
-		epoch = FLAGS.epoch
-		num_train_steps = int(
-			num_train / (batch_size) * epoch)
-
-		decay_train_steps = num_train_steps
-
-		num_warmup_steps = int(num_train_steps * 0.01)
+							"num_warmup_steps":num_warmup_steps})
 
 		sess = tf.Session(config=sess_config)
-		
-		opt_config = Bunch({"init_lr":float(init_lr/hvd.size()), 
-							"num_train_steps":decay_train_steps, 
-							"cycle":False, 
-							"num_warmup_steps":num_warmup_steps,
-						   "lr_decay":"polynomial_decay"})
 
 		model_io_config = Bunch({"fix_lm":False})
 		
@@ -202,14 +187,28 @@ def main(_):
 						tf.FixedLenFeature([], tf.int64),
 		}
 
+		def _decode_record(record, name_to_features):
+			"""Decodes a record to a TensorFlow example.
+			"""
+			example = tf.parse_single_example(record, name_to_features)
+
+			# tf.Example only supports tf.int64, but the TPU only supports tf.int32.
+			# So cast all int64 to int32.
+			for name in list(example.keys()):
+				t = example[name]
+				if t.dtype == tf.int64:
+					t = tf.to_int32(t)
+				example[name] = t
+			return example 
+
 		params = Bunch({})
 		params.epoch = FLAGS.epoch
 		params.batch_size = FLAGS.batch_size
 
 		train_features = tf_data_utils.train_input_fn(FLAGS.train_file,
-                                    _decode_record, name_to_features, params, if_shard=FLAGS.if_shard)
-        eval_features = tf_data_utils.eval_input_fn(FLAGS.dev_file,
-                                    _decode_record, name_to_features, params, if_shard=FLAGS.if_shard)
+									_decode_record, name_to_features, params, if_shard=FLAGS.if_shard)
+		eval_features = tf_data_utils.eval_input_fn(FLAGS.dev_file,
+									_decode_record, name_to_features, params, if_shard=FLAGS.if_shard)
 		
 		[train_op, train_loss, train_per_example_loss, train_logits] = model_train_fn(train_features, [], tf.estimator.ModeKeys.TRAIN)
 		[_, eval_loss, eval_per_example_loss, eval_logits] = model_eval_fn(eval_features, [], tf.estimator.ModeKeys.EVAL)
@@ -257,8 +256,10 @@ def main(_):
 					cnt += 1
 					total_loss += train_loss
 					# print("==device id {} global step {}".format(hvd.rank(), step))
-					if np.mod(i, valid_step) == 0:
+					if np.mod(i, num_storage_steps) == 0:
 						print(total_loss/cnt)
+						if hvd.rank() == 0:
+							model_io_fn.save_model(sess, FLAGS.model_output+"/oqmrc_{}.ckpt".format(int(i/num_storage_steps)))
 						cnt = 0
 						total_loss = 0
 				except tf.errors.OutOfRangeError:
@@ -270,7 +271,8 @@ def main(_):
 		acc, true_label, pred_label = eval_fn(result)
 		end = time.time()
 		print("==total time {} numbers of devices {}".format(end - start, hvd.size()))
-	#     model_io_fn.save_model(sess, "/data/xuht/eventy_detection/sentiment/model/bert/sentiment.ckpt")
+		if hvd.rank() == 0:
+			model_io_fn.save_model(sess, FLAGS.model_output+"/oqmrc_{}.ckpt")
 
 if __name__ == "__main__":
 	tf.app.run()
