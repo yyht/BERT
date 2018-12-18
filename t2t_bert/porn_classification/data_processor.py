@@ -50,7 +50,7 @@ flags.DEFINE_bool(
 	"lower_case", None,
 	"Input TF example files (can be a glob or comma separated).")
 
-flags.DEFINE_int(
+flags.DEFINE_integer(
 	"max_length", None,
 	"Input TF example files (can be a glob or comma separated).")
 
