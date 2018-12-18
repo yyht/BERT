@@ -1,8 +1,8 @@
 sudo nvidia-docker run -it -d -p 8318:8888 --name uber_distributed_xuht_py3 \
 --privileged \
 -e LANG=C.UTF-8 \
--v /home/xuht/source:/notebooks/source \
--v /data/xuht:/data/xuht \
+-v /home/albert.xht/source:/notebooks/source \
+-v /home/albert.xht/data:/data/xuht \
 -p 6152:6006 \
 -p 7949:8080 \
 -p 8339:8891 \
