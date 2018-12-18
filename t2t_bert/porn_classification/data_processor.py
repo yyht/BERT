@@ -78,6 +78,9 @@ def main(_):
 															tokenizer,
 															FLAGS.train_result_file)
 
+if __name__ == "__main__":
+	tf.app.run()
+
 
 
 
