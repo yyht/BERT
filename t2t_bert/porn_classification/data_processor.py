@@ -76,7 +76,7 @@ def main(_):
 															classifier_data_api.label2id,
 															FLAGS.max_length,
 															tokenizer,
-															FLAGS.train_result_file)
+															FLAGS.test_result_file)
 
 if __name__ == "__main__":
 	tf.app.run()
