@@ -1,0 +1,5 @@
+six
+tensorflow-gpu==1.8.0
+bunch
+jieba
+sentencepiece

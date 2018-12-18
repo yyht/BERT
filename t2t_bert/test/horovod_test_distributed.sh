@@ -1,0 +1,21 @@
+mpirun -np 8 \
+ -H 192.168.3.132:4,192.168.3.133:4 \
+ -mca btl_tcp_if_exclude docker0,lo,veth0f552c8,vetha000527,veth0008561,veth0d11910,vetha41034f,vethae22aec,vethab0ce88,vethfbea832,b,br-1ca618956367,vethb4b2f97,vethafec1f2,br-224fa76e2bea,br-6655561aac78,br-697da8ae7b12,br-3e45e7ddc33c,br-be5c07c9e794,docker_gwbridge,vboxnet0,virbr0 \
+ -x NCCL_SOCKET_IFNAME=eno1 \
+ -mca plm_rsh_args "-p 12345" \
+ python test_oqmrc_distributed_final.py \
+ --eval_data_file "/data/xuht/wsdm19/test.csv" \
+ --output_file "/data/xuht/wsdm19/interaction/dev.tfrecords" \
+ --config_file "/mnt/WebotNAS/data/horovod_distributed_test/chinese_L-12_H-768_A-12/bert_config.json" \
+ --init_checkpoint "/mnt/WebotNAS/data/horovod_distributed_test/chinese_L-12_H-768_A-12/bert_model.ckpt" \
+ --result_file "/data/xuht/wsdm19/interaction/model_11_15/submission.csv" \
+ --vocab_file "/data/xuht/bert/chinese_L-12_H-768_A-12/vocab.txt" \
+ --label_id "/data/xuht/wsdm19/data/label_dict.json" \
+ --train_file "/mnt/WebotNAS/data/horovod_distributed_test/oqmrc/train.tfrecords" \
+ --dev_file "/mnt/WebotNAS/data/horovod_distributed_test/oqmrc/test.tfrecords" \
+ --max_length 200 \
+ --model_output "/data/xuht/horovod/model_11_27" \
+ --gpu_id "0" \
+ --epoch 5 \
+ --num_classes 3 \
+ --batch_size 8
