@@ -240,6 +240,10 @@ def main(_):
 					break
 			macro_f1 = f1_score(label_id, label, average="macro")
 			micro_f1 = f1_score(label_id, label, average="micro")
+			macro_precision = precision_score(label_id, label, average="macro")
+			micro_precision = precision_score(label_id, label, average="micro")
+			macro_recall = recall_score(label_id, label, average="macro")
+			micro_recall = recall_score(label_id, label, average="micro")
 			accuracy = accuracy_score(label_id, label)
 			print("test accuracy {} macro_f1 score {} micro_f1 {} accuracy {}".format(total_accuracy/ i, 
 																					macro_f1,  micro_f1, accuracy))
@@ -273,6 +277,9 @@ def main(_):
 		print("==total time {} numbers of devices {}".format(end - start, hvd.size()))
 		if hvd.rank() == 0:
 			model_io_fn.save_model(sess, FLAGS.model_output+"/oqmrc_{}.ckpt")
+			json.dump({"true_label":true_label, 
+						"pred_label":pred_label}, 
+						open(FLAGS.model_output+"/eval_result.json", "w"))
 
 if __name__ == "__main__":
 	tf.app.run()
