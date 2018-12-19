@@ -270,6 +270,7 @@ def main(_):
 					print("End of dataset")
 					break
 		import time
+		import time
 		start = time.time()
 		train_fn(train_op, train_loss)
 		acc, true_label, pred_label = eval_fn(result)
