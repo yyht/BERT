@@ -277,10 +277,11 @@ def main(_):
 		end = time.time()
 		print("==total time {} numbers of devices {}".format(end - start, hvd.size()))
 		if hvd.rank() == 0:
-			model_io_fn.save_model(sess, FLAGS.model_output+"/oqmrc_{}.ckpt")
-			json.dump({"true_label":true_label, 
+			model_io_fn.save_model(sess, FLAGS.model_output+"/oqmrc.ckpt")
+			import _pickle as pkl
+			pkl.dump({"true_label":true_label, 
 						"pred_label":pred_label}, 
-						open(FLAGS.model_output+"/eval_result.json", "w"))
+						open(FLAGS.model_output+"/eval_result.json", "wb"))
 
 if __name__ == "__main__":
 	tf.app.run()
