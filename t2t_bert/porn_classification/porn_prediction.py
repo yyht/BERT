@@ -245,7 +245,7 @@ class PredictHandler(tornado.web.RequestHandler):
         output = []
         for row in result:
             item = {}
-            item["label"] = row["label"]
+            item["label"] = str(row["label"])
             item["max_prob"] = float(row["max_prob"])
             output.append(item)
 
