@@ -207,7 +207,7 @@ class InferAPI(object):
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
 model_config = {
     
-    "label2id":"/data/xuht/websiteanalyze-data-seqing20180821/label2id.json",
+    "label2id":"/data/xuht/websiteanalyze-data-seqing20180821/label_dict.json",
     "init_checkpoint":"/data/xuht/websiteanalyze-data-seqing20180821/oqmrc_8.ckpt",
     "bert_config":"/data/xuht/chinese_L-12_H-768_A-12/bert_config.json",
     "max_length":128,
