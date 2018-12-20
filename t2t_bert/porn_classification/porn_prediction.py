@@ -242,14 +242,17 @@ class PredictHandler(tornado.web.RequestHandler):
         body = json.loads(self.request.body.decode(), encoding="utf-8")
         sentences = body.get("sentences")
         result = api.predict_batch(sentences)
-
+        output = []
         for row in result:
-            row["max_prob"] = float(row["max_prob"])
+            item = {}
+            item["label"] = row["label"]
+            item["max_prob"] = float(row["max_prob"])
+            output.append(item)
 
         # result = [[[row['label']] for row in result], [[float(row['max_prob'])] for row in result]]
 
         # print(result)
-        return self.write(json.dumps({"code":200, "data":result}, ensure_ascii=False))
+        return self.write(json.dumps({"code":200, "data":output}, ensure_ascii=False))
 def main():
     application = tornado.web.Application([(r"/lxm",PredictHandler),])
     http_server = tornado.httpserver.HTTPServer(application)
