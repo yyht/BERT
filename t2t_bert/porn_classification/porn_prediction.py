@@ -242,6 +242,10 @@ class PredictHandler(tornado.web.RequestHandler):
         body = json.loads(self.request.body.decode(), encoding="utf-8")
         sentences = body.get("sentences")
         result = api.predict_batch(sentences)
+
+        for row in result:
+            row["max_prob"] = float(row["max_prob"])
+
         # result = [[[row['label']] for row in result], [[float(row['max_prob'])] for row in result]]
 
         # print(result)
