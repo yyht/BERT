@@ -123,11 +123,11 @@ def main(_):
 			train_size = int(FLAGS.train_size/hvd.size())
 			epoch = FLAGS.epoch
 
-		init_lr = 1e-5
+		init_lr = 2e-5
 
 		num_train_steps = int(
 			train_size / FLAGS.batch_size * epoch)
-		num_warmup_steps = int(num_train_steps * 0.01)
+		num_warmup_steps = int(num_train_steps * 0.1)
 
 		num_storage_steps = int(train_size / FLAGS.batch_size)
 
