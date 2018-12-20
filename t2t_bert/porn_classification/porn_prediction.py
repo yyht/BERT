@@ -200,7 +200,8 @@ class InferAPI(object):
            
     def infer(self, sent_lst):
         with self.graph.as_default():
-            for result in self.estimator.predict(input_fn=lambda:  self.input_fn(input_features)):
+            for result in self.estimator.predict(input_fn=lambda:  self.input_fn(input_features),
+                                                checkpoint_path=self.config["init_checkpoint"]):
                 print(result)
 
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
