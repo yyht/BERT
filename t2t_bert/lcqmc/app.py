@@ -283,16 +283,16 @@ class PredictHandler(tornado.web.RequestHandler):
 		sent_lst = body.get("candidate")
 		result = api.predict_batch(query, sent_lst)
 		output = []
-        for row in result:
-            item = {}
-            item["label"] = str(row["label"])
-            item["max_prob"] = float(row["max_prob"])
-            output.append(item)
+		for row in result:
+			item = {}
+			item["label"] = str(row["label"])
+			item["max_prob"] = float(row["max_prob"])
+			output.append(item)
 
-        # result = [[[row['label']] for row in result], [[float(row['max_prob'])] for row in result]]
+		# result = [[[row['label']] for row in result], [[float(row['max_prob'])] for row in result]]
 
-        # print(result)
-        return self.write(json.dumps({"code":200, "data":output}, ensure_ascii=False))
+		# print(result)
+		return self.write(json.dumps({"code":200, "data":output}, ensure_ascii=False))
 def main():
 	application = tornado.web.Application([(r"/BERT_semantic",PredictHandler),])
 	http_server = tornado.httpserver.HTTPServer(application)
