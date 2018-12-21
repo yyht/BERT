@@ -141,7 +141,8 @@ class InferAPI(object):
         populated in lock-step with the input generator.
         """
 #      features = self.get_input_features(["据此,订约方同意终止认购协议,而公司及认购方概无责任根据认购协议分別发行及认购股可换股债券。"]*2)
-        for i in self.estimator.predict(input_fn=self.queued_predict_input_fn):
+        for i in self.estimator.predict(input_fn=self.queued_predict_input_fn,
+                                        checkpoint_path=self.config["init_checkpoint"]):
 #             if self.verbose:
 #                 print('Putting in output queue')
             print(i)
