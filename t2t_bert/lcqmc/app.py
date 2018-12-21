@@ -240,17 +240,18 @@ class InferAPI(object):
 		   
 	def infer(self, sent_lst):
 		with self.graph.as_default():
-			for result in self.estimator.predict(input_fn=lambda:  self.input_fn(input_features)):
+			for result in self.estimator.predict(input_fn=lambda:  self.input_fn(input_features),
+												checkpoint_path=self.config["init_checkpoint"]):
 				print(result)
 
 model_config = {
 	
 	"label2id":"/data/xuht/LCQMC/label_dict.json",
-	"init_checkpoint":"/data/xuht/LCQMC/model/model_12_5/oqmrc_3.ckpt",
-	"bert_config":"/data/xuht/bert/chinese_L-12_H-768_A-12/bert_config.json",
+	"init_checkpoint":"/data/xuht/LCQMC/oqmrc_4.ckpt",
+	"bert_config":"/data/xuht/chinese_L-12_H-768_A-12/bert_config.json",
 	"max_length":40,
-	"bert_vocab":"/data/xuht/bert/chinese_L-12_H-768_A-12/vocab.txt",
-	"model_dir":"/data/xuht/LCQMC/model/model_12_5"
+	"bert_vocab":"/data/xuht/chinese_L-12_H-768_A-12/vocab.txt",
+	"model_dir":"/data/xuht/LCQMC/"
 	
 }
 
