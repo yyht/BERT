@@ -1,7 +1,7 @@
 from model.bert import bert
 from model_io import model_io
-# from optimizer import optimizer
-from optimizer import hvd_distributed_optimizer as optimizer
+from optimizer import optimizer
+# from optimizer import hvd_distributed_optimizer as optimizer
 from task_module import pretrain, classifier
 import tensorflow as tf
 from utils.bert import bert_utils
