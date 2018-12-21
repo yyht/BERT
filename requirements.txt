@@ -5,3 +5,5 @@ tornado
 pandas
 sklearn
 jupyter
+networkx
+pyemd
