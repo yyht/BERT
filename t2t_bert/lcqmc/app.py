@@ -249,7 +249,7 @@ model_config = {
 	"label2id":"/data/xuht/LCQMC/label_dict.json",
 	"init_checkpoint":"/data/xuht/LCQMC/oqmrc_4.ckpt",
 	"bert_config":"/data/xuht/chinese_L-12_H-768_A-12/bert_config.json",
-	"max_length":40,
+	"max_length":256,
 	"bert_vocab":"/data/xuht/chinese_L-12_H-768_A-12/vocab.txt",
 	"model_dir":"/data/xuht/LCQMC/"
 	
@@ -282,13 +282,21 @@ class PredictHandler(tornado.web.RequestHandler):
 		query = body.get("query")
 		sent_lst = body.get("candidate")
 		result = api.predict_batch(query, sent_lst)
-		result = [[[row['label']] for row in result], [[float(row['max_prob'])] for row in result]]
-		# print(result)
-		return self.write(json.dumps({"code":200, "data":result}, ensure_ascii=False))
+		output = []
+        for row in result:
+            item = {}
+            item["label"] = str(row["label"])
+            item["max_prob"] = float(row["max_prob"])
+            output.append(item)
+
+        # result = [[[row['label']] for row in result], [[float(row['max_prob'])] for row in result]]
+
+        # print(result)
+        return self.write(json.dumps({"code":200, "data":output}, ensure_ascii=False))
 def main():
 	application = tornado.web.Application([(r"/BERT_semantic",PredictHandler),])
 	http_server = tornado.httpserver.HTTPServer(application)
-	http_server.bind(9993)
+	http_server.bind(8011)
 	http_server.start()
 	print("-------------server start-----------------")
 	tornado.ioloop.IOLoop.current().start()
