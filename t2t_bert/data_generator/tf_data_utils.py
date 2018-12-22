@@ -1,5 +1,6 @@
 import tensorflow as tf
 import numpy as np
+import copy
 import collections
 
 """
@@ -110,6 +111,17 @@ def _truncate_seq_pair_v1(tokens_a, tokens_b, max_length, rng):
 		# back to add more randomness and avoid biases.
 		if rng.random() < 0.5:
 		 	del trunc_tokens[0]
+		else:
+			trunc_tokens.pop()
+
+def _truncate_seq(tokens_a, max_length, rng):
+	while True:
+		total_length = len(tokens_a)
+		trunc_tokens = tokens_a
+		if total_length <= max_length:
+			break
+		if rng.random() < 0.5:
+			del trunc_tokens[0]
 		else:
 			trunc_tokens.pop()
 

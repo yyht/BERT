@@ -6,8 +6,9 @@ from example.feature_writer import PairPreTrainingFeature
 from data_generator import pretrain_feature
 import multiprocessing
 import random
+import copy
 
-def create_instances(examples, dupe_factor, max_seq_length, 
+def create_instances_qa(examples, dupe_factor, max_seq_length, 
 					masked_lm_prob, tokenizer, 
 					max_predictions_per_seq,
 					rng):
@@ -15,9 +16,17 @@ def create_instances(examples, dupe_factor, max_seq_length,
 	instances = []
 	for example in examples:
 		max_num_tokens = max_seq_length - 3
-		tokens_a = tokenizer.tokenize(example["text_a"])
-		tokens_b = tokenizer.tokenize(example["text_b"])
+		tokens_a_ = tokenizer.tokenize(example["text_a"])
+		tokens_b_ = tokenizer.tokenize(example["text_b"])
+
+		if len(tokens_a_) + len(tokens_b_) < masked_lm_prob * max_num_tokens:
+			max_predictions_per_seq = 1
+
 		for _ in range(dupe_factor):
+
+			tokens_a = copy.deepcopy(tokens_a_)
+			tokens_b = copy.deepcopy(tokens_b_)
+
 			tf_data_utils._truncate_seq_pair_v1(tokens_a, tokens_b, max_num_tokens, rng)
 
 			tokens = []
@@ -51,6 +60,78 @@ def create_instances(examples, dupe_factor, max_seq_length,
 			instances.append(instance)
 
 	return instances
+
+def create_instances_classification(examples, dupe_factor, max_seq_length, 
+					masked_lm_prob, tokenizer, 
+					max_predictions_per_seq,
+					rng):
+	vocab_words = list(tokenizer.vocab.keys())
+	instances = []
+	max_num_tokens = max_seq_length
+	for example in examples:
+		tokens_a_ = tokenizer.tokenize(example["text_a"])
+		
+		tokens_b_ = None
+		if example["text_b"]:
+			try:
+				tokens_b_ = tokenizer.tokenize(example["text_b"])
+			except:
+				print("==token b error==", example.text_b, ex_index)
+				break
+
+		if tokens_b_:
+			if len(tokens_a_) + len(tokens_b_) < masked_lm_prob * (max_num_tokens-3):
+				max_predictions_per_seq = 1
+		else:
+			if len(tokens_a_) < masked_lm_prob * (max_num_tokens-2):
+				max_predictions_per_seq = 2
+
+		for _ in range(dupe_factor):
+
+			tokens_a = copy.deepcopy(tokens_a_)
+			if tokens_b_:
+				tokens_b = copy.deepcopy(tokens_b_)
+			else:
+				tokens_b = None
+
+			if tokens_b:
+				tf_data_utils._truncate_seq_pair_v1(tokens_a, tokens_b, max_num_tokens-3, rng)
+			else:
+				tf_data_utils._truncate_seq(tokens_a, max_num_tokens-2, rng)
+
+			tokens = []
+			segment_ids = []
+			tokens.append("[CLS]")
+			segment_ids.append(0)
+
+			for token in tokens_a:
+				tokens.append(token)
+				segment_ids.append(0)
+			tokens.append("[SEP]")
+			segment_ids.append(0)
+
+			if tokens_b:
+				for token in tokens_b:
+					tokens.append(token)
+					segment_ids.append(1)
+				tokens.append("[SEP]")
+				segment_ids.append(1)
+
+			(tokens, masked_lm_positions,
+			 masked_lm_labels) = tf_data_utils.create_masked_lm_predictions(
+				 tokens, masked_lm_prob, max_predictions_per_seq, vocab_words, rng)
+			instance = pretrain_feature.PreTrainingInstance(
+				guid=example["guid"],
+				tokens=tokens,
+				segment_ids=segment_ids,
+				is_random_next=0,
+				label=example["label"],
+				masked_lm_positions=masked_lm_positions,
+				masked_lm_labels=masked_lm_labels)
+			instances.append(instance)
+
+	return instances
+	
 
 def build_chunk(examples, chunk_num=10):
 	"""
