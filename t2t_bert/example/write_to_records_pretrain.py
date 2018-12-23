@@ -16,8 +16,8 @@ def create_instances_qa(examples, dupe_factor, max_seq_length,
 	instances = []
 	for example in examples:
 		max_num_tokens = max_seq_length - 3
-		tokens_a_ = tokenizer.tokenize(example["text_a"])
-		tokens_b_ = tokenizer.tokenize(example["text_b"])
+		tokens_a_ = tokenizer.tokenize(example.text_a)
+		tokens_b_ = tokenizer.tokenize(example.text_b)
 
 		if len(tokens_a_) + len(tokens_b_) < masked_lm_prob * max_num_tokens:
 			max_predictions_per_seq = 1
@@ -50,11 +50,11 @@ def create_instances_qa(examples, dupe_factor, max_seq_length,
 			 masked_lm_labels) = tf_data_utils.create_masked_lm_predictions(
 				 tokens, masked_lm_prob, max_predictions_per_seq, vocab_words, rng)
 			instance = pretrain_feature.PreTrainingInstance(
-				guid=example["guid"],
+				guid=example.guid,
 				tokens=tokens,
 				segment_ids=segment_ids,
 				is_random_next=0,
-				label=example["label"],
+				label=example.label,
 				masked_lm_positions=masked_lm_positions,
 				masked_lm_labels=masked_lm_labels)
 			instances.append(instance)
@@ -69,12 +69,12 @@ def create_instances_classification(examples, dupe_factor, max_seq_length,
 	instances = []
 	max_num_tokens = max_seq_length
 	for example in examples:
-		tokens_a_ = tokenizer.tokenize(example["text_a"])
+		tokens_a_ = tokenizer.tokenize(example.text_a)
 		
 		tokens_b_ = None
-		if example["text_b"]:
+		if example.text_b:
 			try:
-				tokens_b_ = tokenizer.tokenize(example["text_b"])
+				tokens_b_ = tokenizer.tokenize(example.text_b)
 			except:
 				print("==token b error==", example.text_b, ex_index)
 				break
@@ -121,11 +121,11 @@ def create_instances_classification(examples, dupe_factor, max_seq_length,
 			 masked_lm_labels) = tf_data_utils.create_masked_lm_predictions(
 				 tokens, masked_lm_prob, max_predictions_per_seq, vocab_words, rng)
 			instance = pretrain_feature.PreTrainingInstance(
-				guid=example["guid"],
+				guid=example.guid,
 				tokens=tokens,
 				segment_ids=segment_ids,
 				is_random_next=0,
-				label=example["label"],
+				label=example.label,
 				masked_lm_positions=masked_lm_positions,
 				masked_lm_labels=masked_lm_labels)
 			instances.append(instance)
