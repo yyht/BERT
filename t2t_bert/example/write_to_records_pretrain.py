@@ -84,7 +84,7 @@ def create_instances_classification(examples, dupe_factor, max_seq_length,
 				max_predictions_per_seq = 1
 		else:
 			if len(tokens_a_) < masked_lm_prob * (max_num_tokens-2):
-				max_predictions_per_seq = 2
+				max_predictions_per_seq = 1
 
 		for _ in range(dupe_factor):
 
@@ -132,7 +132,6 @@ def create_instances_classification(examples, dupe_factor, max_seq_length,
 
 	return instances
 	
-
 def build_chunk(examples, chunk_num=10):
 	"""
 	split list into sub lists:分块
@@ -183,7 +182,8 @@ def write_instance_to_example_files(examples,
 									max_predictions_per_seq, 
 									output_file,
 									dupe,
-									random_seed=2018):
+									random_seed=2018,
+									feature_type="qa"):
 
 
 	"""Create TF example files from `TrainingInstance`s."""
@@ -191,12 +191,21 @@ def write_instance_to_example_files(examples,
 
 	feature_writer = PairPreTrainingFeature(output_file, is_training=False)
 
-	instances = create_instances(examples, dupe, 
-							max_seq_length,
-							masked_lm_prob, 
-							tokenizer,
-							max_predictions_per_seq,
-							rng)
+	if feature_type == "pretrain_qa":
+		instances = create_instances_qa(examples, dupe, 
+								max_seq_length,
+								masked_lm_prob, 
+								tokenizer,
+								max_predictions_per_seq,
+								rng)
+	elif feature_type == "pretrain_classification":
+		instances = create_instances_classification(examples, dupe, 
+								max_seq_length,
+								masked_lm_prob, 
+								tokenizer,
+								max_predictions_per_seq,
+								rng)
+
 	rng.shuffle(instances)
 
 	total_written = 0
