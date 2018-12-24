@@ -59,7 +59,7 @@ flags.DEFINE_integer(
 	"log_cycle", None,
 	"Input TF example files (can be a glob or comma separated).")
 
-flags.DEFINE_integer(
+flags.DEFINE_string(
 	"feature_type", None,
 	"Input TF example files (can be a glob or comma separated).")
 
