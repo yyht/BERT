@@ -239,7 +239,10 @@ def main(_):
 		
 		def eval_fn(op_dict):
 			i = 0
-			eval_total_dict = {}
+			eval_total_dict = {"masked_lm_accuracy":[],
+							"masked_lm_loss":[],
+							"sentence_f":[],
+							"sentence_loss":[]}
 			# label_weight = []
 			while True:
 				# try:
