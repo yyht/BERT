@@ -121,8 +121,8 @@ def create_instances_classification(examples, dupe_factor, max_seq_length,
 											max_predictions_per_seq=max_predictions_per_seq,
 											dupe_factor=dupe_factor)
 
-		# tf.logging.info("max_predictions_per_seq:{} dupe_factor_actual:{}".format(max_predictions_per_seq_actual,
-		# 	dupe_factor_actual))
+		tf.logging.info("max_predictions_per_seq:{} dupe_factor_actual:{}".format(max_predictions_per_seq_actual,
+			dupe_factor_actual))
 
 		for _ in range(dupe_factor_actual):
 
