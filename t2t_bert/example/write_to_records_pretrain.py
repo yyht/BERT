@@ -17,9 +17,9 @@ def per_seq_dupe_func(tokens_a, tokens_b, **kargs):
 	dupe_factor_actual = kargs["dupe_factor"]
 
 	if tokens_b:
-		tokens_b_ = []
-	else:
 		tokens_b_ = tokens_b
+	else:
+		tokens_b_ = []
 
 	if len(tokens_a) + len(tokens_b_) < masked_lm_prob * (max_num_tokens):
 		max_predictions_per_seq_actual = 1
