@@ -191,7 +191,8 @@ def multi_process(examples, process_num,
 				dupe,
 				random_seed=2018,
 				feature_type="pretrain_qa",
-				log_cycle=100):
+				log_cycle=100,
+				per_seq_dupe_func=per_seq_dupe_func):
 
 	chunk_num = process_num - 1
 
@@ -204,7 +205,8 @@ def multi_process(examples, process_num,
 		pool.apply_async(write_instance_to_example_files,
 			args=(each_chunk, label_dict,tokenizer,max_seq_length,
 					masked_lm_prob,max_predictions_per_seq,
-					output_file_, dupe,random_seed,feature_type,log_cycle)) # apply_async
+					output_file_, dupe,random_seed,feature_type,log_cycle,
+					per_seq_dupe_func)) # apply_async
 	pool.close()
 	pool.join()
 
@@ -218,7 +220,8 @@ def write_instance_to_example_files(examples,
 									dupe,
 									random_seed=2018,
 									feature_type="pretrain_qa",
-									log_cycle=100):
+									log_cycle=100,
+									per_seq_dupe_func=per_seq_dupe_func):
 
 
 	"""Create TF example files from `TrainingInstance`s."""
@@ -232,14 +235,16 @@ def write_instance_to_example_files(examples,
 								masked_lm_prob, 
 								tokenizer,
 								max_predictions_per_seq,
-								rng)
+								rng,
+								per_seq_dupe_func)
 	elif feature_type == "pretrain_classification":
 		instances = create_instances_classification(examples, dupe, 
 								max_seq_length,
 								masked_lm_prob, 
 								tokenizer,
 								max_predictions_per_seq,
-								rng)
+								rng,
+								per_seq_dupe_func)
 
 	rng.shuffle(instances)
 
