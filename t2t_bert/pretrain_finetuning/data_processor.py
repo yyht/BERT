@@ -3,11 +3,12 @@ sys.path.append("..")
 
 import numpy as np
 import tensorflow as tf
-from bunch import Bunch
-from example import feature_writer, write_to_tfrecords, classifier_processor
+
+import sys, os
+sys.path.append("..")
+
+from example import classifier_processor
 from data_generator import tokenization
-from data_generator import tf_data_utils
-from model_io import model_io
 from example import write_to_records_pretrain
 
 flags = tf.flags
@@ -67,7 +68,7 @@ flags.DEFINE_float(
 	"masked_lm_prob", None,
 	"Input TF example files (can be a glob or comma separated).")
 
-flags.DEFINE_float(
+flags.DEFINE_integer(
 	"dupe", None,
 	"Input TF example files (can be a glob or comma separated).")
 
@@ -106,7 +107,7 @@ def main(_):
 			tokenizer=tokenizer, 
 			max_seq_length=FLAGS.max_length,
 			masked_lm_prob=FLAGS.masked_lm_prob, 
-			max_predictions_per_seq=FLAGS.max_predictions_per_seq, 
+			max_predictions_per_seq=FLAGS.max_predictions_per_seq,
 			output_file=FLAGS.test_result_file,
 			dupe=FLAGS.dupe,
 			random_seed=2018,

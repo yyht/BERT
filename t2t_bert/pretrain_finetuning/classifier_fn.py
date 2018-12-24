@@ -120,7 +120,7 @@ def classifier_model_fn_builder(
 								opt_config.num_train_steps)
 
 				output_dict = {"train_op":train_op,
-							"loss":total_loss,
+							"total_loss":total_loss,
 							"masked_lm_loss":masked_lm_loss,
 							"sentence_loss":loss}
 

@@ -3,7 +3,7 @@ sys.path.append("..")
 from model_io import model_io
 import numpy as np
 import tensorflow as tf
-from task_pretrain import classifier_fn
+from pretrain_finetuning import classifier_fn
 from bunch import Bunch
 from data_generator import tokenization
 from data_generator import tf_data_utils
