@@ -7,6 +7,7 @@ from data_generator import pretrain_feature
 import multiprocessing
 import random
 import copy
+import numpy as np
 
 def create_instances_qa(examples, dupe_factor, max_seq_length, 
 					masked_lm_prob, tokenizer, 
@@ -158,7 +159,8 @@ def multi_process(examples, process_num,
 				output_file,
 				dupe,
 				random_seed=2018,
-				feature_type="pretrain_qa"):
+				feature_type="pretrain_qa",
+				log_cycle=100):
 
 	chunk_num = process_num - 1
 
@@ -171,7 +173,7 @@ def multi_process(examples, process_num,
 		pool.apply_async(write_instance_to_example_files,
 			args=(each_chunk, label_dict,tokenizer,max_seq_length,
 					masked_lm_prob,max_predictions_per_seq,
-					output_file_, dupe,random_seed,feature_type)) # apply_async
+					output_file_, dupe,random_seed,feature_type,log_cycle)) # apply_async
 	pool.close()
 	pool.join()
 
@@ -184,7 +186,8 @@ def write_instance_to_example_files(examples,
 									output_file,
 									dupe,
 									random_seed=2018,
-									feature_type="pretrain_qa"):
+									feature_type="pretrain_qa",
+									log_cycle=100):
 
 
 	"""Create TF example files from `TrainingInstance`s."""
@@ -249,7 +252,7 @@ def write_instance_to_example_files(examples,
 					is_random_next=instance.is_random_next)
 		feature_writer.process_feature(features)
 
-		if inst_index < 5:
+		if np.mod(inst_index, ) < 5:
 			tf.logging.info("*** Example ***")
 			tf.logging.info("guid: %s" % (features.guid))
 			tf.logging.info("tokens: %s" % " ".join(
