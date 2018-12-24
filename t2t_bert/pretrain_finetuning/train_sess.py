@@ -280,7 +280,7 @@ def main(_):
 						for key in loss_dict:
 							tmp = key + " " + str(loss_dict[key])
 							string += tmp
-						print(string)
+						print(string, "===debug loss string===")
 						break
 					if np.mod(i, num_storage_steps) == 0:
 						string = ""
@@ -289,7 +289,7 @@ def main(_):
 							string += tmp
 						print(string)
 						if hvd.rank() == 0:
-							model_io_fn.save_model(sess, FLAGS.model_output+"/oqmrc_{}.ckpt".format(int(i/num_storage_steps)))
+							model_io_fn.save_model(sess, FLAGS.model_output+"/model_{}.ckpt".format(int(i/num_storage_steps)))
 							print("==successful storing model=={}".format(int(i/num_storage_steps)))
 							
 						total_loss = 0
@@ -302,8 +302,8 @@ def main(_):
 			print("===========begin to eval============")
 			eval_dict = eval_fn(eval_dict)
 			import _pickle as pkl
-			pkl.dump(eval_dict, open(FLAGS.model_output+"/eval_dict.pkl", "rb"))
-			model_io_fn.save_model(sess, FLAGS.model_output+"/oqmrc.ckpt")
+			pkl.dump(eval_dict, open(FLAGS.model_output+"/eval_dict.pkl", "wb"))
+			model_io_fn.save_model(sess, FLAGS.model_output+"/model.ckpt")
 
 if __name__ == "__main__":
 	tf.app.run()
