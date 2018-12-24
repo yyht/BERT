@@ -10,7 +10,7 @@ python train_sess.py \
  --max_length 128 \
  --model_output "/data/xuht/jd_comment/model_12_24" \
  --epoch 8 \
- --num_classes 3 \
+ --num_classes 2 \
  --batch_size 16 \
  --if_shard "1" \
  --max_predictions_per_seq 5 \

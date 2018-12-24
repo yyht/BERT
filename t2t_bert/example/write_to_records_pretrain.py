@@ -23,6 +23,8 @@ def per_seq_dupe_func(tokens_a, tokens_b, **kargs):
 
 	total_len = len(tokens_a) + len(tokens_b_)
 
+	max_predictions_per_seq_actual = 1
+
 	for index in range(1,10):
 		if total_len >= (index-1) * 25 and total_len < (index) * 25:
 			max_predictions_per_seq_actual = index
@@ -44,9 +46,7 @@ def create_instances_qa(examples, dupe_factor, max_seq_length,
 	for example in examples:
 		max_num_tokens = max_seq_length - 3
 		tokens_a_ = tokenizer.tokenize(example.text_a)
-		tokens_b_ = tokenizer.tokenize(example.text_b)
-
-		max_predictions_per_seq_actual = max_predictions_per_seq
+		tokens_b_ = tokenizer.tokenize(example.text_b) 
 
 		[max_predictions_per_seq_actual,
 		dupe_factor_actual] = per_seq_dupe_func(tokens_a_, tokens_b_,
