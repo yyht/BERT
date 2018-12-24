@@ -89,6 +89,19 @@ def main(_):
 
 	train_examples = classifier_data_api.get_train_examples(FLAGS.train_file)
 
+	write_to_records_pretrain.write_instance_to_example_files(train_examples[0:100],
+                                                        label_dict=classifier_data_api.label2id,
+														tokenizer=tokenizer, 
+														max_seq_length=FLAGS.max_length,
+														masked_lm_prob=FLAGS.masked_lm_prob, 
+														max_predictions_per_seq=FLAGS.max_predictions_per_seq, 
+														output_file=FLAGS.train_result_file+"/test.tfrecords",
+														dupe=FLAGS.dupe,
+														random_seed=2018,
+														feature_type=FLAGS.feature_type,
+														log_cycle=FLAGS.log_cycle,
+														per_seq_dupe_func=per_seq_dupe_func)
+
 	write_to_records_pretrain.multi_process(
 			examples=train_examples, 
 			process_num=FLAGS.num_threads, 
