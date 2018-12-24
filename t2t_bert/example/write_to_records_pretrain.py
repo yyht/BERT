@@ -269,6 +269,7 @@ def write_instance_to_example_files(examples,
 					"masked_lm_weights: %s" % " ".join([str(x) for x in masked_lm_weights]))
 			tf.logging.info("label: {} (id = {})".format(instance.label, label_id))
 			tf.logging.info("is_random_next: {} ".format(instance.is_random_next))
+			tf.logging.info("length of tokens: {} ".format(len(instance.tokens)))
 		
 	feature_writer.close()
 
