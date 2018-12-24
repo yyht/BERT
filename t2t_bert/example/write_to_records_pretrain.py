@@ -23,7 +23,9 @@ def per_seq_dupe_func(tokens_a, tokens_b, **kargs):
 
 	total_len = len(tokens_a) + len(tokens_b_)
 
-	max_predictions_per_seq_actual = int(total_len/25) + 1
+	max_predictions_per_seq_actual = int(total_len/25)
+	if max_predictions_per_seq_actual == 0:
+		max_predictions_per_seq_actual = 1
 
 	max_predictions_per_seq_actual = min([max_predictions_per_seq, max_predictions_per_seq_actual])
 	
