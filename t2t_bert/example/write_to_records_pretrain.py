@@ -30,7 +30,7 @@ def per_seq_dupe_func(tokens_a, tokens_b, **kargs):
 def create_instances_qa(examples, dupe_factor, max_seq_length, 
 					masked_lm_prob, tokenizer, 
 					max_predictions_per_seq,
-					rng，
+					rng,
 					per_seq_dupe_func):
 	vocab_words = list(tokenizer.vocab.keys())
 	instances = []
@@ -47,6 +47,9 @@ def create_instances_qa(examples, dupe_factor, max_seq_length,
 											max_num_tokens=max_num_tokens,
 											max_predictions_per_seq=max_predictions_per_seq,
 											dupe_factor=dupe_factor)
+
+		tf.logging.info("max_predictions_per_seq:{} dupe_factor_actual:{}".format(max_predictions_per_seq_actual,
+			dupe_factor_actual))
 
 		for _ in range(dupe_factor_actual):
 
