@@ -21,12 +21,12 @@ def per_seq_dupe_func(tokens_a, tokens_b, **kargs):
 	else:
 		tokens_b_ = []
 
-	if len(tokens_a) + len(tokens_b_) < masked_lm_prob * (max_num_tokens):
-		max_predictions_per_seq_actual = 1
-	elif len(tokens_a) + len(tokens_b_) < 0.5 * (max_num_tokens):
-		max_predictions_per_seq_actual = 2
-	else:
-		max_predictions_per_seq_actual = 3
+	total_len = len(tokens_a) + len(tokens_b_)
+
+	for index in range(1,10):
+		if total_len >= (index-1) * 25 and total_len < (index) * 25:
+			max_predictions_per_seq_actual = index
+			break
 	
 	dupe_factor_actual = 2 * max_predictions_per_seq_actual
 
