@@ -107,7 +107,7 @@ def main(_):
 
 	write_to_records_pretrain.multi_process(
 			train_examples, 10, 
-			data_reader.label2id,
+			classifier_data_api.label2id,
 			tokenizer, 
 			128,
 			0.15, 
@@ -139,7 +139,7 @@ def main(_):
 
 	write_to_records_pretrain.multi_process(
 			train_examples, 10, 
-			data_reader.label2id,
+			classifier_data_api.label2id,
 			tokenizer, 
 			128,
 			0.15, 
