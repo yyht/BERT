@@ -252,7 +252,7 @@ def write_instance_to_example_files(examples,
 					is_random_next=instance.is_random_next)
 		feature_writer.process_feature(features)
 
-		if np.mod(inst_index, ) < 5:
+		if np.mod(inst_index, log_cycle) == 0:
 			tf.logging.info("*** Example ***")
 			tf.logging.info("guid: %s" % (features.guid))
 			tf.logging.info("tokens: %s" % " ".join(
