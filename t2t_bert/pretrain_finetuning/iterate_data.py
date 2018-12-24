@@ -18,6 +18,18 @@ flags.DEFINE_string(
     "train_result_file", None,
     "Input TF example files (can be a glob or comma separated).")
 
+flags.DEFINE_integer(
+    "batch_size", 32,
+    "Input TF example files (can be a glob or comma separated).")
+
+flags.DEFINE_integer(
+    "max_length", None,
+    "Input TF example files (can be a glob or comma separated).")
+
+flags.DEFINE_integer(
+    "max_predictions_per_seq", None,
+    "Input TF example files (can be a glob or comma separated).")
+
 def main(_):
 
     graph = tf.Graph()
@@ -26,24 +38,24 @@ def main(_):
         import random
         name_to_features = {
                 "input_ids":
-                    tf.FixedLenFeature([128], tf.int64),
+                    tf.FixedLenFeature([FLAGS.max_length], tf.int64),
                 "input_mask":
-                    tf.FixedLenFeature([128], tf.int64),
+                    tf.FixedLenFeature([FLAGS.max_length], tf.int64),
                 "segment_ids":
-                    tf.FixedLenFeature([128], tf.int64),
+                    tf.FixedLenFeature([FLAGS.max_length], tf.int64),
                 "masked_lm_positions":
-                    tf.FixedLenFeature([5], tf.int64),
+                    tf.FixedLenFeature([FLAGS.max_predictions_per_seq], tf.int64),
                 "masked_lm_ids":
-                    tf.FixedLenFeature([5], tf.int64),
+                    tf.FixedLenFeature([FLAGS.max_predictions_per_seq], tf.int64),
                 "masked_lm_weights":
-                    tf.FixedLenFeature([5], tf.float32),
+                    tf.FixedLenFeature([FLAGS.max_predictions_per_seq], tf.float32),
                 "label_ids":
                     tf.FixedLenFeature([], tf.int64),
                 }
 
         params = Bunch({})
-        params.epoch = epoch
-        params.batch_size = 32
+        params.epoch = 1
+        params.batch_size = FLAGS.batch_size
         def parse_folder(path):
             files = os.listdir(path)
             output = []
@@ -71,7 +83,7 @@ def main(_):
             except tf.errors.OutOfRangeError:
                 print("End of dataset")
                 break
-        print(i*32)
+        print(i*FLAGS.batch_size)
 
 if __name__ == "__main__":
     tf.app.run()
