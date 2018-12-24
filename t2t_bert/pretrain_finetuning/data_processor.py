@@ -75,9 +75,13 @@ flags.DEFINE_integer(
 def main(_):
 
 	def per_seq_dupe_func(tokens_a, tokens_b, **kargs):
+		masked_lm_prob = kargs["masked_lm_prob"]
+		max_num_tokens = kargs["max_num_tokens"]
+
+		max_predictions_per_seq = kargs["max_predictions_per_seq"]
+		dupe_factor_actual = kargs["dupe_factor"]
 
 		max_predictions_per_seq_actual = 2
-		
 		dupe_factor_actual = 2 * max_predictions_per_seq_actual
 
 		return max_predictions_per_seq_actual, dupe_factor_actual
