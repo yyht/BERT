@@ -1,5 +1,5 @@
-CUDA_VISIBLE_DEVICES="0,1,2,3" mpirun -np 4 \
- -H localhost:4 \
+CUDA_VISIBLE_DEVICES="0,1" mpirun -np 2 \
+ -H localhost:2 \
 python train_sess.py \
  --config_file "/data/xuht/chinese_L-12_H-768_A-12/bert_config.json" \
  --init_checkpoint "/data/xuht/chinese_L-12_H-768_A-12/bert_model.ckpt" \
