@@ -97,20 +97,19 @@ def create_instances_classification(examples, dupe_factor, max_seq_length,
 					per_seq_dupe_func):
 	vocab_words = list(tokenizer.vocab.keys())
 	instances = []
-	max_num_tokens = max_seq_length
 	for example in examples:
 		tokens_a_ = tokenizer.tokenize(example.text_a)
 		
 		tokens_b_ = None
 		if example.text_b:
-			max_num_tokens -= 3
+			max_num_tokens = max_seq_length - 3
 			try:
 				tokens_b_ = tokenizer.tokenize(example.text_b)
 			except:
 				print("==token b error==", example.text_b, ex_index)
 				break
 		else:
-			max_num_tokens -= 2
+			max_num_tokens = max_seq_length - 2
 
 		[max_predictions_per_seq_actual,
 		dupe_factor_actual] = per_seq_dupe_func(tokens_a_, None, masked_lm_prob=masked_lm_prob,
