@@ -20,8 +20,10 @@ def create_instances_qa(examples, dupe_factor, max_seq_length,
 		tokens_a_ = tokenizer.tokenize(example.text_a)
 		tokens_b_ = tokenizer.tokenize(example.text_b)
 
+		max_predictions_per_seq_actual = max_predictions_per_seq
+
 		if len(tokens_a_) + len(tokens_b_) < masked_lm_prob * max_num_tokens:
-			max_predictions_per_seq = 1
+			max_predictions_per_seq_actual = max_predictions_per_seq = 1
 
 		for _ in range(dupe_factor):
 
@@ -49,7 +51,7 @@ def create_instances_qa(examples, dupe_factor, max_seq_length,
 
 			(tokens, masked_lm_positions,
 			 masked_lm_labels) = tf_data_utils.create_masked_lm_predictions(
-				 tokens, masked_lm_prob, max_predictions_per_seq, vocab_words, rng)
+				 tokens, masked_lm_prob, max_predictions_per_seq_actual, vocab_words, rng)
 			instance = pretrain_feature.PreTrainingInstance(
 				guid=example.guid,
 				tokens=tokens,
@@ -71,6 +73,8 @@ def create_instances_classification(examples, dupe_factor, max_seq_length,
 	max_num_tokens = max_seq_length
 	for example in examples:
 		tokens_a_ = tokenizer.tokenize(example.text_a)
+
+		max_predictions_per_seq_actual = max_predictions_per_seq
 		
 		tokens_b_ = None
 		if example.text_b:
@@ -82,10 +86,10 @@ def create_instances_classification(examples, dupe_factor, max_seq_length,
 
 		if tokens_b_:
 			if len(tokens_a_) + len(tokens_b_) < masked_lm_prob * (max_num_tokens-3):
-				max_predictions_per_seq = 1
+				max_predictions_per_seq_actual = 1
 		else:
 			if len(tokens_a_) < masked_lm_prob * (max_num_tokens-2):
-				max_predictions_per_seq = 1
+				max_predictions_per_seq_actual = 1
 
 		for _ in range(dupe_factor):
 
@@ -120,7 +124,7 @@ def create_instances_classification(examples, dupe_factor, max_seq_length,
 
 			(tokens, masked_lm_positions,
 			 masked_lm_labels) = tf_data_utils.create_masked_lm_predictions(
-				 tokens, masked_lm_prob, max_predictions_per_seq, vocab_words, rng)
+				 tokens, masked_lm_prob, max_predictions_per_seq_actual, vocab_words, rng)
 			instance = pretrain_feature.PreTrainingInstance(
 				guid=example.guid,
 				tokens=tokens,
