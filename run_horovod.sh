@@ -1,4 +1,4 @@
-sudo nvidia-docker run -it -d -p 8318:8888 --name uber_distributed_xuht_py3 \
+sudo docker run -it -d -p 8318:8888 --name uber_distributed_xuht_py3 \
 --privileged \
 -e LANG=C.UTF-8 \
 -v /home/albert.xht/source:/notebooks/source \
