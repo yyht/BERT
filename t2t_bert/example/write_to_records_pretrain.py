@@ -100,9 +100,6 @@ def create_instances_classification(examples, dupe_factor, max_seq_length,
 	max_num_tokens = max_seq_length
 	for example in examples:
 		tokens_a_ = tokenizer.tokenize(example.text_a)
-
-		max_predictions_per_seq_actual = max_predictions_per_seq
-		dupe_factor_actual = dupe_factor
 		
 		tokens_b_ = None
 		if example.text_b:
@@ -121,6 +118,9 @@ def create_instances_classification(examples, dupe_factor, max_seq_length,
 											max_predictions_per_seq=max_predictions_per_seq,
 											dupe_factor=dupe_factor)
 
+		tf.logging.info("max_predictions_per_seq:{} dupe_factor_actual:{}".format(max_predictions_per_seq_actual,
+			dupe_factor_actual))
+
 		for _ in range(dupe_factor_actual):
 
 			tokens_a = copy.deepcopy(tokens_a_)
@@ -130,9 +130,9 @@ def create_instances_classification(examples, dupe_factor, max_seq_length,
 				tokens_b = None
 
 			if tokens_b:
-				tf_data_utils._truncate_seq_pair_v1(tokens_a, tokens_b, max_num_tokens-3, rng)
+				tf_data_utils._truncate_seq_pair_v1(tokens_a, tokens_b, max_num_tokens, rng)
 			else:
-				tf_data_utils._truncate_seq(tokens_a, max_num_tokens-2, rng)
+				tf_data_utils._truncate_seq(tokens_a, max_num_tokens, rng)
 
 			tokens = []
 			segment_ids = []
