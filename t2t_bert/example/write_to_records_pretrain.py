@@ -93,7 +93,7 @@ def create_instances_qa(examples, dupe_factor, max_seq_length,
 def create_instances_classification(examples, dupe_factor, max_seq_length, 
 					masked_lm_prob, tokenizer, 
 					max_predictions_per_seq,
-					rng，
+					rng,
 					per_seq_dupe_func):
 	vocab_words = list(tokenizer.vocab.keys())
 	instances = []
