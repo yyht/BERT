@@ -4,7 +4,7 @@ python data_processor.py \
 	--train_result_file "/data/xuht/jd_comment/train" \
 	--test_result_file  "/data/xuht/jd_comment/test" \
 	--vocab_file "/data/xuht/chinese_L-12_H-768_A-12/vocab.txt" \
-	--label_id "/data/xuht/porn/label_dict.json" \
+	--label_id "/data/xuht/jd_comment/label_dict.json" \
 	--lower_case True \
 	--max_length 128 \
 	--num_threads 10 \
