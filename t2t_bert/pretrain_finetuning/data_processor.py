@@ -8,6 +8,7 @@ from example import feature_writer, write_to_tfrecords, classifier_processor
 from data_generator import tokenization
 from data_generator import tf_data_utils
 from model_io import model_io
+from example import write_to_records_pretrain
 
 flags = tf.flags
 
@@ -46,6 +47,30 @@ flags.DEFINE_integer(
 	"max_length", None,
 	"Input TF example files (can be a glob or comma separated).")
 
+flags.DEFINE_integer(
+	"num_threads", None,
+	"Input TF example files (can be a glob or comma separated).")
+
+flags.DEFINE_integer(
+	"max_predictions_per_seq", None,
+	"Input TF example files (can be a glob or comma separated).")
+
+flags.DEFINE_integer(
+	"log_cycle", None,
+	"Input TF example files (can be a glob or comma separated).")
+
+flags.DEFINE_integer(
+	"feature_type", None,
+	"Input TF example files (can be a glob or comma separated).")
+
+flags.DEFINE_float(
+	"masked_lm_prob", None,
+	"Input TF example files (can be a glob or comma separated).")
+
+flags.DEFINE_float(
+	"dupe", None,
+	"Input TF example files (can be a glob or comma separated).")
+
 def main(_):
 
 	tokenizer = tokenization.FullTokenizer(
@@ -57,18 +82,38 @@ def main(_):
 
 	train_examples = classifier_data_api.get_train_examples(FLAGS.train_file)
 
-	write_to_tfrecords.convert_classifier_examples_to_features(train_examples,
-															classifier_data_api.label2id,
-															FLAGS.max_length,
-															tokenizer,
-															FLAGS.train_result_file)
+	write_to_records_pretrain.multi_process(
+			examples=train_examples, 
+			process_num=FLAGS.num_threads, 
+			label_dict=classifier_data_api.label2id,
+			tokenizer=tokenizer, 
+			max_seq_length=FLAGS.max_length,
+			masked_lm_prob=FLAGS.masked_lm_prob, 
+			max_predictions_per_seq=FLAGS.max_predictions_per_seq, 
+			output_file=FLAGS.train_result_file,
+			dupe=FLAGS.dupe,
+			random_seed=2018,
+			feature_type=FLAGS.feature_type,
+			log_cycle=FLAGS.log_cycle
+		)
 
 	test_examples = classifier_data_api.get_train_examples(FLAGS.test_file)
-	write_to_tfrecords.convert_classifier_examples_to_features(test_examples,
-															classifier_data_api.label2id,
-															FLAGS.max_length,
-															tokenizer,
-															FLAGS.test_result_file)
+	write_to_records_pretrain.multi_process(
+			examples=test_examples, 
+			process_num=FLAGS.num_threads, 
+			label_dict=classifier_data_api.label2id,
+			tokenizer=tokenizer, 
+			max_seq_length=FLAGS.max_length,
+			masked_lm_prob=FLAGS.masked_lm_prob, 
+			max_predictions_per_seq=FLAGS.max_predictions_per_seq, 
+			output_file=FLAGS.test_result_file,
+			dupe=FLAGS.dupe,
+			random_seed=2018,
+			feature_type=FLAGS.feature_type,
+			log_cycle=FLAGS.log_cycle
+		)
 
+	print("==Succeeded in preparing masked lm with finetuning data for task-finetuning with masked lm regularization")
+	
 if __name__ == "__main__":
 	tf.app.run()

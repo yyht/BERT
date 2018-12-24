@@ -23,7 +23,7 @@ def create_instances_qa(examples, dupe_factor, max_seq_length,
 		max_predictions_per_seq_actual = max_predictions_per_seq
 
 		if len(tokens_a_) + len(tokens_b_) < masked_lm_prob * max_num_tokens:
-			max_predictions_per_seq_actual = max_predictions_per_seq = 1
+			max_predictions_per_seq_actual = 1
 
 		for _ in range(dupe_factor):
 
