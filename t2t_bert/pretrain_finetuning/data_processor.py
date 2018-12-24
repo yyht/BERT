@@ -74,12 +74,6 @@ flags.DEFINE_integer(
 
 def main(_):
 
-	def per_seq_dupe_func(tokens_a, tokens_b, **kargs):
-		max_predictions_per_seq_actual = 1
-		dupe_factor_actual = 2 * max_predictions_per_seq_actual
-
-		return max_predictions_per_seq_actual, dupe_factor_actual
-
 	tokenizer = tokenization.FullTokenizer(
 		vocab_file=FLAGS.vocab_file, 
 		do_lower_case=FLAGS.lower_case)
