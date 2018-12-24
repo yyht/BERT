@@ -245,17 +245,17 @@ def main(_):
 							"sentence_loss":[]}
 			# label_weight = []
 			while True:
-				# try:
-				eval_result = sess.run(op_dict)
-				for key in eval_result:
-					eval_total_dict[key].extend(eval_result[key])
-				if FLAGS.if_debug == 1:
+				try:
+					eval_result = sess.run(op_dict)
+					for key in eval_result:
+						eval_total_dict[key].extend(eval_result[key])
+					if FLAGS.if_debug == 1:
+						break
+			  
+					i += 1
+				except tf.errors.OutOfRangeError:
+					print("End of dataset")
 					break
-		  
-				i += 1
-				# except tf.errors.OutOfRangeError:
-				# 	print("End of dataset")
-				# 	break
 			
 			return eval_total_dict
 		
@@ -264,41 +264,41 @@ def main(_):
 			cnt = 0
 			loss_dict = {"total_loss":0.0, "masked_lm_loss":0.0, "sentence_loss":0.0}
 			while True:
-				# try:
-				train_result = sess.run(op_dict)
-				for key in train_result:
-					if key == "train_op":
-						continue
-					else:
-						if np.isnan(train_result[key]):
-							print(train_loss, "get nan loss")
-							break
+				try:
+					train_result = sess.run(op_dict)
+					for key in train_result:
+						if key == "train_op":
+							continue
 						else:
-							loss_dict[key] += train_result[key]
-				
-				i += 1
-				cnt += 1
-				if FLAGS.if_debug == 1:
-					string = ""
-					for key in loss_dict:
-						tmp = key + " " + str(loss_dict[key])
-						string += tmp
-					print(string, "===debug loss string===")
+							if np.isnan(train_result[key]):
+								print(train_loss, "get nan loss")
+								break
+							else:
+								loss_dict[key] += train_result[key]
+					
+					i += 1
+					cnt += 1
+					if FLAGS.if_debug == 1:
+						string = ""
+						for key in loss_dict:
+							tmp = key + " " + str(loss_dict[key])
+							string += tmp
+						print(string, "===debug loss string===")
+						break
+					if np.mod(i, num_storage_steps) == 0:
+						string = ""
+						for key in loss_dict:
+							tmp = key + " " + str(loss_dict[key]/cnt)
+							string += tmp
+						print(string)
+						if hvd.rank() == 0:
+							model_io_fn.save_model(sess, FLAGS.model_output+"/model_{}.ckpt".format(int(i/num_storage_steps)))
+							print("==successful storing model=={}".format(int(i/num_storage_steps)))
+							
+						total_loss = 0
+						cnt = 0
+				except tf.errors.OutOfRangeError:
 					break
-				if np.mod(i, num_storage_steps) == 0:
-					string = ""
-					for key in loss_dict:
-						tmp = key + " " + str(loss_dict[key]/cnt)
-						string += tmp
-					print(string)
-					if hvd.rank() == 0:
-						model_io_fn.save_model(sess, FLAGS.model_output+"/model_{}.ckpt".format(int(i/num_storage_steps)))
-						print("==successful storing model=={}".format(int(i/num_storage_steps)))
-						
-					total_loss = 0
-					cnt = 0
-				# except tf.errors.OutOfRangeError:
-				# 	break
 		print("===========begin to train============")        
 		train_fn(train_dict)
 		if hvd.rank() == 0:
