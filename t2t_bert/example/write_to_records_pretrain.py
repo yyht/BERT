@@ -9,10 +9,29 @@ import random
 import copy
 import numpy as np
 
+def per_seq_dupe_func(tokens_a, tokens_b, **kargs):
+	masked_lm_prob = kargs["masked_lm_prob"]
+	max_num_tokens = kargs["max_num_tokens"]
+
+	max_predictions_per_seq_actual = kargs["max_predictions_per_seq"]
+	dupe_factor_actual = kargs["dupe_factor"]
+
+	if tokens_b:
+		tokens_b_ = []
+	else:
+		tokens_b_ = tokens_b
+
+	if len(tokens_a) + len(tokens_b_) < masked_lm_prob * (max_num_tokens):
+		max_predictions_per_seq_actual = 1
+	if len(tokens_a) + len(tokens_b_) <  dupe_factor_actual:
+		dupe_factor_actual = 2
+	return max_predictions_per_seq_actual, dupe_factor_actual
+
 def create_instances_qa(examples, dupe_factor, max_seq_length, 
 					masked_lm_prob, tokenizer, 
 					max_predictions_per_seq,
-					rng):
+					rng，
+					per_seq_dupe_func):
 	vocab_words = list(tokenizer.vocab.keys())
 	instances = []
 	for example in examples:
@@ -22,10 +41,14 @@ def create_instances_qa(examples, dupe_factor, max_seq_length,
 
 		max_predictions_per_seq_actual = max_predictions_per_seq
 
-		if len(tokens_a_) + len(tokens_b_) < masked_lm_prob * max_num_tokens:
-			max_predictions_per_seq_actual = 1
+		[max_predictions_per_seq_actual,
+		dupe_factor_actual] = per_seq_dupe_func(tokens_a_, tokens_b_,
+											masked_lm_prob=masked_lm_prob,
+											max_num_tokens=max_num_tokens,
+											max_predictions_per_seq=max_predictions_per_seq,
+											dupe_factor=dupe_factor)
 
-		for _ in range(dupe_factor):
+		for _ in range(dupe_factor_actual):
 
 			tokens_a = copy.deepcopy(tokens_a_)
 			tokens_b = copy.deepcopy(tokens_b_)
@@ -67,7 +90,8 @@ def create_instances_qa(examples, dupe_factor, max_seq_length,
 def create_instances_classification(examples, dupe_factor, max_seq_length, 
 					masked_lm_prob, tokenizer, 
 					max_predictions_per_seq,
-					rng):
+					rng，
+					per_seq_dupe_func):
 	vocab_words = list(tokenizer.vocab.keys())
 	instances = []
 	max_num_tokens = max_seq_length
@@ -75,23 +99,26 @@ def create_instances_classification(examples, dupe_factor, max_seq_length,
 		tokens_a_ = tokenizer.tokenize(example.text_a)
 
 		max_predictions_per_seq_actual = max_predictions_per_seq
+		dupe_factor_actual = dupe_factor
 		
 		tokens_b_ = None
 		if example.text_b:
+			max_num_tokens -= 3
 			try:
 				tokens_b_ = tokenizer.tokenize(example.text_b)
 			except:
 				print("==token b error==", example.text_b, ex_index)
 				break
-
-		if tokens_b_:
-			if len(tokens_a_) + len(tokens_b_) < masked_lm_prob * (max_num_tokens-3):
-				max_predictions_per_seq_actual = 1
 		else:
-			if len(tokens_a_) < masked_lm_prob * (max_num_tokens-2):
-				max_predictions_per_seq_actual = 1
+			max_num_tokens -= 2
 
-		for _ in range(dupe_factor):
+		[max_predictions_per_seq_actual,
+		dupe_factor_actual] = per_seq_dupe_func(tokens_a_, None, masked_lm_prob=masked_lm_prob,
+											max_num_tokens=max_num_tokens,
+											max_predictions_per_seq=max_predictions_per_seq,
+											dupe_factor=dupe_factor)
+
+		for _ in range(dupe_factor_actual):
 
 			tokens_a = copy.deepcopy(tokens_a_)
 			if tokens_b_:
