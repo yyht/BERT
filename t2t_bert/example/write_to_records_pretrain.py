@@ -23,8 +23,13 @@ def per_seq_dupe_func(tokens_a, tokens_b, **kargs):
 
 	if len(tokens_a) + len(tokens_b_) < masked_lm_prob * (max_num_tokens):
 		max_predictions_per_seq_actual = 1
-	if len(tokens_a) + len(tokens_b_) <  dupe_factor_actual:
-		dupe_factor_actual = 2
+	elif len(tokens_a) + len(tokens_b_) < 0.5 * (max_num_tokens):
+		max_predictions_per_seq_actual = 2
+	else:
+		max_predictions_per_seq_actual = 3
+	
+	dupe_factor_actual = 2 * max_predictions_per_seq_actual
+
 	return max_predictions_per_seq_actual, dupe_factor_actual
 
 def create_instances_qa(examples, dupe_factor, max_seq_length, 
