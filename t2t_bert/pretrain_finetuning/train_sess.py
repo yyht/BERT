@@ -281,14 +281,14 @@ def main(_):
 					if FLAGS.if_debug == 1:
 						string = ""
 						for key in loss_dict:
-							tmp = key + " " + str(loss_dict[key])
+							tmp = key + " " + str(loss_dict[key]) + "\t"
 							string += tmp
 						print(string, "===debug loss string===")
 						break
 					if np.mod(i, num_storage_steps) == 0:
 						string = ""
 						for key in loss_dict:
-							tmp = key + " " + str(loss_dict[key]/cnt)
+							tmp = key + " " + str(loss_dict[key]/cnt) + "\t"
 							string += tmp
 						print(string)
 						for key in loss_dict:
@@ -306,6 +306,8 @@ def main(_):
 		if hvd.rank() == 0:
 			print("===========begin to eval============")
 			eval_dict = eval_fn(eval_dict)
+			for key in eval_dict:
+				print("evaluation {} {}\n".format(key, np.mean(eval_dict[key])))
 			import _pickle as pkl
 			pkl.dump(eval_dict, open(FLAGS.model_output+"/eval_dict.pkl", "wb"))
 			model_io_fn.save_model(sess, FLAGS.model_output+"/model.ckpt")
