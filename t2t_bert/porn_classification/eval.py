@@ -218,7 +218,7 @@ def main(_):
 		params.epoch = FLAGS.epoch
 		params.batch_size = FLAGS.batch_size
 
-		eval_features = tf_data_utils.eval_input_fn(FLAGS.train_result_file,
+		eval_features = tf_data_utils.eval_input_fn(FLAGS.eval_data_file,
 									_decode_record, name_to_features, params, if_shard=FLAGS.if_shard)
 		
 		[_, eval_loss, eval_per_example_loss, eval_logits] = model_eval_fn(eval_features, [], tf.estimator.ModeKeys.EVAL)
