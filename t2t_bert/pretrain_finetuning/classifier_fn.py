@@ -99,7 +99,7 @@ def classifier_model_fn_builder(
 											masked_lm_ids, 
 											masked_lm_weights,
 											reuse=reuse)
-			total_loss = model_config.lm_ratio * masked_lm_loss + loss
+			total_loss = model_config.lm_ratio * masked_lm_loss + model_config.task_ratio * loss
 		else:
 			total_loss = loss
 
