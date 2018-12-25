@@ -191,6 +191,8 @@ def classifier_model_fn_builder(
 					"masked_lm_loss": masked_lm_mean_loss,
 					"sentence_f": sentence_f,
 					"sentence_loss": sentence_mean_loss,
+					"probabilities":tf.exp(tf.nn.log_softmax(logits, name="softmax_tensor")),
+					"label_ids":label_ids
 					}
 
 			eval_metric_ops = metric_fn(masked_lm_example_loss, 

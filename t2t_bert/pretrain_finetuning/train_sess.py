@@ -239,16 +239,16 @@ def main(_):
 		
 		def eval_fn(op_dict):
 			i = 0
-			eval_total_dict = {"masked_lm_accuracy":[],
-							"masked_lm_loss":[],
-							"sentence_f":[],
-							"sentence_loss":[]}
-			# label_weight = []
+			eval_total_dict = {}
 			while True:
 				try:
 					eval_result = sess.run(op_dict)
 					for key in eval_result:
-						eval_total_dict[key].extend(eval_result[key])
+						if key in eval_total_dict:
+							eval_total_dict[key].extend(eval_result[key])
+						else:
+							eval_total_dict[key] = eval_result[key]
+						
 					if FLAGS.if_debug == 1:
 						break
 			  
@@ -262,7 +262,7 @@ def main(_):
 		def train_fn(op_dict):
 			i = 0
 			cnt = 0
-			loss_dict = {"total_loss":0.0, "masked_lm_loss":0.0, "sentence_loss":0.0}
+			loss_dict = {}
 			while True:
 				try:
 					train_result = sess.run(op_dict)
@@ -274,7 +274,10 @@ def main(_):
 								print(train_loss, "get nan loss")
 								break
 							else:
-								loss_dict[key] += train_result[key]
+								if key in loss_dict:
+									loss_dict[key] += train_result[key]
+								else:
+									loss_dict[key] = train_result[key]
 					
 					i += 1
 					cnt += 1
@@ -307,6 +310,8 @@ def main(_):
 			print("===========begin to eval============")
 			eval_dict = eval_fn(eval_dict)
 			for key in eval_dict:
+				if key in ["probabilities", "label_ids"]:
+					continue
 				print("evaluation {} {}\n".format(key, np.mean(eval_dict[key])))
 			import _pickle as pkl
 			pkl.dump(eval_dict, open(FLAGS.model_output+"/eval_dict.pkl", "wb"))
