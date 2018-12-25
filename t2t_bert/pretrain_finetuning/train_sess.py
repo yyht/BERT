@@ -306,7 +306,7 @@ def main(_):
 				except tf.errors.OutOfRangeError:
 					break
 		print("===========begin to train============")        
-		# train_fn(train_dict)
+		train_fn(train_dict)
 		if hvd.rank() == 0:
 			print("===========begin to eval============")
 			eval_dict = eval_fn(eval_dict)
@@ -316,7 +316,7 @@ def main(_):
 				print("evaluation {} {}\n".format(key, np.mean(eval_dict[key])))
 			import _pickle as pkl
 			pkl.dump(eval_dict, open(FLAGS.model_output+"/eval_dict.pkl", "wb"))
-			# model_io_fn.save_model(sess, FLAGS.model_output+"/model.ckpt")
+			model_io_fn.save_model(sess, FLAGS.model_output+"/model.ckpt")
 
 if __name__ == "__main__":
 	tf.app.run()
