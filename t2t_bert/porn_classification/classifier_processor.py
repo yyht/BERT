@@ -88,3 +88,45 @@ class PornClassifierProcessor(data_processor.DataProcessor):
 		examples = self._create_examples(lines)
 		random.shuffle(examples)
 		return examples
+
+class EvaluationProcessor(data_processor.DataProcessor):
+	def get_labels(self, label_file):
+		import json
+		with tf.gfile.Open(label_file, "r") as f:
+			label_mappings = json.load(f)
+			self.label2id = label_mappings["label2id"]
+
+	def _read_data(self, input_file):
+		import _pickle as pkl
+		frequent_phrases = pkl.load(open(input_file, "rb"))["frequent_phrases"]
+
+	def _create_examples(self, frequent_phrases):
+
+		examples = []
+		for (i, line) in enumerate(frequent_phrases):
+			guid = i
+			text_a = clean(line[0])
+			input_labels = ["0"]
+
+			text_a = tokenization.convert_to_unicode(text_a)
+			input_labels = [label.strip() for label in input_labels if label.strip() in list(self.label2id.keys())]
+			
+			examples.append(data_feature_classifier.InputExample(
+					guid=guid,
+					text_a=text_a,
+					text_b=None,
+					label=input_labels
+				))
+		return examples
+
+	def get_train_examples(self, train_file):
+		lines = self._read_data(train_file)
+		examples = self._create_examples(lines)
+		random.shuffle(examples)
+		return examples
+
+	def get_dev_examples(self, dev_file):
+		lines = self._read_data(dev_file)
+		examples = self._create_examples(lines)
+		random.shuffle(examples)
+		return examples
