@@ -1,4 +1,4 @@
-CUDA_VISIBLE_DEVICES="0,1" mpirun -np 2 \
+CUDA_VISIBLE_DEVICES="" mpirun -np 2 \
  -H localhost:2 \
 python eval.py \
  --config_file "/data/xuht/chinese_L-12_H-768_A-12/bert_config.json" \
