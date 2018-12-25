@@ -7,10 +7,11 @@ python eval.py \
  --label_id "/data/xuht/websiteanalyze-data-seqing20180821/label_dict.json" \
  --train_file "/data/xuht/websiteanalyze-data-seqing20180821/topic_data/4/mining_info.pkl" \
  --dev_file "/data/xuht/porn/seqing_test_20180821_tf_records" \
- --max_length 128 \
+ --max_length 64 \
  --model_output "/data/xuht/websiteanalyze-data-seqing20180821/topic_data/4/" \
  --epoch 5 \
  --num_classes 5 \
  --batch_size 32 \
  --if_shard "1" \
- --lower_case True
+ --lower_case True \
+ --eval_data_file "/data/xuht/websiteanalyze-data-seqing20180821/topic_data/4/eval.tfrecords"

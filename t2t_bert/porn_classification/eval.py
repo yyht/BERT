@@ -142,7 +142,7 @@ def main(_):
 																classifier_data_api.label2id,
 																FLAGS.max_length,
 																tokenizer,
-																FLAGS.train_result_file)
+																FLAGS.eval_data_file)
 
 		init_lr = 2e-5
 
