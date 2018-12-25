@@ -8,6 +8,7 @@ from bunch import Bunch
 from data_generator import tokenization
 from data_generator import hvd_distributed_tf_data_utils as tf_data_utils
 from model_io import model_io
+from example import feature_writer, write_to_tfrecords
 import json
 
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
