@@ -13,3 +13,4 @@ python eval.py \
  --num_classes 5 \
  --batch_size 32 \
  --if_shard "1" \
+ --lower_case True
