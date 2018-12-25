@@ -123,11 +123,9 @@ class EvaluationProcessor(data_processor.DataProcessor):
 	def get_train_examples(self, train_file):
 		lines = self._read_data(train_file)
 		examples = self._create_examples(lines)
-		random.shuffle(examples)
 		return examples
 
 	def get_dev_examples(self, dev_file):
 		lines = self._read_data(dev_file)
 		examples = self._create_examples(lines)
-		random.shuffle(examples)
 		return examples
