@@ -9,35 +9,40 @@ import random
 import copy
 import numpy as np
 
-def per_seq_dupe_func(tokens_a, tokens_b, **kargs):
-	masked_lm_prob = kargs["masked_lm_prob"]
-	max_num_tokens = kargs["max_num_tokens"]
+# def per_seq_dupe_func(tokens_a, tokens_b, **kargs):
+# 	masked_lm_prob = kargs["masked_lm_prob"]
+# 	max_num_tokens = kargs["max_num_tokens"]
 
-	max_predictions_per_seq = kargs["max_predictions_per_seq"]
-	dupe_factor_actual = kargs["dupe_factor"]
+# 	max_predictions_per_seq = kargs["max_predictions_per_seq"]
+# 	dupe_factor_actual = kargs["dupe_factor"]
 
-	if tokens_b:
-		tokens_b_ = tokens_b
-	else:
-		tokens_b_ = []
+# 	if tokens_b:
+# 		tokens_b_ = tokens_b
+# 	else:
+# 		tokens_b_ = []
 
-	total_len = len(tokens_a) + len(tokens_b_)
+# 	total_len = len(tokens_a) + len(tokens_b_)
 
-	max_predictions_per_seq_actual = int(total_len/25)
-	if max_predictions_per_seq_actual == 0:
-		max_predictions_per_seq_actual = 1
+# 	max_predictions_per_seq_actual = int(total_len/25)
+# 	if max_predictions_per_seq_actual == 0:
+# 		max_predictions_per_seq_actual = 1
 
-	max_predictions_per_seq_actual = min([max_predictions_per_seq, max_predictions_per_seq_actual])
+# 	max_predictions_per_seq_actual = min([max_predictions_per_seq, max_predictions_per_seq_actual])
 	
-	dupe_factor_actual = min([dupe_factor_actual, 2*max_predictions_per_seq_actual])
+# 	dupe_factor_actual = min([dupe_factor_actual, 2*max_predictions_per_seq_actual])
 
-	return max_predictions_per_seq_actual, dupe_factor_actual
+# 	return max_predictions_per_seq_actual, dupe_factor_actual
+
+def per_seq_dupe_func(tokens_a, tokens_b, **kargs):
+		max_predictions_per_seq_actual = 1
+		dupe_factor_actual = 2 * max_predictions_per_seq_actual
+
+		return max_predictions_per_seq_actual, dupe_factor_actual
 
 def create_instances_qa(examples, dupe_factor, max_seq_length, 
 					masked_lm_prob, tokenizer, 
 					max_predictions_per_seq,
-					rng,
-					per_seq_dupe_func):
+					rng):
 	vocab_words = list(tokenizer.vocab.keys())
 	instances = []
 	for example in examples:
@@ -97,8 +102,7 @@ def create_instances_qa(examples, dupe_factor, max_seq_length,
 def create_instances_classification(examples, dupe_factor, max_seq_length, 
 					masked_lm_prob, tokenizer, 
 					max_predictions_per_seq,
-					rng,
-					per_seq_dupe_func):
+					rng):
 	vocab_words = list(tokenizer.vocab.keys())
 	instances = []
 	for example in examples:
@@ -197,8 +201,7 @@ def multi_process(examples, process_num,
 				dupe,
 				random_seed=2018,
 				feature_type="pretrain_qa",
-				log_cycle=100,
-				per_seq_dupe_func=per_seq_dupe_func):
+				log_cycle=100):
 
 	chunk_num = process_num - 1
 
@@ -211,8 +214,7 @@ def multi_process(examples, process_num,
 		pool.apply_async(write_instance_to_example_files,
 			args=(each_chunk, label_dict,tokenizer,max_seq_length,
 					masked_lm_prob,max_predictions_per_seq,
-					output_file_, dupe,random_seed,feature_type,log_cycle,
-					per_seq_dupe_func)) # apply_async
+					output_file_, dupe,random_seed,feature_type,log_cycle)) # apply_async
 	pool.close()
 	pool.join()
 
@@ -226,8 +228,7 @@ def write_instance_to_example_files(examples,
 									dupe,
 									random_seed=2018,
 									feature_type="pretrain_qa",
-									log_cycle=100,
-									per_seq_dupe_func=per_seq_dupe_func):
+									log_cycle=100):
 
 
 	"""Create TF example files from `TrainingInstance`s."""
@@ -241,16 +242,14 @@ def write_instance_to_example_files(examples,
 								masked_lm_prob, 
 								tokenizer,
 								max_predictions_per_seq,
-								rng,
-								per_seq_dupe_func)
+								rng)
 	elif feature_type == "pretrain_classification":
 		instances = create_instances_classification(examples, dupe, 
 								max_seq_length,
 								masked_lm_prob, 
 								tokenizer,
 								max_predictions_per_seq,
-								rng,
-								per_seq_dupe_func)
+								rng)
 
 	rng.shuffle(instances)
 

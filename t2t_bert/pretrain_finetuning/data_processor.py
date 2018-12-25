@@ -74,12 +74,6 @@ flags.DEFINE_integer(
 
 def main(_):
 
-	def per_seq_dupe_func(tokens_a, tokens_b, **kargs):
-		max_predictions_per_seq_actual = 1
-		dupe_factor_actual = 2 * max_predictions_per_seq_actual
-
-		return max_predictions_per_seq_actual, dupe_factor_actual
-
 	tokenizer = tokenization.FullTokenizer(
 		vocab_file=FLAGS.vocab_file, 
 		do_lower_case=FLAGS.lower_case)
@@ -88,8 +82,6 @@ def main(_):
 	classifier_data_api.get_labels(FLAGS.label_id)
 
 	train_examples = classifier_data_api.get_train_examples(FLAGS.train_file)
-
-	print(classifier_data_api.label2id, train_examples[0:100])
 
 	write_to_records_pretrain.multi_process(
 			examples=train_examples, 
@@ -103,8 +95,7 @@ def main(_):
 			dupe=FLAGS.dupe,
 			random_seed=2018,
 			feature_type=FLAGS.feature_type,
-			log_cycle=FLAGS.log_cycle,
-			per_seq_dupe_func=per_seq_dupe_func
+			log_cycle=FLAGS.log_cycle
 		)
 
 	test_examples = classifier_data_api.get_train_examples(FLAGS.test_file)
@@ -120,8 +111,7 @@ def main(_):
 			dupe=FLAGS.dupe,
 			random_seed=2018,
 			feature_type=FLAGS.feature_type,
-			log_cycle=FLAGS.log_cycle,
-			per_seq_dupe_func=per_seq_dupe_func
+			log_cycle=FLAGS.log_cycle
 		)
 
 	print("==Succeeded in preparing masked lm with finetuning data for task-finetuning with masked lm regularization")

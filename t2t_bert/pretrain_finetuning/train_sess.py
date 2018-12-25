@@ -291,6 +291,8 @@ def main(_):
 							tmp = key + " " + str(loss_dict[key]/cnt)
 							string += tmp
 						print(string)
+						for key in loss_dict:
+							loss_dict[key] = 0.0
 						if hvd.rank() == 0:
 							model_io_fn.save_model(sess, FLAGS.model_output+"/model_{}.ckpt".format(int(i/num_storage_steps)))
 							print("==successful storing model=={}".format(int(i/num_storage_steps)))
