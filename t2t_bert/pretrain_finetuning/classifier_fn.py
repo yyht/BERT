@@ -3,7 +3,10 @@ import numpy as np
 
 from model.bert import bert
 from model_io import model_io
-from optimizer import hvd_distributed_optimizer as optimizer
+try:
+	from optimizer import hvd_distributed_optimizer as optimizer
+except:
+	from optimizer import optimizer
 from task_module import pretrain, classifier
 import tensorflow as tf
 from utils.bert import bert_utils
@@ -103,6 +106,11 @@ def classifier_model_fn_builder(
 		if mode == tf.estimator.ModeKeys.TRAIN:
 			pretrained_tvars = model_io_fn.get_params(model_config.scope, 
 										not_storage_params=not_storage_params)
+
+			masked_lm_pretrain_tvars = model_io_fn.get_params("cls/predictions", 
+										not_storage_params=not_storage_params)
+
+			pretrained_tvars.extend(masked_lm_pretrain_tvars)
 			
 			if load_pretrained:
 				model_io_fn.load_pretrained(pretrained_tvars, 

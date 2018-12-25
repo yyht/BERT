@@ -83,8 +83,6 @@ def main(_):
 
 	train_examples = classifier_data_api.get_train_examples(FLAGS.train_file)
 
-	print(classifier_data_api.label2id, train_examples[0:100])
-
 	write_to_records_pretrain.multi_process(
 			examples=train_examples, 
 			process_num=FLAGS.num_threads, 
@@ -97,8 +95,7 @@ def main(_):
 			dupe=FLAGS.dupe,
 			random_seed=2018,
 			feature_type=FLAGS.feature_type,
-			log_cycle=FLAGS.log_cycle,
-			per_seq_dupe_func=per_seq_dupe_func
+			log_cycle=FLAGS.log_cycle
 		)
 
 	test_examples = classifier_data_api.get_train_examples(FLAGS.test_file)
@@ -114,8 +111,7 @@ def main(_):
 			dupe=FLAGS.dupe,
 			random_seed=2018,
 			feature_type=FLAGS.feature_type,
-			log_cycle=FLAGS.log_cycle,
-			per_seq_dupe_func=per_seq_dupe_func
+			log_cycle=FLAGS.log_cycle
 		)
 
 	print("==Succeeded in preparing masked lm with finetuning data for task-finetuning with masked lm regularization")
