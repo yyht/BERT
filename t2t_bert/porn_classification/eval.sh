@@ -4,7 +4,7 @@ python eval.py \
  --config_file "/data/xuht/chinese_L-12_H-768_A-12/bert_config.json" \
  --init_checkpoint "/data/xuht/websiteanalyze-data-seqing20180821/model/oqmrc_8.ckpt" \
  --vocab_file "/data/xuht/chinese_L-12_H-768_A-12/vocab.txt" \
- --label_id "/data/xuht/porn/label_dict.json" \
+ --label_id "/data/xuht/websiteanalyze-data-seqing20180821/label_dict.json" \
  --train_file "/data/xuht/websiteanalyze-data-seqing20180821/topic_data/4/mining_info.pkl" \
  --dev_file "/data/xuht/porn/seqing_test_20180821_tf_records" \
  --max_length 128 \
