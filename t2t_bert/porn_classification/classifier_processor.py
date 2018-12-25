@@ -99,6 +99,7 @@ class EvaluationProcessor(data_processor.DataProcessor):
 	def _read_data(self, input_file):
 		import _pickle as pkl
 		frequent_phrases = pkl.load(open(input_file, "rb"))["frequent_phrases"]
+		return frequent_phrases
 
 	def _create_examples(self, frequent_phrases):
 
