@@ -162,8 +162,8 @@ class Optimizer(object):
 		self.opt = hvd.DistributedOptimizer(opt)
 		grads = self.grad_clip_fn(self.opt, loss, tvars, **kargs)
 
-		self.grad_summaries_merged = optimizer_utils.add_grad_summaries(
-								zip(grads, tvars))
+		# self.grad_summaries_merged = optimizer_utils.add_grad_summaries(
+		# 						zip(grads, tvars))
 
 		train_op = self.opt.apply_gradients(
 					zip(grads, tvars), global_step=self.global_step)
