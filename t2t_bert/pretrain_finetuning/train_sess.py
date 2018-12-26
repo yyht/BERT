@@ -295,15 +295,15 @@ def main(_):
 		print("===========begin to train============")        
 		train_fn(train_dict)
 		if hvd.rank() == 0:
+			import _pickle as pkl
+			model_io_fn.save_model(sess, FLAGS.model_output+"/model.ckpt")
 			print("===========begin to eval============")
 			eval_finial_dict = eval_fn(eval_dict)
+			pkl.dump(eval_finial_dict, open(FLAGS.model_output+"/eval_dict.pkl", "wb"))
 			for key in eval_finial_dict:
 				if key in ["probabilities", "label_ids"]:
 					continue
 				print("evaluation {} {}\n".format(key, eval_finial_dict[key]))
-			import _pickle as pkl
-			pkl.dump(eval_finial_dict, open(FLAGS.model_output+"/eval_dict.pkl", "wb"))
-			model_io_fn.save_model(sess, FLAGS.model_output+"/model.ckpt")
-
+			
 if __name__ == "__main__":
 	tf.app.run()
