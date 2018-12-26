@@ -264,8 +264,10 @@ def main(_):
 			macro_f1 = f1_score(label_id, label, average="macro")
 			micro_f1 = f1_score(label_id, label, average="micro")
 			accuracy = accuracy_score(label_id, label)
-			print("test accuracy {} macro_f1 score {} micro_f1 {} ".format(accuracy, 
-																		macro_f1,  micro_f1))
+			print("test accuracy {} macro_f1 score {} micro_f1 {} masked_lm_accuracy {} sentence_f {}".format(accuracy, 
+																		macro_f1,  micro_f1, 
+																		eval_total_dict["masked_lm_accuracy"],
+																		eval_total_dict["sentence_f"]))
 			
 			
 			return eval_total_dict

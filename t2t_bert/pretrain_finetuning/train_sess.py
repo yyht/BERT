@@ -267,8 +267,12 @@ def main(_):
 			macro_f1 = f1_score(label_id, label, average="macro")
 			micro_f1 = f1_score(label_id, label, average="micro")
 			accuracy = accuracy_score(label_id, label)
-			print("test accuracy {} macro_f1 score {} micro_f1 {} ".format(accuracy, 
-																		macro_f1,  micro_f1))
+
+			print("test accuracy {} macro_f1 score {} micro_f1 {} masked_lm_accuracy {} sentence_f {}".format(accuracy, 
+																		macro_f1,  micro_f1, 
+																		eval_total_dict["masked_lm_accuracy"],
+																		eval_total_dict["sentence_f"]))
+
 			
 			return eval_total_dict
 
@@ -309,7 +313,7 @@ def main(_):
 					i += 1
 					cnt += 1
 					
-					if np.mod(i, 1) == 0:
+					if np.mod(i, num_storage_steps) == 0:
 						string = ""
 						for key in loss_dict:
 							tmp = key + " " + str(loss_dict[key]/cnt) + "\t"
@@ -326,7 +330,7 @@ def main(_):
 							model_io_fn.save_model(sess, FLAGS.model_output+"/model_{}.ckpt".format(int(i/num_storage_steps)))
 							print("==successful storing model=={}".format(int(i/num_storage_steps)))
 						cnt = 0
-					break
+
 				except tf.errors.OutOfRangeError:
 					if hvd.rank() == 0:
 						import _pickle as pkl
