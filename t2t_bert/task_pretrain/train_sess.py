@@ -264,6 +264,7 @@ def main(_):
 			return eval_total_dict
 
 		def run_eval(steps):
+			import _pickle as pkl
 			eval_features = tf_data_utils.eval_input_fn(
 										parse_folder(FLAGS.dev_file),
 										_decode_record, name_to_features, params)

@@ -268,6 +268,7 @@ def main(_):
 			return eval_total_dict
 
 		def run_eval(steps):
+			import _pickle as pkl
 			eval_features = tf_data_utils.eval_input_fn(
 										parse_folder(FLAGS.dev_file),
 										_decode_record, name_to_features, params)
@@ -328,7 +329,6 @@ def main(_):
 		print("===========begin to train============")        
 		train_fn(train_dict)
 		if hvd.rank() == 0:
-			import _pickle as pkl
 			model_io_fn.save_model(sess, FLAGS.model_output+"/model.ckpt")
 			print("===========begin to eval============")
 			eval_finial_dict = run_eval("final")
