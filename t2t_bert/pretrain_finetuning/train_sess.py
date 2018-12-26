@@ -249,9 +249,6 @@ def main(_):
 							eval_total_dict[key].extend(eval_result[key])
 						else:
 							eval_total_dict[key] = [eval_result[key]]
-						
-					if FLAGS.if_debug == 1:
-						break
 					i += 1
 				except tf.errors.OutOfRangeError:
 					print("End of dataset")
@@ -281,13 +278,6 @@ def main(_):
 					
 					i += 1
 					cnt += 1
-					if FLAGS.if_debug == 1:
-						string = ""
-						for key in loss_dict:
-							tmp = key + " " + str(loss_dict[key]) + "\t"
-							string += tmp
-						print(string, "===debug loss string===")
-						break
 					if np.mod(i, num_storage_steps) == 0:
 						string = ""
 						for key in loss_dict:
@@ -299,8 +289,6 @@ def main(_):
 						if hvd.rank() == 0:
 							model_io_fn.save_model(sess, FLAGS.model_output+"/model_{}.ckpt".format(int(i/num_storage_steps)))
 							print("==successful storing model=={}".format(int(i/num_storage_steps)))
-							
-						total_loss = 0
 						cnt = 0
 				except tf.errors.OutOfRangeError:
 					break
@@ -312,9 +300,9 @@ def main(_):
 			for key in eval_finial_dict:
 				if key in ["probabilities", "label_ids"]:
 					continue
-				print("evaluation {} {}\n".format(key, np.mean(eval_finial_dict[key])))
+				print("evaluation {} {}\n".format(key, eval_finial_dict[key]))
 			import _pickle as pkl
-			pkl.dump(eval_dict, open(FLAGS.model_output+"/eval_dict.pkl", "wb"))
+			pkl.dump(eval_finial_dict, open(FLAGS.model_output+"/eval_dict.pkl", "wb"))
 			model_io_fn.save_model(sess, FLAGS.model_output+"/model.ckpt")
 
 if __name__ == "__main__":

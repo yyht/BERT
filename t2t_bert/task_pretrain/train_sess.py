@@ -236,12 +236,14 @@ def main(_):
 		def eval_fn(op_dict):
 			i = 0
 			eval_total_dict = {}
-			# label_weight = []
 			while True:
 				try:
 					eval_result = sess.run(op_dict)
 					for key in eval_result:
-						eval_total_dict[key].extend(eval_result[key])
+						if key in eval_total_dict:
+							eval_total_dict[key].extend(eval_result[key])
+						else:
+							eval_total_dict[key] = [eval_result[key]]
 			  
 					i += 1
 				except tf.errors.OutOfRangeError:
@@ -253,23 +255,35 @@ def main(_):
 		def train_fn(op_dict):
 			i = 0
 			cnt = 0
-			total_loss = 0.0
+			loss_dict = {}
 			while True:
 				try:
 					train_result = sess.run(op_dict)
-					total_loss += train_result["loss"]
-					if np.isnan(train_result["loss"]):
-						print(train_loss, "nan loss")
-						break
+					for key in train_result:
+						if key == "train_op":
+							continue
+						else:
+							if np.isnan(train_result[key]):
+								print(train_loss, "get nan loss")
+								break
+							else:
+								if key in loss_dict:
+									loss_dict[key] += train_result[key]
+								else:
+									loss_dict[key] = train_result[key]
 					i += 1
 					cnt += 1
 					if np.mod(i, num_storage_steps) == 0:
-						print(total_loss/cnt)
+						string = ""
+						for key in loss_dict:
+							tmp = key + " " + str(loss_dict[key]/cnt) + "\t"
+							string += tmp
+						print(string)
+						for key in loss_dict:
+							loss_dict[key] = 0.0
 						if hvd.rank() == 0:
-							model_io_fn.save_model(sess, FLAGS.model_output+"/oqmrc_{}.ckpt".format(int(i/num_storage_steps)))
+							model_io_fn.save_model(sess, FLAGS.model_output+"/model_{}.ckpt".format(int(i/num_storage_steps)))
 							print("==successful storing model=={}".format(int(i/num_storage_steps)))
-							
-						total_loss = 0
 						cnt = 0
 				except tf.errors.OutOfRangeError:
 					break
@@ -277,8 +291,14 @@ def main(_):
 		train_fn(train_dict)
 		if hvd.rank() == 0:
 			print("===========begin to eval============")
-			eval_dict = eval_fn(eval_dict)
-			model_io_fn.save_model(sess, FLAGS.model_output+"/oqmrc.ckpt")
+			eval_finial_dict = eval_fn(eval_dict)
+			for key in eval_finial_dict:
+				if key in ["probabilities", "label_ids"]:
+					continue
+				print("evaluation {} {}\n".format(key, eval_finial_dict[key]))
+			import _pickle as pkl
+			pkl.dump(eval_finial_dict, open(FLAGS.model_output+"/eval_dict.pkl", "wb"))
+			model_io_fn.save_model(sess, FLAGS.model_output+"/model.ckpt")
 
 if __name__ == "__main__":
 	tf.app.run()

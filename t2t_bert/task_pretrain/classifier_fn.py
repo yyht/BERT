@@ -101,18 +101,23 @@ def classifier_estimator_fn_builder(
 		if mode == tf.estimator.ModeKeys.TRAIN:
 			pretrained_tvars = model_io_fn.get_params(model_config.scope, 
 										not_storage_params=not_storage_params)
-			model_io_fn.print_params(tvars, string=", trainable params")
+			masked_lm_pretrain_tvars = model_io_fn.get_params("cls/predictions", 
+										not_storage_params=not_storage_params)
+
+			pretrained_tvars.extend(masked_lm_pretrain_tvars)
+
 			if load_pretrained:
 				model_io_fn.load_pretrained(pretrained_tvars, 
 											init_checkpoint,
 											exclude_scope=exclude_scope)
 
 			tvars = pretrained_tvars
+			model_io_fn.print_params(tvars, string=", trainable params")
 			
 			update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 			with tf.control_dependencies(update_ops):
 				# optimizer_fn = optimizer.Optimizer(opt_config)
-				train_op = optimizer_fn.get_train_op(loss, tvars, 
+				train_op = optimizer_fn.get_train_op(total_loss, tvars, 
 								opt_config.init_lr, 
 								opt_config.num_train_steps)
 
@@ -168,7 +173,7 @@ def classifier_estimator_fn_builder(
 				sentence_mean_loss = tf.metrics.mean(
 					values=per_example_loss)
 				sentence_f = tf_metrics.f1(label_ids, 
-										predictions, 
+										sentence_predictions, 
 										num_labels, 
 										label_lst, average="macro")
 
@@ -177,6 +182,8 @@ def classifier_estimator_fn_builder(
 					"masked_lm_loss": masked_lm_mean_loss,
 					"sentence_f": sentence_f,
 					"sentence_loss": sentence_mean_loss,
+					"probabilities":tf.exp(tf.nn.log_softmax(logits, name="softmax_tensor")),
+					"label_ids":label_ids
 					}
 
 			eval_metric_ops = metric_fn(masked_lm_example_loss, 
@@ -252,6 +259,11 @@ def classifier_model_fn_builder(
 		if mode == tf.estimator.ModeKeys.TRAIN:
 			pretrained_tvars = model_io_fn.get_params(model_config.scope, 
 										not_storage_params=not_storage_params)
+
+			masked_lm_pretrain_tvars = model_io_fn.get_params("cls/predictions", 
+										not_storage_params=not_storage_params)
+
+			pretrained_tvars.extend(masked_lm_pretrain_tvars)
 			
 			if load_pretrained:
 				model_io_fn.load_pretrained(pretrained_tvars, 
@@ -264,12 +276,12 @@ def classifier_model_fn_builder(
 			update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 			with tf.control_dependencies(update_ops):
 				# optimizer_fn = optimizer.Optimizer(opt_config)
-				train_op = optimizer_fn.get_train_op(loss, tvars, 
+				train_op = optimizer_fn.get_train_op(total_loss, tvars, 
 								opt_config.init_lr, 
 								opt_config.num_train_steps)
 
 				output_dict = {"train_op":train_op,
-							"loss":total_loss,
+							"total_loss":total_loss,
 							"masked_lm_loss":masked_lm_loss,
 							"sentence_loss":loss}
 
@@ -332,6 +344,8 @@ def classifier_model_fn_builder(
 					"masked_lm_loss": masked_lm_mean_loss,
 					"sentence_f": sentence_f,
 					"sentence_loss": sentence_mean_loss,
+					"probabilities":tf.exp(tf.nn.log_softmax(logits, name="softmax_tensor")),
+					"label_ids":label_ids
 					}
 
 			eval_metric_ops = metric_fn(masked_lm_example_loss, 
