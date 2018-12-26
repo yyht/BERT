@@ -269,7 +269,6 @@ def main(_):
 																		eval_total_dict["masked_lm_accuracy"],
 																		eval_total_dict["sentence_f"]))
 			
-			
 			return eval_total_dict
 
 		def run_eval(steps):
