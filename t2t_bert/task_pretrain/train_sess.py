@@ -263,11 +263,10 @@ def main(_):
 			return eval_total_dict
 
 		def run_eval(steps):
-			sess.run(tf.local_variables_initializer())
 			eval_features = tf_data_utils.eval_input_fn(
 										parse_folder(FLAGS.dev_file),
 										_decode_record, name_to_features, params)
-			eval_dict = model_eval_fn(eval_features, [], tf.estimator.ModeKeys.EVAL)
+			sess.run(tf.local_variables_initializer())
 			eval_finial_dict = eval_fn(eval_dict)
 			pkl.dump(eval_finial_dict, open(FLAGS.model_output+"/eval_dict_{}_{}.pkl".format(steps, hvd.rank()), "wb"))
 			return eval_finial_dict
