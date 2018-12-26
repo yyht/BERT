@@ -252,7 +252,6 @@ def main(_):
 						
 					if FLAGS.if_debug == 1:
 						break
-					break
 					i += 1
 				except tf.errors.OutOfRangeError:
 					print("End of dataset")
@@ -290,15 +289,15 @@ def main(_):
 						print(string, "===debug loss string===")
 						break
 					if np.mod(i, 1) == 0:
-						if hvd.rank() == 0:
 							
-							print("===========begin to eval============")
-							eval_finial_dict = eval_fn(eval_dict)
-							for key in eval_finial_dict:
-								if key in ["probabilities", "label_ids"]:
-									continue
-								print("evaluation {} {}\n".format(key, eval_finial_dict[key]))
-							import _pickle as pkl
+						print("===========begin to eval============")
+						eval_finial_dict = eval_fn(eval_dict)
+						for key in eval_finial_dict:
+							if key in ["probabilities", "label_ids"]:
+								continue
+							print("evaluation {} {}\n".format(key, eval_finial_dict[key]))
+						import _pickle as pkl
+						if hvd.rank() == 0:
 							pkl.dump(eval_finial_dict, open(FLAGS.model_output+"/eval_dict_{}.pkl".format(int(i/num_storage_steps)), "wb"))
 
 						string = ""
