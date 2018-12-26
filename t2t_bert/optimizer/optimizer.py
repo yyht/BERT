@@ -116,8 +116,8 @@ class Optimizer(object):
 						exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"])
 		elif opt_type == "adam":
 			opt = tf.train.AdamOptimizer(learning_rate,
-										beta_1=self.config.get("beta_1", 0.9),
-										beta_2=self.config.get("beta_2", 0.999),
+										beta1=self.config.get("beta_1", 0.9),
+										beta2=self.config.get("beta_2", 0.999),
 										epsilon=self.config.get("epsilon", 1e-6))
 		return opt
 
