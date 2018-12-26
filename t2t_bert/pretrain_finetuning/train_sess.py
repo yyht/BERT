@@ -256,7 +256,7 @@ def main(_):
 					print("End of dataset")
 					break
 
-			label_id = eval_total_dict["label_ids"]
+			label_id = eval_total_dict["label_id"]
 			label = np.argmax(np.array(eval_total_dict["probabilities"]), axis=-1)
 
 			macro_f1 = f1_score(label_id, label, average="macro")
@@ -324,6 +324,7 @@ def main(_):
 					break
 				except tf.errors.OutOfRangeError:
 					if hvd.rank() == 0:
+						import _pickle as pkl
 						pkl.dump({"train":monitoring_train,
 							"eval":monitoring_eval}, open(FLAGS.model_output+"/monitoring.pkl", "wb"))
 
