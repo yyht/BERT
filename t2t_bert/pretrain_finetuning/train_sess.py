@@ -121,8 +121,8 @@ def main(_):
 		config.scope = "bert"
 		config.dropout_prob = 0.1
 		config.label_type = "single_label"
-		config.lm_ratio = 0.0
-		config.task_ratio = 1.0
+		config.lm_ratio = 1.0
+		config.task_ratio = 0.0
 
 		json.dump(config, open(FLAGS.model_output+"/config.json", "w"))
 
