@@ -122,7 +122,7 @@ def main(_):
 		config.scope = "bert"
 		config.dropout_prob = 0.1
 		config.label_type = "single_label"
-		config.lm_ratio = 1.0
+		config.lm_ratio = 0.1
 		config.task_ratio = 1.0
 
 		json.dump(config, open(FLAGS.model_output+"/config.json", "w"))
@@ -304,7 +304,7 @@ def main(_):
 					i += 1
 					cnt += 1
 					
-					if np.mod(i, 1) == 0:
+					if np.mod(i, num_storage_steps) == 0:
 						string = ""
 						for key in loss_dict:
 							tmp = key + " " + str(loss_dict[key]/cnt) + "\t"
