@@ -219,12 +219,12 @@ def main(_):
 		train_features = tf_data_utils.train_input_fn(
 									parse_folder(FLAGS.train_file),
 									_decode_record, name_to_features, params)
-		# eval_features = tf_data_utils.eval_input_fn(
-		# 							parse_folder(FLAGS.dev_file),
-		# 							_decode_record, name_to_features, params)
-
 		train_dict = model_train_fn(train_features, [], tf.estimator.ModeKeys.TRAIN)
-		# eval_dict = model_eval_fn(eval_features, [], tf.estimator.ModeKeys.EVAL)
+
+		eval_features = tf_data_utils.eval_input_fn(
+										parse_folder(FLAGS.dev_file),
+										_decode_record, name_to_features, params)
+		eval_dict = model_eval_fn(eval_features, [], tf.estimator.ModeKeys.EVAL)
 
 		model_io_fn.set_saver()
 		
