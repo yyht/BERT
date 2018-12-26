@@ -252,7 +252,7 @@ def main(_):
 						
 					if FLAGS.if_debug == 1:
 						break
-			  		break
+					break
 					i += 1
 				except tf.errors.OutOfRangeError:
 					print("End of dataset")
