@@ -126,7 +126,7 @@ def main(_):
 
 		json.dump(config, open(FLAGS.model_output+"/config.json", "w"))
 
-		init_lr = 2e-5
+		init_lr = 1e-5
 
 		if FLAGS.if_shard == "0":
 			train_size = FLAGS.train_size
@@ -254,6 +254,15 @@ def main(_):
 				except tf.errors.OutOfRangeError:
 					print("End of dataset")
 					break
+
+			label_ids = eval_total_dict["label_ids"]
+			label = np.argmax(np.array(eval_total_dict["probabilities"]), axis=-1)
+
+			macro_f1 = f1_score(label_id, label, average="macro")
+			micro_f1 = f1_score(label_id, label, average="micro")
+			accuracy = accuracy_score(label_id, label)
+			print("test accuracy {} macro_f1 score {} micro_f1 {} ".format(accuracy, 
+																		macro_f1,  micro_f1))
 			
 			return eval_total_dict
 		
@@ -261,6 +270,7 @@ def main(_):
 			i = 0
 			cnt = 0
 			loss_dict = {}
+			monitoring_train = []
 			while True:
 				try:
 					train_result = sess.run(op_dict)
@@ -279,12 +289,13 @@ def main(_):
 					
 					i += 1
 					cnt += 1
-					if np.mod(i, num_storage_steps) == 0:
+					if np.mod(i, 1) == 0:
 						string = ""
 						for key in loss_dict:
 							tmp = key + " " + str(loss_dict[key]/cnt) + "\t"
 							string += tmp
 						print(string)
+						monitoring_train.append(loss_dict)
 						for key in loss_dict:
 							loss_dict[key] = 0.0
 						if hvd.rank() == 0:
@@ -292,6 +303,8 @@ def main(_):
 							print("==successful storing model=={}".format(int(i/num_storage_steps)))
 						cnt = 0
 				except tf.errors.OutOfRangeError:
+					import _pickle as pkl
+					pkl.dump(monitoring_train, open(FLAGS.model_output+"/mointoring_train.pkl", "wb"))
 					break
 		print("===========begin to train============")        
 		train_fn(train_dict)
