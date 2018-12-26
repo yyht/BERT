@@ -256,7 +256,7 @@ def main(_):
 					print("End of dataset")
 					break
 
-			label_id = eval_total_dict["label_id"]
+			label_id = eval_total_dict["label_ids"]
 			label = np.argmax(np.array(eval_total_dict["probabilities"]), axis=-1)
 
 			macro_f1 = f1_score(label_id, label, average="macro")
