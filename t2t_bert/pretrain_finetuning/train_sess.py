@@ -290,7 +290,7 @@ def main(_):
 										parse_folder(FLAGS.dev_file),
 										_decode_record, name_to_features, params)
 							eval_dict = model_eval_fn(eval_features, [], tf.estimator.ModeKeys.EVAL)
-							sess.run(tf.local_variables_initializer())
+							
 							print("===========begin to eval============")
 							eval_dict = eval_fn(eval_dict)
 							for key in eval_dict:
