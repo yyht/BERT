@@ -100,9 +100,9 @@ def classifier_model_fn_builder(
 											masked_lm_weights,
 											reuse=reuse)
 			if model_config.lm_ratio == 0.0:
-				masked_lm_loss = tf.stop_gradients(masked_lm_loss)
+				masked_lm_loss = tf.stop_gradient(masked_lm_loss)
 			if model_config.task_ratio == 0.0:
-				loss = tf.stop_gradients(loss)
+				loss = tf.stop_gradient(loss)
 			total_loss = model_config.lm_ratio * masked_lm_loss + model_config.task_ratio * loss
 		else:
 			total_loss = loss
