@@ -289,7 +289,7 @@ def main(_):
 					
 					i += 1
 					cnt += 1
-					break
+					
 					if np.mod(i, num_storage_steps) == 0:
 						string = ""
 						for key in loss_dict:
