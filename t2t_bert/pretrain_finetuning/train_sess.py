@@ -126,7 +126,7 @@ def main(_):
 
 		json.dump(config, open(FLAGS.model_output+"/config.json", "w"))
 
-		init_lr = 1e-5
+		init_lr = 2e-5
 
 		if FLAGS.if_shard == "0":
 			train_size = FLAGS.train_size
@@ -248,7 +248,8 @@ def main(_):
 						if key in eval_total_dict:
 							eval_total_dict[key].extend(eval_result[key])
 						else:
-							eval_total_dict[key] = [eval_result[key]]
+							eval_total_dict[key] = []
+							eval_total_dict[key].extend(eval_result[key])
 					i += 1
 				except tf.errors.OutOfRangeError:
 					print("End of dataset")

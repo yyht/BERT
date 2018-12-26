@@ -243,7 +243,8 @@ def main(_):
 						if key in eval_total_dict:
 							eval_total_dict[key].extend(eval_result[key])
 						else:
-							eval_total_dict[key] = [eval_result[key]]
+							eval_total_dict[key] = []
+							eval_total_dict[key].extend(eval_result[key])
 			  
 					i += 1
 				except tf.errors.OutOfRangeError:
