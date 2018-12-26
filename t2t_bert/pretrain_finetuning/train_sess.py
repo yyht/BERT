@@ -226,11 +226,6 @@ def main(_):
 									_decode_record, name_to_features, params)
 		train_dict = model_train_fn(train_features, [], tf.estimator.ModeKeys.TRAIN)
 
-		eval_features = tf_data_utils.eval_input_fn(
-										parse_folder(FLAGS.dev_file),
-										_decode_record, name_to_features, params)
-		eval_dict = model_eval_fn(eval_features, [], tf.estimator.ModeKeys.EVAL)
-
 		model_io_fn.set_saver()
 		
 		init_op = tf.group(tf.global_variables_initializer(), tf.local_variables_initializer())
@@ -265,12 +260,23 @@ def main(_):
 																		macro_f1,  micro_f1))
 			
 			return eval_total_dict
+
+		def run_eval(steps):
+			sess.run(tf.local_variables_initializer())
+			eval_features = tf_data_utils.eval_input_fn(
+										parse_folder(FLAGS.dev_file),
+										_decode_record, name_to_features, params)
+			eval_dict = model_eval_fn(eval_features, [], tf.estimator.ModeKeys.EVAL)
+			eval_finial_dict = eval_fn(eval_dict)
+			pkl.dump(eval_finial_dict, open(FLAGS.model_output+"/eval_dict_{}_{}.pkl".format(steps, hvd.rank()), "wb"))
+			return eval_finial_dict
 		
 		def train_fn(op_dict):
 			i = 0
 			cnt = 0
 			loss_dict = {}
 			monitoring_train = []
+			monitoring_eval = []
 			while True:
 				try:
 					train_result = sess.run(op_dict)
@@ -290,22 +296,29 @@ def main(_):
 					i += 1
 					cnt += 1
 					
-					if np.mod(i, num_storage_steps) == 0:
+					if np.mod(i, 1) == 0:
 						string = ""
 						for key in loss_dict:
 							tmp = key + " " + str(loss_dict[key]/cnt) + "\t"
 							string += tmp
 						print(string)
 						monitoring_train.append(loss_dict)
+
+						eval_finial_dict = run_eval(int(i/num_storage_steps))
+						monitoring_eval.append(eval_finial_dict)
+
 						for key in loss_dict:
 							loss_dict[key] = 0.0
 						if hvd.rank() == 0:
 							model_io_fn.save_model(sess, FLAGS.model_output+"/model_{}.ckpt".format(int(i/num_storage_steps)))
 							print("==successful storing model=={}".format(int(i/num_storage_steps)))
 						cnt = 0
+					break
 				except tf.errors.OutOfRangeError:
 					import _pickle as pkl
-					pkl.dump(monitoring_train, open(FLAGS.model_output+"/mointoring_train.pkl", "wb"))
+					pkl.dump({"train":monitoring_train,
+							"eval":monitoring_eval}, open(FLAGS.model_output+"/monitoring.pkl", "wb"))
+
 					break
 		print("===========begin to train============")        
 		train_fn(train_dict)
@@ -313,8 +326,7 @@ def main(_):
 			import _pickle as pkl
 			model_io_fn.save_model(sess, FLAGS.model_output+"/model.ckpt")
 			print("===========begin to eval============")
-			eval_finial_dict = eval_fn(eval_dict)
-			pkl.dump(eval_finial_dict, open(FLAGS.model_output+"/eval_dict.pkl", "wb"))
+			eval_finial_dict = run_eval("final")
 			
 if __name__ == "__main__":
 	tf.app.run()
