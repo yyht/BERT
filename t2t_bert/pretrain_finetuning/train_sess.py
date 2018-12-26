@@ -122,7 +122,7 @@ def main(_):
 		config.dropout_prob = 0.1
 		config.label_type = "single_label"
 		config.lm_ratio = 1.0
-		config.task_ratio = 0.0
+		config.task_ratio = 1.0
 
 		json.dump(config, open(FLAGS.model_output+"/config.json", "w"))
 
@@ -252,7 +252,6 @@ def main(_):
 						
 					if FLAGS.if_debug == 1:
 						break
-			  
 					i += 1
 				except tf.errors.OutOfRangeError:
 					print("End of dataset")
@@ -289,14 +288,7 @@ def main(_):
 							string += tmp
 						print(string, "===debug loss string===")
 						break
-					if np.mod(i, 1) == 0:
-						print("===========begin to eval============")
-						eval_finial_dict = eval_fn(eval_dict)
-						for key in eval_finial_dict:
-							if key in ["probabilities", "label_ids"]:
-								continue
-							print("evaluation {} {}\n".format(key, eval_finial_dict[key]))
-
+					if np.mod(i, num_storage_steps) == 0:
 						string = ""
 						for key in loss_dict:
 							tmp = key + " " + str(loss_dict[key]/cnt) + "\t"

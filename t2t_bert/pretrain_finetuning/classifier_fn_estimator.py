@@ -123,7 +123,7 @@ def classifier_model_fn_builder(
 			update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 			with tf.control_dependencies(update_ops):
 				# optimizer_fn = optimizer.Optimizer(opt_config)
-				train_op = optimizer_fn.get_train_op(total_loss, tvars, 
+				train_op = optimizer_fn.get_train_op(loss, tvars, 
 								opt_config.init_lr, 
 								opt_config.num_train_steps)
 
@@ -132,7 +132,8 @@ def classifier_model_fn_builder(
 							"masked_lm_loss":masked_lm_loss,
 							"sentence_loss":loss}
 
-				return output_dict
+				return tf.estimator.EstimatorSpec(mode=mode, 
+								loss=total_loss, train_op=train_op)
 
 		elif mode == tf.estimator.ModeKeys.PREDICT:
 
@@ -147,7 +148,8 @@ def classifier_model_fn_builder(
 
 			predictions = prediction_fn(logits)
 
-			return predictions
+			return tf.estimator.EstimatorSpec(mode=mode, 
+								predictions=predictions)
 
 		elif mode == tf.estimator.ModeKeys.EVAL:
 
@@ -203,6 +205,8 @@ def classifier_model_fn_builder(
 							logits, 
 							label_ids)
 			
-			return eval_metric_ops
+			return tf.estimator.EstimatorSpec(mode=mode, 
+								loss=total_loss,
+								eval_metric_ops=eval_metric_ops)
 
 	return model_fn
