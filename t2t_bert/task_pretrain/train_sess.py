@@ -236,24 +236,29 @@ def main(_):
 		sess.run(hvd.broadcast_global_variables(0))
 		
 		def eval_fn(op_dict):
+			def eval_fn(op_dict):
 			i = 0
 			eval_total_dict = {}
 			while True:
 				try:
 					eval_result = sess.run(op_dict)
 					for key in eval_result:
-						if key in eval_total_dict:
-							eval_total_dict[key].extend(eval_result[key])
-						else:
-							eval_total_dict[key] = []
-							eval_total_dict[key].extend(eval_result[key])
-			  
+						if key in ["probabilities", "label_ids"]:
+							if key in eval_total_dict:
+								eval_total_dict[key].extend(eval_result[key])
+							else:
+								eval_total_dict[key] = []
+								eval_total_dict[key].extend(eval_result[key])
 					i += 1
 				except tf.errors.OutOfRangeError:
 					print("End of dataset")
 					break
 
-			label_id = eval_total_dict["label_id"]
+			for key in eval_result:
+				if key not in ["probabilities", "label_ids"]:
+					eval_total_dict[key] = eval_result[key]
+
+			label_id = eval_total_dict["label_ids"]
 			label = np.argmax(np.array(eval_total_dict["probabilities"]), axis=-1)
 
 			macro_f1 = f1_score(label_id, label, average="macro")
@@ -261,6 +266,7 @@ def main(_):
 			accuracy = accuracy_score(label_id, label)
 			print("test accuracy {} macro_f1 score {} micro_f1 {} ".format(accuracy, 
 																		macro_f1,  micro_f1))
+			
 			
 			return eval_total_dict
 

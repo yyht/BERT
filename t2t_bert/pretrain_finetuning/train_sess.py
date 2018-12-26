@@ -246,15 +246,20 @@ def main(_):
 				try:
 					eval_result = sess.run(op_dict)
 					for key in eval_result:
-						if key in eval_total_dict:
-							eval_total_dict[key].extend(eval_result[key])
-						else:
-							eval_total_dict[key] = []
-							eval_total_dict[key].extend(eval_result[key])
+						if key in ["probabilities", "label_ids"]:
+							if key in eval_total_dict:
+								eval_total_dict[key].extend(eval_result[key])
+							else:
+								eval_total_dict[key] = []
+								eval_total_dict[key].extend(eval_result[key])
 					i += 1
 				except tf.errors.OutOfRangeError:
 					print("End of dataset")
 					break
+
+			for key in eval_result:
+				if key not in ["probabilities", "label_ids"]:
+					eval_total_dict[key] = eval_result[key]
 
 			label_id = eval_total_dict["label_ids"]
 			label = np.argmax(np.array(eval_total_dict["probabilities"]), axis=-1)
@@ -321,7 +326,7 @@ def main(_):
 							model_io_fn.save_model(sess, FLAGS.model_output+"/model_{}.ckpt".format(int(i/num_storage_steps)))
 							print("==successful storing model=={}".format(int(i/num_storage_steps)))
 						cnt = 0
-					break
+
 				except tf.errors.OutOfRangeError:
 					if hvd.rank() == 0:
 						import _pickle as pkl

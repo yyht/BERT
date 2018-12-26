@@ -116,7 +116,6 @@ def classifier_estimator_fn_builder(
 			
 			update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 			with tf.control_dependencies(update_ops):
-				# optimizer_fn = optimizer.Optimizer(opt_config)
 				train_op = optimizer_fn.get_train_op(total_loss, tvars, 
 								opt_config.init_lr, 
 								opt_config.num_train_steps)
@@ -177,14 +176,14 @@ def classifier_estimator_fn_builder(
 										num_labels, 
 										label_lst, average="macro")
 
-				return {
+				eval_metric_ops = {
 					"masked_lm_accuracy": masked_lm_accuracy,
 					"masked_lm_loss": masked_lm_mean_loss,
 					"sentence_f": sentence_f,
-					"sentence_loss": sentence_mean_loss,
-					"probabilities":tf.exp(tf.nn.log_softmax(logits, name="softmax_tensor")),
-					"label_ids":label_ids
-					}
+					"sentence_loss": sentence_mean_loss
+				}
+
+				return eval_metric_ops
 
 			eval_metric_ops = metric_fn(masked_lm_example_loss, 
 							masked_lm_log_probs, 
@@ -275,7 +274,6 @@ def classifier_model_fn_builder(
 			
 			update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 			with tf.control_dependencies(update_ops):
-				# optimizer_fn = optimizer.Optimizer(opt_config)
 				train_op = optimizer_fn.get_train_op(total_loss, tvars, 
 								opt_config.init_lr, 
 								opt_config.num_train_steps)
@@ -339,14 +337,16 @@ def classifier_model_fn_builder(
 										num_labels, 
 										label_lst, average="macro")
 
-				return {
-					"masked_lm_accuracy": masked_lm_accuracy,
-					"masked_lm_loss": masked_lm_mean_loss,
-					"sentence_f": sentence_f,
-					"sentence_loss": sentence_mean_loss,
+				eval_metric_ops = {
+					"masked_lm_accuracy": masked_lm_accuracy[-1],
+					"masked_lm_loss": masked_lm_mean_loss[-1],
+					"sentence_f": sentence_f[-1],
+					"sentence_loss": sentence_mean_loss[-1],
 					"probabilities":tf.exp(tf.nn.log_softmax(logits, name="softmax_tensor")),
 					"label_ids":label_ids
-					}
+				}
+
+				return eval_metric_ops
 
 			eval_metric_ops = metric_fn(masked_lm_example_loss, 
 							masked_lm_log_probs, 
