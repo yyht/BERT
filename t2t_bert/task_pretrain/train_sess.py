@@ -270,7 +270,8 @@ def main(_):
 										_decode_record, name_to_features, params)
 			sess.run(tf.local_variables_initializer())
 			eval_finial_dict = eval_fn(eval_dict)
-			pkl.dump(eval_finial_dict, open(FLAGS.model_output+"/eval_dict_{}_{}.pkl".format(steps, hvd.rank()), "wb"))
+			if hvd.rank() == 0:
+				pkl.dump(eval_finial_dict, open(FLAGS.model_output+"/eval_dict_{}.pkl".format(steps), "wb"))
 			return eval_finial_dict
 		
 		def train_fn(op_dict):
@@ -314,7 +315,8 @@ def main(_):
 							print("==successful storing model=={}".format(int(i/num_storage_steps)))
 						cnt = 0
 				except tf.errors.OutOfRangeError:
-					pkl.dump({"train":monitoring_train,
+					if hvd.rank() == 0:
+						pkl.dump({"train":monitoring_train,
 							"eval":monitoring_eval}, open(FLAGS.model_output+"/monitoring.pkl", "wb"))
 					break
 		print("===========begin to train============")        

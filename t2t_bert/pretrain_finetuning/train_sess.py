@@ -252,7 +252,6 @@ def main(_):
 							eval_total_dict[key] = []
 							eval_total_dict[key].extend(eval_result[key])
 					i += 1
-					break
 				except tf.errors.OutOfRangeError:
 					print("End of dataset")
 					break
@@ -276,7 +275,8 @@ def main(_):
 
 			sess.run(tf.local_variables_initializer())
 			eval_finial_dict = eval_fn(eval_dict)
-			pkl.dump(eval_finial_dict, open(FLAGS.model_output+"/eval_dict_{}_{}.pkl".format(steps, hvd.rank()), "wb"))
+			if hvd.rank() == 0:
+				pkl.dump(eval_finial_dict, open(FLAGS.model_output+"/eval_dict_{}.pkl".format(steps), "wb"))
 			return eval_finial_dict
 		
 		def train_fn(op_dict):
@@ -323,7 +323,8 @@ def main(_):
 						cnt = 0
 					break
 				except tf.errors.OutOfRangeError:
-					pkl.dump({"train":monitoring_train,
+					if hvd.rank() == 0:
+						pkl.dump({"train":monitoring_train,
 							"eval":monitoring_eval}, open(FLAGS.model_output+"/monitoring.pkl", "wb"))
 
 					break
