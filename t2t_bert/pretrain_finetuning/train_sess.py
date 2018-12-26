@@ -293,13 +293,13 @@ def main(_):
 						if hvd.rank() == 0:
 							
 							print("===========begin to eval============")
-							eval_dict = eval_fn(eval_dict)
-							for key in eval_dict:
+							eval_finial_dict = eval_fn(eval_dict)
+							for key in eval_finial_dict:
 								if key in ["probabilities", "label_ids"]:
 									continue
-								print("evaluation {} {}\n".format(key, eval_dict[key]))
+								print("evaluation {} {}\n".format(key, eval_finial_dict[key]))
 							import _pickle as pkl
-							pkl.dump(eval_dict, open(FLAGS.model_output+"/eval_dict_{}.pkl".format(int(i/num_storage_steps)), "wb"))
+							pkl.dump(eval_finial_dict, open(FLAGS.model_output+"/eval_dict_{}.pkl".format(int(i/num_storage_steps)), "wb"))
 
 						string = ""
 						for key in loss_dict:
@@ -320,11 +320,11 @@ def main(_):
 		train_fn(train_dict)
 		if hvd.rank() == 0:
 			print("===========begin to eval============")
-			eval_dict = eval_fn(eval_dict)
-			for key in eval_dict:
+			eval_finial_dict = eval_fn(eval_dict)
+			for key in eval_finial_dict:
 				if key in ["probabilities", "label_ids"]:
 					continue
-				print("evaluation {} {}\n".format(key, np.mean(eval_dict[key])))
+				print("evaluation {} {}\n".format(key, np.mean(eval_finial_dict[key])))
 			import _pickle as pkl
 			pkl.dump(eval_dict, open(FLAGS.model_output+"/eval_dict.pkl", "wb"))
 			model_io_fn.save_model(sess, FLAGS.model_output+"/model.ckpt")
