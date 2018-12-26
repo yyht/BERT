@@ -224,12 +224,7 @@ def main(_):
 		train_features = tf_data_utils.train_input_fn(
 									parse_folder(FLAGS.train_file),
 									_decode_record, name_to_features, params)
-		eval_features = tf_data_utils.eval_input_fn(
-									parse_folder(FLAGS.dev_file),
-									_decode_record, name_to_features, params)
-
 		train_dict = model_train_fn(train_features, [], tf.estimator.ModeKeys.TRAIN)
-		eval_dict = model_eval_fn(eval_features, [], tf.estimator.ModeKeys.EVAL)
 
 		model_io_fn.set_saver()
 		
@@ -290,6 +285,21 @@ def main(_):
 						print(string, "===debug loss string===")
 						break
 					if np.mod(i, num_storage_steps) == 0:
+						if hvd.rank() == 0:
+							eval_features = tf_data_utils.eval_input_fn(
+										parse_folder(FLAGS.dev_file),
+										_decode_record, name_to_features, params)
+							eval_dict = model_eval_fn(eval_features, [], tf.estimator.ModeKeys.EVAL)
+							sess.run(tf.local_variables_initializer())
+							print("===========begin to eval============")
+							eval_dict = eval_fn(eval_dict)
+							for key in eval_dict:
+								if key in ["probabilities", "label_ids"]:
+									continue
+								print("evaluation {} {}\n".format(key, eval_dict[key]))
+							import _pickle as pkl
+							pkl.dump(eval_dict, open(FLAGS.model_output+"/eval_dict_{}.pkl".format(int(i/num_storage_steps)), "wb"))
+
 						string = ""
 						for key in loss_dict:
 							tmp = key + " " + str(loss_dict[key]/cnt) + "\t"
