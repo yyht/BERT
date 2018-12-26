@@ -8,7 +8,7 @@ python train_sess.py \
  --train_file "/data/xuht/jd_comment/train" \
  --dev_file "/data/xuht/jd_comment/test" \
  --max_length 128 \
- --model_output "/data/xuht/jd_comment/model_12_25" \
+ --model_output "/data/xuht/jd_comment/model_12_26" \
  --epoch 2 \
  --num_classes 2 \
  --batch_size 32 \
