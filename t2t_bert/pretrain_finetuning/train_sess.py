@@ -309,7 +309,7 @@ def main(_):
 					i += 1
 					cnt += 1
 					
-					if np.mod(i, num_storage_steps) == 0:
+					if np.mod(i, 1) == 0:
 						string = ""
 						for key in loss_dict:
 							tmp = key + " " + str(loss_dict[key]/cnt) + "\t"
@@ -326,7 +326,7 @@ def main(_):
 							model_io_fn.save_model(sess, FLAGS.model_output+"/model_{}.ckpt".format(int(i/num_storage_steps)))
 							print("==successful storing model=={}".format(int(i/num_storage_steps)))
 						cnt = 0
-
+					break
 				except tf.errors.OutOfRangeError:
 					if hvd.rank() == 0:
 						import _pickle as pkl
