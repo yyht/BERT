@@ -252,7 +252,7 @@ def main(_):
 						
 					if FLAGS.if_debug == 1:
 						break
-			  
+			  		break
 					i += 1
 				except tf.errors.OutOfRangeError:
 					print("End of dataset")
@@ -279,7 +279,7 @@ def main(_):
 									loss_dict[key] += train_result[key]
 								else:
 									loss_dict[key] = train_result[key]
-					
+						
 					i += 1
 					cnt += 1
 					if FLAGS.if_debug == 1:
