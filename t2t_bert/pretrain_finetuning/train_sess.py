@@ -284,7 +284,7 @@ def main(_):
 							string += tmp
 						print(string, "===debug loss string===")
 						break
-					if np.mod(i, num_storage_steps) == 0:
+					if np.mod(i, 1) == 0:
 						if hvd.rank() == 0:
 							eval_features = tf_data_utils.eval_input_fn(
 										parse_folder(FLAGS.dev_file),
