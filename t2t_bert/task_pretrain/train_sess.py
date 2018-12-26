@@ -14,6 +14,7 @@ from optimizer import hvd_distributed_optimizer as optimizer
 import random
 
 import horovod.tensorflow as hvd
+import _pickle as pkl
 
 flags = tf.flags
 
@@ -312,7 +313,6 @@ def main(_):
 							print("==successful storing model=={}".format(int(i/num_storage_steps)))
 						cnt = 0
 				except tf.errors.OutOfRangeError:
-					import _pickle as pkl
 					pkl.dump({"train":monitoring_train,
 							"eval":monitoring_eval}, open(FLAGS.model_output+"/monitoring.pkl", "wb"))
 					break

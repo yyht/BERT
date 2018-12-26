@@ -14,6 +14,7 @@ from optimizer import hvd_distributed_optimizer as optimizer
 import random
 
 import horovod.tensorflow as hvd
+import _pickle as pkl
 
 flags = tf.flags
 
@@ -270,7 +271,7 @@ def main(_):
 			eval_features = tf_data_utils.eval_input_fn(
 										parse_folder(FLAGS.dev_file),
 										_decode_record, name_to_features, params)
-			
+
 			sess.run(tf.local_variables_initializer())
 			eval_finial_dict = eval_fn(eval_dict)
 			pkl.dump(eval_finial_dict, open(FLAGS.model_output+"/eval_dict_{}_{}.pkl".format(steps, hvd.rank()), "wb"))
@@ -320,7 +321,6 @@ def main(_):
 						cnt = 0
 					break
 				except tf.errors.OutOfRangeError:
-					import _pickle as pkl
 					pkl.dump({"train":monitoring_train,
 							"eval":monitoring_eval}, open(FLAGS.model_output+"/monitoring.pkl", "wb"))
 
