@@ -7,3 +7,5 @@ sklearn
 jupyter
 networkx
 pyemd
+jieba
+fuzzywuzzy[speedup]
