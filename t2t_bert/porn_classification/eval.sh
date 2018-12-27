@@ -15,3 +15,4 @@ python eval.py \
  --if_shard "1" \
  --lower_case True \
  --eval_data_file "/data/xuht/websiteanalyze-data-seqing20180821/global_mining/eval.tfrecords"
+
