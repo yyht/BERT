@@ -187,7 +187,9 @@ def main(_):
 				tf.cast(features["label_ids"], tf.int32)
 			)
 			accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
-			return {"accuracy":accuracy, "loss":loss, "pred_label":pred_label, "label_ids":features["label_ids"]}
+			return {"accuracy":accuracy, "loss":loss, "pred_label":pred_label, 
+				"label_ids":features["label_ids"],
+				"prob":prob}
 		
 		name_to_features = {
 				"input_ids":
@@ -235,13 +237,14 @@ def main(_):
 		def eval_fn(result):
 			i = 0
 			total_accuracy = 0
-			label, label_id = [], []
+			label, label_id, prob = [], [], []
 			while True:
 				try:
 					eval_result = sess.run(result)
 					total_accuracy += eval_result["accuracy"]
 					label_id.extend(eval_result["label_ids"])
 					label.extend(eval_result["pred_label"])
+					prob.extend(eval_result["prob"])
 					i += 1
 				except tf.errors.OutOfRangeError:
 					print("End of dataset")
@@ -255,7 +258,7 @@ def main(_):
 			accuracy = accuracy_score(label_id, label)
 			print("test accuracy {} macro_f1 score {} micro_f1 {} accuracy {}".format(total_accuracy/ i, 
 																					macro_f1,  micro_f1, accuracy))
-			return total_accuracy/ i, label_id, label
+			return total_accuracy/ i, label_id, label, prob
 		
 		import time
 		import time
@@ -267,7 +270,8 @@ def main(_):
 		if hvd.rank() == 0:
 			import _pickle as pkl
 			pkl.dump({"true_label":true_label, 
-						"pred_label":pred_label}, 
+						"pred_label":pred_label,
+						"prob":prob}, 
 						open(FLAGS.model_output+"/predict.pkl", "wb"))
 
 if __name__ == "__main__":
