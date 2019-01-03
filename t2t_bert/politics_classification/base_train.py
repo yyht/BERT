@@ -299,7 +299,7 @@ def main(_):
 					i += 1
 					cnt += 1
 					
-					if np.mod(i, num_storage_steps) == 0:
+					if np.mod(i, 1) == 0:
 						string = ""
 						for key in loss_dict:
 							tmp = key + " " + str(loss_dict[key]/cnt) + "\t"
