@@ -264,7 +264,7 @@ def main(_):
 		import time
 		start = time.time()
 		
-		acc, true_label, pred_label = eval_fn(result)
+		acc, true_label, pred_label, prob = eval_fn(result)
 		end = time.time()
 		print("==total time {} numbers of devices {}".format(end - start, hvd.size()))
 		if hvd.rank() == 0:
