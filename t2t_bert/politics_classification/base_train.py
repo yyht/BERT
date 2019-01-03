@@ -216,7 +216,7 @@ def main(_):
 		train_dict = {"train_op":train_op,
 					"train_loss":train_loss}
 		[_, eval_loss, eval_per_example_loss, eval_logits] = model_eval_fn(eval_features, [], tf.estimator.ModeKeys.EVAL)
-		result = metric_fn(eval_features, eval_logits, eval_loss)
+		eval_dict = metric_fn(eval_features, eval_logits, eval_loss)
 		
 		init_op = tf.group(tf.global_variables_initializer(), 
 					tf.local_variables_initializer())
@@ -234,7 +234,9 @@ def main(_):
 										FLAGS.dev_file,
 										_decode_record, 
 										name_to_features, params)
-			eval_dict = model_eval_fn(eval_features, [], tf.estimator.ModeKeys.EVAL)
+			[_, eval_loss, 
+			eval_per_example_loss, eval_logits] = model_eval_fn(eval_features, [], tf.estimator.ModeKeys.EVAL)
+			eval_dict = metric_fn(eval_features, eval_logits, eval_loss)
 			sess.run(tf.local_variables_initializer())
 			eval_finial_dict = eval_fn(eval_dict)
 			if hvd.rank() == 0:
