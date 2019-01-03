@@ -276,7 +276,9 @@ def main(_):
 
 			result = classification_report(label_id, pred_label, 
 				target_names=list(label_dict["label2id"].keys()))
-			
+
+			print(result)
+			eval_total_dict["classification_report"] = result
 			return eval_total_dict
 
 		def train_fn(op_dict):
