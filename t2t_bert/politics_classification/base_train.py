@@ -255,6 +255,7 @@ def main(_):
 								eval_total_dict[key] = []
 								eval_total_dict[key].extend(eval_result[key])
 							except:
+								eval_total_dict[key] = 0.0
 								eval_total_dict[key] = eval_result[key]
 						else:
 							try:
