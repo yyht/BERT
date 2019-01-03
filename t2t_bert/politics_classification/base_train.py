@@ -251,16 +251,16 @@ def main(_):
 					eval_result = sess.run(result)
 					for key in eval_result:
 						if key not in eval_total_dict:
-							try:
+							if key in ["pred_label", "label_ids"]:
 								eval_total_dict[key] = []
 								eval_total_dict[key].extend(eval_result[key])
-							except:
+							if key in ["accuracy", "loss"]:
 								eval_total_dict[key] = 0.0
-								eval_total_dict[key] = eval_result[key]
+								eval_total_dict[key] += eval_result[key]
 						else:
-							try:
+							if key in ["pred_label", "label_ids"]:
 								eval_total_dict[key].extend(eval_result[key])
-							except:
+							if key in ["accuracy", "loss"]:
 								eval_total_dict[key] += eval_result[key]
 
 					i += 1
