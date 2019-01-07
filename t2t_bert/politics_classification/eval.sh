@@ -10,7 +10,7 @@ python eval.py \
  --max_length 64 \
  --model_output "/data/xuht/politics/global_mining/" \
  --epoch 5 \
- --num_classes 5 \
+ --num_classes 2 \
  --batch_size 32 \
  --if_shard "1" \
  --lower_case True \
