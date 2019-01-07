@@ -257,7 +257,7 @@ class PredictHandler(tornado.web.RequestHandler):
 def main():
     application = tornado.web.Application([(r"/lxm",PredictHandler),])
     http_server = tornado.httpserver.HTTPServer(application)
-    http_server.bind(8011)
+    http_server.bind(8080)
     http_server.start()
     print("-------------server start-----------------")
     tornado.ioloop.IOLoop.current().start()

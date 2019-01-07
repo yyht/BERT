@@ -127,6 +127,8 @@ class InferAPI(object):
 		input_mask_b, 
 		segment_ids_b] = get_input(tokens_b, tokens_a)
 
+		print(len(input_ids_a), len(input_ids_b))
+
 		return {"input_ids_a":input_ids_a,
 				"input_mask_a":input_mask_a,
 				"segment_ids_a":segment_ids_a,
@@ -250,7 +252,7 @@ model_config = {
 	"label2id":"/data/xuht/LCQMC/label_dict.json",
 	"init_checkpoint":"/data/xuht/LCQMC/oqmrc_4.ckpt",
 	"bert_config":"/data/xuht/chinese_L-12_H-768_A-12/bert_config.json",
-	"max_length":256,
+	"max_length":512,
 	"bert_vocab":"/data/xuht/chinese_L-12_H-768_A-12/vocab.txt",
 	"model_dir":"/data/xuht/LCQMC/"
 	
