@@ -19,6 +19,11 @@ import pandas as pd
 import re
 from hanziconv import HanziConv
 
+CH_PUNCTUATION = u"['!#$%&\'()*+,-/:;<=>.?@[\\]^_`{|}~'＂＃＄％＆＇，：；＠［＼］＾＿｀｛｜｝～｟｠｢｣､　、〃〈〉《》「」『』【】〔〕〖〗〘〙〚〛〜〝〞〟〰〾〿–—‘’‛“”„‟…‧﹏﹑﹔·！？｡。]"
+
+symbol_pattern = re.compile(CH_PUNCTUATION)
+ch_pattern = re.compile(u"[\u4e00-\u9fa5]+")
+
 def full2half(s):
 	n = []
 	for char in s:
@@ -37,6 +42,7 @@ def clean(text):
 	text = full2half(text)
 	text = re.sub("\\#.*?#|\\|.*?\\||\\[.*?]", "", text)
 	text = re.sub("\s*", "", text)
+	text = re.sub(CH_PUNCTUATION, "", text)
 	return text
 
 class PornClassifierProcessor(data_processor.DataProcessor):
