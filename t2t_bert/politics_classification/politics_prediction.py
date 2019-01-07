@@ -208,12 +208,12 @@ class InferAPI(object):
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
 model_config = {
     
-    "label2id":"/data/xuht/websiteanalyze-data-seqing20180821/label_dict.json",
-    "init_checkpoint":"/data/xuht/websiteanalyze-data-seqing20180821/model/oqmrc_8.ckpt",
+    "label2id":"/data/xuht/politics/label_dict.json",
+    "init_checkpoint":"/data/xuht/politics/model/model.ckpt",
     "bert_config":"/data/xuht/chinese_L-12_H-768_A-12/bert_config.json",
     "max_length":128,
     "bert_vocab":"/data/xuht/chinese_L-12_H-768_A-12/vocab.txt",
-    "model_dir":"/data/xuht/websiteanalyze-data-seqing20180821/model"
+    "model_dir":"/data/xuht/politics/model"
     
 }
 
@@ -257,7 +257,7 @@ class PredictHandler(tornado.web.RequestHandler):
 def main():
     application = tornado.web.Application([(r"/lxm",PredictHandler),])
     http_server = tornado.httpserver.HTTPServer(application)
-    http_server.bind(8891)
+    http_server.bind(8011)
     http_server.start()
     print("-------------server start-----------------")
     tornado.ioloop.IOLoop.current().start()
