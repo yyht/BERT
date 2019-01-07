@@ -114,6 +114,8 @@ class EvaluationProcessor(data_processor.DataProcessor):
 			guid = i
 			text_a = clean(line[0])
 			input_labels = ["0"]
+			if i <= 10:
+				print(text_a)
 
 			text_a = tokenization.convert_to_unicode(text_a)
 			input_labels = [label.strip() for label in input_labels if label.strip() in list(self.label2id.keys())]
