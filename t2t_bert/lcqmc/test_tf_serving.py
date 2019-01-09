@@ -104,7 +104,7 @@ def get_single_features(query, sent, max_seq_length):
 			"segment_ids_b":segment_ids_b,
 			"label_ids":[0]}
 
-def main(_):
+def main():
 	tokenizer = tokenization.FullTokenizer(
 				vocab_file=FLAGS.vocab, 
 				do_lower_case=True)
