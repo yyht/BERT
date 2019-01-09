@@ -35,16 +35,6 @@ flags.DEFINE_string(
     "export_path", None,
     "Input TF example files (can be a glob or comma separated).")
 
-def serving_input_receiver_fn(feature_spec, max_seq_length):
-	"""An input receiver that expects a serialized tf.Example."""
-
-	serialized_tf_example = tf.placeholder(dtype=tf.string,
-									shape=None,
-									name='input_example_tensor')
-	receiver_tensors = {'examples': serialized_tf_example}
-	features = tf.parse_example(serialized_tf_example, feature_spec)
-	return tf.estimator.export.ServingInputReceiver(features, receiver_tensors)
-
 def export_model(config):
 
 	opt_config = Bunch({"init_lr":2e-5, "num_train_steps":1e30, "cycle":False})
@@ -76,6 +66,14 @@ def export_model(config):
 						tf.FixedLenFeature([], tf.int64),
 	}
 
+	def serving_input_receiver_fn():
+		serialized_tf_example = tf.placeholder(dtype=tf.string,
+										shape=None,
+										name='input_example_tensor')
+		receiver_tensors = {'examples': serialized_tf_example}
+		features = tf.parse_example(serialized_tf_example, feature_spec)
+		return tf.estimator.export.ServingInputReceiver(features, receiver_tensors)
+
 	model_io_fn = model_io.ModelIO(model_io_config)
 
 	model_fn = bert_classifier_estimator.classifier_model_fn_builder(
@@ -95,7 +93,7 @@ def export_model(config):
 				model_dir=config["model_dir"])
 
 	export_dir = estimator.export_savedmodel(export_dir_base=config["export_path"], 
-									serving_input_receiver_fn=serving_input_receiver_fn(feature_spec, max_seq_length))
+									serving_input_receiver_fn=serving_input_receiver_fn())
 
 	print("===Succeeded in exporting saved model===")
 
