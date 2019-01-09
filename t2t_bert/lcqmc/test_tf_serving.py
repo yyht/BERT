@@ -34,6 +34,9 @@ flags.DEFINE_string(
     "The config json file corresponding to the pre-trained BERT model. "
     "This specifies the model architecture.")
 
+tokenizer = tokenization.FullTokenizer(
+				vocab_file=FLAGS.vocab, 
+				do_lower_case=True)
 
 def full2half(ustring):
     rstring = ""
@@ -105,10 +108,6 @@ def get_single_features(query, sent, max_seq_length):
 			"label_ids":[0]}
 
 def main():
-	tokenizer = tokenization.FullTokenizer(
-				vocab_file=FLAGS.vocab, 
-				do_lower_case=True)
-
 
 	query = u"银行转证券怎么转"
 	candidate_lst = 10*[u"银行转证券怎么才能转过去"]
