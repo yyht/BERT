@@ -9,9 +9,6 @@ from model_io import model_io
 import json
 import requests
 
-reload(sys)
-sys.setdefaultencoding('utf-8')
-
 flags = tf.flags
 
 FLAGS = flags.FLAGS
