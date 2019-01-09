@@ -43,6 +43,11 @@ def export_model(config):
 	bert_config = json.load(open(config["config_file"], "r"))
 	model_config = Bunch(bert_config)
 
+	model_config.use_one_hot_embeddings = True
+	model_config.scope = "bert"
+	model_config.dropout_prob = 0.1
+	model_config.label_type = "single_label"
+
 	with open(config["label2id"], "r") as frobj:
 		label_dict = json.load(frobj)
 
@@ -92,8 +97,9 @@ def export_model(config):
 				model_fn=model_fn,
 				model_dir=config["model_dir"])
 
-	export_dir = estimator.export_savedmodel(export_dir_base=config["export_path"], 
-									serving_input_receiver_fn=serving_input_receiver_fn())
+	export_dir = estimator.export_savedmodel(config["export_path"], 
+									serving_input_receiver_fn,
+									checkpoint_path=config["init_checkpoint"])
 
 	print("===Succeeded in exporting saved model===")
 

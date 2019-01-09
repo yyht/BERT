@@ -88,7 +88,7 @@ def classifier_model_fn_builder(
 							trainable=False)
 
 				ratio_weight = tf.nn.embedding_lookup(label_ratio_table,
-				 	label_ids)
+					label_ids)
 				print("==applying class weight==")
 			except:
 				ratio_weight = None
@@ -121,7 +121,16 @@ def classifier_model_fn_builder(
 			'pred_label':pred_label,
 			"label_ids":label_ids,
 			"max_prob":max_prob
-
-		  })
+		  },
+		  export_outputs={
+			"output":tf.estimator.export.PredictOutput(
+					{
+						'pred_label':pred_label,
+						"label_ids":label_ids,
+						"max_prob":max_prob
+		  			}
+		  	)
+		  }
+		)
 		return output_spec
 	return model_fn
