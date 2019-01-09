@@ -131,5 +131,8 @@ def main(_):
 	results = requests.post(FLAGS.url, json=feed_dict)
 	print(results)
 
+if __name__ == "__main__":
+	main()
+
 
 
