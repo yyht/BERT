@@ -27,6 +27,16 @@ flags.DEFINE_string(
     "The config json file corresponding to the pre-trained BERT model. "
     "This specifies the model architecture.")
 
+flags.DEFINE_string(
+    "port", None,
+    "The config json file corresponding to the pre-trained BERT model. "
+    "This specifies the model architecture.")
+
+flags.DEFINE_string(
+    "model_name", None,
+    "The config json file corresponding to the pre-trained BERT model. "
+    "This specifies the model architecture.")
+
 
 def full2half(ustring):
     rstring = ""
@@ -128,7 +138,10 @@ def main(_):
 		for key in feed_dict["inputs"]:
 			feed_dict["inputs"][key].append(feature[key])
 
-	results = requests.post(FLAGS.url, json=feed_dict)
+	url = "http://{}:{}/models/{}:predict".format(FLAGS.url, FLAGS.port, FLAGS.model_name)
+	print("==serving url==", url)
+
+	results = requests.post(url, json=feed_dict)
 	print(results)
 
 if __name__ == "__main__":
