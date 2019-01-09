@@ -94,7 +94,7 @@ def export_model(config):
 				model_fn=model_fn,
 				model_dir=config["model_dir"])
 
-	export_dir = estimator.export_saved_model(export_dir_base=config["export_path"], 
+	export_dir = estimator.export_savedmodel(export_dir_base=config["export_path"], 
 									serving_input_receiver_fn=serving_input_receiver_fn(feature_spec, max_seq_length))
 
 	print("===Succeeded in exporting saved model===")
