@@ -101,7 +101,7 @@ def export_model(config):
 									serving_input_receiver_fn,
 									checkpoint_path=config["init_checkpoint"])
 
-	print("===Succeeded in exporting saved model===")
+	print("===Succeeded in exporting saved model==={}".format(export_dir))
 
 if __name__ == "__main__":
 
