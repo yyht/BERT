@@ -35,6 +35,10 @@ flags.DEFINE_string(
     "export_path", None,
     "Input TF example files (can be a glob or comma separated).")
 
+flags.DEFINE_string(
+    "export_type", None,
+    "Input TF example files (can be a glob or comma separated).")
+
 def export_model_v1(config):
 
 	opt_config = Bunch({"init_lr":2e-5, "num_train_steps":1e30, "cycle":False})
@@ -178,7 +182,9 @@ if __name__ == "__main__":
 		"model_dir":FLAGS.model_dir,
 		"export_path":FLAGS.export_path
 	}
-
-	export_model_v2(model_config)
+	if FLAGS.export_type == "1":
+		export_model_v1(model_config)
+	elif FLAGS.export_type == "2":
+		export_model_v2(model_config)
 
 
