@@ -154,6 +154,9 @@ def main():
 				else:
 					feed_dict["inputs"][key].extend(feature[key])
 
+		for key in feed_dict["inputs"]:
+			print(key, np.array(feed_dict["inputs"][key]).shape)
+
 	results = requests.post("http://%s:%s/v1/models/%s:predict" % (FLAGS.url, FLAGS.port, FLAGS.model_name), json=feed_dict)
 	print(results.json())
 
