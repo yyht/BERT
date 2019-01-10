@@ -3,5 +3,5 @@ python test_tf_serving.py \
 	--url "10.183.20.12" \
 	--port "7901" \
 	--model_name "default" \
-	--input_keys "inputs" \
+	--input_keys "instances" \
 	--signature_name "output"
