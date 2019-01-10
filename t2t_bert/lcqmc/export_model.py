@@ -81,7 +81,7 @@ def export_model_v1(config):
     	features = {}
 	    for key in receiver_tensors:
 	    	features[key] = receiver_tensors[key]
-    return tf.estimator.export.ServingInputReceiver(receiver_tensors=receiver_tensors,
+    	return tf.estimator.export.ServingInputReceiver(receiver_tensors=receiver_tensors,
                                                     features=features)
 
 	# def serving_input_receiver_fn():
