@@ -117,7 +117,6 @@ def main():
 	for candidate in candidate_lst:
 		feature = get_single_features(query, candidate, 500)
 		features.append(feature)
-
 #	feed_dict = {
 #		"inputs":{
 #			"input_ids_a":[],
@@ -133,11 +132,7 @@ def main():
 			 
 	feed_dict = {"instances":features}
 	print(feed_dict["instances"][0])
-#	for feature in features:
-#		for key in feed_dict["inputs"]:
-#			feed_dict["inputs"][key].append(feature[key])
-#	import json
-#	json.dump(feed_dict, open("/data/xuht/test.json", "w"))
+
 	url = "http://{}:{}/v1/models/{}:predict".format(FLAGS.url, FLAGS.port, FLAGS.model_name)
 	print("==serving url==", url)
 

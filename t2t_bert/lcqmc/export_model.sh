@@ -5,4 +5,4 @@ python export_model.py \
  --init_checkpoint "/data/xuht/LCQMC/model/model_12_5/oqmrc_4.ckpt" \
  --max_length 500 \
  --export_path "/data/xuht/LCQMC/export" \
- --export_type "1"
+ --export_type "2"
