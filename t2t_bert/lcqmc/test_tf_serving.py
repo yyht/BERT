@@ -161,6 +161,7 @@ def main():
 	try:
 		print(results.json())
 	except:
+		import json
 		print(results.content)
 
 if __name__ == "__main__":
