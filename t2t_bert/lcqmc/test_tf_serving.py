@@ -34,6 +34,16 @@ flags.DEFINE_string(
     "The config json file corresponding to the pre-trained BERT model. "
     "This specifies the model architecture.")
 
+flags.DEFINE_string(
+    "signature_name", None,
+    "The config json file corresponding to the pre-trained BERT model. "
+    "This specifies the model architecture.")
+
+flags.DEFINE_string(
+    "input_keys", None,
+    "The config json file corresponding to the pre-trained BERT model. "
+    "This specifies the model architecture.")
+
 tokenizer = tokenization.FullTokenizer(
 				vocab_file=FLAGS.vocab, 
 				do_lower_case=True)
@@ -105,7 +115,7 @@ def get_single_features(query, sent, max_seq_length):
 			"input_ids_b":input_ids_b,
 			"input_mask_b":input_mask_b,
 			"segment_ids_b":segment_ids_b,
-			"label_ids":0}
+			"label_ids":[0]}
 
 def main():
 
@@ -118,31 +128,34 @@ def main():
 		feature = get_single_features(query, candidate, 500)
 		features.append(feature)
 
-	# feed_dict = {
-	# 	"inputs":{
-	# 		"input_ids_a":[],
-	# 		"input_mask_a":[],
-	# 		"segment_ids_a":[],
-	# 		"input_ids_b":[],
-	# 		"input_mask_b":[],
-	# 		"segment_ids_b":[],
-	# 		"label_ids":[]
-	# 	}
-	# }
+	if FLAGS.input_keys == "instances":
 
-	feed_dict = {
-		"instances":features
-	}
+		feed_dict = {
+			"instances":features[0:2]，
+			"signature_name":FLAGS.signature_name
+		}
+	elif FLAGS.input_keys == "inputs":
+		feed_dict = {
+			"inputs":{
+				"input_ids_a":[],
+				"input_mask_a":[],
+				"segment_ids_a":[],
+				"input_ids_b":[],
+				"input_mask_b":[],
+				"segment_ids_b":[],
+				"label_ids":[]
+			},
+			"signature_name":FLAGS.signature_name
+		}
+		for feature in features[0:3]:
+			for key in feed_dict["inputs"]:
+				if key not in ["label_ids"]
+					feed_dict["inputs"][key].append(feature[key])
+				else:
+					feed_dict["inputs"][key].extend(feature[key])
 
-	# for feature in features:
-	# 	for key in feed_dict["inputs"]:
-	# 		feed_dict["inputs"][key].append(feature[key])
-
-	url = "http://{}:{}/v1/models/{}:predict".format(FLAGS.url, FLAGS.port, FLAGS.model_name)
-	print("==serving url==", url)
-
-	results = requests.post(url, json=feed_dict)
-	print(results)
+	results = requests.post("http://%s:%s/v1/models/%s:predict" % (FLAGS.url, FLAGS.port, FLAGS.model_name), json=feed_dict)
+	print(results.json())
 
 if __name__ == "__main__":
 	main()
