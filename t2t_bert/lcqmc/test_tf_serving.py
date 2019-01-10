@@ -155,7 +155,7 @@ def main():
 					feed_dict["inputs"][key].extend(feature[key])
 
 	results = requests.post("http://%s:%s/v1/models/%s:predict" % (FLAGS.url, FLAGS.port, FLAGS.model_name), json=feed_dict)
-	print(results.json())
+	print(results.content)
 
 if __name__ == "__main__":
 	main()
