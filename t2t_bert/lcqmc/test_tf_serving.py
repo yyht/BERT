@@ -105,12 +105,12 @@ def get_single_features(query, sent, max_seq_length):
 			"input_ids_b":input_ids_b,
 			"input_mask_b":input_mask_b,
 			"segment_ids_b":segment_ids_b,
-			"label_ids":0}
+			"label_ids":[0]}
 
 def main():
 
 	query = u"银行转证券怎么转"
-	candidate_lst = 10*[u"银行转证券怎么才能转过去"]
+	candidate_lst = 1*[u"银行转证券怎么才能转过去"]
 
 	features = []
 
@@ -118,22 +118,26 @@ def main():
 		feature = get_single_features(query, candidate, 500)
 		features.append(feature)
 
-	feed_dict = {
-		"inputs":{
-			"input_ids_a":[],
-			"input_mask_a":[],
-			"segment_ids_a":[],
-			"input_ids_b":[],
-			"input_mask_b":[],
-			"segment_ids_b":[],
-			"label_ids":[]
-		}
-	}
-
-	for feature in features:
-		for key in feed_dict["inputs"]:
-			feed_dict["inputs"][key].append(feature[key])
-
+#	feed_dict = {
+#		"inputs":{
+#			"input_ids_a":[],
+#			"input_mask_a":[],
+#			"segment_ids_a":[],
+#			"input_ids_b":[],
+#			"input_mask_b":[],
+#			"segment_ids_b":[],
+#			"label_ids":[]
+#		},
+#		"signature_name":"serving_default"
+#	}
+			 
+	feed_dict = {"instances":features}
+	print(feed_dict["instances"][0])
+#	for feature in features:
+#		for key in feed_dict["inputs"]:
+#			feed_dict["inputs"][key].append(feature[key])
+#	import json
+#	json.dump(feed_dict, open("/data/xuht/test.json", "w"))
 	url = "http://{}:{}/v1/models/{}:predict".format(FLAGS.url, FLAGS.port, FLAGS.model_name)
 	print("==serving url==", url)
 
