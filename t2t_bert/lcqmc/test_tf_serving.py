@@ -131,7 +131,7 @@ def main():
 	if FLAGS.input_keys == "instances":
 
 		feed_dict = {
-			"instances":features[0:2]，
+			"instances":features[0:2],
 			"signature_name":FLAGS.signature_name
 		}
 	elif FLAGS.input_keys == "inputs":
