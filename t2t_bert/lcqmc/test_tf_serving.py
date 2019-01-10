@@ -34,6 +34,16 @@ flags.DEFINE_string(
     "The config json file corresponding to the pre-trained BERT model. "
     "This specifies the model architecture.")
 
+flags.DEFINE_string(
+    "signature_name", None,
+    "The config json file corresponding to the pre-trained BERT model. "
+    "This specifies the model architecture.")
+
+flags.DEFINE_string(
+    "input_keys", None,
+    "The config json file corresponding to the pre-trained BERT model. "
+    "This specifies the model architecture.")
+
 tokenizer = tokenization.FullTokenizer(
 				vocab_file=FLAGS.vocab, 
 				do_lower_case=True)
@@ -117,27 +127,35 @@ def main():
 	for candidate in candidate_lst:
 		feature = get_single_features(query, candidate, 500)
 		features.append(feature)
-#	feed_dict = {
-#		"inputs":{
-#			"input_ids_a":[],
-#			"input_mask_a":[],
-#			"segment_ids_a":[],
-#			"input_ids_b":[],
-#			"input_mask_b":[],
-#			"segment_ids_b":[],
-#			"label_ids":[]
-#		},
-#		"signature_name":"serving_default"
-#	}
-			 
-	feed_dict = {"instances":features}
-	print(feed_dict["instances"][0])
 
-	url = "http://{}:{}/v1/models/{}:predict".format(FLAGS.url, FLAGS.port, FLAGS.model_name)
-	print("==serving url==", url)
+	if FLAGS.input_keys == "instances":
 
-	results = requests.post(url, json=feed_dict)
-	print(results)
+		feed_dict = {
+			"instances":features[0:2]，
+			"signature_name":FLAGS.signature_name
+		}
+	elif FLAGS.input_keys == "inputs":
+		feed_dict = {
+			"inputs":{
+				"input_ids_a":[],
+				"input_mask_a":[],
+				"segment_ids_a":[],
+				"input_ids_b":[],
+				"input_mask_b":[],
+				"segment_ids_b":[],
+				"label_ids":[]
+			},
+			"signature_name":FLAGS.signature_name
+		}
+		for feature in features[0:3]:
+			for key in feed_dict["inputs"]:
+				if key not in ["label_ids"]
+					feed_dict["inputs"][key].append(feature[key])
+				else:
+					feed_dict["inputs"][key].extend(feature[key])
+
+	results = requests.post("http://%s:%s/v1/models/%s:predict" % (FLAGS.url, FLAGS.port, FLAGS.model_name), json=feed_dict)
+	print(results.json())
 
 if __name__ == "__main__":
 	main()
