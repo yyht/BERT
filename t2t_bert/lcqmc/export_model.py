@@ -58,30 +58,40 @@ def export_model_v1(config):
 	num_classes = len(label_dict["id2label"])
 	max_seq_length = config["max_length"]
 
-	feature_spec = {
-				"input_ids_a":
-						tf.FixedLenFeature([max_seq_length], tf.int64),
-				"input_mask_a":
-						tf.FixedLenFeature([max_seq_length], tf.int64),
-				"segment_ids_a":
-						tf.FixedLenFeature([max_seq_length], tf.int64),
-				"input_ids_b":
-						tf.FixedLenFeature([max_seq_length], tf.int64),
-				"input_mask_b":
-						tf.FixedLenFeature([max_seq_length], tf.int64),
-				"segment_ids_b":
-						tf.FixedLenFeature([max_seq_length], tf.int64),
-				"label_ids":
-						tf.FixedLenFeature([], tf.int64),
-	}
-
 	def serving_input_receiver_fn():
-		serialized_tf_example = tf.placeholder(dtype=tf.string,
-										shape=None,
-										name='input_example_tensor')
-		receiver_tensors = {'examples': serialized_tf_example}
-		features = tf.parse_example(serialized_tf_example, feature_spec)
-		return tf.estimator.export.ServingInputReceiver(features, receiver_tensors)
+		# receive tensors
+		receiver_tensors = {
+				"input_ids_a":
+						tf.placeholder(tf.int32, [None, max_seq_length], name='input_ids_a'),
+				"input_mask_a":
+						tf.placeholder(tf.int32, [None, max_seq_length], name='input_mask_a'),
+				"segment_ids_a":
+						tf.placeholder(tf.int32, [None, max_seq_length], name='segment_ids_a'),
+				"input_ids_b":
+						tf.placeholder(tf.int32, [None, max_seq_length], name='input_ids_b'),
+				"input_mask_b":
+						tf.placeholder(tf.int32, [None, max_seq_length], name='input_mask_b'),
+				"segment_ids_b":
+						tf.placeholder(tf.int32, [None, max_seq_length], name='segment_ids_b'),
+				"label_ids":
+						tf.placeholder(tf.int32, [None], name='label_ids'),
+		}
+
+    	# Convert give inputs to adjust to the model.
+    	features = {}
+	    for key in receiver_tensors:
+	    	features[key] = receiver_tensors[key]
+    return tf.estimator.export.ServingInputReceiver(receiver_tensors=receiver_tensors,
+                                                    features=features)
+
+	# def serving_input_receiver_fn():
+	#	receive serialized example
+	# 	serialized_tf_example = tf.placeholder(dtype=tf.string,
+	# 									shape=None,
+	# 									name='input_example_tensor')
+	# 	receiver_tensors = {'examples': serialized_tf_example}
+	# 	features = tf.parse_example(serialized_tf_example, feature_spec)
+	# 	return tf.estimator.export.ServingInputReceiver(features, receiver_tensors)
 
 	model_io_fn = model_io.ModelIO(model_io_config)
 

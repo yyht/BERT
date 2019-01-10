@@ -126,7 +126,7 @@ def classifier_model_fn_builder(
 			"output":tf.estimator.export.PredictOutput(
 					{
 						'pred_label':pred_label,
-						"label_ids":label_ids,
+						"true_label_ids":label_ids,
 						"max_prob":max_prob
 		  			}
 		  	)

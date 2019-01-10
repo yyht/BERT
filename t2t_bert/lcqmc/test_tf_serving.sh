@@ -1,5 +1,5 @@
 python test_tf_serving.py \
 	--vocab "/data/xuht/chinese_L-12_H-768_A-12/vocab.txt" \
 	--url "10.183.20.12" \
-	--port "19751" \
-	--model_name "dnn"
+	--port "7901" \
+	--model_name "default"

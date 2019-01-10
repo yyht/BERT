@@ -118,21 +118,25 @@ def main():
 		feature = get_single_features(query, candidate, 500)
 		features.append(feature)
 
+	# feed_dict = {
+	# 	"inputs":{
+	# 		"input_ids_a":[],
+	# 		"input_mask_a":[],
+	# 		"segment_ids_a":[],
+	# 		"input_ids_b":[],
+	# 		"input_mask_b":[],
+	# 		"segment_ids_b":[],
+	# 		"label_ids":[]
+	# 	}
+	# }
+
 	feed_dict = {
-		"inputs":{
-			"input_ids_a":[],
-			"input_mask_a":[],
-			"segment_ids_a":[],
-			"input_ids_b":[],
-			"input_mask_b":[],
-			"segment_ids_b":[],
-			"label_ids":[]
-		}
+		"instances":features
 	}
 
-	for feature in features:
-		for key in feed_dict["inputs"]:
-			feed_dict["inputs"][key].append(feature[key])
+	# for feature in features:
+	# 	for key in feed_dict["inputs"]:
+	# 		feed_dict["inputs"][key].append(feature[key])
 
 	url = "http://{}:{}/v1/models/{}:predict".format(FLAGS.url, FLAGS.port, FLAGS.model_name)
 	print("==serving url==", url)
