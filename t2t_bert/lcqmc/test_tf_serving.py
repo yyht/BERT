@@ -130,10 +130,28 @@ def main():
 
 	if FLAGS.input_keys == "instances":
 
+		batch_features = {
+			"input_ids_a":[],
+			"input_mask_a":[],
+			"segment_ids_a":[],
+			"input_ids_b":[],
+			"input_mask_b":[],
+			"segment_ids_b":[],
+			"label_ids":[]
+		}
+
+		for feature in features[0:5]:
+			for key in batch_features:
+				if key not in ["label_ids"]:
+					batch_features[key].append(feature[key])
+				else:
+					batch_features[key].extend(feature[key])
+
 		feed_dict = {
-			"instances":features[0:5],
+			"instances":batch_features,#features[0:5],
 			"signature_name":FLAGS.signature_name
 		}
+
 	elif FLAGS.input_keys == "inputs":
 		feed_dict = {
 			"inputs":{
