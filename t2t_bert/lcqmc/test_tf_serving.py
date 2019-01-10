@@ -105,7 +105,7 @@ def get_single_features(query, sent, max_seq_length):
 			"input_ids_b":input_ids_b,
 			"input_mask_b":input_mask_b,
 			"segment_ids_b":segment_ids_b,
-			"label_ids":[0]}
+			"label_ids":0}
 
 def main():
 
@@ -134,7 +134,7 @@ def main():
 		for key in feed_dict["inputs"]:
 			feed_dict["inputs"][key].append(feature[key])
 
-	url = "http://{}:{}/models/{}:predict".format(FLAGS.url, FLAGS.port, FLAGS.model_name)
+	url = "http://{}:{}/v1/models/{}:predict".format(FLAGS.url, FLAGS.port, FLAGS.model_name)
 	print("==serving url==", url)
 
 	results = requests.post(url, json=feed_dict)
