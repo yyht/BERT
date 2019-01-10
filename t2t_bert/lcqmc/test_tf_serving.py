@@ -149,7 +149,7 @@ def main():
 		}
 		for feature in features[0:3]:
 			for key in feed_dict["inputs"]:
-				if key not in ["label_ids"]
+				if key not in ["label_ids"]:
 					feed_dict["inputs"][key].append(feature[key])
 				else:
 					feed_dict["inputs"][key].extend(feature[key])
