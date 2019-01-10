@@ -148,7 +148,7 @@ def main():
 					batch_features[key].extend(feature[key])
 
 		feed_dict = {
-			"instances":batch_features,#features[0:5],
+			"instances":[batch_features],#features[0:5],
 			"signature_name":FLAGS.signature_name
 		}
 
