@@ -143,7 +143,7 @@ signature_name = 'output'
 print("starting REST test...")
 json = {
     "signature_name": signature_name,
-    "instances": features[0]
+    "instances": features[0:2]
 }
 print ("warming up....")
 req = requests.post("http://%s:%s/v1/models/default:predict" % (host, rest_port), json=json)
