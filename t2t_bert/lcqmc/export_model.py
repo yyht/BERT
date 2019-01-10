@@ -12,32 +12,32 @@ flags = tf.flags
 FLAGS = flags.FLAGS
 
 flags.DEFINE_string(
-    "config_file", None,
-    "Input TF example files (can be a glob or comma separated).")
+	"config_file", None,
+	"Input TF example files (can be a glob or comma separated).")
 
 flags.DEFINE_string(
-    "model_dir", None,
-    "Input TF example files (can be a glob or comma separated).")
+	"model_dir", None,
+	"Input TF example files (can be a glob or comma separated).")
 
 flags.DEFINE_string(
-    "label2id", None,
-    "Input TF example files (can be a glob or comma separated).")
+	"label2id", None,
+	"Input TF example files (can be a glob or comma separated).")
 
 flags.DEFINE_string(
-    "init_checkpoint", None,
-    "Input TF example files (can be a glob or comma separated).")
+	"init_checkpoint", None,
+	"Input TF example files (can be a glob or comma separated).")
 
 flags.DEFINE_integer(
-    "max_length", None,
-    "Input TF example files (can be a glob or comma separated).")
+	"max_length", None,
+	"Input TF example files (can be a glob or comma separated).")
 
 flags.DEFINE_string(
-    "export_path", None,
-    "Input TF example files (can be a glob or comma separated).")
+	"export_path", None,
+	"Input TF example files (can be a glob or comma separated).")
 
 flags.DEFINE_string(
-    "export_type", None,
-    "Input TF example files (can be a glob or comma separated).")
+	"export_type", None,
+	"Input TF example files (can be a glob or comma separated).")
 
 def export_model_v1(config):
 
@@ -77,12 +77,12 @@ def export_model_v1(config):
 						tf.placeholder(tf.int32, [None], name='label_ids'),
 		}
 
-    	# Convert give inputs to adjust to the model.
-    	features = {}
-	    for key in receiver_tensors:
-	    	features[key] = receiver_tensors[key]
-    	return tf.estimator.export.ServingInputReceiver(receiver_tensors=receiver_tensors,
-                                                    features=features)
+		# Convert give inputs to adjust to the model.
+		features = {}
+		for key in receiver_tensors:
+			features[key] = receiver_tensors[key]
+		return tf.estimator.export.ServingInputReceiver(receiver_tensors=receiver_tensors,
+													features=features)
 
 	# def serving_input_receiver_fn():
 	#	receive serialized example
@@ -137,26 +137,26 @@ def export_model_v2(config):
 	max_seq_length = config["max_length"]
 
 	def serving_input_receiver_fn():
-	    label_ids = tf.placeholder(tf.int32, [None], name='label_ids')
+		label_ids = tf.placeholder(tf.int32, [None], name='label_ids')
 
-	    input_ids_a = tf.placeholder(tf.int32, [None, max_seq_length], name='input_ids_a')
-	    input_mask_a = tf.placeholder(tf.int32, [None, max_seq_length], name='input_mask_a')
-	    segment_ids_a = tf.placeholder(tf.int32, [None, max_seq_length], name='segment_ids_a')
+		input_ids_a = tf.placeholder(tf.int32, [None, max_seq_length], name='input_ids_a')
+		input_mask_a = tf.placeholder(tf.int32, [None, max_seq_length], name='input_mask_a')
+		segment_ids_a = tf.placeholder(tf.int32, [None, max_seq_length], name='segment_ids_a')
 
-	    input_ids_b = tf.placeholder(tf.int32, [None, max_seq_length], name='input_ids_b')
-	    input_mask_b = tf.placeholder(tf.int32, [None, max_seq_length], name='input_mask_b')
-	    segment_ids_b = tf.placeholder(tf.int32, [None, max_seq_length], name='segment_ids_b')
+		input_ids_b = tf.placeholder(tf.int32, [None, max_seq_length], name='input_ids_b')
+		input_mask_b = tf.placeholder(tf.int32, [None, max_seq_length], name='input_mask_b')
+		segment_ids_b = tf.placeholder(tf.int32, [None, max_seq_length], name='segment_ids_b')
 
-	    input_fn = tf.estimator.export.build_raw_serving_input_receiver_fn({
-	        'label_ids': label_ids,
-	        'input_ids_a': input_ids_a,
-	        'input_mask_a': input_mask_a,
-	        'segment_ids_a': segment_ids_a,
-	        'input_ids_b': input_ids_b,
-	        'input_mask_b': input_mask_b,
-	        'segment_ids_b': segment_ids_b
-	    })()
-	    return input_fn
+		input_fn = tf.estimator.export.build_raw_serving_input_receiver_fn({
+			'label_ids': label_ids,
+			'input_ids_a': input_ids_a,
+			'input_mask_a': input_mask_a,
+			'segment_ids_a': segment_ids_a,
+			'input_ids_b': input_ids_b,
+			'input_mask_b': input_mask_b,
+			'segment_ids_b': segment_ids_b
+		})()
+		return input_fn
 
 	model_io_fn = model_io.ModelIO(model_io_config)
 
