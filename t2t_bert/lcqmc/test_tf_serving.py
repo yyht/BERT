@@ -115,7 +115,7 @@ def main():
 	features = []
 
 	for candidate in candidate_lst:
-		feature = get_single_features(query, candidate, 128)
+		feature = get_single_features(query, candidate, 500)
 		features.append(feature)
 
 	feed_dict = {
