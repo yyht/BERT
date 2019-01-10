@@ -131,7 +131,7 @@ def main():
 	if FLAGS.input_keys == "instances":
 
 		feed_dict = {
-			"instances":features[0:2],
+			"instances":features[0:5],
 			"signature_name":FLAGS.signature_name
 		}
 	elif FLAGS.input_keys == "inputs":
@@ -147,7 +147,7 @@ def main():
 			},
 			"signature_name":FLAGS.signature_name
 		}
-		for feature in features[0:3]:
+		for feature in features[0:5]:
 			for key in feed_dict["inputs"]:
 				if key not in ["label_ids"]:
 					feed_dict["inputs"][key].append(feature[key])
@@ -158,7 +158,10 @@ def main():
 			print(key, np.array(feed_dict["inputs"][key]).shape)
 
 	results = requests.post("http://%s:%s/v1/models/%s:predict" % (FLAGS.url, FLAGS.port, FLAGS.model_name), json=feed_dict)
-	print(results.json())
+	try:
+		print(results.json())
+	except:
+		print(results.content)
 
 if __name__ == "__main__":
 	main()
