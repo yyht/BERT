@@ -146,5 +146,5 @@ json = {
     "instances": features
 }
 print ("warming up....")
-req = requests.Request('post', "http://%s:%s/v1/models/default:predict" % (host, rest_port), json=json)
-print(req.content())
+req = requests.post("http://%s:%s/v1/models/default:predict" % (host, rest_port), json=json)
+print(req.json())

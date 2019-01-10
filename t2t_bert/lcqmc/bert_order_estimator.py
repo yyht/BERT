@@ -119,14 +119,14 @@ def classifier_model_fn_builder(
 		  mode=mode,
 		  predictions={
 			'pred_label':pred_label,
-			"true_label_ids":label_ids,
+			# "true_label_ids":label_ids,
 			"max_prob":max_prob
 		  },
 		  export_outputs={
 			"output":tf.estimator.export.PredictOutput(
 					{
 						'pred_label':pred_label,
-						"true_label_ids":label_ids,
+						# "true_label_ids":label_ids,
 						"max_prob":max_prob
 		  			}
 		  	)
