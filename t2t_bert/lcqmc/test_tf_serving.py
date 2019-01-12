@@ -129,11 +129,15 @@ def main():
 		features.append(feature)
 
 	if FLAGS.input_keys == "instances":
-
+		for key in features[0]:
+			import numpy as np
+			print(np.array(features[0][key]).shape, key)
 		feed_dict = {
-			"instances":features[0:5],
+			"instances":features[0:1],
 			"signature_name":FLAGS.signature_name
 		}
+		import json
+		json.dump(features, open("/data/xuht/LCQMC/test.json", "w"))
 	elif FLAGS.input_keys == "inputs":
 		feed_dict = {
 			"inputs":{
