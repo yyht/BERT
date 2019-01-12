@@ -20,6 +20,8 @@ def prepare_grpc_request(model_name, signature_name, input_dict):
     for key in input_dict:
         request.inputs[key].CopyFrom(
             make_tensor_proto([input_dict[key]]))
+    for key in request.inputs:
+        print(key, request.inputs[key])
     return request
 
 def run(host, port, test_json, model_name, signature_name):
