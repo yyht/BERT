@@ -11,11 +11,14 @@ from tensorflow.contrib.util import make_tensor_proto
 from tensorflow_serving.apis import predict_pb2
 from tensorflow_serving.apis import prediction_service_pb2
 
+import numpy as np
+
 def prepare_grpc_request(model_name, signature_name, input_dict):
     request = predict_pb2.PredictRequest()
     request.model_spec.name = model_name
     request.model_spec.signature_name = signature_name
     for key in input_dict:
+        print(np.array(input_dict[key]).shape)
         request.inputs[key].CopyFrom(
             make_tensor_proto(input_dict[key], dtype=None))
     return request
