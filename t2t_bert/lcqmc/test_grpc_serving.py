@@ -33,10 +33,10 @@ def run(host, port, test_json, model_name, signature_name):
 
     start = time.time()
 
-    for input_dict in content:
+    for i, input_dict in enumerate(content):
         request = prepare_grpc_request(model_name, signature_name, input_dict)
         result = stub.Predict(request, 10.0)
-        print(result)
+        print(result, i)
 
     end = time.time()
     time_diff = end - start
