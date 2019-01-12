@@ -18,9 +18,8 @@ def prepare_grpc_request(model_name, signature_name, input_dict):
     request.model_spec.name = model_name
     request.model_spec.signature_name = signature_name
     for key in input_dict:
-        d = np.array(input_dict[key])
         request.inputs[key].CopyFrom(
-            make_tensor_proto(d))
+            make_tensor_proto(input_dict[key]))
     return request
 
 def run(host, port, test_json, model_name, signature_name):
