@@ -30,6 +30,7 @@ def run(host, port, test_json, model_name, signature_name):
 
     with open(test_json, "r") as frobj:
         content = json.load(frobj)
+        print(len(content), "======")
 
     start = time.time()
 
