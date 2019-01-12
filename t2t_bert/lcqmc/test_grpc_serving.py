@@ -20,7 +20,7 @@ def prepare_grpc_request(model_name, signature_name, input_dict):
     for key in input_dict:
         d = np.array(input_dict)
         request.inputs[key].CopyFrom(
-            make_tensor_proto(d, dtype=np.int32, shape=d.shape))
+            make_tensor_proto(d))
     return request
 
 def run(host, port, test_json, model_name, signature_name):
