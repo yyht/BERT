@@ -81,7 +81,7 @@ flags.DEFINE_integer(
 	"Input TF example files (can be a glob or comma separated).")
 
 flags.DEFINE_integer(
-	"train_size", 1402171,
+	"train_size", 760760,
 	"Input TF example files (can be a glob or comma separated).")
 
 flags.DEFINE_integer(
