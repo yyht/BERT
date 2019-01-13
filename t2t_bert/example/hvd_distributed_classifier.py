@@ -19,7 +19,7 @@ def classifier_model_fn_builder(
 							not_storage_params=[]):
 
 	def model_fn(features, labels, mode):
-		print(features)
+		# print(features)
 		input_ids = features["input_ids"]
 		input_mask = features["input_mask"]
 		segment_ids = features["segment_ids"]
