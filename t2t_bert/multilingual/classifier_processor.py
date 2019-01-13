@@ -33,10 +33,10 @@ def full2half(s):
 
 def clean(text):
 	text = text.strip()
-	text = HanziConv.toSimplified(text)
-	text = full2half(text)
+	# text = HanziConv.toSimplified(text)
+	# text = full2half(text)
 	text = re.sub("\\#.*?#|\\|.*?\\||\\[.*?]", "", text)
-	text = re.sub("\s*", "", text)
+	# text = re.sub("\s*", "", text)
 	return text
 
 class MultilingualClassifierProcessor(data_processor.DataProcessor):
