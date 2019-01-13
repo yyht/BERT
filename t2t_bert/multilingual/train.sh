@@ -11,7 +11,7 @@ python base_train.py \
  --model_output "/data/xuht/lazada/20190107/model" \
  --epoch 3 \
  --num_classes 4 \
- --batch_size 32 \
+ --batch_size 16 \
  --if_shard "1" \
 
  
