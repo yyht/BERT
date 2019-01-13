@@ -399,30 +399,30 @@ class WordpieceTokenizer(object):
 				output_tokens.append(self.unk_token)
 				continue
 
-		is_bad = False
-		start = 0
-		sub_tokens = []
-		while start < len(chars):
-			end = len(chars)
-			cur_substr = None
-			while start < end:
-				substr = "".join(chars[start:end])
-				if start > 0:
-					substr = "##" + substr
-				if substr in self.vocab:
-					cur_substr = substr
+			is_bad = False
+			start = 0
+			sub_tokens = []
+			while start < len(chars):
+				end = len(chars)
+				cur_substr = None
+				while start < end:
+					substr = "".join(chars[start:end])
+					if start > 0:
+						substr = "##" + substr
+					if substr in self.vocab:
+						cur_substr = substr
+						break
+					end -= 1
+				if cur_substr is None:
+					is_bad = True
 					break
-				end -= 1
-			if cur_substr is None:
-				is_bad = True
-				break
-			sub_tokens.append(cur_substr)
-			start = end
+				sub_tokens.append(cur_substr)
+				start = end
 
-		if is_bad:
-			output_tokens.append(self.unk_token)
-		else:
-			output_tokens.extend(sub_tokens)
+			if is_bad:
+				output_tokens.append(self.unk_token)
+			else:
+				output_tokens.extend(sub_tokens)
 		return output_tokens
 
 def _is_whitespace(char):
