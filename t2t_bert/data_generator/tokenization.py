@@ -148,7 +148,6 @@ import unicodedata
 import six
 import tensorflow as tf
 
-
 def convert_to_unicode(text):
 	"""Converts `text` to Unicode (if it's not already), assuming utf-8 input."""
 	if six.PY3:
@@ -207,16 +206,24 @@ def load_vocab(vocab_file):
 	return vocab
 
 
+def convert_by_vocab(vocab, items):
+	"""Converts a sequence of [tokens|ids] using the vocab."""
+	output = []
+	for item in items:
+		output.append(vocab[item])
+	return output
+
+
 def convert_tokens_to_ids(vocab, tokens):
-	"""Converts a sequence of tokens into ids using the vocab."""
-	ids = []
-	for token in tokens:
-		ids.append(vocab[token])
-	return ids
+	return convert_by_vocab(vocab, tokens)
+
+
+def convert_ids_to_tokens(inv_vocab, ids):
+	return convert_by_vocab(inv_vocab, ids)
 
 
 def whitespace_tokenize(text):
-	"""Runs basic whitespace cleaning and splitting on a peice of text."""
+	"""Runs basic whitespace cleaning and splitting on a piece of text."""
 	text = text.strip()
 	if not text:
 		return []
@@ -225,10 +232,11 @@ def whitespace_tokenize(text):
 
 
 class FullTokenizer(object):
-	"""Runs end-to-end tokenziation."""
+  """Runs end-to-end tokenziation."""
 
 	def __init__(self, vocab_file, do_lower_case=True):
 		self.vocab = load_vocab(vocab_file)
+		self.inv_vocab = {v: k for k, v in self.vocab.items()}
 		self.basic_tokenizer = BasicTokenizer(do_lower_case=do_lower_case)
 		self.wordpiece_tokenizer = WordpieceTokenizer(vocab=self.vocab)
 
@@ -241,17 +249,19 @@ class FullTokenizer(object):
 		return split_tokens
 
 	def convert_tokens_to_ids(self, tokens):
-		return convert_tokens_to_ids(self.vocab, tokens)
+		return convert_by_vocab(self.vocab, tokens)
+
+	def convert_ids_to_tokens(self, ids):
+		return convert_by_vocab(self.inv_vocab, ids)
 
 
 class BasicTokenizer(object):
-	"""Runs basic tokenization (punctuation splitting, lower casing, etc.)."""
+		"""Runs basic tokenization (punctuation splitting, lower casing, etc.)."""
 
 	def __init__(self, do_lower_case=True):
 		"""Constructs a BasicTokenizer.
-
 		Args:
-			do_lower_case: Whether to lower case the input.
+		  do_lower_case: Whether to lower case the input.
 		"""
 		self.do_lower_case = do_lower_case
 
@@ -334,13 +344,13 @@ class BasicTokenizer(object):
 		# space-separated words, so they are not treated specially and handled
 		# like the all of the other languages.
 		if ((cp >= 0x4E00 and cp <= 0x9FFF) or  #
-				(cp >= 0x3400 and cp <= 0x4DBF) or  #
-				(cp >= 0x20000 and cp <= 0x2A6DF) or  #
-				(cp >= 0x2A700 and cp <= 0x2B73F) or  #
-				(cp >= 0x2B740 and cp <= 0x2B81F) or  #
-				(cp >= 0x2B820 and cp <= 0x2CEAF) or
-				(cp >= 0xF900 and cp <= 0xFAFF) or  #
-				(cp >= 0x2F800 and cp <= 0x2FA1F)):  #
+			(cp >= 0x3400 and cp <= 0x4DBF) or  #
+			(cp >= 0x20000 and cp <= 0x2A6DF) or  #
+			(cp >= 0x2A700 and cp <= 0x2B73F) or  #
+			(cp >= 0x2B740 and cp <= 0x2B81F) or  #
+			(cp >= 0x2B820 and cp <= 0x2CEAF) or
+			(cp >= 0xF900 and cp <= 0xFAFF) or  #
+			(cp >= 0x2F800 and cp <= 0x2FA1F)):  #
 			return True
 
 		return False
@@ -362,27 +372,23 @@ class BasicTokenizer(object):
 class WordpieceTokenizer(object):
 	"""Runs WordPiece tokenziation."""
 
-	def __init__(self, vocab, unk_token="[UNK]", max_input_chars_per_word=100):
+	def __init__(self, vocab, unk_token="[UNK]", max_input_chars_per_word=200):
 		self.vocab = vocab
 		self.unk_token = unk_token
 		self.max_input_chars_per_word = max_input_chars_per_word
 
 	def tokenize(self, text):
 		"""Tokenizes a piece of text into its word pieces.
-
 		This uses a greedy longest-match-first algorithm to perform tokenization
 		using the given vocabulary.
-
 		For example:
-			input = "unaffable"
-			output = ["un", "##aff", "##able"]
-
+		  input = "unaffable"
+		  output = ["un", "##aff", "##able"]
 		Args:
-			text: A single token or whitespace separated tokens. This should have
-				already been passed through `BasicTokenizer.
-
+		  text: A single token or whitespace separated tokens. This should have
+			already been passed through `BasicTokenizer.
 		Returns:
-			A list of wordpiece tokens.
+		  A list of wordpiece tokens.
 		"""
 
 		text = convert_to_unicode(text)
@@ -394,32 +400,31 @@ class WordpieceTokenizer(object):
 				output_tokens.append(self.unk_token)
 				continue
 
-			is_bad = False
-			start = 0
-			sub_tokens = []
-			while start < len(chars):
-				end = len(chars)
-				cur_substr = None
-				while start < end:
-					substr = "".join(chars[start:end])
-					if start > 0:
-						substr = "##" + substr
-					if substr in self.vocab:
-						cur_substr = substr
-						break
-					end -= 1
-				if cur_substr is None:
-					is_bad = True
+		is_bad = False
+		start = 0
+		sub_tokens = []
+		while start < len(chars):
+			end = len(chars)
+			cur_substr = None
+			while start < end:
+				substr = "".join(chars[start:end])
+				if start > 0:
+					substr = "##" + substr
+				if substr in self.vocab:
+					cur_substr = substr
 					break
-				sub_tokens.append(cur_substr)
-				start = end
+				end -= 1
+			if cur_substr is None:
+				is_bad = True
+				break
+			sub_tokens.append(cur_substr)
+			start = end
 
-			if is_bad:
-				output_tokens.append(self.unk_token)
-			else:
-				output_tokens.extend(sub_tokens)
+		if is_bad:
+			output_tokens.append(self.unk_token)
+		else:
+			output_tokens.extend(sub_tokens)
 		return output_tokens
-
 
 def _is_whitespace(char):
 	"""Checks whether `chars` is a whitespace character."""
@@ -453,7 +458,7 @@ def _is_punctuation(char):
 	# Punctuation class but we treat them as punctuation anyways, for
 	# consistency.
 	if ((cp >= 33 and cp <= 47) or (cp >= 58 and cp <= 64) or
-			(cp >= 91 and cp <= 96) or (cp >= 123 and cp <= 126)):
+	  (cp >= 91 and cp <= 96) or (cp >= 123 and cp <= 126)):
 		return True
 	cat = unicodedata.category(char)
 	if cat.startswith("P"):
