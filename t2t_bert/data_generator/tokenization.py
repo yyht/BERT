@@ -255,7 +255,7 @@ class FullTokenizer(object):
 
 
 class BasicTokenizer(object):
-		"""Runs basic tokenization (punctuation splitting, lower casing, etc.)."""
+	"""Runs basic tokenization (punctuation splitting, lower casing, etc.)."""
 
 	def __init__(self, do_lower_case=True):
 		"""Constructs a BasicTokenizer.
