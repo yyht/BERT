@@ -77,6 +77,7 @@ def convert_classifier_examples_to_features(examples, label_dict,
 			for item in example.label:
 				label_id[label_dict[item]] = 1
 		if ex_index < 5:
+			print(tokens)
 			tf.logging.info("*** Example ***")
 			tf.logging.info("guid: %s" % (example.guid))
 			tf.logging.info("tokens: %s" % " ".join(
@@ -86,8 +87,7 @@ def convert_classifier_examples_to_features(examples, label_dict,
 			tf.logging.info(
 					"segment_ids: %s" % " ".join([str(x) for x in segment_ids]))
 			tf.logging.info("label: {} (id = {})".format(example.label, label_id))
-			print(tokens)
-		
+
 		feature = data_feature_classifier.InputFeatures(
 					guid=example.guid,
 					input_ids=input_ids,

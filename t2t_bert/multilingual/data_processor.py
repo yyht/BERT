@@ -15,7 +15,7 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 import horovod.tensorflow as hvd
 
 from example import feature_writer, write_to_tfrecords
-from porn_classification import classifier_processor
+from multilingual import classifier_processor
 
 flags = tf.flags
 
@@ -60,7 +60,7 @@ def main(_):
 		vocab_file=FLAGS.vocab_file, 
 		do_lower_case=FLAGS.lower_case)
 
-	classifier_data_api = classifier_processor.PornClassifierProcessor()
+	classifier_data_api = classifier_processor.MultilingualClassifierProcessor()
 	classifier_data_api.get_labels(FLAGS.label_id)
 
 	train_examples = classifier_data_api.get_train_examples(FLAGS.train_file)
