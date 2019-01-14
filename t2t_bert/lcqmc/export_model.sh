@@ -1,4 +1,4 @@
-python export_model.py \
+CUDA_VISIBLE_DEVICES="" python export_model.py \
  --config_file "/data/xuht/chinese_L-12_H-768_A-12/bert_config.json" \
  --model_dir "/data/xuht/LCQMC/model/model_12_5" \
  --label2id "/data/xuht/LCQMC/label_dict.json" \
