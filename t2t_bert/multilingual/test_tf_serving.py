@@ -46,7 +46,7 @@ flags.DEFINE_string(
 
 tokenizer = tokenization.FullTokenizer(
 				vocab_file=FLAGS.vocab, 
-				do_lower_case=True)
+				do_lower_case=False)
 
 def full2half(ustring):
     rstring = ""
