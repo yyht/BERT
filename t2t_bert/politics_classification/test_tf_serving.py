@@ -15,79 +15,79 @@ FLAGS = flags.FLAGS
 
 ## Required parameters
 flags.DEFINE_string(
-    "vocab", None,
-    "The config json file corresponding to the pre-trained BERT model. "
-    "This specifies the model architecture.")
+	"vocab", None,
+	"The config json file corresponding to the pre-trained BERT model. "
+	"This specifies the model architecture.")
 
 flags.DEFINE_string(
-    "url", None,
-    "The config json file corresponding to the pre-trained BERT model. "
-    "This specifies the model architecture.")
+	"url", None,
+	"The config json file corresponding to the pre-trained BERT model. "
+	"This specifies the model architecture.")
 
 flags.DEFINE_string(
-    "port", None,
-    "The config json file corresponding to the pre-trained BERT model. "
-    "This specifies the model architecture.")
+	"port", None,
+	"The config json file corresponding to the pre-trained BERT model. "
+	"This specifies the model architecture.")
 
 flags.DEFINE_string(
-    "model_name", None,
-    "The config json file corresponding to the pre-trained BERT model. "
-    "This specifies the model architecture.")
+	"model_name", None,
+	"The config json file corresponding to the pre-trained BERT model. "
+	"This specifies the model architecture.")
 
 flags.DEFINE_string(
-    "signature_name", None,
-    "The config json file corresponding to the pre-trained BERT model. "
-    "This specifies the model architecture.")
+	"signature_name", None,
+	"The config json file corresponding to the pre-trained BERT model. "
+	"This specifies the model architecture.")
 
 flags.DEFINE_string(
-    "input_keys", None,
-    "The config json file corresponding to the pre-trained BERT model. "
-    "This specifies the model architecture.")
+	"input_keys", None,
+	"The config json file corresponding to the pre-trained BERT model. "
+	"This specifies the model architecture.")
 
 tokenizer = tokenization.FullTokenizer(
 				vocab_file=FLAGS.vocab, 
 				do_lower_case=True)
 
 def full2half(ustring):
-    rstring = ""
-    for uchar in ustring:
-        inside_code=ord(uchar)
-        if inside_code==0x3000:
-            inside_code=0x0020
-        else:
-            inside_code-=0xfee0
-        if inside_code<0x0020 or inside_code>0x7e:   
-            rstring += uchar
-        else:
-            rstring += unichr(inside_code)
-    return rstring
+	rstring = ""
+	for uchar in ustring:
+		inside_code=ord(uchar)
+		if inside_code==0x3000:
+			inside_code=0x0020
+		else:
+			inside_code-=0xfee0
+		if inside_code<0x0020 or inside_code>0x7e:   
+			rstring += uchar
+		else:
+			rstring += unichr(inside_code)
+	return rstring
 
 def get_single_features(query, max_seq_length):
-    tokens_a = tokenizer.tokenize(query)
+	tokens_a = tokenizer.tokenize(query)
 
-    if len(tokens_a) > max_seq_length - 2:
-        tokens_a = tokens_a[0:(max_seq_length - 2)]
+	if len(tokens_a) > max_seq_length - 2:
+		tokens_a = tokens_a[0:(max_seq_length - 2)]
 
-    tokens = []
-    segment_ids = []
-    tokens.append("[CLS]")
-    segment_ids.append(0)
+	tokens = []
+	segment_ids = []
+	tokens.append("[CLS]")
+	segment_ids.append(0)
 
-    for token in tokens_a:
-        tokens.append(token)
-        segment_ids.append(0)
-    tokens.append("[SEP]")
-    segment_ids.append(0)
+	for token in tokens_a:
+		tokens.append(token)
+		segment_ids.append(0)
+	tokens.append("[SEP]")
+	segment_ids.append(0)
 
-    input_ids = tokenizer.convert_tokens_to_ids(tokens)
-    input_mask = [1] * len(input_ids)
+	input_ids = tokenizer.convert_tokens_to_ids(tokens)
+	input_mask = [1] * len(input_ids)
 
-    # Zero-pad up to the sequence length.
-    while len(input_ids) < max_seq_length:
-        input_ids.append(0)
-        input_mask.append(0)
-        segment_ids.append(0)
-    label_ids = 0
+	# Zero-pad up to the sequence length.
+	while len(input_ids) < max_seq_length:
+		input_ids.append(0)
+		input_mask.append(0)
+		segment_ids.append(0)
+	label_ids = 0
 
 	return {"input_ids":input_ids,
 			"input_mask":input_mask,
