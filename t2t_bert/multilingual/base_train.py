@@ -322,7 +322,7 @@ def main(_):
 							model_io_fn.save_model(sess, FLAGS.model_output+"/model_{}.ckpt".format(int(i/num_storage_steps)))
 							print("==successful storing model=={}".format(int(i/num_storage_steps)))
 						cnt = 0
-						break
+					break
 				except tf.errors.OutOfRangeError:
 					if hvd.rank() == 0:
 						import _pickle as pkl
