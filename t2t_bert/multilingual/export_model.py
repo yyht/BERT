@@ -7,6 +7,8 @@ from model_io import model_io
 from bunch import Bunch
 import 	json
 
+from optimizer import hvd_distributed_optimizer as optimizer
+
 flags = tf.flags
 
 FLAGS = flags.FLAGS
@@ -127,6 +129,12 @@ def export_model_v2(config):
 
 	num_classes = len(label_dict["id2label"])
 	max_seq_length = config["max_length"]
+
+	opt_config = Bunch({"init_lr":init_lr/hvd.size(), 
+							"num_train_steps":num_train_steps,
+							"num_warmup_steps":num_warmup_steps})
+
+	optimizer_fn = optimizer.Optimizer(opt_config)
 
 	def serving_input_receiver_fn():
 		label_ids = tf.placeholder(tf.int32, [None], name='label_ids')
