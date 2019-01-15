@@ -44,6 +44,11 @@ flags.DEFINE_string(
 	"The config json file corresponding to the pre-trained BERT model. "
 	"This specifies the model architecture.")
 
+flags.DEFINE_string(
+	"versions", None,
+	"The config json file corresponding to the pre-trained BERT model. "
+	"This specifies the model architecture.")
+
 tokenizer = tokenization.FullTokenizer(
 				vocab_file=FLAGS.vocab, 
 				do_lower_case=True)
@@ -163,7 +168,8 @@ def main():
 		for key in feed_dict["inputs"]:
 			print(key, np.array(feed_dict["inputs"][key]).shape)
 
-	results = requests.post("http://%s:%s/v1/models/%s:predict" % (FLAGS.url, FLAGS.port, FLAGS.model_name), json=feed_dict)
+	results = requests.post("http://%s:%s/v1/models/%s/versions/%s:predict" % (FLAGS.url, FLAGS.port, FLAGS.model_name, FLAGS.versions), 
+					json=feed_dict)
 	try:
 		print(results.json())
 	except:
