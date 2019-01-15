@@ -130,9 +130,9 @@ def export_model_v2(config):
 	num_classes = len(label_dict["id2label"])
 	max_seq_length = config["max_length"]
 
-	opt_config = Bunch({"init_lr":init_lr/hvd.size(), 
-							"num_train_steps":num_train_steps,
-							"num_warmup_steps":num_warmup_steps})
+	opt_config = Bunch({"init_lr":0.1, 
+							"num_train_steps":0.1,
+							"num_warmup_steps":0.1})
 
 	optimizer_fn = optimizer.Optimizer(opt_config)
 
