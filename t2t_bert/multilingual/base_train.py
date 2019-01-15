@@ -332,15 +332,15 @@ def main(_):
 					break
 		print("===========begin to train============")    
 
-		if hvd.rank() == 0:
-			model_io_fn.save_model(sess, FLAGS.model_output+"/model_{}.ckpt".format(int(0/1)))
-			print("==successful storing model=={}".format(int(0/1)))
-
-		# train_fn(train_dict)
 		# if hvd.rank() == 0:
-		# 	model_io_fn.save_model(sess, FLAGS.model_output+"/model.ckpt")
-		# 	print("===========begin to eval============")
-		# 	eval_finial_dict = run_eval("final")
+		# 	model_io_fn.save_model(sess, FLAGS.model_output+"/model_{}.ckpt".format(int(0/1)))
+		# 	print("==successful storing model=={}".format(int(0/1)))
+
+		train_fn(train_dict)
+		if hvd.rank() == 0:
+			model_io_fn.save_model(sess, FLAGS.model_output+"/model.ckpt")
+			print("===========begin to eval============")
+			eval_finial_dict = run_eval("final")
 
 if __name__ == "__main__":
 	tf.app.run()
