@@ -131,8 +131,8 @@ def export_model_v2(config):
 	max_seq_length = config["max_length"]
 
 	opt_config = Bunch({"init_lr":0.1, 
-							"num_train_steps":0.1,
-							"num_warmup_steps":0.1})
+							"num_train_steps":10,
+							"num_warmup_steps":10})
 
 	optimizer_fn = optimizer.Optimizer(opt_config)
 
