@@ -15,52 +15,50 @@ FLAGS = flags.FLAGS
 
 ## Required parameters
 flags.DEFINE_string(
-    "vocab", None,
-    "The config json file corresponding to the pre-trained BERT model. "
-    "This specifies the model architecture.")
+	"vocab", None,
+	"The config json file corresponding to the pre-trained BERT model. "
+	"This specifies the model architecture.")
 
 flags.DEFINE_string(
-    "url", None,
-    "The config json file corresponding to the pre-trained BERT model. "
-    "This specifies the model architecture.")
+	"url", None,
+	"The config json file corresponding to the pre-trained BERT model. "
+	"This specifies the model architecture.")
 
 flags.DEFINE_string(
-    "port", None,
-    "The config json file corresponding to the pre-trained BERT model. "
-    "This specifies the model architecture.")
+	"port", None,
+	"The config json file corresponding to the pre-trained BERT model. "
+	"This specifies the model architecture.")
 
 flags.DEFINE_string(
-    "model_name", None,
-    "The config json file corresponding to the pre-trained BERT model. "
-    "This specifies the model architecture.")
+	"model_name", None,
+	"The config json file corresponding to the pre-trained BERT model. "
+	"This specifies the model architecture.")
 
 flags.DEFINE_string(
-    "signature_name", None,
-    "The config json file corresponding to the pre-trained BERT model. "
-    "This specifies the model architecture.")
+	"signature_name", None,
+	"The config json file corresponding to the pre-trained BERT model. "
+	"This specifies the model architecture.")
 
 flags.DEFINE_string(
-    "input_keys", None,
-    "The config json file corresponding to the pre-trained BERT model. "
-    "This specifies the model architecture.")
+	"input_keys", None,
+	"The config json file corresponding to the pre-trained BERT model. "
+	"This specifies the model architecture.")
 
 tokenizer = tokenization.FullTokenizer(
 				vocab_file=FLAGS.vocab, 
 				do_lower_case=True)
 
-def full2half(ustring):
-    rstring = ""
-    for uchar in ustring:
-        inside_code=ord(uchar)
-        if inside_code==0x3000:
-            inside_code=0x0020
-        else:
-            inside_code-=0xfee0
-        if inside_code<0x0020 or inside_code>0x7e:   
-            rstring += uchar
-        else:
-            rstring += unichr(inside_code)
-    return rstring
+def full2half(s):
+	n = []
+	for char in s:
+		num = ord(char)
+		if num == 0x3000:
+			num = 32
+		elif 0xFF01 <= num <= 0xFF5E:
+			num -= 0xfee0
+		num = chr(num)
+		n.append(num)
+	return ''.join(n)
 
 def get_single_features(query, sent, max_seq_length):
 	query = full2half(query)
