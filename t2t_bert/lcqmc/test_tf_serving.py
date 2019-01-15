@@ -135,7 +135,7 @@ def main():
 			import numpy as np
 			print(np.array(features[0][key]).shape, key)
 		feed_dict = {
-			"instances":features[0:1],
+			"instances":features,
 			"signature_name":FLAGS.signature_name
 		}
 		import json
