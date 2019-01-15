@@ -2,7 +2,7 @@ CUDA_VISIBLE_DEVICES="0,1" mpirun -np 2 \
  -H localhost:2 \
 python base_train.py \
  --config_file "/data/xuht/multi_cased_L-12_H-768_A-12/bert_config.json" \
- --init_checkpoint "/data/xuht/multi_cased_L-12_H-768_A-12/bert_model.ckpt" \
+ --init_checkpoint "/data/xuht/lazada/20190107/model/model_3.ckpt" \
  --vocab_file "/data/xuht/multi_cased_L-12_H-768_A-12/vocab.txt" \
  --label_id "/data/xuht/lazada/label_dict.json" \
  --train_file "/data/xuht/lazada/20190107/train_tf_records" \
