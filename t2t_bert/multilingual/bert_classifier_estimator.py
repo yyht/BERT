@@ -66,13 +66,13 @@ def classifier_model_fn_builder(
 		tvars = model_io_fn.get_params(scope)
 		update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 
-		if mode == tf.estimator.ModeKeys.TRAIN:
-			model_io_fn.print_params(tvars, string=", trainable params")
-			with tf.control_dependencies(update_ops):
-				optimizer_fn = optimizer.Optimizer(opt_config)
-				train_op = optimizer_fn.get_train_op(loss, tvars, 
-								opt_config.init_lr, 
-								opt_config.num_train_steps)
+		# if mode == tf.estimator.ModeKeys.TRAIN:
+		# 	model_io_fn.print_params(tvars, string=", trainable params")
+		# 	with tf.control_dependencies(update_ops):
+		# 		optimizer_fn = optimizer.Optimizer(opt_config)
+		# 		train_op = optimizer_fn.get_train_op(loss, tvars, 
+		# 						opt_config.init_lr, 
+		# 						opt_config.num_train_steps)
 
 		print(logits.get_shape(), "===logits shape===")
 		pred_label = tf.argmax(logits, axis=-1, output_type=tf.int32)
