@@ -127,7 +127,7 @@ def main():
 	features = []
 
 	for candidate in candidate_lst:
-		feature = get_single_features(query, candidate, 500)
+		feature = get_single_features(query, candidate, 128)
 		features.append(feature)
 
 	if FLAGS.input_keys == "instances":
