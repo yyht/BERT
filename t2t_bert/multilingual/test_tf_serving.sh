@@ -1,4 +1,4 @@
-python test_tf_serving.py \
+CUDA_VISIBLE_DEVICES="" python test_tf_serving.py \
 	--vocab "/data/xuht/multi_cased_L-12_H-768_A-12/vocab.txt" \
 	--url "10.183.20.12" \
 	--port "7901" \
