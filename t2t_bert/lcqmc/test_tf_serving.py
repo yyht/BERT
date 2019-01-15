@@ -120,7 +120,11 @@ def get_single_features(query, sent, max_seq_length):
 def main():
 
 	query = u"银行转证券怎么转"
-	candidate_lst = 10*[u"银行转证券怎么才能转过去"]
+	candidate_lst = [u"银行转证券怎么才能转过去", 
+					u"证券怎么转银行",
+					u"我无法从银行转账到证券怎么办",
+					u"银行转证券失败",
+					u"好好学习，天天向上"]
 
 	features = []
 
