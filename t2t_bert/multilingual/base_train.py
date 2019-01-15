@@ -333,9 +333,9 @@ def main(_):
 		print("===========begin to train============")    
 
 		if hvd.rank() == 0:
-			model_io_fn.save_model(sess, FLAGS.model_output+"/model_{}.ckpt".format(int(i/num_storage_steps)))
-			print("==successful storing model=={}".format(int(i/num_storage_steps)))
-		    
+			model_io_fn.save_model(sess, FLAGS.model_output+"/model_{}.ckpt".format(int(0/1)))
+			print("==successful storing model=={}".format(int(0/1)))
+
 		# train_fn(train_dict)
 		# if hvd.rank() == 0:
 		# 	model_io_fn.save_model(sess, FLAGS.model_output+"/model.ckpt")
