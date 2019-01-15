@@ -305,7 +305,7 @@ def main(_):
 					i += 1
 					cnt += 1
 					
-					if np.mod(i, num_storage_steps) == 0:
+					if np.mod(i, 1) == 0:
 						string = ""
 						for key in loss_dict:
 							tmp = key + " " + str(loss_dict[key]/cnt) + "\t"
@@ -313,8 +313,8 @@ def main(_):
 						print(string)
 						monitoring_train.append(loss_dict)
 
-						eval_finial_dict = run_eval(int(i/num_storage_steps))
-						monitoring_eval.append(eval_finial_dict)
+						# eval_finial_dict = run_eval(int(i/num_storage_steps))
+						# monitoring_eval.append(eval_finial_dict)
 
 						for key in loss_dict:
 							loss_dict[key] = 0.0
@@ -322,7 +322,7 @@ def main(_):
 							model_io_fn.save_model(sess, FLAGS.model_output+"/model_{}.ckpt".format(int(i/num_storage_steps)))
 							print("==successful storing model=={}".format(int(i/num_storage_steps)))
 						cnt = 0
-
+					break
 				except tf.errors.OutOfRangeError:
 					if hvd.rank() == 0:
 						import _pickle as pkl
@@ -330,11 +330,7 @@ def main(_):
 							"eval":monitoring_eval}, open(FLAGS.model_output+"/monitoring.pkl", "wb"))
 
 					break
-		print("===========begin to train============")    
-
-		# if hvd.rank() == 0:
-		# 	model_io_fn.save_model(sess, FLAGS.model_output+"/model_{}.ckpt".format(int(0/1)))
-		# 	print("==successful storing model=={}".format(int(0/1)))
+		print("===========begin to train============")
 
 		train_fn(train_dict)
 		if hvd.rank() == 0:
