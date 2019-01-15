@@ -4,4 +4,5 @@ python test_tf_serving.py \
 	--port "7901" \
 	--model_name "bert" \
 	--input_keys "instances" \
-	--signature_name "serving_default"
+	--signature_name "serving_default" \
+	--version "1547099882"
