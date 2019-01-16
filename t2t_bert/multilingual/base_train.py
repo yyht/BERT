@@ -321,8 +321,8 @@ def main(_):
 						print("==successful storing model=={}".format(int(i/num_storage_steps)))
 						cnt = 0
 
-						eval_finial_dict = run_eval(int(i/num_storage_steps))
-						monitoring_eval.append(eval_finial_dict)
+						# eval_finial_dict = run_eval(int(i/num_storage_steps))
+						# monitoring_eval.append(eval_finial_dict)
 
 						for key in loss_dict:
 							loss_dict[key] = 0.0
