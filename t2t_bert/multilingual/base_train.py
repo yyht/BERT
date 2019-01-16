@@ -81,7 +81,7 @@ flags.DEFINE_integer(
 	"Input TF example files (can be a glob or comma separated).")
 
 flags.DEFINE_integer(
-	"train_size", 760760,
+	"train_size", 1402171,
 	"Input TF example files (can be a glob or comma separated).")
 
 flags.DEFINE_integer(
@@ -305,7 +305,7 @@ def main(_):
 					i += 1
 					cnt += 1
 					
-					if np.mod(i, num_storage_steps) == 0:
+					if np.mod(i, 100) == 0:
 						string = ""
 						for key in loss_dict:
 							tmp = key + " " + str(loss_dict[key]/cnt) + "\t"
@@ -330,8 +330,7 @@ def main(_):
 							"eval":monitoring_eval}, open(FLAGS.model_output+"/monitoring.pkl", "wb"))
 
 					break
-		print("===========begin to train============")    
-
+		print("===========begin to train============")        
 		train_fn(train_dict)
 		if hvd.rank() == 0:
 			model_io_fn.save_model(sess, FLAGS.model_output+"/model.ckpt")
