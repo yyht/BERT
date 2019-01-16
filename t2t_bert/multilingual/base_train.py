@@ -315,15 +315,17 @@ def main(_):
 						print(string)
 						monitoring_train.append(loss_dict)
 
+						if hvd.rank() == 0:
+							model_io_fn.save_model(sess, FLAGS.model_output+"/model_{}.ckpt".format(int(i/num_storage_steps)))
+						
+						print("==successful storing model=={}".format(int(i/num_storage_steps)))
+						cnt = 0
+
 						eval_finial_dict = run_eval(int(i/num_storage_steps))
 						monitoring_eval.append(eval_finial_dict)
 
 						for key in loss_dict:
 							loss_dict[key] = 0.0
-
-						model_io_fn.save_model(sess, FLAGS.model_output+"/model_{}_{}.ckpt".format(int(i/num_storage_steps), hvd.rank()))
-						print("==successful storing model=={}".format(int(i/num_storage_steps)))
-						cnt = 0
 
 				except tf.errors.OutOfRangeError:
 					if hvd.rank() == 0:
