@@ -266,8 +266,8 @@ def main(_):
 								eval_total_dict[key] += eval_result[key]
 
 					i += 1
-					if i == 100:
-						break
+					# if i == 100:
+					# 	break
 				except tf.errors.OutOfRangeError:
 					print("End of dataset")
 					break
