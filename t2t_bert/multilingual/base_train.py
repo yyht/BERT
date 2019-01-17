@@ -230,14 +230,14 @@ def main(_):
 
 		def run_eval(steps):
 			import _pickle as pkl
-			eval_features = tf_data_utils.eval_input_fn(
-										FLAGS.dev_file,
-										_decode_record, 
-										name_to_features, params)
-			[_, eval_loss, 
-			eval_per_example_loss, eval_logits] = model_eval_fn(eval_features, [], tf.estimator.ModeKeys.EVAL)
-			eval_dict = metric_fn(eval_features, eval_logits, eval_loss)
-			sess.run(tf.local_variables_initializer())
+			# eval_features = tf_data_utils.eval_input_fn(
+			# 							FLAGS.dev_file,
+			# 							_decode_record, 
+			# 							name_to_features, params)
+			# [_, eval_loss, 
+			# eval_per_example_loss, eval_logits] = model_eval_fn(eval_features, [], tf.estimator.ModeKeys.EVAL)
+			# eval_dict = metric_fn(eval_features, eval_logits, eval_loss)
+			# sess.run(tf.local_variables_initializer())
 			eval_finial_dict = eval_fn(eval_dict)
 			if hvd.rank() == 0:
 				pkl.dump(eval_finial_dict, open(FLAGS.model_output+"/eval_dict_{}.pkl".format(steps), "wb"))
@@ -307,7 +307,7 @@ def main(_):
 					i += 1
 					cnt += 1
 					
-					if np.mod(i, 100) == 0:
+					if np.mod(i, num_storage_steps) == 0:
 						string = ""
 						for key in loss_dict:
 							tmp = key + " " + str(loss_dict[key]/cnt) + "\t"
