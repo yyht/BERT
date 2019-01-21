@@ -49,3 +49,4 @@ def main(_):
 		saver.restore(sess, FLAGS.input_checkpoint)
 		saver.save(sess, FLAGS.output_checkpoint)
 
+
