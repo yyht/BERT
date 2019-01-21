@@ -49,7 +49,8 @@ def main(_):
 	with graph.as_default():
 		import json
 
-		sess = tf.Session(log_device_placement=True)
+		sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True, 
+                                        log_device_placement=True))
 				
 		saver = tf.train.import_meta_graph(FLAGS.meta, clear_devices=True)
 		print("==succeeded in loading meta graph==")
@@ -61,7 +62,7 @@ def main(_):
 		summary_op = tf.merge_all_summaries()
 		summary_writer = tf.train.SummaryWriter(FLAGS.log_directory, graph_def=sess.graph_def)
 
-		
+
 
 if __name__ == "__main__":
 	tf.app.run()
