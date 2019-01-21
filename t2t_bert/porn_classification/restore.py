@@ -44,6 +44,8 @@ def main(_):
 	graph = tf.Graph()
 	with graph.as_default():
 		import json
+
+		sess = tf.Session()
 				
 		saver = tf.train.import_meta_graph(FLAGS.meta, clear_devices=True)
 		saver.restore(sess, FLAGS.input_checkpoint)
