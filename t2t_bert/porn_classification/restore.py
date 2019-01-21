@@ -54,4 +54,7 @@ def main(_):
 		saver.save(sess, FLAGS.output_checkpoint)
 		print("==succeeded in restoring model==")
 
+if __name__ == "__main__":
+	tf.app.run()
+
 
