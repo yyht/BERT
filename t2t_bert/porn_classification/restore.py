@@ -63,7 +63,7 @@ def main(_):
 		print("==succeeded in loading model==")
 		saver.save(sess, FLAGS.output_checkpoint)
 		print("==succeeded in restoring model==")
-		saver.export_meta_graph(FLAGS.output_meta_graph)
+		saver.export_meta_graph(FLAGS.output_meta_graph, clear_devices=True)
 
 if __name__ == "__main__":
 	tf.app.run()
