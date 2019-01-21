@@ -43,6 +43,10 @@ flags.DEFINE_string(
 	"log_directory", None,
 	"Input TF example files (can be a glob or comma separated).")
 
+flags.DEFINE_string(
+	"output_meta_graph", None,
+	"Input TF example files (can be a glob or comma separated).")
+
 def main(_):
 
 	graph = tf.Graph()
@@ -59,6 +63,7 @@ def main(_):
 		print("==succeeded in loading model==")
 		saver.save(sess, FLAGS.output_checkpoint)
 		print("==succeeded in restoring model==")
+		saver.export_meta_graph(FLAGS.output_meta_graph)
 
 if __name__ == "__main__":
 	tf.app.run()
