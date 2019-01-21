@@ -48,7 +48,10 @@ def main(_):
 		sess = tf.Session()
 				
 		saver = tf.train.import_meta_graph(FLAGS.meta, clear_devices=True)
+		print("==succeeded in loading meta graph==")
 		saver.restore(sess, FLAGS.input_checkpoint)
+		print("==succeeded in loading model==")
 		saver.save(sess, FLAGS.output_checkpoint)
+		print("==succeeded in restoring model==")
 
 
