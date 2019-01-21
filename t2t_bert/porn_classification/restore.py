@@ -39,13 +39,17 @@ flags.DEFINE_string(
 	"output_checkpoint", None,
 	"Input TF example files (can be a glob or comma separated).")
 
+flags.DEFINE_string(
+	"log_directory", None,
+	"Input TF example files (can be a glob or comma separated).")
+
 def main(_):
 
 	graph = tf.Graph()
 	with graph.as_default():
 		import json
 
-		sess = tf.Session()
+		sess = tf.Session(log_device_placement=True)
 				
 		saver = tf.train.import_meta_graph(FLAGS.meta, clear_devices=True)
 		print("==succeeded in loading meta graph==")
@@ -53,6 +57,11 @@ def main(_):
 		print("==succeeded in loading model==")
 		saver.save(sess, FLAGS.output_checkpoint)
 		print("==succeeded in restoring model==")
+
+		summary_op = tf.merge_all_summaries()
+		summary_writer = tf.train.SummaryWriter(FLAGS.log_directory, graph_def=sess.graph_def)
+
+		
 
 if __name__ == "__main__":
 	tf.app.run()
