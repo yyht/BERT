@@ -52,17 +52,13 @@ def main(_):
 		sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True, 
                                         log_device_placement=True))
 				
-		saver = tf.train.import_meta_graph(FLAGS.meta, clear_devices=True)
+		# saver = tf.train.import_meta_graph(FLAGS.meta, clear_devices=True)
+		saver = tf.train.import_meta_graph(FLAGS.meta)
 		print("==succeeded in loading meta graph==")
 		saver.restore(sess, FLAGS.input_checkpoint)
 		print("==succeeded in loading model==")
 		saver.save(sess, FLAGS.output_checkpoint)
 		print("==succeeded in restoring model==")
-
-		summary_op = tf.merge_all_summaries()
-		summary_writer = tf.train.SummaryWriter(FLAGS.log_directory, graph_def=sess.graph_def)
-
-
 
 if __name__ == "__main__":
 	tf.app.run()
