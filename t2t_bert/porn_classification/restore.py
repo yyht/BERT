@@ -46,6 +46,7 @@ def main(_):
 		import json
 				
 		saver = tf.train.import_meta_graph(FLAGS.meta, clear_devices=True)
-  		saver.restore(sess, FLAGS.input_checkpoint)
-  		saver.save(sess, FLAGS.output_checkpoint)
+		saver.restore(sess, FLAGS.input_checkpoint)
+		saver.save(sess, FLAGS.output_checkpoint)
+
 
