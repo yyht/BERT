@@ -5,4 +5,4 @@ python test_tf_serving.py \
 	--model_name "bert" \
 	--input_keys "instances" \
 	--signature_name "serving_default" \
-	--versions "1547554905"
+	--versions "1548673483"
