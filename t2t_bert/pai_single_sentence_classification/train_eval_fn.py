@@ -280,7 +280,7 @@ def train_eval_fn(FLAGS,
 		if sync_replicas_hook:
 			hooks.append(sync_replicas_hook)
 
-		sess.run(init_op)
+		# sess.run(init_op)
 		step = sess.run(tf.train.get_global_step())
 		print(step)
 
