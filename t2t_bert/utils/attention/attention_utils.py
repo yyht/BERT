@@ -26,16 +26,16 @@ def query_context_alignment(query, context,
 									shape=[hidden_dim, hidden_dim],
 									initializer=initializer)
 
-		weighted_query = tf.tensordot(query, attn_W, axes=[[2], [0]])
+		weighted_query = tf.tensordot(query, attn_W, axes=[[2], [0]]) # batch x q_len x hidden_dim
 
 		S = tf.matmul(weighted_query, context_)  # batch x q_len x c_len
 
-		mask_q = tf.expand_dims(query_mask, 1)
-		mask_c = tf.expand_dims(context_mask, 1)
+		mask_q = tf.expand_dims(query_mask, 1) # batch x 1 x q_len 
+		mask_c = tf.expand_dims(context_mask, 1) # batch x 1 x c_len
 
 		# S_ = tf.nn.softmax(mask_logits(S, mask = mask_c))
-		S_ = tf.exp(tf.nn.log_softmax(mask_logits(S, mask = mask_c)))
-		query_attn = tf.matmul(S_, context)
+		S_ = tf.exp(tf.nn.log_softmax(mask_logits(S, mask = mask_c))) # batch x q_len x c_len
+		query_attn = tf.matmul(S_, context) # batch x q_len x hidden_dim
 
 		S_T = tf.exp(tf.nn.log_softmax(mask_logits(tf.transpose(S, [0,2,1]), mask = mask_q)))
 		context_attn = tf.matmul(S_T, query)

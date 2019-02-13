@@ -51,7 +51,7 @@ class RuleMatch(object):
 
 	def add_rule(self, tokenizer):
 		for item in self.rule_data:
-			self.rule_match_api.add_keyword(tokenizer.tokenize(item["word"]), [item["word"]["label"]])
+			self.rule_match_api.add_keyword(tokenizer.tokenize(item["word"]), [item["label"]])
 
 	def parse(self, sentence_lst, background_label="正常"):
 		output_lst = self.rule_match_api.extract_keywords(sentence_lst,
