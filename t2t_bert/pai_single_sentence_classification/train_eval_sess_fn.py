@@ -306,7 +306,7 @@ def train_eval_fn(FLAGS,
 		else:
 			print("==single sess==")
 			sess = tf.train.MonitoredTrainingSession(config=sess_config,
-												   hooks=[],
+												   hooks=None,
 												   checkpoint_dir=checkpoint_dir,
 												   save_checkpoint_steps=num_storage_steps)
 						
