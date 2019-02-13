@@ -32,7 +32,7 @@ class Optimizer(object):
 		self.global_step = tf.Variable(0, name="global_step", trainable=False, dtype=tf.int64)
 
 		num_warmup_steps = self.config.num_warmup_steps
-		global_steps_int = tf.cast(self.global_step, tf.int32)
+		global_steps_int = tf.cast(self.global_step, tf.int64)
 		warmup_steps_int = tf.constant(num_warmup_steps, dtype=tf.int64)
 
 		self.decay_global_step = tf.cond(global_steps_int < warmup_steps_int,
