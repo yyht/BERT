@@ -13,7 +13,6 @@ def model_fn_builder(
 					init_checkpoint,
 					model_reuse=None,
 					load_pretrained=True,
-					model_io_fn=None,
 					model_io_config={},
 					opt_config={},
 					exclude_scope="",
@@ -46,6 +45,8 @@ def model_fn_builder(
 											num_labels,
 											label_ids,
 											dropout_prob)
+
+		model_io_fn = model_io.ModelIO(model_io_config)
 
 		tvars = model_io_fn.get_params(model_config.scope, 
 										not_storage_params=not_storage_params)
