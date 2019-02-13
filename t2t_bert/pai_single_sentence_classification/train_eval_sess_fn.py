@@ -198,7 +198,9 @@ def train_eval_fn(FLAGS,
 												 save_checkpoint_steps=num_storage_steps)
 		else:
 			sess = tf.train.MonitoredTrainingSession(config=sess_config,
-                                           hooks=[])
+                                           hooks=[],
+                                           checkpoint_dir=checkpoint_dir,
+										   save_checkpoint_steps=num_storage_steps)
 		
 		def eval_fn(eval_dict, sess):
 			i = 0
