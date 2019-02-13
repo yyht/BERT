@@ -45,6 +45,9 @@ def model_fn_builder(
 											label_ids,
 											dropout_prob)
 
+		if not model_io_fn:
+			model_io_fn = model_io.ModelIO(model_io_config)
+
 		tvars = model_io_fn.get_params(model_config.scope, 
 										not_storage_params=not_storage_params)
 		if load_pretrained:
@@ -55,6 +58,10 @@ def model_fn_builder(
 		model_io_fn.set_saver(var_lst=tvars)
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
+
+			if not optimizer_fn:
+				optimizer_fn = optimizer.Optimizer(opt_config)
+
 			model_io_fn.print_params(tvars, string=", trainable params")
 			update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 			with tf.control_dependencies(update_ops):
