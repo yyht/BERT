@@ -55,7 +55,7 @@ def train_eval_fn(FLAGS,
 
 		num_eval_steps = int(FLAGS.eval_size / FLAGS.batch_size)
 
-		if is_debug:
+		if is_debug == "0":
 			num_storage_steps = 2
 			num_eval_steps = 10
 			num_train_steps = 10
@@ -256,7 +256,7 @@ def train_eval_fn(FLAGS,
 							loss_dict[key] = 0.0
 						cnt = 0
 
-					if is_debug:
+					if is_debug == "0":
 						if i == num_train_steps:
 							break
 
