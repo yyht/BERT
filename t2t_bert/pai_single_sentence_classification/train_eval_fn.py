@@ -101,7 +101,7 @@ def train_eval_fn(FLAGS,
 												not_storage_params=[],
 												target="")
 		if FLAGS.opt_type == "ps":
-			sync_replicas_hook = optimizer_fn.opt.make_session_run_hook(is_chief)
+			sync_replicas_hook = optimizer_fn.opt.make_session_run_hook(is_chief, num_tokens=0)
 		else:
 			sync_replicas_hook = []
 		
@@ -176,6 +176,25 @@ def train_eval_fn(FLAGS,
 		eval_op_dict = model_eval_fn(eval_features, [], tf.estimator.ModeKeys.EVAL)
 		eval_dict = eval_metric_fn(eval_features, eval_op_dict["eval"])
 		train_dict = train_metric_fn(train_features, train_op_dict["train"])
+
+		print("===========begin to train============")
+		sess_config = tf.ConfigProto(allow_soft_placement=False,
+									log_device_placement=False)
+
+		checkpoint_dir = checkpoint_dir if task_index == 0 else None
+
+		print("start training") 
+
+		hooks = [tf.train.StopAtStepHook(last_step=num_train_steps)]
+		if sync_replicas_hook:
+			hooks.append(sync_replicas_hook)
+
+		sess = tf.train.MonitoredTrainingSession(master=target,
+											 is_chief=is_chief,
+											 config=sess_config,
+											 hooks=[],
+											 checkpoint_dir=checkpoint_dir,
+											 save_checkpoint_steps=num_storage_steps)
 		
 		def eval_fn(eval_dict, sess):
 			i = 0
@@ -263,28 +282,35 @@ def train_eval_fn(FLAGS,
 				except tf.errors.OutOfRangeError:
 					print("==Succeeded in training model==")
 						
-		print("===========begin to train============")
-		sess_config = tf.ConfigProto(allow_soft_placement=False,
-									log_device_placement=False)
+		# print("===========begin to train============")
+		# sess_config = tf.ConfigProto(allow_soft_placement=False,
+		# 							log_device_placement=False)
 
-		checkpoint_dir = checkpoint_dir if task_index == 0 else None
+		# checkpoint_dir = checkpoint_dir if task_index == 0 else None
 
-		print("start training") 
+		# print("start training") 
 
-		hooks = [tf.train.StopAtStepHook(last_step=num_train_steps)]
-		if sync_replicas_hook:
-			hooks.append(sync_replicas_hook)
+		# hooks = [tf.train.StopAtStepHook(last_step=num_train_steps)]
+		# if sync_replicas_hook:
+		# 	hooks.append(sync_replicas_hook)
 
-		with tf.train.MonitoredTrainingSession(master=target,
-											 is_chief=is_chief,
-											 config=sess_config,
-											 hooks=[],
-											 checkpoint_dir=checkpoint_dir,
-											 save_checkpoint_steps=num_storage_steps) as sess:
-			step = sess.run(tf.train.get_global_step())
-			print(step)
-			train_fn(train_dict, sess)
+		# sess = tf.train.MonitoredTrainingSession(master=target,
+		# 									 is_chief=is_chief,
+		# 									 config=sess_config,
+		# 									 hooks=[],
+		# 									 checkpoint_dir=checkpoint_dir,
+		# 									 save_checkpoint_steps=num_storage_steps)
 
-			if task_index == 0:
-				print("===========begin to eval============")
-				eval_finial_dict = eval_fn(eval_dict, sess)
+		# with tf.train.MonitoredTrainingSession(master=target,
+		# 									 is_chief=is_chief,
+		# 									 config=sess_config,
+		# 									 hooks=[],
+		# 									 checkpoint_dir=checkpoint_dir,
+		# 									 save_checkpoint_steps=num_storage_steps) as sess:
+		step = sess.run(tf.train.get_global_step())
+		print(step)
+		train_fn(train_dict, sess)
+
+		if task_index == 0:
+			print("===========begin to eval============")
+			eval_finial_dict = eval_fn(eval_dict, sess)
