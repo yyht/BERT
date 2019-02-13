@@ -174,7 +174,7 @@ def train_eval_fn(FLAGS,
 											session_config=sess_config)
 		
 		estimator = tf.estimator.Estimator(
-				        model_fn=model_fn["estimator_spec"],
+				        model_fn=model_fn,
 				        config=run_config)
 
 		train_spec = tf.estimator.TrainSpec(input_fn=train_features, max_steps=num_train_steps)
