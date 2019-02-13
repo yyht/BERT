@@ -27,7 +27,8 @@ except Exception as e:
 class Optimizer(object):
 	def __init__(self, config, **kargs):
 		self.config = config
-		self.global_step = tf.train.get_or_create_global_step()
+		# self.global_step = tf.train.get_or_create_global_step()
+		self.global_step = tf.train.get_global_step()
 
 		num_warmup_steps = self.config.num_warmup_steps
 		global_steps_int = tf.cast(self.global_step, tf.int32)
@@ -175,6 +176,6 @@ class Optimizer(object):
 
 		train_op = self.opt.apply_gradients(
 					zip(grads, tvars), global_step=self.global_step)
-		new_global_step = self.global_step + 1
-		train_op = tf.group(train_op, [self.global_step.assign(new_global_step)])
+		# new_global_step = self.global_step + 1
+		# train_op = tf.group(train_op, [self.global_step.assign(new_global_step)])
 		return train_op
