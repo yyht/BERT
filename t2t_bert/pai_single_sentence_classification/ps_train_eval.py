@@ -112,8 +112,7 @@ def monitored_sess(worker_count,
 					checkpoint_dir)
 
 if __name__ == "__main__":
-	monitored_sess(FLAGS=FLAGS,
-					worker_count=1,
+	monitored_sess(worker_count=1,
 					task_index=0,
 					cluster="",
 					is_chief=0,
