@@ -9,10 +9,10 @@ CUDA_VISIBLE_DEVICES="0" python ps_train_eval.py \
  --model_output "/data/xuht/jd_comment/model/ps_test" \
  --epoch 2 \
  --num_classes 2 \
- --batch_size 32 \
+ --batch_size 64 \
  --if_shard "1" \
  --opt_type "" \
- --is_debug "0" \
+ --is_debug "1" \
  --train_size 33033 \
  --eval_size 8589
 

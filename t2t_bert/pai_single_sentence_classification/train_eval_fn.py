@@ -183,21 +183,7 @@ def train_eval_fn(FLAGS,
 
 		checkpoint_dir = checkpoint_dir if task_index == 0 else None
 
-		print("start training") 
-
-		# hooks = [tf.train.StopAtStepHook(last_step=num_train_steps)]
-		hooks = []
-		if sync_replicas_hook:
-			hooks.append(sync_replicas_hook)
-			sess = tf.train.MonitoredTrainingSession(master=target,
-												 is_chief=is_chief,
-												 config=sess_config,
-												 hooks=[],
-												 checkpoint_dir=checkpoint_dir,
-												 save_checkpoint_steps=num_storage_steps)
-		else:
-			sess = tf.train.MonitoredTrainingSession(config=sess_config,
-                                           hooks=[])
+		print("start training")
 		
 		def eval_fn(eval_dict, sess):
 			i = 0
@@ -284,32 +270,21 @@ def train_eval_fn(FLAGS,
 
 				except tf.errors.OutOfRangeError:
 					print("==Succeeded in training model==")
-						
-		# print("===========begin to train============")
-		# sess_config = tf.ConfigProto(allow_soft_placement=False,
-		# 							log_device_placement=False)
-
-		# checkpoint_dir = checkpoint_dir if task_index == 0 else None
-
-		# print("start training") 
 
 		# hooks = [tf.train.StopAtStepHook(last_step=num_train_steps)]
-		# if sync_replicas_hook:
-		# 	hooks.append(sync_replicas_hook)
-
-		# sess = tf.train.MonitoredTrainingSession(master=target,
-		# 									 is_chief=is_chief,
-		# 									 config=sess_config,
-		# 									 hooks=[],
-		# 									 checkpoint_dir=checkpoint_dir,
-		# 									 save_checkpoint_steps=num_storage_steps)
-
-		# with tf.train.MonitoredTrainingSession(master=target,
-		# 									 is_chief=is_chief,
-		# 									 config=sess_config,
-		# 									 hooks=[],
-		# 									 checkpoint_dir=checkpoint_dir,
-		# 									 save_checkpoint_steps=num_storage_steps) as sess:
+		hooks = []
+		if FLAGS.opt_type == "ps":
+			hooks.append(sync_replicas_hook)
+			sess = tf.train.MonitoredTrainingSession(master=target,
+												 is_chief=is_chief,
+												 config=sess_config,
+												 hooks=[],
+												 checkpoint_dir=checkpoint_dir,
+												 save_checkpoint_steps=num_storage_steps)
+		else:
+			sess = tf.train.MonitoredTrainingSession(config=sess_config,
+                                           hooks=[])
+						
 		step = sess.run(optimizer_fn.global_step)
 		print(step)
 		train_fn(train_dict, sess)
