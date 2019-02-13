@@ -76,8 +76,8 @@ flags.DEFINE_string(
 	"opt_type", "ps",
 	"Input TF example files (can be a glob or comma separated).")
 
-flags.DEFINE_bool(
-	"is_debug", False,
+flags.DEFINE_string(
+	"is_debug", "0",
 	"Input TF example files (can be a glob or comma separated).")
 
 def monitored_sess(worker_count, 
@@ -91,8 +91,6 @@ def monitored_sess(worker_count,
 				checkpoint_dir):
 	
 	sess_config = tf.ConfigProto()
-
-	print(FLAGS.is_debug, "=====is_debug=====")
 
 	if worker_count >= 1 and FLAGS.opt_type == "ps":
 		available_worker_device = "/job:worker/task:%d" % (task_index)
