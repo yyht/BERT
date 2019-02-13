@@ -250,6 +250,7 @@ def train_eval_fn(FLAGS,
 
 					for key in loss_dict:
 						loss_dict[key] = 0.0
+					cnt = 0
 
 				if is_debug:
 					if i == num_train_steps:
