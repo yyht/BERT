@@ -283,7 +283,7 @@ def train_eval_fn(FLAGS,
 											 hooks=[],
 											 checkpoint_dir=checkpoint_dir,
 											 save_checkpoint_steps=num_storage_steps)
-		sess.run(init_op)
+		# sess.run(init_op)
 
 		# with tf.train.MonitoredTrainingSession(master=target,
 		# 									 is_chief=is_chief,
