@@ -40,7 +40,7 @@ class Optimizer(object):
 		lr_decay = self.config.get("lr_decay", "polynomial_decay")
 		tf.logging.info(" lr decay method {}".format(lr_decay))
 		learning_rate = tf.constant(value=init_lr, shape=[], dtype=tf.float32, name="init_lr")
-		print(learning_rate.graph)
+		print(learning_rate.graph, self.global_step.graph)
 		end_learning_rate = self.config.get("end_learning_rate", 0.0)
 		if lr_decay == "polynomial_decay":
 			learning_rate = tf.train.polynomial_decay(
