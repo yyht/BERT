@@ -227,7 +227,7 @@ def train_eval_fn(FLAGS,
 					if key == "train_op":
 						continue
 					else:
-						if np.isnan(train_result[key]).any():
+						if np.isnan(train_result[key]):
 							print(train_loss, "get nan loss")
 							break
 						else:
