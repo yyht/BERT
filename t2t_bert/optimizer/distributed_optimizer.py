@@ -27,7 +27,7 @@ except Exception as e:
 class Optimizer(object):
 	def __init__(self, config, **kargs):
 		self.config = config
-		self.global_step = tf.train.get_or_create_global_step()
+		self.global_step = tf.train.get_or_create_global_step(tf.get_default_graph())
 
 		cond_fn = tf.less(self.global_step, tf.constant(self.config.num_warmup_steps, dtype=tf.int64))
 
