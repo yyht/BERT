@@ -7,7 +7,7 @@ import tensorflow as tf
 from optimizer import distributed_optimizer as optimizer
 from data_generator import distributed_tf_data_utils as tf_data_utils
 
-from .bert_model_fn import model_fn_builder
+from bert_model_fn import model_fn_builder
 
 import numpy as np
 import tensorflow as tf
