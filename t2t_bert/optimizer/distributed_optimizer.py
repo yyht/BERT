@@ -27,9 +27,7 @@ except Exception as e:
 class Optimizer(object):
 	def __init__(self, config, **kargs):
 		self.config = config
-		# self.global_step = tf.train.get_or_create_global_step()
-
-		self.global_step = tf.Variable(0, name="global_step", trainable=False, dtype=tf.int64)
+		self.global_step = tf.train.get_or_create_global_step()
 
 		num_warmup_steps = self.config.num_warmup_steps
 		global_steps_int = tf.cast(self.global_step, tf.int64)
@@ -167,6 +165,7 @@ class Optimizer(object):
 											replicas_to_aggregate=self.config.get("worker_count", 4), 
 											total_num_replicas=self.config.get("worker_count", 4))
 		else:
+			print("==initialization of single node optimizer==")
 			self.opt = self.optimizer_op(learning_rate, **kargs)
 
 	def get_train_op(self, loss, tvars, init_lr, num_train_steps, **kargs):

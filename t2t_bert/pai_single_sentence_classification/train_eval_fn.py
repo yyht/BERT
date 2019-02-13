@@ -307,7 +307,7 @@ def train_eval_fn(FLAGS,
 		# 									 hooks=[],
 		# 									 checkpoint_dir=checkpoint_dir,
 		# 									 save_checkpoint_steps=num_storage_steps) as sess:
-		step = sess.run(tf.train.get_global_step())
+		step = sess.run(optimizer_fn.global_step)
 		print(step)
 		train_fn(train_dict, sess)
 
