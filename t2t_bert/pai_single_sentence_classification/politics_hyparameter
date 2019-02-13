@@ -11,3 +11,5 @@ train_size=1402171
 num_classes=2
 epoch=2
 model_output=politics/pai_ps_model
+is_debug=1
+run_type=sess
