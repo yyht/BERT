@@ -300,11 +300,13 @@ def train_eval_fn(FLAGS,
 			sess_config.gpu_options.visible_device_list = str(hvd.local_rank())
 			sess = tf.train.MonitoredTrainingSession(checkpoint_dir=checkpoint_dir,
 												   hooks=hooks,
-												   config=sess_config)
+												   config=sess_config,
+												   save_checkpoint_steps=num_storage_steps)
 		else:
 			sess = tf.train.MonitoredTrainingSession(config=sess_config,
 												   hooks=hooks,
-												   checkpoint_dir=checkpoint_dir)
+												   checkpoint_dir=checkpoint_dir,
+												   save_checkpoint_steps=num_storage_steps)
 						
 		step = sess.run(optimizer_fn.global_step)
 		print(step)
