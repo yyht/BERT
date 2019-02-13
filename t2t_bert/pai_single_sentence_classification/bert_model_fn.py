@@ -14,6 +14,7 @@ def model_fn_builder(
 					model_reuse=None,
 					load_pretrained=True,
 					model_io_fn=None,
+					model_io_config={},
 					opt_config={},
 					exclude_scope="",
 					not_storage_params=[],
