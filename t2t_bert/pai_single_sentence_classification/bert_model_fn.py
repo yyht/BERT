@@ -64,7 +64,7 @@ def model_fn_builder(
 								loss=loss, train_op=train_op)
 
 				return {
-							"estimator_spec":output_spec, 
+							"estimator_spec":estimator_spec, 
 							"train":{
 										"loss":loss, 
 										"logits":logits,

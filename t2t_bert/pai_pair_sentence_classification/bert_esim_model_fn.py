@@ -237,7 +237,7 @@ def model_fn_builder(
 				estimator_spec = tf.estimator.EstimatorSpec(mode=mode, 
 								loss=loss, train_op=train_op)
 				return {
-							"estimator_spec":output_spec, 
+							"estimator_spec":estimator_spec, 
 							"train":{
 										"loss":loss, 
 										"logits":logits,
