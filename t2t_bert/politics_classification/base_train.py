@@ -288,7 +288,8 @@ def main(_):
 			monitoring_eval = []
 			while True:
 				try:
-					train_result = sess.run(op_dict)
+					[train_result, step] = sess.run([op_dict, tf.train.get_global_step()])
+					print(step)
 					for key in train_result:
 						if key == "train_op":
 							continue
