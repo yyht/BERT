@@ -125,7 +125,6 @@ def model_fn_builder(
 
 				eval_metric_ops = {
 									"f1": sentence_f,
-									"loss": sentence_mean_loss,
 									"acc":sentence_accuracy
 								}
 
