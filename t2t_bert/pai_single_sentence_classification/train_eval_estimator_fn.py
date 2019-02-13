@@ -100,6 +100,7 @@ def train_eval_fn(FLAGS,
 												not_storage_params=[],
 												target="",
 												output_type="estimator")
+		print(model_fn)
 
 		name_to_features = {
 				"input_ids":
