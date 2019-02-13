@@ -76,6 +76,10 @@ flags.DEFINE_string(
 	"opt_type", "ps",
 	"Input TF example files (can be a glob or comma separated).")
 
+flags.DEFINE_bool(
+	"is_debug", False,
+	"Input TF example files (can be a glob or comma separated).")
+
 def monitored_sess(worker_count, 
 				task_index, 
 				cluster, 
@@ -99,7 +103,8 @@ def monitored_sess(worker_count,
 							init_checkpoint,
 							train_file,
 							dev_file,
-							checkpoint_dir)
+							checkpoint_dir,
+							FLAGS.is_debug)
 	else:
 		train_eval_fn(FLAGS,
 					worker_count, 
@@ -109,7 +114,8 @@ def monitored_sess(worker_count,
 					init_checkpoint,
 					train_file,
 					dev_file,
-					checkpoint_dir)
+					checkpoint_dir,
+					FLAGS.is_debug)
 
 if __name__ == "__main__":
 	monitored_sess(worker_count=1,
