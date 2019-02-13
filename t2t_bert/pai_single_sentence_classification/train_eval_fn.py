@@ -277,7 +277,12 @@ def train_eval_fn(FLAGS,
 
 		init_op = tf.group(tf.global_variables_initializer(), 
 					tf.local_variables_initializer())
-		sess = tf.Session()
+		sess = tf.train.MonitoredTrainingSession(master=target,
+											 is_chief=is_chief,
+											 config=sess_config,
+											 hooks=[],
+											 checkpoint_dir=checkpoint_dir,
+											 save_checkpoint_steps=num_storage_steps)
 		sess.run(init_op)
 
 		# with tf.train.MonitoredTrainingSession(master=target,
