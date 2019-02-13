@@ -222,7 +222,6 @@ def train_eval_fn(FLAGS,
 				
 				i += 1
 				cnt += 1
-				print(i, "===train===", loss_dict)
 				
 				if np.mod(i, num_storage_steps) == 0:
 					string = ""
@@ -259,7 +258,7 @@ def train_eval_fn(FLAGS,
 	with tf.train.MonitoredTrainingSession(master=target,
 										 is_chief=is_chief,
 										 config=sess_config,
-										 hooks=hooks,
+										 hooks=[],
 										 checkpoint_dir=checkpoint_dir,
 										 save_checkpoint_steps=num_storage_steps) as sess:
 		while not sess.should_stop():
