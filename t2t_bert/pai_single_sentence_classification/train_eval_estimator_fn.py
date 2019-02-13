@@ -172,7 +172,7 @@ def train_eval_fn(FLAGS,
 											save_checkpoints_steps=num_storage_steps,
 											session_config=sess_config)
 		
-		estimator = tf.estimator.Estimator(
+		model_estimator = tf.estimator.Estimator(
 						model_fn=model_fn,
 						config=run_config)
 
@@ -183,7 +183,7 @@ def train_eval_fn(FLAGS,
 		# 								steps=num_eval_steps)
 
 		# tf.estimator.train_and_evaluate(estimator, train_spec, eval_spec)
-		tf.estimator.train(input_fn=train_features,
+		model_estimator.train(input_fn=train_features,
 						steps=num_train_steps,
 						hooks=hooks)
 		
