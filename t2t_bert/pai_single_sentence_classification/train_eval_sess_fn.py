@@ -79,7 +79,8 @@ def train_eval_fn(FLAGS,
 							"num_train_steps":num_train_steps,
 							"num_warmup_steps":num_warmup_steps,
 							"worker_count":worker_count,
-							"opt_type":FLAGS.opt_type})
+							"opt_type":FLAGS.opt_type,
+							"graph":graph})
 
 		model_io_config = Bunch({"fix_lm":False})
 		
