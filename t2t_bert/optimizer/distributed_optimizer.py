@@ -35,7 +35,7 @@ class Optimizer(object):
 									lambda:tf.constant(value=0, shape=[], dtype=tf.int64, name="initial_global_step"),
 									lambda:self.global_step-tf.constant(self.config.num_warmup_steps, dtype=tf.int64))
 
-		print(self.decay_global_step.graph, self.config["graph"])
+		print(self.decay_global_step.graph, self.config["graph"], tf.constant(self.config.num_warmup_steps, dtype=tf.int64).graph)
 
 	def lr_decay_fn(self, init_lr, num_train_steps,
 					**kargs):
