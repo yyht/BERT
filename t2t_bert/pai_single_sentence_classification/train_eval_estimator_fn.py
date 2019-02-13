@@ -34,7 +34,7 @@ def train_eval_fn(FLAGS,
 				checkpoint_dir,
 				is_debug):
 
-	graph = tf.Graph()
+	graph = tf.get_default_graph()
 	with graph.as_default():
 		import json
 				
