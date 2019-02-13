@@ -99,7 +99,8 @@ def train_eval_fn(FLAGS,
 												opt_config=opt_config,
 												exclude_scope="",
 												not_storage_params=[],
-												target="")
+												target="",
+												graph=graph)
 
 		name_to_features = {
 				"input_ids":
