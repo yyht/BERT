@@ -280,6 +280,10 @@ def train_eval_fn(FLAGS,
 		if sync_replicas_hook:
 			hooks.append(sync_replicas_hook)
 
+		sess.run(init_op)
+		step = sess.run(tf.train.get_global_step())
+		print(step)
+
 		with tf.train.MonitoredTrainingSession(master=target,
 											 is_chief=is_chief,
 											 config=sess_config,
