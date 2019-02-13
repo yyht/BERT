@@ -242,7 +242,7 @@ def train_eval_fn(FLAGS,
 					for key in loss_dict:
 						tmp = key + " " + str(loss_dict[key]/cnt) + "\t"
 						string += tmp
-					print(string)
+					print(string, optimizer_fn.global_step)
 					monitoring_train.append(loss_dict)
 
 					eval_finial_dict = eval_fn(eval_dict, sess)
