@@ -220,7 +220,7 @@ def train_eval_fn(FLAGS,
 		monitoring_eval = []
 		while True:
 			try:
-				step = sess.run(optimizer_fn.global_step)
+				step = sess.run(tf.train.get_or_create_global_step())
 				print(step)
 				train_result = sess.run([train_op_dict])
 				for key in train_result:
