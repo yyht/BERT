@@ -34,7 +34,7 @@ def train_eval_fn(FLAGS,
 				checkpoint_dir,
 				is_debug):
 
-	graph = tf.get_default_graph()
+	graph = tf.Graph()
 	with graph.as_default():
 		import json
 				
@@ -82,13 +82,14 @@ def train_eval_fn(FLAGS,
 							"opt_type":FLAGS.opt_type})
 
 		model_io_config = Bunch({"fix_lm":False})
+		model_io_fn = model_io.ModelIO(model_io_config)
 		
 		num_classes = FLAGS.num_classes
 
 		model_fn = model_fn_builder(config, num_classes, init_checkpoint, 
 												model_reuse=None, 
 												load_pretrained=True,
-												model_io_config=model_io_config, 
+												model_io_fn=model_io_fn, 
 												opt_config=opt_config,
 												exclude_scope="",
 												not_storage_params=[],
@@ -170,14 +171,12 @@ def train_eval_fn(FLAGS,
 						model_fn=model_fn,
 						config=run_config)
 
-		# train_spec = tf.estimator.TrainSpec(input_fn=train_features, 
-		# 								max_steps=num_train_steps)
+		train_spec = tf.estimator.TrainSpec(input_fn=train_features, 
+										max_steps=num_train_steps)
 
-		# eval_spec = tf.estimator.EvalSpec(input_fn=eval_features, 
-		# 								steps=num_eval_steps)
+		eval_spec = tf.estimator.EvalSpec(input_fn=eval_features, 
+										steps=num_eval_steps)
 
-		# tf.estimator.train_and_evaluate(estimator, train_spec, eval_spec)
-		model_estimator.train(input_fn=train_features,
-						steps=num_train_steps,
-						hooks=hooks)
+		tf.estimator.train_and_evaluate(estimator, train_spec, eval_spec)
+		
 		

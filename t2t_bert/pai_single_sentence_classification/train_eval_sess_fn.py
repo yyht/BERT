@@ -83,13 +83,14 @@ def train_eval_fn(FLAGS,
 							})
 
 		model_io_config = Bunch({"fix_lm":False})
+		model_io_fn = model_io.ModelIO(model_io_config)
 		
 		num_classes = FLAGS.num_classes
 
 		model_train_fn = model_fn_builder(config, num_classes, init_checkpoint, 
 												model_reuse=None, 
 												load_pretrained=True,
-												model_io_config=model_io_config, 
+												model_io_fn=model_io_fn, 
 												opt_config=opt_config,
 												exclude_scope="",
 												not_storage_params=[],
@@ -99,7 +100,7 @@ def train_eval_fn(FLAGS,
 		model_eval_fn = model_fn_builder(config, num_classes, init_checkpoint, 
 												model_reuse=True, 
 												load_pretrained=True,
-												model_io_config=model_io_config, 
+												model_io_fn=model_io_fn, 
 												opt_config=opt_config,
 												exclude_scope="",
 												not_storage_params=[],
