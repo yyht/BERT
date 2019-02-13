@@ -102,7 +102,7 @@ def train_eval_fn(FLAGS,
 	else:
 		sync_replicas_hook = []
 	
-	def metric_fn(features, eval_op_dict):
+	def eval_metric_fn(features, eval_op_dict):
 		logits = eval_op_dict["logits"]
 		print(logits.get_shape(), "===logits shape===")
 		pred_label = tf.argmax(logits, axis=-1, output_type=tf.int32)
@@ -115,6 +115,19 @@ def train_eval_fn(FLAGS,
 
 		return {"accuracy":accuracy, "loss":eval_op_dict["loss"], 
 				"pred_label":pred_label, "label_ids":features["label_ids"]}
+
+	def train_metric_fn(features, train_op_dict):
+		logits = train_op_dict["logits"]
+		print(logits.get_shape(), "===logits shape===")
+		pred_label = tf.argmax(logits, axis=-1, output_type=tf.int32)
+		prob = tf.nn.softmax(logits)
+		accuracy = correct = tf.equal(
+			tf.cast(pred_label, tf.int32),
+			tf.cast(features["label_ids"], tf.int32)
+		)
+		accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
+		return {"accuracy":accuracy, "loss":train_op_dict["loss"], 
+				"train_op":train_op_dict["train_op"]}
 	
 	name_to_features = {
 			"input_ids":
@@ -158,7 +171,8 @@ def train_eval_fn(FLAGS,
 	
 	train_op_dict = model_train_fn(train_features, [], tf.estimator.ModeKeys.TRAIN)
 	eval_op_dict = model_eval_fn(eval_features, [], tf.estimator.ModeKeys.EVAL)
-	eval_dict = metric_fn(eval_features, eval_op_dict["eval"])
+	eval_dict = eval_metric_fn(eval_features, eval_op_dict["eval"])
+	train_dict = train_metric_fn(train_features, train_op_dict["train"])
 	
 	def eval_fn(eval_dict, sess):
 		i = 0
@@ -261,9 +275,9 @@ def train_eval_fn(FLAGS,
 										 hooks=[],
 										 checkpoint_dir=checkpoint_dir,
 										 save_checkpoint_steps=num_storage_steps) as sess:
-		while not sess.should_stop():
-			train_fn(train_op_dict, sess)
+		# while not sess.should_stop():
+		train_fn(train_dict, sess)
 
-			if task_index == 0:
-				print("===========begin to eval============")
-				eval_finial_dict = eval_fn(eval_dict, sess)
+		if task_index == 0:
+			print("===========begin to eval============")
+			eval_finial_dict = eval_fn(eval_dict, sess)
