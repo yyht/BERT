@@ -99,7 +99,8 @@ def train_eval_fn(FLAGS,
 												opt_config=opt_config,
 												exclude_scope="",
 												not_storage_params=[],
-												target="")
+												target="",
+												output_type="sess")
 		
 		model_eval_fn = model_fn_builder(config, num_classes, init_checkpoint, 
 												model_reuse=True, 
@@ -110,7 +111,8 @@ def train_eval_fn(FLAGS,
 												opt_config=opt_config,
 												exclude_scope="",
 												not_storage_params=[],
-												target="")
+												target="",
+												output_type="sess")
 		
 		def eval_metric_fn(features, eval_op_dict):
 			logits = eval_op_dict["logits"]
