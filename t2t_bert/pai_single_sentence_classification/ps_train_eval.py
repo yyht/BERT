@@ -115,7 +115,7 @@ if __name__ == "__main__":
 	monitored_sess(worker_count=1,
 					task_index=0,
 					cluster="",
-					is_chief=0,
+					is_chief=True,
 					target="",
 					init_checkpoint=FLAGS.init_checkpoint,
 					train_file=FLAGS.train_file,
