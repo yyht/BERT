@@ -61,11 +61,11 @@ def model_fn_builder(
 								opt_config.init_lr, 
 								opt_config.num_train_steps)
 
-				estimator_spec = tf.estimator.EstimatorSpec(mode=mode, 
-								loss=loss, train_op=train_op)
+				# estimator_spec = tf.estimator.EstimatorSpec(mode=mode, 
+				# 				loss=loss, train_op=train_op)
 
 				return {
-							"estimator_spec":estimator_spec, 
+							# "estimator_spec":estimator_spec, 
 							"train":{
 										"loss":loss, 
 										"logits":logits,
@@ -128,12 +128,12 @@ def model_fn_builder(
 							logits, 
 							label_ids)
 			
-			estimator_spec = tf.estimator.EstimatorSpec(mode=mode, 
-								loss=loss,
-								eval_metric_ops=eval_metric_ops)
+			# estimator_spec = tf.estimator.EstimatorSpec(mode=mode, 
+			# 					loss=loss,
+			# 					eval_metric_ops=eval_metric_ops)
 
 			return {
-						"estimator_spec":estimator_spec, 
+						# "estimator_spec":estimator_spec, 
 						"eval":{
 							"per_example_loss":per_example_loss,
 							"logits":logits,
