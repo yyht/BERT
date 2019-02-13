@@ -130,12 +130,12 @@ def train_eval_fn(FLAGS,
 		params.epoch = FLAGS.epoch
 		params.batch_size = FLAGS.batch_size
 
-		train_features = tf_data_utils.train_input_fn(train_file,
+		train_features = lambda: tf_data_utils.train_input_fn(train_file,
 									_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,
 									worker_count=worker_count,
 									task_index=task_index)
 
-		eval_features = tf_data_utils.eval_input_fn(dev_file,
+		eval_features = lambda: tf_data_utils.eval_input_fn(dev_file,
 									_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,
 									worker_count=worker_count,
 									task_index=task_index)
