@@ -222,6 +222,7 @@ def train_eval_fn(FLAGS,
 				
 				i += 1
 				cnt += 1
+				print(i, "===train===", loss_dict)
 				
 				if np.mod(i, num_storage_steps) == 0:
 					string = ""
