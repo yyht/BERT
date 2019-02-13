@@ -273,6 +273,7 @@ def train_eval_fn(FLAGS,
 									log_device_placement=False)
 
 		checkpoint_dir = checkpoint_dir if task_index == 0 else None
+		print("==checkpoint_dir==", checkpoint_dir)
 
 		print("start training")
 
@@ -303,8 +304,9 @@ def train_eval_fn(FLAGS,
 												   config=sess_config,
 												   save_checkpoint_steps=num_storage_steps)
 		else:
+			print("==single sess==")
 			sess = tf.train.MonitoredTrainingSession(config=sess_config,
-												   hooks=hooks,
+												   hooks=[],
 												   checkpoint_dir=checkpoint_dir,
 												   save_checkpoint_steps=num_storage_steps)
 						

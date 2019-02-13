@@ -169,8 +169,8 @@ def train_eval_fn(FLAGS,
 			print("==not supported==")
 
 		run_config = tf.estimator.RunConfig(model_dir=checkpoint_dir, 
-										save_checkpoints_steps=num_storage_steps,
-										session_config=sess_config)
+											save_checkpoints_steps=num_storage_steps,
+											session_config=sess_config)
 		
 		estimator = tf.estimator.Estimator(
 				        model_fn=model_fn,
