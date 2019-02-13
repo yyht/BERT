@@ -27,7 +27,9 @@ except Exception as e:
 class Optimizer(object):
 	def __init__(self, config, **kargs):
 		self.config = config
-		self.global_step = tf.train.get_or_create_global_step()
+		# self.global_step = tf.train.get_or_create_global_step()
+
+		self.global_step = tf.Variable(0, name="global_step", trainable=False)
 
 		num_warmup_steps = self.config.num_warmup_steps
 		global_steps_int = tf.cast(self.global_step, tf.int32)
