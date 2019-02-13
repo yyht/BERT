@@ -27,20 +27,18 @@ except Exception as e:
 class Optimizer(object):
 	def __init__(self, config, **kargs):
 		self.config = config
-
-		global_step = tf.train.get_or_create_global_step()
+		self.global_step = tf.train.get_or_create_global_step()
 
 		num_warmup_steps = self.config.num_warmup_steps
-		global_steps_int = tf.cast(global_step, tf.int32)
+		global_steps_int = tf.cast(self.global_step, tf.int32)
 		warmup_steps_int = tf.constant(num_warmup_steps, dtype=tf.int32)
 
 		self.decay_global_step = tf.cond(global_steps_int < warmup_steps_int,
 									lambda:tf.cast(tf.constant(0), tf.int64),
-									lambda:global_step-tf.cast(warmup_steps_int, tf.int64))
+									lambda:self.global_step-tf.cast(warmup_steps_int, tf.int64))
 
 	def lr_decay_fn(self, init_lr, num_train_steps,
 					**kargs):
-		global_step = tf.train.get_or_create_global_step()
 		lr_decay = self.config.get("lr_decay", "polynomial_decay")
 		tf.logging.info(" lr decay method {}".format(lr_decay))
 		learning_rate = tf.constant(value=init_lr, shape=[], dtype=tf.float32)
@@ -81,9 +79,8 @@ class Optimizer(object):
 		return learning_rate
 
 	def warm_up(self, learning_rate, init_lr, **kargs):
-		global_step = tf.train.get_or_create_global_step()
 		num_warmup_steps = self.config.num_warmup_steps
-		global_steps_int = tf.cast(global_step, tf.int32)
+		global_steps_int = tf.cast(self.global_step, tf.int32)
 		warmup_steps_int = tf.constant(num_warmup_steps, dtype=tf.int32)
 
 		global_steps_float = tf.cast(global_steps_int, tf.float32)
@@ -98,7 +95,6 @@ class Optimizer(object):
 		return learning_rate
 
 	def grad_clip_fn(self, opt, loss, tvars, **kargs):
-		global_step = tf.train.get_or_create_global_step()
 		grads_and_vars = opt.compute_gradients(loss, tvars)
 		grads = [grad for grad, _ in grads_and_vars]
 		grad_clip = self.config.get("grad_clip", "global_norm")
@@ -120,7 +116,6 @@ class Optimizer(object):
 
 	def optimizer_op(self, learning_rate,
 							**kargs):
-		global_step = tf.train.get_or_create_global_step()
 		opt_type = self.config.get("train_op", "adam_decay")
 		tf.logging.info(" optimization method {}".format(opt_type))
 		if opt_type not in ["adam_decay", "adam"]:
@@ -149,7 +144,6 @@ class Optimizer(object):
 
 	def get_opt(self, init_lr, 
 				num_train_steps, **kargs):
-		global_step = tf.train.get_or_create_global_step()
 		learning_rate = self.lr_decay_fn(init_lr, num_train_steps, **kargs)
 		learning_rate = self.warm_up(learning_rate, init_lr, **kargs)
 		
@@ -174,13 +168,13 @@ class Optimizer(object):
 			self.opt = self.optimizer_op(learning_rate, **kargs)
 
 	def get_train_op(self, loss, tvars, init_lr, num_train_steps, **kargs):
-		global_step = tf.train.get_or_create_global_step()
+
 		self.get_opt(init_lr, num_train_steps)
 
 		grads = self.grad_clip_fn(self.opt, loss, tvars, **kargs)
 
 		train_op = self.opt.apply_gradients(
-					zip(grads, tvars), global_step=global_step)
-		new_global_step = global_step + 1
-		train_op = tf.group(train_op, [global_step.assign(new_global_step)])
+					zip(grads, tvars), global_step=self.global_step)
+		new_global_step = self.global_step + 1
+		train_op = tf.group(train_op, [self.global_step.assign(new_global_step)])
 		return train_op
