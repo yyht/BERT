@@ -177,6 +177,6 @@ def train_eval_fn(FLAGS,
 		eval_spec = tf.estimator.EvalSpec(input_fn=eval_features, 
 										steps=num_eval_steps)
 
-		tf.estimator.train_and_evaluate(estimator, train_spec, eval_spec)
+		tf.estimator.train_and_evaluate(model_estimator, train_spec, eval_spec)
 		
 		
