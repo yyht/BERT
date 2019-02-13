@@ -35,8 +35,6 @@ class Optimizer(object):
 									lambda:tf.constant(value=0, shape=[], dtype=tf.int64, name="initial_global_step"),
 									lambda:self.global_step-tf.constant(self.config.num_warmup_steps, dtype=tf.int64))
 
-		print(self.decay_global_step.graph, self.config["graph"], tf.constant(self.config.num_warmup_steps, dtype=tf.int64).graph)
-
 	def lr_decay_fn(self, init_lr, num_train_steps,
 					**kargs):
 		lr_decay = self.config.get("lr_decay", "polynomial_decay")
@@ -170,13 +168,13 @@ class Optimizer(object):
 			self.opt = self.optimizer_op(learning_rate, **kargs)
 
 	def get_train_op(self, loss, tvars, init_lr, num_train_steps, **kargs):
+		with self.config["graph"].as_default:
+			self.get_opt(init_lr, num_train_steps)
 
-		self.get_opt(init_lr, num_train_steps)
+			grads = self.grad_clip_fn(self.opt, loss, tvars, **kargs)
 
-		grads = self.grad_clip_fn(self.opt, loss, tvars, **kargs)
-
-		train_op = self.opt.apply_gradients(
-					zip(grads, tvars), global_step=self.global_step)
-		new_global_step = self.global_step + 1
-		train_op = tf.group(train_op, [self.global_step.assign(new_global_step)])
-		return train_op
+			train_op = self.opt.apply_gradients(
+						zip(grads, tvars), global_step=self.global_step)
+			new_global_step = self.global_step + 1
+			train_op = tf.group(train_op, [self.global_step.assign(new_global_step)])
+			return train_op
