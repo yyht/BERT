@@ -220,7 +220,7 @@ def train_eval_fn(FLAGS,
 		monitoring_eval = []
 		while True:
 			try:
-				train_result = sess.run(train_op_dict["train"])
+				train_result = sess.run(train_op_dict)
 				for key in train_result:
 					if key == "train_op":
 						continue
