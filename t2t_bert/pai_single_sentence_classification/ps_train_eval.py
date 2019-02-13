@@ -92,6 +92,8 @@ def monitored_sess(worker_count,
 	
 	sess_config = tf.ConfigProto()
 
+	print(FLAGS.is_debug, "=====is_debug=====")
+
 	if worker_count >= 1 and FLAGS.opt_type == "ps":
 		available_worker_device = "/job:worker/task:%d" % (task_index)
 		with tf.device(tf.train.replica_device_setter(worker_device=available_worker_device, cluster=cluster)):
