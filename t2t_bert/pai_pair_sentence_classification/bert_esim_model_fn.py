@@ -1,6 +1,3 @@
-import sys, os
-sys.path.append("..")
-
 from pai_encoder.bert_encoder import bert_encoder
 from model_io import model_io
 from task_module import classifier
