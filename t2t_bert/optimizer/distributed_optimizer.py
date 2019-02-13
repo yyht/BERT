@@ -30,14 +30,14 @@ class Optimizer(object):
 		self.global_step = tf.train.get_or_create_global_step()
 
 		self.decay_global_step = tf.cond(tf.cast(self.global_step, tf.int64) < tf.constant(self.config.num_warmup_steps, dtype=tf.int64),
-									lambda:tf.cast(tf.constant(0), tf.int64),
+									lambda:tf.constant(value=0, shape=[], dtype=tf.int64, name="initial_global_step"),
 									lambda:self.global_step-tf.constant(self.config.num_warmup_steps, dtype=tf.int64))
 
 	def lr_decay_fn(self, init_lr, num_train_steps,
 					**kargs):
 		lr_decay = self.config.get("lr_decay", "polynomial_decay")
 		tf.logging.info(" lr decay method {}".format(lr_decay))
-		learning_rate = tf.constant(value=init_lr, shape=[], dtype=tf.float32)
+		learning_rate = tf.constant(value=init_lr, shape=[], dtype=tf.float32, name="init_lr")
 		end_learning_rate = self.config.get("end_learning_rate", 0.0)
 		if lr_decay == "polynomial_decay":
 			learning_rate = tf.train.polynomial_decay(
