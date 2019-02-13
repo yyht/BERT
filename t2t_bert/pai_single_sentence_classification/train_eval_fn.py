@@ -178,6 +178,9 @@ def train_eval_fn(FLAGS,
 		train_dict = train_metric_fn(train_features, train_op_dict["train"])
 
 		sess = tf.Session()
+		init_op = tf.group(tf.global_variables_initializer(), 
+					tf.local_variables_initializer())
+		sess.run(init_op)
 		step = sess.run(tf.train.get_global_step())
 		print(step)
 		
