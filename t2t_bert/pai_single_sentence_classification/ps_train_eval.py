@@ -2,6 +2,7 @@
 import sys,os
 sys.path.append("..")
 
+import tensorflow as tf
 from train_eval_fn import train_eval_fn
 
 flags = tf.flags
