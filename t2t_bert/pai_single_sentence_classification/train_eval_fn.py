@@ -13,72 +13,8 @@ import json
 
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, classification_report
 
-flags = tf.flags
-
-FLAGS = flags.FLAGS
-
-## Required parameters
-flags.DEFINE_string(
-	"config_file", None,
-	"Input TF example files (can be a glob or comma separated).")
-
-flags.DEFINE_string(
-	"init_checkpoint", None,
-	"Input TF example files (can be a glob or comma separated).")
-
-flags.DEFINE_string(
-	"vocab_file", None,
-	"Input TF example files (can be a glob or comma separated).")
-
-flags.DEFINE_string(
-	"label_id", None,
-	"Input TF example files (can be a glob or comma separated).")
-
-flags.DEFINE_integer(
-	"max_length", 128,
-	"Input TF example files (can be a glob or comma separated).")
-
-flags.DEFINE_string(
-	"train_file", None,
-	"Input TF example files (can be a glob or comma separated).")
-
-flags.DEFINE_string(
-	"dev_file", None,
-	"Input TF example files (can be a glob or comma separated).")
-
-flags.DEFINE_string(
-	"model_output", None,
-	"Input TF example files (can be a glob or comma separated).")
-
-flags.DEFINE_integer(
-	"epoch", 5,
-	"Input TF example files (can be a glob or comma separated).")
-
-flags.DEFINE_integer(
-	"num_classes", 5,
-	"Input TF example files (can be a glob or comma separated).")
-
-flags.DEFINE_integer(
-	"train_size", 1402171,
-	"Input TF example files (can be a glob or comma separated).")
-
-flags.DEFINE_integer(
-	"batch_size", 32,
-	"Input TF example files (can be a glob or comma separated).")
-
-flags.DEFINE_string(
-	"model_type", None,
-	"Input TF example files (can be a glob or comma separated).")
-
-flags.DEFINE_string(
-	"if_shard", None,
-	"Input TF example files (can be a glob or comma separated).")
-
-flags.DEFINE_integer(
-	"eval_size", 1000,
-	"Input TF example files (can be a glob or comma separated).")
-
-def train_eval_fn(worker_count, 
+def train_eval_fn(FLAGS,
+				worker_count, 
 				task_index, 
 				is_chief, 
 				target,
