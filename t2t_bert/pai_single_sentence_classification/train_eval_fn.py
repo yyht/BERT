@@ -276,6 +276,7 @@ def train_eval_fn(FLAGS,
 		checkpoint_dir = checkpoint_dir if task_index == 0 else None
 
 		print("start training") 
+
 		hooks = [tf.train.StopAtStepHook(last_step=num_train_steps)]
 		if sync_replicas_hook:
 			hooks.append(sync_replicas_hook)

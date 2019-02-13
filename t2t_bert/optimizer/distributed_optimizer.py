@@ -24,19 +24,19 @@ try:
 except Exception as e:
 	hvd = None
 
+global_step = tf.train.get_or_create_global_step()
+
 class Optimizer(object):
 	def __init__(self, config, **kargs):
 		self.config = config
-		self.global_step = tf.train.get_or_create_global_step()
-		# self.global_step = tf.train.get_global_step()
 
 		num_warmup_steps = self.config.num_warmup_steps
-		global_steps_int = tf.cast(self.global_step, tf.int32)
+		global_steps_int = tf.cast(global_step, tf.int32)
 		warmup_steps_int = tf.constant(num_warmup_steps, dtype=tf.int32)
 
 		self.decay_global_step = tf.cond(global_steps_int < warmup_steps_int,
 									lambda:tf.cast(tf.constant(0), tf.int64),
-									lambda:self.global_step-tf.cast(warmup_steps_int, tf.int64))
+									lambda:global_step-tf.cast(warmup_steps_int, tf.int64))
 
 	def lr_decay_fn(self, init_lr, num_train_steps,
 					**kargs):
@@ -81,7 +81,7 @@ class Optimizer(object):
 
 	def warm_up(self, learning_rate, init_lr, **kargs):
 		num_warmup_steps = self.config.num_warmup_steps
-		global_steps_int = tf.cast(self.global_step, tf.int32)
+		global_steps_int = tf.cast(global_step, tf.int32)
 		warmup_steps_int = tf.constant(num_warmup_steps, dtype=tf.int32)
 
 		global_steps_float = tf.cast(global_steps_int, tf.float32)
@@ -175,7 +175,7 @@ class Optimizer(object):
 		grads = self.grad_clip_fn(self.opt, loss, tvars, **kargs)
 
 		train_op = self.opt.apply_gradients(
-					zip(grads, tvars), global_step=self.global_step)
-		# new_global_step = self.global_step + 1
-		# train_op = tf.group(train_op, [self.global_step.assign(new_global_step)])
+					zip(grads, tvars), global_step=global_step)
+		new_global_step = global_step + 1
+		train_op = tf.group(train_op, [global_step.assign(new_global_step)])
 		return train_op
