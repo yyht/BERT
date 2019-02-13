@@ -176,13 +176,6 @@ def train_eval_fn(FLAGS,
 		eval_op_dict = model_eval_fn(eval_features, [], tf.estimator.ModeKeys.EVAL)
 		eval_dict = eval_metric_fn(eval_features, eval_op_dict["eval"])
 		train_dict = train_metric_fn(train_features, train_op_dict["train"])
-
-		sess = tf.Session()
-		init_op = tf.group(tf.global_variables_initializer(), 
-					tf.local_variables_initializer())
-		sess.run(init_op)
-		step = sess.run(tf.train.get_global_step())
-		print(step)
 		
 		def eval_fn(eval_dict, sess):
 			i = 0
@@ -230,6 +223,8 @@ def train_eval_fn(FLAGS,
 			monitoring_eval = []
 			while True:
 				try:
+					step = sess.run(tf.train.get_global_step())
+					print(step)
 					[train_result] = sess.run([train_op_dict])
 					for key in train_result:
 						if key == "train_op":
@@ -281,10 +276,6 @@ def train_eval_fn(FLAGS,
 		if sync_replicas_hook:
 			hooks.append(sync_replicas_hook)
 
-		# sess.run(init_op)
-		step = sess.run(tf.train.get_global_step())
-		print(step)
-
 		with tf.train.MonitoredTrainingSession(master=target,
 											 is_chief=is_chief,
 											 config=sess_config,
@@ -294,7 +285,7 @@ def train_eval_fn(FLAGS,
 			# while not sess.should_stop():
 			step = sess.run(tf.train.get_global_step())
 			print(step)
-			# train_fn(train_dict, sess)
+			train_fn(train_dict, sess)
 
 			if task_index == 0:
 				print("===========begin to eval============")
