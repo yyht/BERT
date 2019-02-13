@@ -46,8 +46,8 @@ def main(_):
 			dev_file=dev_file,
 			checkpoint_dir=checkpoint_dir)
 
-	except Exception, e:
-		print("catch a exception: %s" % e.message)
+	except Exception:
+		print("catch a exception: %s" % "error")
 
 if __name__ == "__main__":
 	tf.app.run()
