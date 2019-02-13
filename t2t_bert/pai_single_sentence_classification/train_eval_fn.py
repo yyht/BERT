@@ -194,7 +194,7 @@ def train_eval_fn(FLAGS,
 		result = classification_report(label_id, pred_label, 
 			target_names=list(label_dict["label2id"].keys()))
 
-		print(result)
+		print(result, task_index)
 		eval_total_dict["classification_report"] = result
 		return eval_total_dict
 
@@ -223,7 +223,7 @@ def train_eval_fn(FLAGS,
 				i += 1
 				cnt += 1
 				
-				if np.mod(i, num_train_steps) == 0:
+				if np.mod(i, num_storage_steps) == 0:
 					string = ""
 					for key in loss_dict:
 						tmp = key + " " + str(loss_dict[key]/cnt) + "\t"
@@ -236,8 +236,7 @@ def train_eval_fn(FLAGS,
 
 					for key in loss_dict:
 						loss_dict[key] = 0.0
-					if is_debug:
-						break
+
 			except tf.errors.OutOfRangeError:
 				print("==Succeeded in training model==")
 					
