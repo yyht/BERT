@@ -4,6 +4,9 @@ from task_module import classifier
 import tensorflow as tf
 from metric import tf_metrics
 
+from optimizer import distributed_optimizer as optimizer
+from model_io import model_io
+
 def model_fn_builder(
 					model_config,
 					num_labels,
