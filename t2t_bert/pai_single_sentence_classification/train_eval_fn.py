@@ -275,27 +275,27 @@ def train_eval_fn(FLAGS,
 		if sync_replicas_hook:
 			hooks.append(sync_replicas_hook)
 
-		init_op = tf.group(tf.global_variables_initializer(), 
-					tf.local_variables_initializer())
-		sess = tf.train.MonitoredTrainingSession(master=target,
-											 is_chief=is_chief,
-											 config=sess_config,
-											 hooks=[],
-											 checkpoint_dir=checkpoint_dir,
-											 save_checkpoint_steps=num_storage_steps)
-		# sess.run(init_op)
-
-		# with tf.train.MonitoredTrainingSession(master=target,
+		# init_op = tf.group(tf.global_variables_initializer(), 
+		# 			tf.local_variables_initializer())
+		# sess = tf.train.MonitoredTrainingSession(master=target,
 		# 									 is_chief=is_chief,
 		# 									 config=sess_config,
 		# 									 hooks=[],
 		# 									 checkpoint_dir=checkpoint_dir,
-		# 									 save_checkpoint_steps=num_storage_steps) as sess:
-			# while not sess.should_stop():
-		step = sess.run(tf.train.get_global_step())
-		print(step)
-		train_fn(train_dict, sess)
+		# 									 save_checkpoint_steps=num_storage_steps)
+		# sess.run(init_op)
 
-		if task_index == 0:
-			print("===========begin to eval============")
-			eval_finial_dict = eval_fn(eval_dict, sess)
+		with tf.train.MonitoredTrainingSession(master=target,
+											 is_chief=is_chief,
+											 config=sess_config,
+											 hooks=[],
+											 checkpoint_dir=checkpoint_dir,
+											 save_checkpoint_steps=num_storage_steps) as sess:
+			# while not sess.should_stop():
+			step = sess.run(tf.train.get_global_step())
+			print(step)
+			train_fn(train_dict, sess)
+
+			if task_index == 0:
+				print("===========begin to eval============")
+				eval_finial_dict = eval_fn(eval_dict, sess)
