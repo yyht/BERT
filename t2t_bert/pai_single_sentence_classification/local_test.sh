@@ -6,7 +6,7 @@ CUDA_VISIBLE_DEVICES="0" python ps_train_eval.py \
  --train_file "/data/xuht/politics/train_tf_records" \
  --dev_file "/data/xuht/politics/test_tf_records" \
  --max_length 128 \
- --model_output "/data/xuht/politics/model" \
+ --model_output "/data/xuht/politics/model/ps_test" \
  --epoch 2 \
  --num_classes 2 \
  --batch_size 32 \
