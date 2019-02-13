@@ -34,7 +34,7 @@ def train_eval_fn(FLAGS,
 				checkpoint_dir,
 				is_debug):
 
-	graph = tf.Graph()
+	graph = tf.get_default_graph()
 	with graph.as_default():
 		import json
 				
@@ -100,7 +100,6 @@ def train_eval_fn(FLAGS,
 												not_storage_params=[],
 												target="",
 												output_type="estimator")
-		print(model_fn)
 
 		name_to_features = {
 				"input_ids":
@@ -132,15 +131,15 @@ def train_eval_fn(FLAGS,
 		params.epoch = FLAGS.epoch
 		params.batch_size = FLAGS.batch_size
 
-		# train_features = lambda: tf_data_utils.train_input_fn(train_file,
-		# 							_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,
-		# 							worker_count=worker_count,
-		# 							task_index=task_index)
+		train_features = lambda: tf_data_utils.train_input_fn(train_file,
+									_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,
+									worker_count=worker_count,
+									task_index=task_index)
 
-		# eval_features = lambda: tf_data_utils.eval_input_fn(dev_file,
-		# 							_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,
-		# 							worker_count=worker_count,
-		# 							task_index=task_index)
+		eval_features = lambda: tf_data_utils.eval_input_fn(dev_file,
+									_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,
+									worker_count=worker_count,
+									task_index=task_index)
 
 		print("===========begin to train============")
 		sess_config = tf.ConfigProto(allow_soft_placement=False,
@@ -154,7 +153,6 @@ def train_eval_fn(FLAGS,
 		if FLAGS.opt_type == "ps":
 			sync_replicas_hook = optimizer_fn.opt.make_session_run_hook(is_chief, num_tokens=0)
 			hooks.append(sync_replicas_hook)
-			
 		elif FLAGS.opt_type == "pai_soar" and pai:
 			sess = tf.train.MonitoredTrainingSession(master=target,
 												 is_chief=is_chief,
@@ -178,19 +176,10 @@ def train_eval_fn(FLAGS,
 				        model_fn=model_fn,
 				        config=run_config)
 
-		train_spec = tf.estimator.TrainSpec(
-										input_fn=lambda: tf_data_utils.train_input_fn(train_file,
-															_decode_record, name_to_features, params, 
-															if_shard=FLAGS.if_shard,
-															worker_count=worker_count,
-															task_index=task_index), 
+		train_spec = tf.estimator.TrainSpec(input_fn=train_features, 
 										max_steps=num_train_steps)
-		eval_spec = tf.estimator.EvalSpec(
-										input_fn=lambda: tf_data_utils.eval_input_fn(dev_file,
-															_decode_record, name_to_features, params, 
-															if_shard=FLAGS.if_shard,
-															worker_count=worker_count,
-															task_index=task_index), 
+
+		eval_spec = tf.estimator.EvalSpec(input_fn=eval_features, 
 										steps=num_eval_steps)
 
 		tf.estimator.train_and_evaluate(estimator, train_spec, eval_spec)
