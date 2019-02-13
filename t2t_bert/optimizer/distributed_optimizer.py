@@ -168,7 +168,7 @@ class Optimizer(object):
 			self.opt = self.optimizer_op(learning_rate, **kargs)
 
 	def get_train_op(self, loss, tvars, init_lr, num_train_steps, **kargs):
-		with self.config["graph"].as_default:
+		with self.config["graph"].as_default():
 			self.get_opt(init_lr, num_train_steps)
 
 			grads = self.grad_clip_fn(self.opt, loss, tvars, **kargs)
