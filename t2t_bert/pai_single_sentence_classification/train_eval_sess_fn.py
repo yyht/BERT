@@ -79,22 +79,16 @@ def train_eval_fn(FLAGS,
 							"num_train_steps":num_train_steps,
 							"num_warmup_steps":num_warmup_steps,
 							"worker_count":worker_count,
-							"opt_type":FLAGS.opt_type,
-							"graph":graph})
+							"opt_type":FLAGS.opt_type
+							})
 
 		model_io_config = Bunch({"fix_lm":False})
-		
-		model_io_fn = model_io.ModelIO(model_io_config)
-
-		optimizer_fn = optimizer.Optimizer(opt_config)
 		
 		num_classes = FLAGS.num_classes
 
 		model_train_fn = model_fn_builder(config, num_classes, init_checkpoint, 
 												model_reuse=None, 
 												load_pretrained=True,
-												model_io_fn=model_io_fn,
-												optimizer_fn=optimizer_fn,
 												model_io_config=model_io_config, 
 												opt_config=opt_config,
 												exclude_scope="",
@@ -105,8 +99,6 @@ def train_eval_fn(FLAGS,
 		model_eval_fn = model_fn_builder(config, num_classes, init_checkpoint, 
 												model_reuse=True, 
 												load_pretrained=True,
-												model_io_fn=model_io_fn,
-												optimizer_fn=optimizer_fn,
 												model_io_config=model_io_config, 
 												opt_config=opt_config,
 												exclude_scope="",
