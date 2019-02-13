@@ -36,8 +36,8 @@ class Optimizer(object):
 		warmup_steps_int = tf.constant(num_warmup_steps, dtype=tf.int32)
 
 		self.decay_global_step = tf.cond(global_steps_int < warmup_steps_int,
-									lambda:tf.cast(tf.constant(0), tf.int64),
-									lambda:self.global_step-tf.cast(warmup_steps_int, tf.int64))
+									lambda:tf.cast(tf.constant(0), tf.int32),
+									lambda:self.global_step-tf.cast(warmup_steps_int, tf.int32))
 
 	def lr_decay_fn(self, init_lr, num_train_steps,
 					**kargs):
