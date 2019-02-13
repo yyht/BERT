@@ -14,6 +14,7 @@ CUDA_VISIBLE_DEVICES="0" python ps_train_eval.py \
  --opt_type "" \
  --is_debug "1" \
  --train_size 33033 \
- --eval_size 8589
+ --eval_size 8589 \
+ --run_type "sess"
 
  
