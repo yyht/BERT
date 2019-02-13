@@ -11,5 +11,6 @@ CUDA_VISIBLE_DEVICES="0" python ps_train_eval.py \
  --num_classes 2 \
  --batch_size 32 \
  --if_shard "1" \
+ --opt_type ""
 
  
