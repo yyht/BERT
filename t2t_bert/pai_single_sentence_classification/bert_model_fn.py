@@ -16,7 +16,8 @@ def model_fn_builder(
 					opt_config={},
 					exclude_scope="",
 					not_storage_params=[],
-					target="a"):
+					target="a",
+					label_lst=None):
 
 	def model_fn(features, labels, mode):
 		model = bert_encoder(model_config, features, labels,

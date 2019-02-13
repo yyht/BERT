@@ -150,7 +150,8 @@ def model_fn_builder(
 					opt_config={},
 					exclude_scope="",
 					not_storage_params=[],
-					target=["a", "b"]):
+					target=["a", "b"],
+					label_lst=None):
 
 	def model_fn(features, labels, mode):
 
