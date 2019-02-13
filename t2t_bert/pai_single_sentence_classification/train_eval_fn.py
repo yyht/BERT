@@ -224,6 +224,7 @@ def train_eval_fn(FLAGS,
 			while True:
 				try:
 					[train_result] = sess.run([train_op_dict])
+					step = sess.run(tf.train.get_global_step())
 					for key in train_result:
 						if key == "train_op":
 							continue
