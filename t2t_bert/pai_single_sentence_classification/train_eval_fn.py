@@ -280,7 +280,7 @@ def train_eval_fn(FLAGS,
 											 checkpoint_dir=checkpoint_dir,
 											 save_checkpoint_steps=num_storage_steps) as sess:
 			# while not sess.should_stop():
-			step = sess.run(tf.train.get_or_create_global_step())
+			step = sess.run(tf.train.get_global_step())
 			print(step)
 			# train_fn(train_dict, sess)
 
