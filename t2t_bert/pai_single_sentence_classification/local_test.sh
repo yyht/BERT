@@ -12,7 +12,7 @@ CUDA_VISIBLE_DEVICES="0" python ps_train_eval.py \
  --batch_size 32 \
  --if_shard "1" \
  --opt_type "" \
- --is_debug False \
+ --is_debug "0" \
  --train_size 33033 \
  --eval_size 8589
 
