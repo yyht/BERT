@@ -220,9 +220,7 @@ def train_eval_fn(FLAGS,
 		monitoring_eval = []
 		while True:
 			try:
-				step = sess.run(tf.train.get_or_create_global_step())
-				print(step)
-				train_result = sess.run([train_op_dict])
+				[train_result] = sess.run([train_op_dict])
 				for key in train_result:
 					if key == "train_op":
 						continue
@@ -279,7 +277,9 @@ def train_eval_fn(FLAGS,
 										 checkpoint_dir=checkpoint_dir,
 										 save_checkpoint_steps=num_storage_steps) as sess:
 		# while not sess.should_stop():
-		train_fn(train_dict, sess)
+		step = sess.run(tf.train.get_or_create_global_step())
+		print(step)
+		# train_fn(train_dict, sess)
 
 		if task_index == 0:
 			print("===========begin to eval============")
