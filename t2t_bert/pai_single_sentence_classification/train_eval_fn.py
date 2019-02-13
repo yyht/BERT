@@ -127,7 +127,8 @@ def train_eval_fn(FLAGS,
 		)
 		accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
 		return {"accuracy":accuracy, "loss":train_op_dict["loss"], 
-				"train_op":train_op_dict["train_op"]}
+				"train_op":train_op_dict["train_op"],
+				"global_step":optimizer_fn.global_step}
 	
 	name_to_features = {
 			"input_ids":
@@ -242,7 +243,7 @@ def train_eval_fn(FLAGS,
 					for key in loss_dict:
 						tmp = key + " " + str(loss_dict[key]/cnt) + "\t"
 						string += tmp
-					print(string, optimizer_fn.global_step)
+					print(string)
 					monitoring_train.append(loss_dict)
 
 					eval_finial_dict = eval_fn(eval_dict, sess)
