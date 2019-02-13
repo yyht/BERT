@@ -1,6 +1,4 @@
 import sys, os
-sys.path.append("..")
-
 import tensorflow as tf
 from task_module import pretrain
 

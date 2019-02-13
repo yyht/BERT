@@ -1,6 +1,3 @@
-import sys, os
-sys.path.append("..")
-
 from model.bert import bert
 from model.bert_rule import bert_rule
 import tensorflow as tf
