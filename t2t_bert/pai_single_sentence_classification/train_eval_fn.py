@@ -21,7 +21,8 @@ def train_eval_fn(FLAGS,
 				init_checkpoint,
 				train_file,
 				dev_file,
-				checkpoint_dir):
+				checkpoint_dir,
+				is_debug):
 	import json
 			
 	config = json.load(open(FLAGS.config_file, "r"))
@@ -50,6 +51,10 @@ def train_eval_fn(FLAGS,
 	num_storage_steps = int(train_size / FLAGS.batch_size)
 
 	num_eval_steps = int(FLAGS.eval_size / FLAGS.batch_size)
+
+	if is_debug:
+		num_storage_steps = 10
+		num_eval_steps = 10
 
 	print(" model type {}".format(FLAGS.model_type))
 
@@ -175,7 +180,7 @@ def train_eval_fn(FLAGS,
 							eval_total_dict[key] += eval_result[key]
 
 				i += 1
-				if np.mod(i, 10) == 0:
+				if np.mod(i, num_eval_steps) == 0:
 					break
 			except tf.errors.OutOfRangeError:
 				print("End of dataset")
@@ -216,7 +221,7 @@ def train_eval_fn(FLAGS,
 				i += 1
 				cnt += 1
 				
-				if np.mod(i, 10) == 0:
+				if np.mod(i, num_train_steps) == 0:
 					string = ""
 					for key in loss_dict:
 						tmp = key + " " + str(loss_dict[key]/cnt) + "\t"
