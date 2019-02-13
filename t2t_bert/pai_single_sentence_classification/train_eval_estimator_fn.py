@@ -98,7 +98,8 @@ def train_eval_fn(FLAGS,
 												opt_config=opt_config,
 												exclude_scope="",
 												not_storage_params=[],
-												target="")
+												target="",
+												output_type="estimator")
 
 		name_to_features = {
 				"input_ids":

@@ -17,7 +17,8 @@ def model_fn_builder(
 					exclude_scope="",
 					not_storage_params=[],
 					target="a",
-					label_lst=None):
+					label_lst=None,
+					output_type="sess"):
 
 	def model_fn(features, labels, mode):
 		model = bert_encoder(model_config, features, labels,
@@ -63,15 +64,17 @@ def model_fn_builder(
 
 				estimator_spec = tf.estimator.EstimatorSpec(mode=mode, 
 								loss=loss, train_op=train_op)
-
-				return {
-							"estimator_spec":estimator_spec, 
-							"train":{
+				if output_type == "sess":
+					return {
+						"train":{
 										"loss":loss, 
 										"logits":logits,
 										"train_op":train_op
 									}
-						}
+					}
+				elif output_type == "estimator":
+					return estimator_spec
+
 		elif mode == tf.estimator.ModeKeys.PREDICT:
 			print(logits.get_shape(), "===logits shape===")
 			pred_label = tf.argmax(logits, axis=-1, output_type=tf.int32)
@@ -93,9 +96,8 @@ def model_fn_builder(
 												)
 									}
 						)
-			return {
-						"estimator_spec":estimator_spec 
-					}
+			return estimator_spec
+
 		elif mode == tf.estimator.ModeKeys.EVAL:
 			def metric_fn(per_example_loss,
 						logits, 
@@ -132,14 +134,16 @@ def model_fn_builder(
 								loss=loss,
 								eval_metric_ops=eval_metric_ops)
 
-			return {
-						"estimator_spec":estimator_spec, 
-						"eval":{
+			if output_type == "sess":
+				return {
+					"eval":{
 							"per_example_loss":per_example_loss,
 							"logits":logits,
 							"loss":tf.reduce_mean(per_example_loss)
 						}
-					}
+				}
+			elif output_type == "estimator":
+				return estimator_spec
 		else:
 			raise NotImplementedError()
 	return model_fn
