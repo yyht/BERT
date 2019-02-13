@@ -185,16 +185,19 @@ def train_eval_fn(FLAGS,
 
 		print("start training") 
 
-		hooks = [tf.train.StopAtStepHook(last_step=num_train_steps)]
+		# hooks = [tf.train.StopAtStepHook(last_step=num_train_steps)]
+		hooks = []
 		if sync_replicas_hook:
 			hooks.append(sync_replicas_hook)
-
-		sess = tf.train.MonitoredTrainingSession(master=target,
-											 is_chief=is_chief,
-											 config=sess_config,
-											 hooks=[],
-											 checkpoint_dir=checkpoint_dir,
-											 save_checkpoint_steps=num_storage_steps)
+			sess = tf.train.MonitoredTrainingSession(master=target,
+												 is_chief=is_chief,
+												 config=sess_config,
+												 hooks=[],
+												 checkpoint_dir=checkpoint_dir,
+												 save_checkpoint_steps=num_storage_steps)
+		else:
+			sess = tf.train.MonitoredTrainingSession(config=sess_config,
+                                           hooks=[])
 		
 		def eval_fn(eval_dict, sess):
 			i = 0
