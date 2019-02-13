@@ -131,15 +131,15 @@ def train_eval_fn(FLAGS,
 		params.epoch = FLAGS.epoch
 		params.batch_size = FLAGS.batch_size
 
-		train_features = lambda: tf_data_utils.train_input_fn(train_file,
-									_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,
-									worker_count=worker_count,
-									task_index=task_index)
+		# train_features = lambda: tf_data_utils.train_input_fn(train_file,
+		# 							_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,
+		# 							worker_count=worker_count,
+		# 							task_index=task_index)
 
-		eval_features = lambda: tf_data_utils.eval_input_fn(dev_file,
-									_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,
-									worker_count=worker_count,
-									task_index=task_index)
+		# eval_features = lambda: tf_data_utils.eval_input_fn(dev_file,
+		# 							_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,
+		# 							worker_count=worker_count,
+		# 							task_index=task_index)
 
 		print("===========begin to train============")
 		sess_config = tf.ConfigProto(allow_soft_placement=False,
@@ -177,8 +177,20 @@ def train_eval_fn(FLAGS,
 				        model_fn=model_fn,
 				        config=run_config)
 
-		train_spec = tf.estimator.TrainSpec(input_fn=train_features, max_steps=num_train_steps)
-		eval_spec = tf.estimator.EvalSpec(input_fn=eval_features, steps=num_eval_steps)
+		train_spec = tf.estimator.TrainSpec(
+										input_fn=lambda: tf_data_utils.train_input_fn(train_file,
+															_decode_record, name_to_features, params, 
+															if_shard=FLAGS.if_shard,
+															worker_count=worker_count,
+															task_index=task_index), 
+										max_steps=num_train_steps)
+		eval_spec = tf.estimator.EvalSpec(
+										input_fn=lambda: tf_data_utils.eval_input_fn(dev_file,
+															_decode_record, name_to_features, params, 
+															if_shard=FLAGS.if_shard,
+															worker_count=worker_count,
+															task_index=task_index), 
+										steps=num_eval_steps)
 
 		tf.estimator.train_and_evaluate(estimator, train_spec, eval_spec)
 		
