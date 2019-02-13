@@ -59,7 +59,7 @@ def train_eval_fn(FLAGS,
 			num_storage_steps = 2
 			num_eval_steps = 10
 			num_train_steps = 10
-			print("num_train_steps {}, num_eval_steps {}, num_storage_steps {}".format(num_train_steps, num_eval_steps, num_storage_steps))
+		print("num_train_steps {}, num_eval_steps {}, num_storage_steps {}".format(num_train_steps, num_eval_steps, num_storage_steps))
 
 		print(" model type {}".format(FLAGS.model_type))
 
