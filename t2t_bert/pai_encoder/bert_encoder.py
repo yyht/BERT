@@ -1,5 +1,5 @@
 from model.bert import bert
-from model.bert_rule import bert_rule
+from model.bert import bert_rule
 import tensorflow as tf
 from utils.bert import bert_utils
 import numpy as np
