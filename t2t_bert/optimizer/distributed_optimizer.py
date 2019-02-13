@@ -165,7 +165,7 @@ class Optimizer(object):
 											replicas_to_aggregate=self.config.get("worker_count", 4), 
 											total_num_replicas=self.config.get("worker_count", 4))
 		else:
-			self.opt = opt
+			self.opt = self.optimizer_op(learning_rate, **kargs)
 
 	def get_train_op(self, loss, tvars, init_lr, num_train_steps, **kargs):
 
