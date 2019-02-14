@@ -277,7 +277,7 @@ def train_eval_fn(FLAGS,
 		print("start training")
 
 		hooks = []
-		hooks.extend(train_features["hooks"])
+		hooks.extend(train_op_dict["hooks"])
 		if FLAGS.opt_type == "ps":
 			sess = tf.train.MonitoredTrainingSession(master=target,
 												 is_chief=is_chief,
