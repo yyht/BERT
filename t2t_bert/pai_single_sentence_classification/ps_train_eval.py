@@ -3,8 +3,8 @@ import sys,os
 
 import tensorflow as tf
 import os
-from train_eval_sess_fn import train_eval_fn as sess_fn
-from train_eval_estimator_fn import train_eval_fn as estimator_fn
+from .train_eval_sess_fn import train_eval_fn as sess_fn
+from .train_eval_estimator_fn import train_eval_fn as estimator_fn
 
 flags = tf.flags
 
