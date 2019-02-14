@@ -68,9 +68,10 @@ def model_fn_builder(
 				train_op = optimizer_fn.get_train_op(loss, tvars, 
 								opt_config.init_lr, 
 								opt_config.num_train_steps)
-				checkpoint_hook = model_io_fn.get_hooks(kargs.get("checkpoint_dir", None), 
+				model_io_fn.get_hooks(kargs.get("checkpoint_dir", None), 
 													kargs.get("num_storage_steps", 1000))
-				training_hooks = checkpoint_hook.extend(optimizer_fn.distributed_hooks)
+
+				training_hooks = model_io_fn.checkpoint_hook.extend(optimizer_fn.distributed_hooks)
 
 				estimator_spec = tf.estimator.EstimatorSpec(mode=mode, 
 								loss=loss, train_op=train_op,
