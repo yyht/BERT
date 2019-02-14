@@ -116,7 +116,7 @@ class Optimizer(object):
 							**kargs):
 		opt_type = self.config.get("train_op", "adam_decay")
 		tf.logging.info(" optimization method {}".format(opt_type))
-		if opt_type not in ["adam_decay", "adam"]:
+		if opt_type not in ["adam_decay", "adam", "adam_weight_decay"]:
 			raise NotImplementedError()
 		if opt_type == "adam_decay":
 			opt = optimizer_utils.AdamWeightDecayOptimizer(
@@ -164,7 +164,7 @@ class Optimizer(object):
 			self.opt = tf.train.SyncReplicasOptimizer(opt, 
 											replicas_to_aggregate=self.config.get("worker_count", 4), 
 											total_num_replicas=self.config.get("worker_count", 4))
-			self.distributed_hooks = [optimizer_fn.opt.make_session_run_hook(is_chief, num_tokens=0)]
+			self.distributed_hooks = [self.opt.make_session_run_hook(self.config["is_chief"], num_tokens=0)]
 		elif self.config["opt_type"] == "ps":
 			print("==optimizer ps_async size=={}".format(self.config.get("worker_count", 4)))
 			self.opt = self.optimizer_op(learning_rate*self.config.get("worker_count", 4), **kargs)

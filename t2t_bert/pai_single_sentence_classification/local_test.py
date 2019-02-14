@@ -25,22 +25,13 @@ t2t_bert_path = os.path.join(bert_path, "t2t_bert")
 sys.path.extend([bert_path, t2t_bert_path])
 
 import tensorflow as tf
-
-from pai_single_sentence_classification import ps_train_eval
+from ps_train_eval import monitored_estimator, monitored_sess
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-
-import tensorflow as tf
 
 flags = tf.flags
 
 FLAGS = flags.FLAGS
-
-flags.DEFINE_string('worker_hosts', '', 'must be list')
-flags.DEFINE_string('job_name', '', 'must be in ("", "worker", "ps")')
-flags.DEFINE_integer('task_index', 0, '')
-flags.DEFINE_string("ps_hosts", "", "must be list")
-flags.DEFINE_string("buckets", "", "oss buckets")
 
 flags.DEFINE_string(
 	"config_file", None,
@@ -114,61 +105,25 @@ flags.DEFINE_string(
 	"run_type", "0",
 	"Input TF example files (can be a glob or comma separated).")
 
-def main(_):
-
-	print(FLAGS)
-
-	print(tf.__version__, "==tensorflow version==")
-
-	ps_spec = FLAGS.ps_hosts.split(",")
-	worker_spec = FLAGS.worker_hosts.split(",")
-	cluster = tf.train.ClusterSpec({"ps": ps_spec, "worker": worker_spec})
-	worker_count = len(worker_spec)
-
-	is_chief = FLAGS.task_index == 0
-
-	server = tf.train.Server(cluster, job_name=FLAGS.job_name, task_index=FLAGS.task_index,
-							protocol="grpc")
-
-	init_checkpoint = os.path.join(FLAGS.buckets, FLAGS.init_checkpoint)
-	train_file = os.path.join(FLAGS.buckets, FLAGS.train_file)
-	dev_file = os.path.join(FLAGS.buckets, FLAGS.dev_file)
-	checkpoint_dir = os.path.join(FLAGS.buckets, FLAGS.model_output)
-
-	print(init_checkpoint, train_file, dev_file, checkpoint_dir)
-	
-	# join the ps server
-	if FLAGS.job_name == "ps":
-		server.join()
-	# try:
+def run(FLAGS):
 	if FLAGS.run_type == "sess":
-		ps_train_eval.monitored_sess(
-			FLAGS=FLAGS,
-			worker_count=worker_count, 
-			task_index=FLAGS.task_index, 
-			cluster=cluster, 
-			is_chief=is_chief, 
-			target=server.target,
-			init_checkpoint=init_checkpoint,
-			train_file=train_file,
-			dev_file=dev_file,
-			checkpoint_dir=checkpoint_dir)
-
+		monitored_sess(worker_count=1,
+						task_index=0,
+						cluster="",
+						is_chief=True,
+						target="",
+						init_checkpoint=FLAGS.init_checkpoint,
+						train_file=FLAGS.train_file,
+						dev_file=FLAGS.dev_file,
+						checkpoint_dir=FLAGS.model_output)
 	elif FLAGS.run_type == "estimator":
-		ps_train_eval.monitored_estimator(
-			FLAGS=FLAGS,
-			worker_count=worker_count, 
-			task_index=FLAGS.task_index, 
-			cluster=cluster, 
-			is_chief=is_chief, 
-			target=server.target,
-			init_checkpoint=init_checkpoint,
-			train_file=train_file,
-			dev_file=dev_file,
-			checkpoint_dir=checkpoint_dir)
+		monitored_estimator(worker_count=1,
+						task_index=0,
+						cluster="",
+						is_chief=True,
+						target="",
+						init_checkpoint=FLAGS.init_checkpoint,
+						train_file=FLAGS.train_file,
+						dev_file=FLAGS.dev_file,
+						checkpoint_dir=FLAGS.model_output)
 
-	# except Exception, e:
-	# 	print("catch a exception: %s" % e.message)
-
-if __name__ == "__main__":
-	tf.app.run()

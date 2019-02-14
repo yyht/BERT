@@ -45,6 +45,8 @@ def train_eval_fn(FLAGS,
 		config.scope = "bert"
 		config.dropout_prob = 0.1
 		config.label_type = "single_label"
+
+		print(config, "==model config==")
 		
 		if FLAGS.if_shard == "0":
 			train_size = FLAGS.train_size
@@ -79,8 +81,9 @@ def train_eval_fn(FLAGS,
 							"num_train_steps":num_train_steps,
 							"num_warmup_steps":num_warmup_steps,
 							"worker_count":worker_count,
-							"opt_type":FLAGS.opt_type
-							})
+							"opt_type":FLAGS.opt_type,
+							"is_chief":is_chief,
+							"train_op":"adam_weight_decay"})
 
 		model_io_config = Bunch({"fix_lm":False})
 		
@@ -99,7 +102,8 @@ def train_eval_fn(FLAGS,
 												target="",
 												output_type="sess",
 												checkpoint_dir=checkpoint_dir,
-												num_storage_steps=num_storage_steps)
+												num_storage_steps=num_storage_steps,
+												task_index=task_index)
 		
 		model_eval_fn = model_fn_builder(config, num_classes, init_checkpoint, 
 												model_reuse=True, 
@@ -111,7 +115,10 @@ def train_eval_fn(FLAGS,
 												target="",
 												output_type="sess",
 												checkpoint_dir=checkpoint_dir,
-												num_storage_steps=num_storage_steps)
+												num_storage_steps=num_storage_steps,
+												task_index=task_index)
+
+		print("==succeeded in building model==")
 		
 		def eval_metric_fn(features, eval_op_dict):
 			logits = eval_op_dict["logits"]
@@ -170,20 +177,28 @@ def train_eval_fn(FLAGS,
 		params.epoch = FLAGS.epoch
 		params.batch_size = FLAGS.batch_size
 
+		print("==train_file==", train_file, params)
+
 		train_features = tf_data_utils.train_input_fn(train_file,
 									_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,
 									worker_count=worker_count,
 									task_index=task_index)
 
+		print("==succeeded in building data==")
+
 		eval_features = tf_data_utils.eval_input_fn(dev_file,
 									_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,
 									worker_count=worker_count,
 									task_index=task_index)
+
+		print("==succeeded in building data==")
 		
 		train_op_dict = model_train_fn(train_features, [], tf.estimator.ModeKeys.TRAIN)
 		eval_op_dict = model_eval_fn(eval_features, [], tf.estimator.ModeKeys.EVAL)
 		eval_dict = eval_metric_fn(eval_features, eval_op_dict["eval"])
 		train_dict = train_metric_fn(train_features, train_op_dict["train"])
+
+		print("==succeeded in building data and model==")
 
 		print(train_op_dict)
 		
