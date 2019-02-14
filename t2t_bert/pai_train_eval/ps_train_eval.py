@@ -2,6 +2,8 @@
 import sys,os
 sys.path.append("..")
 
+print(sys.path)
+
 import tensorflow as tf
 
 from pai_single_sentence_classification import ps_train_eval
