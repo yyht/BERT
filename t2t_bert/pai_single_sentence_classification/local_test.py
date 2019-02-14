@@ -109,7 +109,8 @@ flags.DEFINE_string(
 
 def run(FLAGS):
 	if FLAGS.run_type == "sess":
-		monitored_sess(worker_count=1,
+		monitored_sess(FLAGS=FLAGS,
+						worker_count=1,
 						task_index=0,
 						cluster="",
 						is_chief=True,
@@ -119,7 +120,8 @@ def run(FLAGS):
 						dev_file=FLAGS.dev_file,
 						checkpoint_dir=FLAGS.model_output)
 	elif FLAGS.run_type == "estimator":
-		monitored_estimator(worker_count=1,
+		monitored_estimator(FLAGS=FLAGS,
+						worker_count=1,
 						task_index=0,
 						cluster="",
 						is_chief=True,
