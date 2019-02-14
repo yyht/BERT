@@ -56,7 +56,7 @@ def model_fn_builder(
 										init_checkpoint,
 										exclude_scope=exclude_scope)
 
-		model_io_fn.set_saver()
+		
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
 
@@ -68,6 +68,7 @@ def model_fn_builder(
 				train_op = optimizer_fn.get_train_op(loss, tvars, 
 								opt_config.init_lr, 
 								opt_config.num_train_steps)
+				model_io_fn.set_saver()
 				model_io_fn.get_hooks(kargs.get("checkpoint_dir", None), 
 													kargs.get("num_storage_steps", 1000))
 
