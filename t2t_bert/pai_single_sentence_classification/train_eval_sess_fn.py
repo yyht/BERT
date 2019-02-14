@@ -271,6 +271,7 @@ def train_eval_fn(FLAGS,
 
 				except tf.errors.OutOfRangeError:
 					print("==Succeeded in training model==")
+					break
 
 		print("===========begin to train============")
 		sess_config = tf.ConfigProto(allow_soft_placement=False,

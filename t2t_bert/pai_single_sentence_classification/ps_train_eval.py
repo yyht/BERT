@@ -2,6 +2,8 @@
 import sys,os
 sys.path.append("..")
 
+print(sys.path)
+
 import tensorflow as tf
 import os
 from train_eval_sess_fn import train_eval_fn as sess_fn
