@@ -61,14 +61,15 @@ def model_fn_builder(
 		if mode == tf.estimator.ModeKeys.TRAIN:
 
 			optimizer_fn = optimizer.Optimizer(opt_config)
-
+			model_io_fn.set_saver()
+			
 			model_io_fn.print_params(tvars, string=", trainable params")
 			update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 			with tf.control_dependencies(update_ops):
 				train_op = optimizer_fn.get_train_op(loss, tvars, 
 								opt_config.init_lr, 
 								opt_config.num_train_steps)
-				model_io_fn.set_saver()
+
 				model_io_fn.get_hooks(kargs.get("checkpoint_dir", None), 
 													kargs.get("num_storage_steps", 1000))
 
