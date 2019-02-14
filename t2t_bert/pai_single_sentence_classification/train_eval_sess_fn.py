@@ -83,31 +83,35 @@ def train_eval_fn(FLAGS,
 							})
 
 		model_io_config = Bunch({"fix_lm":False})
-		model_io_fn = model_io.ModelIO(model_io_config)
 		
 		num_classes = FLAGS.num_classes
+
+		checkpoint_dir = checkpoint_dir if task_index == 0 else None
+		print("==checkpoint_dir==", checkpoint_dir)
 
 		model_train_fn = model_fn_builder(config, num_classes, init_checkpoint, 
 												model_reuse=None, 
 												load_pretrained=True,
 												opt_config=opt_config,
 												model_io_config=model_io_config,
-												model_io_fn=model_io_fn,
 												exclude_scope="",
 												not_storage_params=[],
 												target="",
-												output_type="sess")
+												output_type="sess",
+												checkpoint_dir=checkpoint_dir,
+												num_storage_steps=num_storage_steps)
 		
 		model_eval_fn = model_fn_builder(config, num_classes, init_checkpoint, 
 												model_reuse=True, 
 												load_pretrained=True,
 												opt_config=opt_config,
 												model_io_config=model_io_config,
-												model_io_fn=model_io_fn,
 												exclude_scope="",
 												not_storage_params=[],
 												target="",
-												output_type="sess")
+												output_type="sess",
+												checkpoint_dir=checkpoint_dir,
+												num_storage_steps=num_storage_steps)
 		
 		def eval_metric_fn(features, eval_op_dict):
 			logits = eval_op_dict["logits"]
@@ -270,21 +274,9 @@ def train_eval_fn(FLAGS,
 		sess_config = tf.ConfigProto(allow_soft_placement=False,
 									log_device_placement=False)
 
-		checkpoint_dir = checkpoint_dir if task_index == 0 else None
-		print("==checkpoint_dir==", checkpoint_dir)
-
 		print("start training")
 
-		checkpoint_hook = tf.train.CheckpointSaverHook(
-							checkpoint_dir,
-							save_secs=None,
-							save_steps=num_storage_steps,
-							saver=model_io_fn.saver,
-							checkpoint_basename='model.ckpt',
-							scaffold=None,
-							listeners=None
-						)
-		hooks = [checkpoint_hook]
+		hooks = []
 		if FLAGS.opt_type == "ps":
 			hooks.extend(train_features["hooks"])
 			sess = tf.train.MonitoredTrainingSession(master=target,

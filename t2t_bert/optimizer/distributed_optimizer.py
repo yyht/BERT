@@ -150,7 +150,7 @@ class Optimizer(object):
 			print("==optimizer hvd size=={}".format(hvd.size()))
 			opt = self.optimizer_op(learning_rate*hvd.size(), **kargs)
 			self.opt = hvd.DistributedOptimizer(opt)
-			self.distributed_hooks = []
+			self.distributed_hooks = [hvd.BroadcastGlobalVariablesHook(0)]
 		# add pai soar distributed optimizer
 		elif pai and self.config["opt_type"] == "pai_soar":
 			print("==optimizer pai_soar size=={}".format(self.config.get("worker_count", 4)))
