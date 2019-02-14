@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 import sys,os
 import os, sys
-os.sys.path.append("/notebooks/source/BERT/")
-os.sys.path.append("/notebooks/source/BERT/t2t_bert/")
 
-os.sys.path.append("/notebooks/source/BERT/t2t_bert/pai_single_sentence_classification")
+father_path = os.path.abspath(os.path.join(os.getcwd(), ".."))
+user_path = os.path.join(father_path, "pai_single_sentence_classification")
+
+sys.path.append(father_path)
+sys.path.append(user_path)
 
 
 print(sys.path)
@@ -25,77 +27,77 @@ flags.DEFINE_integer('task_index', 0, '')
 flags.DEFINE_string("ps_hosts", "", "must be list")
 flags.DEFINE_string("buckets", "", "oss buckets")
 
-flags.DEFINE_string(
-	"config_file", None,
-	"Input TF example files (can be a glob or comma separated).")
+# flags.DEFINE_string(
+# 	"config_file", None,
+# 	"Input TF example files (can be a glob or comma separated).")
 
-flags.DEFINE_string(
-	"init_checkpoint", None,
-	"Input TF example files (can be a glob or comma separated).")
+# flags.DEFINE_string(
+# 	"init_checkpoint", None,
+# 	"Input TF example files (can be a glob or comma separated).")
 
-flags.DEFINE_string(
-	"vocab_file", None,
-	"Input TF example files (can be a glob or comma separated).")
+# flags.DEFINE_string(
+# 	"vocab_file", None,
+# 	"Input TF example files (can be a glob or comma separated).")
 
-flags.DEFINE_string(
-	"label_id", None,
-	"Input TF example files (can be a glob or comma separated).")
+# flags.DEFINE_string(
+# 	"label_id", None,
+# 	"Input TF example files (can be a glob or comma separated).")
 
-flags.DEFINE_integer(
-	"max_length", 128,
-	"Input TF example files (can be a glob or comma separated).")
+# flags.DEFINE_integer(
+# 	"max_length", 128,
+# 	"Input TF example files (can be a glob or comma separated).")
 
-flags.DEFINE_string(
-	"train_file", None,
-	"Input TF example files (can be a glob or comma separated).")
+# flags.DEFINE_string(
+# 	"train_file", None,
+# 	"Input TF example files (can be a glob or comma separated).")
 
-flags.DEFINE_string(
-	"dev_file", None,
-	"Input TF example files (can be a glob or comma separated).")
+# flags.DEFINE_string(
+# 	"dev_file", None,
+# 	"Input TF example files (can be a glob or comma separated).")
 
-flags.DEFINE_string(
-	"model_output", None,
-	"Input TF example files (can be a glob or comma separated).")
+# flags.DEFINE_string(
+# 	"model_output", None,
+# 	"Input TF example files (can be a glob or comma separated).")
 
-flags.DEFINE_integer(
-	"epoch", 5,
-	"Input TF example files (can be a glob or comma separated).")
+# flags.DEFINE_integer(
+# 	"epoch", 5,
+# 	"Input TF example files (can be a glob or comma separated).")
 
-flags.DEFINE_integer(
-	"num_classes", 5,
-	"Input TF example files (can be a glob or comma separated).")
+# flags.DEFINE_integer(
+# 	"num_classes", 5,
+# 	"Input TF example files (can be a glob or comma separated).")
 
-flags.DEFINE_integer(
-	"train_size", 1402171,
-	"Input TF example files (can be a glob or comma separated).")
+# flags.DEFINE_integer(
+# 	"train_size", 1402171,
+# 	"Input TF example files (can be a glob or comma separated).")
 
-flags.DEFINE_integer(
-	"batch_size", 32,
-	"Input TF example files (can be a glob or comma separated).")
+# flags.DEFINE_integer(
+# 	"batch_size", 32,
+# 	"Input TF example files (can be a glob or comma separated).")
 
-flags.DEFINE_string(
-	"model_type", None,
-	"Input TF example files (can be a glob or comma separated).")
+# flags.DEFINE_string(
+# 	"model_type", None,
+# 	"Input TF example files (can be a glob or comma separated).")
 
-flags.DEFINE_string(
-	"if_shard", None,
-	"Input TF example files (can be a glob or comma separated).")
+# flags.DEFINE_string(
+# 	"if_shard", None,
+# 	"Input TF example files (can be a glob or comma separated).")
 
-flags.DEFINE_integer(
-	"eval_size", 1000,
-	"Input TF example files (can be a glob or comma separated).")
+# flags.DEFINE_integer(
+# 	"eval_size", 1000,
+# 	"Input TF example files (can be a glob or comma separated).")
 
-flags.DEFINE_string(
-	"opt_type", "ps_sync",
-	"Input TF example files (can be a glob or comma separated).")
+# flags.DEFINE_string(
+# 	"opt_type", "ps_sync",
+# 	"Input TF example files (can be a glob or comma separated).")
 
-flags.DEFINE_string(
-	"is_debug", "0",
-	"Input TF example files (can be a glob or comma separated).")
+# flags.DEFINE_string(
+# 	"is_debug", "0",
+# 	"Input TF example files (can be a glob or comma separated).")
 
-flags.DEFINE_string(
-	"run_type", "0",
-	"Input TF example files (can be a glob or comma separated).")
+# flags.DEFINE_string(
+# 	"run_type", "0",
+# 	"Input TF example files (can be a glob or comma separated).")
 
 def main(_):
 	ps_spec = FLAGS.ps_hosts.split(",")
