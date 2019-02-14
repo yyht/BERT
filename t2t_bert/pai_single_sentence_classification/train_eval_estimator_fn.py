@@ -145,7 +145,16 @@ def train_eval_fn(FLAGS,
 
 		print("start training")
 
-		hooks = []
+		checkpoint_hook = tf.train.CheckpointSaverHook(
+							checkpoint_dir,
+							save_secs=None,
+							save_steps=num_storage_steps,
+							saver=model_io_fn.saver,
+							checkpoint_basename='model.ckpt',
+							scaffold=None,
+							listeners=None
+						)
+		hooks = [checkpoint_hook]
 		if FLAGS.opt_type == "ps":
 			print("==no need for hook==")
 		elif FLAGS.opt_type == "pai_soar" and pai:
@@ -164,10 +173,12 @@ def train_eval_fn(FLAGS,
 		
 		model_estimator = tf.estimator.Estimator(
 						model_fn=model_fn,
-						config=run_config)
+						config=run_config,
+						hooks=hooks)
 
 		train_spec = tf.estimator.TrainSpec(input_fn=train_features, 
-										max_steps=num_train_steps)
+										max_steps=num_train_steps,
+										hooks=hooks)
 
 		eval_spec = tf.estimator.EvalSpec(input_fn=eval_features, 
 										steps=num_eval_steps)
