@@ -167,12 +167,10 @@ def train_eval_fn(FLAGS,
 						config=run_config)
 
 		train_spec = tf.estimator.TrainSpec(input_fn=train_features, 
-										max_steps=num_train_steps,
-										hooks=train_hooks)
+										max_steps=num_train_steps)
 
 		eval_spec = tf.estimator.EvalSpec(input_fn=eval_features, 
-										steps=num_eval_steps,
-										hooks=eval_hooks)
+										steps=num_eval_steps)
 
 		tf.estimator.train_and_evaluate(model_estimator, train_spec, eval_spec)
 		
