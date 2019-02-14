@@ -71,10 +71,13 @@ def model_fn_builder(
 
 				model_io_fn.set_saver()
 
-				model_io_fn.get_hooks(kargs.get("checkpoint_dir", None), 
-													kargs.get("num_storage_steps", 1000))
+				if kargs.get("task_index", 1) == 0:
+					model_io_fn.get_hooks(kargs.get("checkpoint_dir", None), 
+														kargs.get("num_storage_steps", 1000))
 
-				training_hooks = model_io_fn.checkpoint_hook
+					training_hooks = model_io_fn.checkpoint_hook
+				else:
+					training_hooks = []
 
 				if len(optimizer_fn.distributed_hooks) >= 1:
 					training_hooks.extend(optimizer_fn.distributed_hooks)
