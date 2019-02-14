@@ -150,11 +150,13 @@ class Optimizer(object):
 			print("==optimizer hvd size=={}".format(hvd.size()))
 			opt = self.optimizer_op(learning_rate*hvd.size(), **kargs)
 			self.opt = hvd.DistributedOptimizer(opt)
+			self.distributed_hooks = []
 		# add pai soar distributed optimizer
 		elif pai and self.config["opt_type"] == "pai_soar":
 			print("==optimizer pai_soar size=={}".format(self.config.get("worker_count", 4)))
 			opt = self.optimizer_op(learning_rate*self.config.get("worker_count", 4), **kargs)
 			self.opt = pai.ReplicatedVarsOptimizer(opt)
+			self.distributed_hooks = []
 		# add tensorflow ps sync distributed optimizer
 		elif self.config["opt_type"] == "ps_sync":
 			print("==optimizer ps_sync size=={}".format(self.config.get("worker_count", 4)))
@@ -162,9 +164,11 @@ class Optimizer(object):
 			self.opt = tf.train.SyncReplicasOptimizer(opt, 
 											replicas_to_aggregate=self.config.get("worker_count", 4), 
 											total_num_replicas=self.config.get("worker_count", 4))
+			self.distributed_hooks = [optimizer_fn.opt.make_session_run_hook(is_chief, num_tokens=0)]
 		else:
 			print("==initialization of single node optimizer==")
 			self.opt = self.optimizer_op(learning_rate, **kargs)
+			self.distributed_hooks = []
 
 	def get_train_op(self, loss, tvars, init_lr, num_train_steps, **kargs):
 		
