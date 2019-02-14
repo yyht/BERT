@@ -147,7 +147,7 @@ def train_eval_fn(FLAGS,
 
 		train_hooks = []
 		eval_hooks = []
-		if FLAGS.opt_type == "ps":
+		if FLAGS.opt_type == "ps" or FLAGS.opt_type == "ps_sync":
 			print("==no need for hook==")
 		elif FLAGS.opt_type == "pai_soar" and pai:
 			print("no need for hook")

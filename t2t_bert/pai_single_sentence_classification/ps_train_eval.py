@@ -95,7 +95,7 @@ def monitored_sess(worker_count,
 				dev_file,
 				checkpoint_dir):
 
-	if worker_count >= 1 and FLAGS.opt_type == "ps":
+	if worker_count >= 1 and FLAGS.opt_type == "ps_sync" or FLAGS.opt_type == "ps":
 		available_worker_device = "/job:worker/task:%d" % (task_index)
 		with tf.device(tf.train.replica_device_setter(worker_device=available_worker_device, cluster=cluster)):
 			sess_fn(FLAGS,
@@ -130,7 +130,7 @@ def monitored_estimator(worker_count,
 				dev_file,
 				checkpoint_dir):
 	
-	if worker_count >= 1 and FLAGS.opt_type == "ps":
+	if worker_count >= 1 and FLAGS.opt_type == "ps_sync" or FLAGS.opt_type == "ps":
 		available_worker_device = "/job:worker/task:%d" % (task_index)
 		with tf.device(tf.train.replica_device_setter(worker_device=available_worker_device, cluster=cluster)):
 			estimator_fn(FLAGS,

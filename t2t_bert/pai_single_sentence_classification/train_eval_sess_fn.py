@@ -280,7 +280,7 @@ def train_eval_fn(FLAGS,
 
 		hooks = []
 		hooks.extend(train_op_dict["hooks"])
-		if FLAGS.opt_type == "ps":
+		if FLAGS.opt_type == "ps" or FLAGS.opt_type == "ps_sync":
 			sess = tf.train.MonitoredTrainingSession(master=target,
 												 is_chief=is_chief,
 												 config=sess_config,

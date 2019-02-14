@@ -165,14 +165,15 @@ class Optimizer(object):
 											replicas_to_aggregate=self.config.get("worker_count", 4), 
 											total_num_replicas=self.config.get("worker_count", 4))
 			self.distributed_hooks = [optimizer_fn.opt.make_session_run_hook(is_chief, num_tokens=0)]
+		elif self.config["opt_type"] == "ps":
+			print("==optimizer ps_async size=={}".format(self.config.get("worker_count", 4)))
+			self.opt = self.optimizer_op(learning_rate*self.config.get("worker_count", 4), **kargs)
 		else:
 			print("==initialization of single node optimizer==")
 			self.opt = self.optimizer_op(learning_rate, **kargs)
 			self.distributed_hooks = []
 
 	def get_train_op(self, loss, tvars, init_lr, num_train_steps, **kargs):
-		
-		self.get_opt(init_lr, num_train_steps)
 
 		grads = self.grad_clip_fn(self.opt, loss, tvars, **kargs)
 
