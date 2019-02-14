@@ -129,3 +129,5 @@ def run(FLAGS):
 						dev_file=FLAGS.dev_file,
 						checkpoint_dir=FLAGS.model_output)
 
+run(FLAGS)
+
