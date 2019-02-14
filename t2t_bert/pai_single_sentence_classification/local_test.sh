@@ -1,4 +1,4 @@
-CUDA_VISIBLE_DEVICES="0" python local_test.py \
+CUDA_VISIBLE_DEVICES="0" python ./t2t_bert/pai_single_sentence_classification/local_test.py \
  --config_file "/data/xuht/chinese_L-12_H-768_A-12/bert_config.json" \
  --init_checkpoint "/data/xuht/chinese_L-12_H-768_A-12/bert_model.ckpt" \
  --vocab_file "/data/xuht/chinese_L-12_H-768_A-12/vocab.txt" \
