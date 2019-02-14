@@ -184,6 +184,8 @@ def train_eval_fn(FLAGS,
 		eval_op_dict = model_eval_fn(eval_features, [], tf.estimator.ModeKeys.EVAL)
 		eval_dict = eval_metric_fn(eval_features, eval_op_dict["eval"])
 		train_dict = train_metric_fn(train_features, train_op_dict["train"])
+
+		print(train_op_dict)
 		
 		def eval_fn(eval_dict, sess):
 			i = 0
