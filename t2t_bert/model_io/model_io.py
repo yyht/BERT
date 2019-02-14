@@ -18,7 +18,7 @@ class ModelIO(object):
 		
 	def set_saver(self, max_keep=10, **kargs):
 		if len(kargs.get("var_lst", [])) >= 1:
-			self.saver = tf.train.Saver(var_list=kargs.get("var_lst", []),
+			self.saver = tf.train.Saver(var_list=kargs.get("var_lst", None),
 			max_to_keep=self.config.get("max_to_keep", 100))
 		else:
 			self.saver = tf.train.Saver(

@@ -56,7 +56,7 @@ def model_fn_builder(
 										init_checkpoint,
 										exclude_scope=exclude_scope)
 
-		model_io_fn.set_saver(var_lst=tvars)
+		model_io_fn.set_saver()
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
 
