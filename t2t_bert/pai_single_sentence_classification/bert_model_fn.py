@@ -13,7 +13,7 @@ def model_fn_builder(
 					init_checkpoint,
 					model_reuse=None,
 					load_pretrained=True,
-					model_io_config={},,
+					model_io_config={},
 					model_io_fn=None,
 					opt_config={},
 					exclude_scope="",
