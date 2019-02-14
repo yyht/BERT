@@ -277,8 +277,8 @@ def train_eval_fn(FLAGS,
 		print("start training")
 
 		hooks = []
+		hooks.extend(train_features["hooks"])
 		if FLAGS.opt_type == "ps":
-			hooks.extend(train_features["hooks"])
 			sess = tf.train.MonitoredTrainingSession(master=target,
 												 is_chief=is_chief,
 												 config=sess_config,
@@ -293,8 +293,6 @@ def train_eval_fn(FLAGS,
 												 checkpoint_dir=checkpoint_dir,
 												 save_checkpoint_steps=num_storage_steps)
 		elif FLAGS.opt_type == "hvd" and hvd:
-			bcast_hook = hvd.BroadcastGlobalVariablesHook(0)
-			hooks.append(bcast_hook)
 			sess_config.gpu_options.allow_growth = True
 			sess_config.gpu_options.visible_device_list = str(hvd.local_rank())
 			sess = tf.train.MonitoredTrainingSession(checkpoint_dir=checkpoint_dir,
