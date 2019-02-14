@@ -4,7 +4,7 @@ sys.path.append("..")
 
 import tensorflow as tf
 
-from .pai_single_sentence_classification import ps_train_eval
+from pai_single_sentence_classification import ps_train_eval
 
 flags = tf.flags
 
