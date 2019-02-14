@@ -2,20 +2,36 @@
 import sys,os
 import os, sys
 
-father_path = os.path.abspath(os.path.join(os.getcwd(), ".."))
-user_path = os.path.join(father_path, "pai_single_sentence_classification")
+father_path = os.path.join(os.getcwd())
+print(father_path, "==father path==")
 
-sys.path.append(father_path)
-sys.path.append(user_path)
+def find_bert(father_path):
+	if father_path.split("/")[-1] == "BERT":
+		return father_path
 
+	output_path = ""
+	for fi in os.listdir(father_path):
+		if fi == "BERT":
+			output_path = os.path.join(father_path, fi)
+			break
+		else:
+			if os.path.isdir(os.path.join(father_path, fi)):
+				find_bert(os.path.join(father_path, fi))
+			else:
+				continue
+	return output_path
 
+bert_path = find_bert(father_path)
+t2t_bert_path = os.path.join(bert_path, "t2t_bert")
+sys.path.extend([bert_path, t2t_bert_path])
+	
 print(sys.path)
 
 import tensorflow as tf
 
 from pai_single_sentence_classification import ps_train_eval
 
-flags = tf.flags
+flags = ps_train_eval.flags
 
 FLAGS = flags.FLAGS
 
@@ -119,7 +135,7 @@ def main(_):
 	if FLAGS.job_name == "ps":
 		server.join()
 	try:
-		if run_type == "sess":
+		if FLAGS.run_type == "sess":
 			ps_train_eval.monitored_sess(
 				worker_count=worker_count, 
 				task_index=FLAGS.task_index, 
@@ -131,7 +147,7 @@ def main(_):
 				dev_file=dev_file,
 				checkpoint_dir=checkpoint_dir)
 
-		elif run_type == "estimator":
+		elif FLAGS.run_type == "estimator":
 			ps_train_eval.monitored_estimator(
 				worker_count=worker_count, 
 				task_index=FLAGS.task_index, 
