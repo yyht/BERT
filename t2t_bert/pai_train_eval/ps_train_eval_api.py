@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
 import sys,os
-sys.path.append("..")
+import os, sys
+os.sys.path.append("/notebooks/source/BERT/")
+os.sys.path.append("/notebooks/source/BERT/t2t_bert/")
+
+os.sys.path.append("/notebooks/source/BERT/t2t_bert/pai_single_sentence_classification")
+
 
 print(sys.path)
 
