@@ -274,8 +274,7 @@ def train_eval_fn(FLAGS,
 
 		hooks = []
 		if FLAGS.opt_type == "ps":
-			sync_replicas_hook = optimizer_fn.opt.make_session_run_hook(is_chief, num_tokens=0)
-			hooks.append(sync_replicas_hook)
+			hooks.extend(train_features["hooks"])
 			sess = tf.train.MonitoredTrainingSession(master=target,
 												 is_chief=is_chief,
 												 config=sess_config,

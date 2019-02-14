@@ -69,14 +69,16 @@ def model_fn_builder(
 								opt_config.num_train_steps)
 
 				estimator_spec = tf.estimator.EstimatorSpec(mode=mode, 
-								loss=loss, train_op=train_op)
+								loss=loss, train_op=train_op,
+								training_hooks=optimizer_fn.distributed_hooks)
 				if output_type == "sess":
 					return {
 						"train":{
 										"loss":loss, 
 										"logits":logits,
 										"train_op":train_op
-									}
+									},
+						"hooks":optimizer_fn.distributed_hooks
 					}
 				elif output_type == "estimator":
 					return estimator_spec

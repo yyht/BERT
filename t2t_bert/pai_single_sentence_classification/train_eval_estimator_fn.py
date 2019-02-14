@@ -145,22 +145,16 @@ def train_eval_fn(FLAGS,
 
 		hooks = []
 		if FLAGS.opt_type == "ps":
-			sync_replicas_hook = optimizer_fn.opt.make_session_run_hook(is_chief, num_tokens=0)
-			hooks.append(sync_replicas_hook)
+			print("==no need for hook==")
 		elif FLAGS.opt_type == "pai_soar" and pai:
-			sess = tf.train.MonitoredTrainingSession(master=target,
-												 is_chief=is_chief,
-												 config=sess_config,
-												 hooks=hooks,
-												 checkpoint_dir=checkpoint_dir,
-												 save_checkpoint_steps=num_storage_steps)
+			print("no need for hook")
 		elif FLAGS.opt_type == "hvd" and hvd:
 			bcast_hook = hvd.BroadcastGlobalVariablesHook(0)
 			hooks.append(bcast_hook)
 			sess_config.gpu_options.allow_growth = True
 			sess_config.gpu_options.visible_device_list = str(hvd.local_rank())
 		else:
-			print("==not supported==")
+			print("==no need for hooks==")
 
 		run_config = tf.estimator.RunConfig(model_dir=checkpoint_dir, 
 											save_checkpoints_steps=num_storage_steps,
