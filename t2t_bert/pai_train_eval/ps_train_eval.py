@@ -4,7 +4,7 @@ sys.path.append("..")
 
 import tensorflow as tf
 
-from pai_single_sentence_classification import ps_train_eval
+from .pai_single_sentence_classification import ps_train_eval
 
 flags = tf.flags
 
@@ -79,7 +79,7 @@ flags.DEFINE_integer(
 	"Input TF example files (can be a glob or comma separated).")
 
 flags.DEFINE_string(
-	"opt_type", "ps",
+	"opt_type", "ps_sync",
 	"Input TF example files (can be a glob or comma separated).")
 
 flags.DEFINE_string(
@@ -121,7 +121,8 @@ def main(_):
 				train_file=train_file,
 				dev_file=dev_file,
 				checkpoint_dir=checkpoint_dir)
-		else run_type == "estimator":
+
+		elif run_type == "estimator":
 			ps_train_eval.monitored_estimator(
 				worker_count=worker_count, 
 				task_index=FLAGS.task_index, 

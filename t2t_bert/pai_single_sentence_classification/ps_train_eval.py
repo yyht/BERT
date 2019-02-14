@@ -75,7 +75,7 @@ flags.DEFINE_integer(
 	"Input TF example files (can be a glob or comma separated).")
 
 flags.DEFINE_string(
-	"opt_type", "ps",
+	"opt_type", "ps_sync",
 	"Input TF example files (can be a glob or comma separated).")
 
 flags.DEFINE_string(
