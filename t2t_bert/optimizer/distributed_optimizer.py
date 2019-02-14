@@ -174,6 +174,8 @@ class Optimizer(object):
 			self.distributed_hooks = []
 
 	def get_train_op(self, loss, tvars, init_lr, num_train_steps, **kargs):
+		
+		self.get_opt(init_lr, num_train_steps)
 
 		grads = self.grad_clip_fn(self.opt, loss, tvars, **kargs)
 
