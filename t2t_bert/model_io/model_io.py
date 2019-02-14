@@ -24,6 +24,17 @@ class ModelIO(object):
 			self.saver = tf.train.Saver(
 			max_to_keep=self.config.get("max_to_keep", 100))
 
+	def get_hooks(self, checkpoint_dir, num_storage_steps):
+		self.checkpoint_hook = [tf.train.CheckpointSaverHook(
+									checkpoint_dir,
+									save_secs=None,
+									save_steps=num_storage_steps,
+									saver=self.saver,
+									checkpoint_basename='model.ckpt',
+									scaffold=None,
+									listeners=None
+								)]
+
 	def init_model(self, sess, **kargs):
 		sess.run(tf.global_variables_initializer())
 

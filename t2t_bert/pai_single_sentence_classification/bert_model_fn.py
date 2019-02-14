@@ -14,13 +14,13 @@ def model_fn_builder(
 					model_reuse=None,
 					load_pretrained=True,
 					model_io_config={},
-					model_io_fn=None,
 					opt_config={},
 					exclude_scope="",
 					not_storage_params=[],
 					target="a",
 					label_lst=None,
-					output_type="sess"):
+					output_type="sess",
+					**kargs):
 
 	def model_fn(features, labels, mode):
 		model = bert_encoder(model_config, features, labels,
@@ -47,6 +47,8 @@ def model_fn_builder(
 											label_ids,
 											dropout_prob)
 
+		model_io_fn = model_io.ModelIO(model_io_config)
+
 		tvars = model_io_fn.get_params(model_config.scope, 
 										not_storage_params=not_storage_params)
 		if load_pretrained:
@@ -66,10 +68,13 @@ def model_fn_builder(
 				train_op = optimizer_fn.get_train_op(loss, tvars, 
 								opt_config.init_lr, 
 								opt_config.num_train_steps)
+				checkpoint_hook = model_io_fn.get_hooks(kargs.get("checkpoint_dir", None), 
+													kargs.get("num_storage_steps", 1000))
+				training_hooks = checkpoint_hook.extend(optimizer_fn.distributed_hooks)
 
 				estimator_spec = tf.estimator.EstimatorSpec(mode=mode, 
 								loss=loss, train_op=train_op,
-								training_hooks=optimizer_fn.distributed_hooks)
+								training_hooks=training_hooks)
 				if output_type == "sess":
 					return {
 						"train":{
@@ -77,7 +82,7 @@ def model_fn_builder(
 										"logits":logits,
 										"train_op":train_op
 									},
-						"hooks":optimizer_fn.distributed_hooks
+						"hooks":training_hooks
 					}
 				elif output_type == "estimator":
 					return estimator_spec
