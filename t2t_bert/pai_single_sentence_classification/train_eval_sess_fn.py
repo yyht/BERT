@@ -83,6 +83,7 @@ def train_eval_fn(FLAGS,
 							})
 
 		model_io_config = Bunch({"fix_lm":False})
+		model_io_fn = model_io.ModelIO(model_io_config)
 		
 		num_classes = FLAGS.num_classes
 
@@ -91,6 +92,7 @@ def train_eval_fn(FLAGS,
 												load_pretrained=True,
 												opt_config=opt_config,
 												model_io_config=model_io_config,
+												model_io_fn=model_io_fn,
 												exclude_scope="",
 												not_storage_params=[],
 												target="",
@@ -101,6 +103,7 @@ def train_eval_fn(FLAGS,
 												load_pretrained=True,
 												opt_config=opt_config,
 												model_io_config=model_io_config,
+												model_io_fn=model_io_fn,
 												exclude_scope="",
 												not_storage_params=[],
 												target="",
@@ -272,7 +275,16 @@ def train_eval_fn(FLAGS,
 
 		print("start training")
 
-		hooks = []
+		checkpoint_hook = tf.train.CheckpointSaverHook(
+							checkpoint_dir,
+							save_secs=None,
+							save_steps=num_storage_steps,
+							saver=model_io_fn.saver,
+							checkpoint_basename='model.ckpt',
+							scaffold=None,
+							listeners=None
+						)
+		hooks = [checkpoint_hook]
 		if FLAGS.opt_type == "ps":
 			hooks.extend(train_features["hooks"])
 			sess = tf.train.MonitoredTrainingSession(master=target,
