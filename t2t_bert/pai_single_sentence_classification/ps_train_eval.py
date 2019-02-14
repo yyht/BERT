@@ -3,6 +3,7 @@ import sys,os
 sys.path.append("..")
 
 import tensorflow as tf
+import os
 from train_eval_sess_fn import train_eval_fn as sess_fn
 from train_eval_estimator_fn import train_eval_fn as estimator_fn
 
@@ -130,21 +131,7 @@ def monitored_estimator(worker_count,
 				dev_file,
 				checkpoint_dir):
 	
-	if worker_count >= 1 and FLAGS.opt_type == "ps_sync" or FLAGS.opt_type == "ps":
-		available_worker_device = "/job:worker/task:%d" % (task_index)
-		with tf.device(tf.train.replica_device_setter(worker_device=available_worker_device, cluster=cluster)):
-			estimator_fn(FLAGS,
-							worker_count, 
-							task_index, 
-							is_chief, 
-							target,
-							init_checkpoint,
-							train_file,
-							dev_file,
-							checkpoint_dir,
-							FLAGS.is_debug)
-	else:
-		estimator_fn(FLAGS,
+	estimator_fn(FLAGS,
 					worker_count, 
 					task_index, 
 					is_chief, 
@@ -155,7 +142,6 @@ def monitored_estimator(worker_count,
 					checkpoint_dir,
 					FLAGS.is_debug)
 	
-
 if __name__ == "__main__":
 	if FLAGS.run_type == "sess":
 		monitored_sess(worker_count=1,
