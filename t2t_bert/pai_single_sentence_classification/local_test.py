@@ -1,28 +1,30 @@
 # -*- coding: utf-8 -*-
 import sys,os
 
-father_path = os.path.join(os.getcwd())
-print(father_path, "==father path==")
+sys.path.append("..")
 
-def find_bert(father_path):
-	if father_path.split("/")[-1] == "BERT":
-		return father_path
+# father_path = os.path.join(os.getcwd())
+# print(father_path, "==father path==")
 
-	output_path = ""
-	for fi in os.listdir(father_path):
-		if fi == "BERT":
-			output_path = os.path.join(father_path, fi)
-			break
-		else:
-			if os.path.isdir(os.path.join(father_path, fi)):
-				find_bert(os.path.join(father_path, fi))
-			else:
-				continue
-	return output_path
+# def find_bert(father_path):
+# 	if father_path.split("/")[-1] == "BERT":
+# 		return father_path
 
-bert_path = find_bert(father_path)
-t2t_bert_path = os.path.join(bert_path, "t2t_bert")
-sys.path.extend([bert_path, t2t_bert_path])
+# 	output_path = ""
+# 	for fi in os.listdir(father_path):
+# 		if fi == "BERT":
+# 			output_path = os.path.join(father_path, fi)
+# 			break
+# 		else:
+# 			if os.path.isdir(os.path.join(father_path, fi)):
+# 				find_bert(os.path.join(father_path, fi))
+# 			else:
+# 				continue
+# 	return output_path
+
+# bert_path = find_bert(father_path)
+# t2t_bert_path = os.path.join(bert_path, "t2t_bert")
+# sys.path.extend([bert_path, t2t_bert_path])
 
 import tensorflow as tf
 from ps_train_eval import monitored_estimator, monitored_sess
