@@ -314,7 +314,9 @@ def train_eval_fn(FLAGS,
 												 checkpoint_dir=checkpoint_dir,
 												 save_checkpoint_steps=num_storage_steps)
 		elif FLAGS.opt_type == "hvd" and hvd:
-			sess_config.gpu_options.allow_growth = True
+			sess_config = tf.ConfigProto(allow_soft_placement=False,
+									log_device_placement=False)
+			sess_config.gpu_options.allow_growth = False
 			sess_config.gpu_options.visible_device_list = str(hvd.local_rank())
 			sess = tf.train.MonitoredTrainingSession(checkpoint_dir=checkpoint_dir,
 												   hooks=hooks,
