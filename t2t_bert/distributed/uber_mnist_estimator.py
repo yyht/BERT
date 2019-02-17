@@ -122,7 +122,8 @@ def cnn_model_fn(features, labels, mode):
 
 		global_step = tf.train.get_or_create_global_step()
 		tvars = tf.trainable_variables()
-		grads = optimizer.compute_gradients(loss, tvars)
+		grads_and_vars = optimizer.compute_gradients(loss, tvars)
+		grads = [grad for grad, _ in grads_and_vars]
 
 		# This is how the model was pre-trained.
 		(grads, _) = tf.clip_by_global_norm(grads, clip_norm=1.0)
