@@ -140,7 +140,7 @@ def main(unused_argv):
     # condition among the workers that share the same filesystem. If the
     # directory already exists by the time this worker gets around to creating
     # it, ignore the resulting exception and continue.
-    cache_dir = os.path.join("/gruntdata/albert.xht/jd_comment/hvd/model_hvd_test", "kears", "mnist")
+    cache_dir = os.path.join("/data/xuht/jd_comment/hvd/model_hvd_test", "kears", "mnist")
     if not os.path.exists(cache_dir):
         try:
             os.mkdir(cache_dir)
@@ -167,7 +167,7 @@ def main(unused_argv):
 
     # Horovod: save checkpoints only on worker 0 to prevent other workers from
     # corrupting them.
-    model_dir = '/gruntdata/albert.xht/jd_comment/hvd/model_hvd_test' if hvd.rank() == 0 else None
+    model_dir = '/data/xuht/jd_comment/hvd/model_hvd_test' if hvd.rank() == 0 else None
 
     # Create the Estimator
     mnist_classifier = tf.estimator.Estimator(
