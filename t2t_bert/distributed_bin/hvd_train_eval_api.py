@@ -132,7 +132,7 @@ def main(_):
 
 	is_chief = task_index == 0
 
-	print("==worker_count==", worker_count, "==local_rank==", local_rank)
+	print("==worker_count==", worker_count, "==local_rank==", task_index, "==is is_chief==", is_chief)
 	
 	if FLAGS.run_type == "sess":
 		ps_train_eval.monitored_sess(
