@@ -140,7 +140,7 @@ def main(unused_argv):
     # condition among the workers that share the same filesystem. If the
     # directory already exists by the time this worker gets around to creating
     # it, ignore the resulting exception and continue.
-    cache_dir = os.path.join("/data/xuht/jd_comment/hvd/model_hvd_test", "kears", "mnist")
+    cache_dir = os.path.join("/data/xuht/jd_comment/hvd/model_hvd_test", "keras", "mnist")
     if not os.path.exists(cache_dir):
         try:
             os.mkdir(cache_dir)
