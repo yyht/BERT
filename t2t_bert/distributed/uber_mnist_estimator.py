@@ -111,8 +111,11 @@ def cnn_model_fn(features, labels, mode):
 	# Configure the Training Op (for TRAIN mode)
 	if mode == tf.estimator.ModeKeys.TRAIN:
 		# Horovod: scale learning rate by the number of workers.
-		optimizer = tf.train.MomentumOptimizer(
-			learning_rate=0.001 * hvd.size(), momentum=0.9)
+
+		optimizer = tf.train.AdamOptimizer(0.001 * hvd.size(),
+										beta1=0.9,
+										beta2=0.999,
+										epsilon=1e-8)
 
 		# Horovod: add Horovod Distributed Optimizer.
 		optimizer = hvd.DistributedOptimizer(optimizer)
