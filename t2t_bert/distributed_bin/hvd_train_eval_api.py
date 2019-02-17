@@ -133,6 +133,8 @@ def main(_):
 	is_chief = task_index == 0
 
 	print("==worker_count==", worker_count, "==local_rank==", task_index, "==is is_chief==", is_chief)
+	cluster = ""
+	target = ""
 	
 	if FLAGS.run_type == "sess":
 		hvd_train_eval.monitored_sess(
@@ -141,7 +143,7 @@ def main(_):
 			task_index=task_index, 
 			cluster=cluster, 
 			is_chief=is_chief, 
-			target=server.target,
+			target=target,
 			init_checkpoint=init_checkpoint,
 			train_file=train_file,
 			dev_file=dev_file,
@@ -154,7 +156,7 @@ def main(_):
 			task_index=task_index, 
 			cluster=cluster, 
 			is_chief=is_chief, 
-			target=server.target,
+			target=target,
 			init_checkpoint=init_checkpoint,
 			train_file=train_file,
 			dev_file=dev_file,
