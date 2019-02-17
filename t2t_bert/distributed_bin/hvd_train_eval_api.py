@@ -135,7 +135,7 @@ def main(_):
 	print("==worker_count==", worker_count, "==local_rank==", task_index, "==is is_chief==", is_chief)
 	
 	if FLAGS.run_type == "sess":
-		ps_train_eval.monitored_sess(
+		hvd_train_eval.monitored_sess(
 			FLAGS=FLAGS,
 			worker_count=worker_count, 
 			task_index=task_index, 
@@ -148,7 +148,7 @@ def main(_):
 			checkpoint_dir=checkpoint_dir)
 
 	elif FLAGS.run_type == "estimator":
-		ps_train_eval.monitored_estimator(
+		hvd_train_eval.monitored_estimator(
 			FLAGS=FLAGS,
 			worker_count=worker_count, 
 			task_index=task_index, 
