@@ -24,6 +24,8 @@ bert_path = find_bert(father_path)
 t2t_bert_path = os.path.join(bert_path, "t2t_bert")
 sys.path.extend([bert_path, t2t_bert_path])
 
+print(sys.path)
+
 import tensorflow as tf
 
 from distributed_single_sentence_classification import hvd_train_eval
