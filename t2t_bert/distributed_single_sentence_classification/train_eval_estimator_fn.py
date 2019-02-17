@@ -145,11 +145,7 @@ def train_eval_fn(FLAGS,
 									_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,
 									worker_count=worker_count,
 									task_index=task_index)
-
-		print("===========begin to train============")
-		sess_config = tf.ConfigProto(allow_soft_placement=False,
-									log_device_placement=False)
-
+		
 		train_hooks = []
 		eval_hooks = []
 		if FLAGS.opt_type == "ps" or FLAGS.opt_type == "ps_sync":
@@ -157,6 +153,8 @@ def train_eval_fn(FLAGS,
 		elif FLAGS.opt_type == "pai_soar" and pai:
 			print("no need for hook")
 		elif FLAGS.opt_type == "hvd" and hvd:
+			sess_config = tf.ConfigProto(allow_soft_placement=False,
+									log_device_placement=False)
 			sess_config.gpu_options.allow_growth = True
 			sess_config.gpu_options.visible_device_list = str(hvd.local_rank())
 			print("==no need fo hook==")

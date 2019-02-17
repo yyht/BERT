@@ -9,7 +9,7 @@ mpirun -np 2 \
  --train_file "jd_comment/train.tfrecords" \
  --dev_file "jd_comment/test.tfrecords" \
  --max_length 128 \
- --model_output "jd_comment/hvd/model" \
+ --model_output "jd_comment/hvd/model_estimator" \
  --epoch 2 \
  --num_classes 2 \
  --batch_size 32 \
@@ -18,6 +18,6 @@ mpirun -np 2 \
  --model_type bert \
  --if_shard "1" \
  --is_debug "1" \
- --run_type "sess" \
+ --run_type "estimator" \
  --opt_type "hvd"
 
