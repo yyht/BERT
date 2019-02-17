@@ -135,6 +135,8 @@ def main(_):
 	print("==worker_count==", worker_count, "==local_rank==", task_index, "==is is_chief==", is_chief)
 	cluster = ""
 	target = ""
+
+	FLAGS.config_file = os.path.join(FLAGS.buckets, FLAGS.config_file)
 	
 	if FLAGS.run_type == "sess":
 		hvd_train_eval.monitored_sess(
