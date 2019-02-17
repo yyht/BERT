@@ -26,7 +26,7 @@ sys.path.extend([bert_path, t2t_bert_path])
 
 import tensorflow as tf
 
-from pai_single_sentence_classification import ps_train_eval
+from distributed_single_sentence_classification import ps_train_eval
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
@@ -127,8 +127,23 @@ def main(_):
 
 	is_chief = FLAGS.task_index == 0
 
+	print("==worker count==", worker_count)
+	print("==is chief==", is_chief)
+	print("==cluster==", cluster)
+
+	print("==ps spec==", ps_spec, "==worker_spec==", worker_spec)
+
+	print("job name = %s" % FLAGS.job_name)
+	print("task index = %d" % FLAGS.task_index)
+
+	sess_config = tf.ConfigProto(allow_soft_placement=False,
+									log_device_placement=False)
+	# sess_config.gpu_options.visible_device_list = str(task_index)
+
+	print(sess_config.gpu_options.visible_device_list, task_index, "==============")
+
 	server = tf.train.Server(cluster, job_name=FLAGS.job_name, task_index=FLAGS.task_index,
-							protocol="grpc")
+							protocol="grpc", config=sess_config)
 
 	init_checkpoint = os.path.join(FLAGS.buckets, FLAGS.init_checkpoint)
 	train_file = os.path.join(FLAGS.buckets, FLAGS.train_file)
@@ -139,33 +154,38 @@ def main(_):
 	
 	# join the ps server
 	if FLAGS.job_name == "ps":
+		print("==parameter server join==")
 		server.join()
-	# try:
-	if FLAGS.run_type == "sess":
-		ps_train_eval.monitored_sess(
-			FLAGS=FLAGS,
-			worker_count=worker_count, 
-			task_index=FLAGS.task_index, 
-			cluster=cluster, 
-			is_chief=is_chief, 
-			target=server.target,
-			init_checkpoint=init_checkpoint,
-			train_file=train_file,
-			dev_file=dev_file,
-			checkpoint_dir=checkpoint_dir)
 
-	elif FLAGS.run_type == "estimator":
-		ps_train_eval.monitored_estimator(
-			FLAGS=FLAGS,
-			worker_count=worker_count, 
-			task_index=FLAGS.task_index, 
-			cluster=cluster, 
-			is_chief=is_chief, 
-			target=server.target,
-			init_checkpoint=init_checkpoint,
-			train_file=train_file,
-			dev_file=dev_file,
-			checkpoint_dir=checkpoint_dir)
+	elif FLAGS.job_name == "worker":
+		# try:
+		if FLAGS.run_type == "sess":
+			print("==sess worker running==", FLAGS.job_name, FLAGS.task_index)
+			ps_train_eval.monitored_sess(
+				FLAGS=FLAGS,
+				worker_count=worker_count, 
+				task_index=FLAGS.task_index, 
+				cluster=cluster, 
+				is_chief=is_chief, 
+				target=server.target,
+				init_checkpoint=init_checkpoint,
+				train_file=train_file,
+				dev_file=dev_file,
+				checkpoint_dir=checkpoint_dir)
+
+		elif FLAGS.run_type == "estimator":
+			print("==estimator worker running==", FLAGS.job_name, FLAGS.task_index)
+			ps_train_eval.monitored_estimator(
+				FLAGS=FLAGS,
+				worker_count=worker_count, 
+				task_index=FLAGS.task_index, 
+				cluster=cluster, 
+				is_chief=is_chief, 
+				target=server.target,
+				init_checkpoint=init_checkpoint,
+				train_file=train_file,
+				dev_file=dev_file,
+				checkpoint_dir=checkpoint_dir)
 
 	# except Exception, e:
 	# 	print("catch a exception: %s" % e.message)
