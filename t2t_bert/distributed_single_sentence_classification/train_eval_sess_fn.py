@@ -71,9 +71,9 @@ def train_eval_fn(FLAGS,
 		num_eval_steps = int(FLAGS.eval_size / FLAGS.batch_size)
 
 		if is_debug == "0":
-			num_storage_steps = 2
-			num_eval_steps = 10
-			num_train_steps = 10
+			num_storage_steps = 190
+			num_eval_steps = 100
+			num_train_steps = 200
 		print("num_train_steps {}, num_eval_steps {}, num_storage_steps {}".format(num_train_steps, num_eval_steps, num_storage_steps))
 
 		print(" model type {}".format(FLAGS.model_type))
@@ -86,14 +86,14 @@ def train_eval_fn(FLAGS,
 							"worker_count":worker_count,
 							"opt_type":FLAGS.opt_type,
 							"is_chief":is_chief,
-							"train_op":"adam_weight_decay"})
+							"train_op":"adam"})
 
 		model_io_config = Bunch({"fix_lm":False})
 		
 		num_classes = FLAGS.num_classes
 
-		checkpoint_dir = checkpoint_dir if task_index == 0 else None
-		print("==checkpoint_dir==", checkpoint_dir)
+		checkpoint_dir = checkpoint_dir #if task_index == 0 else None
+		print("==checkpoint_dir==", checkpoint_dir, is_chief)
 
 		model_train_fn = model_fn_builder(config, num_classes, init_checkpoint, 
 												model_reuse=None, 
@@ -177,7 +177,7 @@ def train_eval_fn(FLAGS,
 			return example 
 
 		params = Bunch({})
-		params.epoch = FLAGS.epoch
+		params.epoch = epoch
 		params.batch_size = FLAGS.batch_size
 
 		print("==train_file==", train_file, params)
@@ -187,14 +187,10 @@ def train_eval_fn(FLAGS,
 									worker_count=worker_count,
 									task_index=task_index)
 
-		print("==succeeded in building data==")
-
 		eval_features = tf_data_utils.eval_input_fn(dev_file,
 									_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,
 									worker_count=worker_count,
 									task_index=task_index)
-
-		print("==succeeded in building data==")
 		
 		train_op_dict = model_train_fn(train_features, [], tf.estimator.ModeKeys.TRAIN)
 		eval_op_dict = model_eval_fn(eval_features, [], tf.estimator.ModeKeys.EVAL)
@@ -251,7 +247,7 @@ def train_eval_fn(FLAGS,
 			monitoring_eval = []
 			while True:
 				try:
-					[train_result, step] = sess.run([train_op_dict, tf.train.get_global_step()])
+					[train_result] = sess.run([train_op_dict])
 					for key in train_result:
 						if key == "train_op":
 							continue
@@ -273,7 +269,7 @@ def train_eval_fn(FLAGS,
 						for key in loss_dict:
 							tmp = key + " " + str(loss_dict[key]/cnt) + "\t"
 							string += tmp
-						print(string, step)
+						print(string)
 						monitoring_train.append(loss_dict)
 
 						eval_finial_dict = eval_fn(eval_dict, sess)
@@ -292,14 +288,18 @@ def train_eval_fn(FLAGS,
 					break
 
 		print("===========begin to train============")
-		sess_config = tf.ConfigProto(allow_soft_placement=False,
-									log_device_placement=False)
+		# sess_config = tf.ConfigProto(allow_soft_placement=False,
+		# 							log_device_placement=False)
+		# # sess_config.gpu_options.visible_device_list = str(task_index)
+
+		# print(sess_config.gpu_options.visible_device_list, task_index, "==============")
 
 		print("start training")
 
 		hooks = []
 		hooks.extend(train_op_dict["hooks"])
 		if FLAGS.opt_type == "ps" or FLAGS.opt_type == "ps_sync":
+			print("==create monitored training session==", FLAGS.opt_type, is_chief)
 			sess = tf.train.MonitoredTrainingSession(master=target,
 												 is_chief=is_chief,
 												 config=sess_config,
@@ -327,9 +327,12 @@ def train_eval_fn(FLAGS,
 												   checkpoint_dir=checkpoint_dir,
 												   save_checkpoint_steps=num_storage_steps)
 						
-		step = sess.run(tf.train.get_global_step())
-		print(step)
+		print("==begin to train and eval==")
 		train_fn(train_dict, sess)
+
+		# for i in range(10):
+		# 	l = sess.run(train_features)
+		# print(l, task_index)
 
 		if task_index == 0:
 			print("===========begin to eval============")

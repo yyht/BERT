@@ -1,4 +1,4 @@
-from pai_encoder.bert_encoder import bert_encoder
+from dsitributed_encoder.bert_encoder import bert_encoder
 from model_io import model_io
 from task_module import classifier
 import tensorflow as tf
@@ -144,14 +144,14 @@ def model_fn_builder(
 					init_checkpoint,
 					model_reuse=None,
 					load_pretrained=True,
-					model_io_fn=None,
-					optimizer_fn=None,
 					model_io_config={},
 					opt_config={},
 					exclude_scope="",
 					not_storage_params=[],
 					target=["a", "b"],
-					label_lst=None):
+					label_lst=None,
+					output_type="sess",
+					**kargs):
 
 	def model_fn(features, labels, mode):
 
@@ -218,6 +218,8 @@ def model_fn_builder(
 											label_ids,
 											dropout_prob)
 
+		model_io_fn = model_io.ModelIO(model_io_config)
+
 		tvars = model_io_fn.get_params(model_config.scope, 
 										not_storage_params=not_storage_params)
 		if load_pretrained:
@@ -225,9 +227,10 @@ def model_fn_builder(
 										init_checkpoint,
 										exclude_scope=exclude_scope)
 
-		model_io_fn.set_saver(var_lst=tvars)
-
 		if mode == tf.estimator.ModeKeys.TRAIN:
+
+			optimizer_fn = optimizer.Optimizer(opt_config)
+
 			model_io_fn.print_params(tvars, string=", trainable params")
 			update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 			with tf.control_dependencies(update_ops):
@@ -235,16 +238,35 @@ def model_fn_builder(
 								opt_config.init_lr, 
 								opt_config.num_train_steps)
 
+				model_io_fn.set_saver()
+
+				if kargs.get("task_index", 1) == 0:
+					model_io_fn.get_hooks(kargs.get("checkpoint_dir", None), 
+										kargs.get("num_storage_steps", 1000))
+
+					training_hooks = model_io_fn.checkpoint_hook
+				else:
+					training_hooks = []
+
+				if len(optimizer_fn.distributed_hooks) >= 1:
+					training_hooks.extend(optimizer_fn.distributed_hooks)
+				print(training_hooks)
+
 				estimator_spec = tf.estimator.EstimatorSpec(mode=mode, 
-								loss=loss, train_op=train_op)
-				return {
-							"estimator_spec":estimator_spec, 
-							"train":{
+								loss=loss, train_op=train_op,
+								training_hooks=training_hooks)
+
+				if output_type == "sess":
+					return {
+						"train":{
 										"loss":loss, 
 										"logits":logits,
 										"train_op":train_op
-									}
-						}
+									},
+						"hooks":training_hooks
+					}
+				elif output_type == "estimator":
+					return estimator_spec
 		elif mode == tf.estimator.ModeKeys.PREDICT:
 			print(logits.get_shape(), "===logits shape===")
 			pred_label = tf.argmax(logits, axis=-1, output_type=tf.int32)
@@ -266,9 +288,8 @@ def model_fn_builder(
 												)
 								  	}
 						)
-			return {
-						"estimator_spec":estimator_spec 
-					}
+			return estimator_spec
+
 		elif mode == tf.estimator.ModeKeys.EVAL:
 			def metric_fn(per_example_loss,
 						logits, 
@@ -304,13 +325,16 @@ def model_fn_builder(
 			estimator_spec = tf.estimator.EstimatorSpec(mode=mode, 
 								loss=loss,
 								eval_metric_ops=eval_metric_ops)
-			return {
-						"estimator_spec":estimator_spec, 
-						"eval":{
+			if output_type == "sess":
+				return {
+					"eval":{
 							"per_example_loss":per_example_loss,
-							"logits":logits
+							"logits":logits,
+							"loss":tf.reduce_mean(per_example_loss)
 						}
-					}
+				}
+			elif output_type == "estimator":
+				return estimator_spec
 		else:
 			raise NotImplementedError()
 	return model_fn

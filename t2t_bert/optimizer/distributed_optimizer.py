@@ -27,7 +27,13 @@ except Exception as e:
 class Optimizer(object):
 	def __init__(self, config, **kargs):
 		self.config = config
-		self.global_step = tf.train.get_or_create_global_step()
+
+		self.global_step = tf.get_variable(
+							"global_step",
+							dtype=tf.int64,
+							initializer=tf.constant(1, dtype=tf.int64))
+
+		# self.global_step = tf.train.get_or_create_global_step()
 
 		cond_fn = tf.less(self.global_step, tf.constant(self.config.num_warmup_steps, dtype=tf.int64))
 
@@ -132,7 +138,7 @@ class Optimizer(object):
 						learning_rate=learning_rate,
 						beta1=self.config.get("beta_1", 0.9),
 						beta2=self.config.get("beta_2", 0.999),
-               			epsilon=self.config.get("epsilon", 1e-6))
+						epsilon=self.config.get("epsilon", 1e-6))
 		elif opt_type == "adam":
 			opt = tf.train.AdamOptimizer(learning_rate,
 										beta1=self.config.get("beta_1", 0.9),
@@ -147,8 +153,8 @@ class Optimizer(object):
 		
 		# add uber horvod distributed optimizer
 		if hvd and self.config["opt_type"] == "hvd":
-			print("==optimizer hvd size=={}".format(hvd.size()))
-			opt = self.optimizer_op(learning_rate*hvd.size(), **kargs)
+			print("==optimizer hvd size=={}".format(self.config.get("worker_count", hvd.size())))
+			opt = self.optimizer_op(learning_rate*self.config.get("worker_count", hvd.size()), **kargs)
 			self.opt = hvd.DistributedOptimizer(opt)
 			self.distributed_hooks = [hvd.BroadcastGlobalVariablesHook(0)]
 		# add pai soar distributed optimizer
