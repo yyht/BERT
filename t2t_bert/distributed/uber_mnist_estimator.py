@@ -134,9 +134,9 @@ def cnn_model_fn(features, labels, mode):
 		new_global_step = global_step + 1
 		train_op = tf.group(train_op, [global_step.assign(new_global_step)])
 
-		train_op = optimizer.minimize(
-			loss=loss,
-			global_step=global_step)
+		# train_op = optimizer.minimize(
+		# 	loss=loss,
+		# 	global_step=global_step)
 		return tf.estimator.EstimatorSpec(mode=mode, loss=loss,
 										  train_op=train_op)
 
