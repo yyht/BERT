@@ -189,5 +189,6 @@ class Optimizer(object):
 		train_op = self.opt.apply_gradients(
 					zip(grads, tvars), global_step=self.global_step)
 		new_global_step = self.global_step + 1
-		train_op = tf.group(train_op, [self.global_step.assign(new_global_step)])
+		# train_op = tf.group(train_op, [self.global_step.assign(new_global_step)])
+		train_op = train_op
 		return train_op
