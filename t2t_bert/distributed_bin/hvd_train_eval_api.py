@@ -31,6 +31,12 @@ import tensorflow as tf
 from distributed_single_sentence_classification import hvd_train_eval
 import horovod.tensorflow as hvd
 
+import tensorflow as tf
+
+flags = tf.flags
+
+FLAGS = flags.FLAGS
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 flags.DEFINE_string("buckets", "", "oss buckets")
