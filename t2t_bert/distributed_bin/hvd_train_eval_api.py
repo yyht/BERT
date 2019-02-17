@@ -137,6 +137,7 @@ def main(_):
 	target = ""
 
 	FLAGS.config_file = os.path.join(FLAGS.buckets, FLAGS.config_file)
+	FLAGS.label_id = os.path.join(FLAGS.buckets, FLAGS.label_id)
 	
 	if FLAGS.run_type == "sess":
 		hvd_train_eval.monitored_sess(
