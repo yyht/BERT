@@ -81,7 +81,7 @@ def model_fn_builder(
 
 				if len(optimizer_fn.distributed_hooks) >= 1:
 					training_hooks.extend(optimizer_fn.distributed_hooks)
-				print(training_hooks, "==training_hooks==", "==task_index==", task_index)
+				print(training_hooks, "==training_hooks==", "==task_index==", kargs.get("task_index", 1))
 
 				estimator_spec = tf.estimator.EstimatorSpec(mode=mode, 
 								loss=loss, train_op=train_op,

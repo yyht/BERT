@@ -91,7 +91,11 @@ def train_eval_fn(FLAGS,
 		
 		num_classes = FLAGS.num_classes
 
-		checkpoint_dir = checkpoint_dir if task_index == 0 else None
+		if FLAGS.opt_type == "hvd" and hvd:
+			checkpoint_dir = checkpoint_dir if task_index == 0 else None
+		else:
+			checkpoint_dir = checkpoint_dir
+		print("==checkpoint_dir==", checkpoint_dir, is_chief)
 
 		model_fn = model_fn_builder(config, num_classes, init_checkpoint, 
 												model_reuse=None, 
@@ -104,7 +108,8 @@ def train_eval_fn(FLAGS,
 												target="",
 												output_type="estimator",
 												checkpoint_dir=checkpoint_dir,
-												num_storage_steps=num_storage_steps)
+												num_storage_steps=num_storage_steps,
+												task_index=task_index)
 
 		name_to_features = {
 				"input_ids":
