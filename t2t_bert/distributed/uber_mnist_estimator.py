@@ -193,9 +193,9 @@ def main(unused_argv):
 
 	# Set up logging for predictions
 	# Log the values in the "Softmax" tensor with label "probabilities"
-	tensors_to_log = {"probabilities": "softmax_tensor"}
-	logging_hook = tf.train.LoggingTensorHook(
-		tensors=tensors_to_log, every_n_iter=500)
+	# tensors_to_log = {"probabilities": "softmax_tensor"}
+	# logging_hook = tf.train.LoggingTensorHook(
+	# 	tensors=tensors_to_log, every_n_iter=500)
 
 	# Horovod: BroadcastGlobalVariablesHook broadcasts initial variable states from
 	# rank 0 to all other processes. This is necessary to ensure consistent
@@ -215,7 +215,7 @@ def main(unused_argv):
 	mnist_classifier.train(
 		input_fn=train_input_fn,
 		steps=20000 // hvd.size(),
-		hooks=[logging_hook, bcast_hook])
+		hooks=[bcast_hook])
 
 	# Evaluate the model and print results
 	eval_input_fn = tf.estimator.inputs.numpy_input_fn(
