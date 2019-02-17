@@ -122,6 +122,8 @@ def main(_):
 	worker_count = hvd.size()
 	task_index = hvd.local_rank()
 
+	is_chief = task_index == 0
+
 	print("==worker_count==", worker_count, "==local_rank==", local_rank)
 	
 	if FLAGS.run_type == "sess":
