@@ -28,12 +28,12 @@ class Optimizer(object):
 	def __init__(self, config, **kargs):
 		self.config = config
 
-		self.global_step = tf.get_variable(
-							"global_step",
-							dtype=tf.int64,
-							initializer=tf.constant(1, dtype=tf.int64))
+		# self.global_step = tf.get_variable(
+		# 					"global_step",
+		# 					dtype=tf.int64,
+		# 					initializer=tf.constant(1, dtype=tf.int64))
 
-		# self.global_step = tf.train.get_or_create_global_step()
+		self.global_step = tf.train.get_or_create_global_step()
 
 		cond_fn = tf.less(self.global_step, tf.constant(self.config.num_warmup_steps, dtype=tf.int64))
 
