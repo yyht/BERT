@@ -1,6 +1,6 @@
 mpirun -np 2 \
  -H localhost:2 \
- python hvd_train_eval_api.py \
+ python ./t2t_bert/distributed_bin/hvd_train_eval_api.py \
  --buckets "/data/xuht" \
  --config_file "bert/chinese_L-12_H-768_A-12/bert_config.json" \
  --init_checkpoint "bert/chinese_L-12_H-768_A-12/bert_model.ckpt" \
