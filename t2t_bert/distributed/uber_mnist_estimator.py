@@ -132,7 +132,8 @@ def cnn_model_fn(features, labels, mode):
 		  zip(grads, tvars), global_step=global_step)
 
 		new_global_step = global_step + 1
-		train_op = tf.group(train_op, [global_step.assign(new_global_step)])
+		# train_op = tf.group(train_op, [global_step.assign(new_global_step)])
+		train_op = train_op
 
 		# train_op = optimizer.minimize(
 		# 	loss=loss,
