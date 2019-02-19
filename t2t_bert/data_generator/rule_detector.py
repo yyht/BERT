@@ -1,4 +1,4 @@
-import flashtext
+from data_generator import flash_text
 import json
 
 class RuleDetector(object):
