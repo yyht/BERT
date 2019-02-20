@@ -177,7 +177,7 @@ class Optimizer(object):
 			self.opt = self.optimizer_op(learning_rate*self.config.get("worker_count", 4), **kargs)
 		else:
 			print("==initialization of single node optimizer==")
-			self.opt = self.optimizer_op(learning_rate, **kargs)
+			self.opt = self.optimizer_op(learning_rate*self.config.get("worker_count", 1), **kargs)
 			self.distributed_hooks = []
 
 	def get_train_op(self, loss, tvars, init_lr, num_train_steps, **kargs):

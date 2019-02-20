@@ -26,6 +26,8 @@ try:
 except Exception as e:
 	hvd = None
 
+import time
+
 def train_eval_fn(FLAGS,
 				worker_count, 
 				task_index, 
@@ -35,7 +37,8 @@ def train_eval_fn(FLAGS,
 				train_file,
 				dev_file,
 				checkpoint_dir,
-				is_debug):
+				is_debug,
+				**kargs):
 
 	graph = tf.Graph()
 	with graph.as_default():
@@ -109,7 +112,8 @@ def train_eval_fn(FLAGS,
 												output_type="estimator",
 												checkpoint_dir=checkpoint_dir,
 												num_storage_steps=num_storage_steps,
-												task_index=task_index)
+												task_index=task_index,
+												**kargs)
 
 		name_to_features = {
 				"input_ids":
@@ -141,45 +145,77 @@ def train_eval_fn(FLAGS,
 		params.epoch = FLAGS.epoch
 		params.batch_size = FLAGS.batch_size
 
-		train_features = lambda: tf_data_utils.train_input_fn(train_file,
-									_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,
-									worker_count=worker_count,
-									task_index=task_index)
+		if kargs.get("run_config", None):
+			train_features = lambda: tf_data_utils.all_reduce_train_input_fn(train_file,
+										_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,
+										worker_count=worker_count,
+										task_index=task_index)
+			eval_features = lambda: tf_data_utils.all_reduce_train_input_fn(dev_file,
+										_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,
+										worker_count=worker_count,
+										task_index=task_index)
+		else:
+			train_features = lambda: tf_data_utils.train_input_fn(train_file,
+										_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,
+										worker_count=worker_count,
+										task_index=task_index)
 
-		eval_features = lambda: tf_data_utils.eval_input_fn(dev_file,
-									_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,
-									worker_count=worker_count,
-									task_index=task_index)
+			eval_features = lambda: tf_data_utils.eval_input_fn(dev_file,
+										_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,
+										worker_count=worker_count,
+										task_index=task_index)
 		
 		train_hooks = []
 		eval_hooks = []
+
+		sess_config = tf.ConfigProto(allow_soft_placement=False,
+									log_device_placement=False)
 		if FLAGS.opt_type == "ps" or FLAGS.opt_type == "ps_sync":
 			print("==no need for hook==")
 		elif FLAGS.opt_type == "pai_soar" and pai:
 			print("no need for hook")
 		elif FLAGS.opt_type == "hvd" and hvd:
-			sess_config = tf.ConfigProto(allow_soft_placement=False,
-									log_device_placement=False)
 			sess_config.gpu_options.allow_growth = True
 			sess_config.gpu_options.visible_device_list = str(hvd.local_rank())
 			print("==no need fo hook==")
 		else:
 			print("==no need for hooks==")
 
-		run_config = tf.estimator.RunConfig(model_dir=checkpoint_dir, 
+		if kargs.get("run_config", None):
+			run_config = kargs.get("run_config", None)
+			run_config.replace(save_checkpoints_steps=num_storage_steps)
+		else:
+			run_config = tf.estimator.RunConfig(model_dir=checkpoint_dir, 
 											save_checkpoints_steps=num_storage_steps,
 											session_config=sess_config)
-		
+
 		model_estimator = tf.estimator.Estimator(
 						model_fn=model_fn,
 						config=run_config)
 
-		train_spec = tf.estimator.TrainSpec(input_fn=train_features, 
-										max_steps=num_train_steps)
+		train_being_time = time.time()
+		tf.logging.info("==training distribution_strategy=={}".foramt(kargs.get("distribution_strategy", "MirroredStrategy")))
+		if kargs.get("distribution_strategy", "MirroredStrategy") == "MirroredStrategy":
+			print("==apply single machine multi-card training==")
+			model_estimator.train(input_fn=train_features,
+							max_steps=num_train_steps)
 
-		eval_spec = tf.estimator.EvalSpec(input_fn=eval_features, 
-										steps=num_eval_steps)
+			train_end_time = time.time()
 
-		tf.estimator.train_and_evaluate(model_estimator, train_spec, eval_spec)
+			eval_results = model_estimator.evaluate(input_fn=eval_features, steps=num_eval_steps)
+			print(eval_results)
+			print("==training time==", train_end_time - train_being_time)
+		elif kargs.get("distribution_strategy", "MirroredStrategy") in ["ParameterServerStrategy", "CollectiveAllReduceStrategy"]: 
+			print("==apply multi-machine machine multi-card training==")
+			train_spec = tf.estimator.TrainSpec(input_fn=train_features, 
+											max_steps=num_train_steps)
+
+			eval_spec = tf.estimator.EvalSpec(input_fn=eval_features, 
+											steps=num_eval_steps)
+
+			tf.estimator.train_and_evaluate(model_estimator, train_spec, eval_spec)
+			train_end_time = time.time()
+			print("==training time==", train_end_time - train_being_time)
+
 		
 		
