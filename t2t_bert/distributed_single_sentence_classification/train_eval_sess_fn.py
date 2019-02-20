@@ -5,8 +5,10 @@ from data_generator import distributed_tf_data_utils as tf_data_utils
 
 try:
 	from .bert_model_fn import model_fn_builder
+	from .bert_model_fn import rule_model_fn_builder
 except:
 	from bert_model_fn import model_fn_builder
+	from bert_model_fn import rule_model_fn_builder
 
 import numpy as np
 import tensorflow as tf
@@ -98,7 +100,12 @@ def train_eval_fn(FLAGS,
 			checkpoint_dir = checkpoint_dir
 		print("==checkpoint_dir==", checkpoint_dir, is_chief)
 
-		model_train_fn = model_fn_builder(config, num_classes, init_checkpoint, 
+		if kargs.get("rule_model", "rule"):
+			model_fn_interface = rule_model_fn_builder
+		else:
+			model_fn_interface = model_fn_builder
+
+		model_train_fn = model_fn_interface(config, num_classes, init_checkpoint, 
 												model_reuse=None, 
 												load_pretrained=True,
 												opt_config=opt_config,
@@ -111,7 +118,7 @@ def train_eval_fn(FLAGS,
 												num_storage_steps=num_storage_steps,
 												task_index=task_index)
 		
-		model_eval_fn = model_fn_builder(config, num_classes, init_checkpoint, 
+		model_eval_fn = model_fn_interface(config, num_classes, init_checkpoint, 
 												model_reuse=True, 
 												load_pretrained=True,
 												opt_config=opt_config,

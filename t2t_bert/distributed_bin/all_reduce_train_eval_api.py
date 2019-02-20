@@ -155,6 +155,8 @@ def main(_):
 					  model_dir=checkpoint_dir,
 					  distribute=distribution, 
 					  session_config=sess_config,
+					  save_checkpoints_secs=None,
+					  save_checkpoints_steps=None,
 					  log_step_count_steps=100)
 
 	task_index = run_config.task_id
@@ -176,7 +178,8 @@ def main(_):
 		dev_file=dev_file,
 		checkpoint_dir=checkpoint_dir,
 		run_config=run_config,
-		distribution_strategy=FLAGS.distribution_strategy)
+		distribution_strategy=FLAGS.distribution_strategy,
+		profiler="profiler")
 
 if __name__ == "__main__":
 	tf.app.run()
