@@ -58,6 +58,9 @@ def train_eval_fn(FLAGS,
 		elif FLAGS.if_shard == "1":
 			train_size = int(FLAGS.train_size/worker_count)
 			epoch = FLAGS.epoch
+		else:
+			train_size = int(FLAGS.train_size/worker_count)
+			epoch = FLAGS.epoch
 
 		init_lr = 2e-5
 
@@ -201,10 +204,10 @@ def train_eval_fn(FLAGS,
 							max_steps=num_train_steps)
 
 			train_end_time = time.time()
-
+			print("==training time==", train_end_time - train_being_time)
 			eval_results = model_estimator.evaluate(input_fn=eval_features, steps=num_eval_steps)
 			print(eval_results)
-			print("==training time==", train_end_time - train_being_time)
+			
 		elif kargs.get("distribution_strategy", "MirroredStrategy") in ["ParameterServerStrategy", "CollectiveAllReduceStrategy"]: 
 			print("==apply multi-machine machine multi-card training==")
 			train_spec = tf.estimator.TrainSpec(input_fn=train_features, 
