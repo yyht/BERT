@@ -119,6 +119,11 @@ flags.DEFINE_string(
 	"distribution strategy"
 	)
 
+flags.DEFINE_string(
+	"rule_model", "normal",
+	"distribution strategy"
+	)
+
 def main(_):
 
 	print(FLAGS)
@@ -157,7 +162,8 @@ def main(_):
 			train_file=train_file,
 			dev_file=dev_file,
 			checkpoint_dir=checkpoint_dir,
-			distribution_strategy=FLAGS.distribution_strategy)
+			distribution_strategy=FLAGS.distribution_strategy,
+			rule_model=FLAGS.rule_model)
 
 	elif FLAGS.run_type == "estimator":
 		hvd_train_eval.monitored_estimator(
@@ -171,7 +177,8 @@ def main(_):
 			train_file=train_file,
 			dev_file=dev_file,
 			checkpoint_dir=checkpoint_dir,
-			distribution_strategy=FLAGS.distribution_strategy)
+			distribution_strategy=FLAGS.distribution_strategy,
+			rule_model=FLAGS.rule_model)
 
 if __name__ == "__main__":
 	tf.app.run()

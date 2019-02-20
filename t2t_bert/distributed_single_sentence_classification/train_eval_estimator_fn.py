@@ -5,8 +5,10 @@ from data_generator import distributed_tf_data_utils as tf_data_utils
 
 try:
 	from .bert_model_fn import model_fn_builder
+	from .bert_model_fn import rule_model_fn_builder
 except:
 	from bert_model_fn import model_fn_builder
+	from bert_model_fn import rule_model_fn_builder
 
 import numpy as np
 import tensorflow as tf
@@ -26,7 +28,7 @@ try:
 except Exception as e:
 	hvd = None
 
-import time
+import time, os, sys
 
 def train_eval_fn(FLAGS,
 				worker_count, 
@@ -103,20 +105,26 @@ def train_eval_fn(FLAGS,
 			checkpoint_dir = checkpoint_dir
 		print("==checkpoint_dir==", checkpoint_dir, is_chief)
 
-		model_fn = model_fn_builder(config, num_classes, init_checkpoint, 
-												model_reuse=None, 
-												load_pretrained=True,
-												model_io_config=model_io_config,
-												opt_config=opt_config,
-												model_io_fn=model_io_fn,
-												exclude_scope="",
-												not_storage_params=[],
-												target="",
-												output_type="estimator",
-												checkpoint_dir=checkpoint_dir,
-												num_storage_steps=num_storage_steps,
-												task_index=task_index,
-												**kargs)
+
+		if kargs.get("rule_model", "rule"):
+			model_fn_interface = rule_model_fn_builder
+		else:
+			model_fn_interface = model_fn_builder
+
+		model_fn = 	model_fn_interface(config, num_classes, init_checkpoint, 
+									model_reuse=None, 
+									load_pretrained=True,
+									model_io_config=model_io_config,
+									opt_config=opt_config,
+									model_io_fn=model_io_fn,
+									exclude_scope="",
+									not_storage_params=[],
+									target="",
+									output_type="estimator",
+									checkpoint_dir=checkpoint_dir,
+									num_storage_steps=num_storage_steps,
+									task_index=task_index,
+									**kargs)
 
 		name_to_features = {
 				"input_ids":
@@ -186,11 +194,21 @@ def train_eval_fn(FLAGS,
 
 		if kargs.get("run_config", None):
 			run_config = kargs.get("run_config", None)
-			run_config.replace(save_checkpoints_steps=num_storage_steps)
+			run_config = run_config.replace(save_checkpoints_steps=num_storage_steps)
+			print("==run config==", run_config.save_checkpoints_steps)
 		else:
 			run_config = tf.estimator.RunConfig(model_dir=checkpoint_dir, 
 											save_checkpoints_steps=num_storage_steps,
 											session_config=sess_config)
+
+		if kargs.get("profiler", "profiler") == "profiler":
+			hooks = tf.train.ProfilerHook(
+						save_steps=100,
+						save_secs=None,
+						output_dir=os.path.join(checkpoint_dir, "profiler"),
+				)
+			train_hooks.append(hooks)
+			print("==add profiler hooks==")
 
 		model_estimator = tf.estimator.Estimator(
 						model_fn=model_fn,
@@ -201,10 +219,12 @@ def train_eval_fn(FLAGS,
 		if kargs.get("distribution_strategy", "MirroredStrategy") == "MirroredStrategy":
 			print("==apply single machine multi-card training==")
 			model_estimator.train(input_fn=train_features,
-							max_steps=num_train_steps)
+							max_steps=num_train_steps,
+							hooks=train_hooks)
 
 			train_end_time = time.time()
 			print("==training time==", train_end_time - train_being_time)
+			tf.logging.info("==training time=={}".format(train_end_time - train_being_time))
 			eval_results = model_estimator.evaluate(input_fn=eval_features, steps=num_eval_steps)
 			print(eval_results)
 			
