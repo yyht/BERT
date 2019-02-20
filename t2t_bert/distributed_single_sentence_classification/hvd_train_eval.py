@@ -58,4 +58,4 @@ def monitored_estimator(FLAGS,
 				dev_file,
 				checkpoint_dir,
 				FLAGS.is_debug,
-				**Kargs)
+				**kargs)
