@@ -37,7 +37,8 @@ def train_eval_fn(FLAGS,
 				train_file,
 				dev_file,
 				checkpoint_dir,
-				is_debug):
+				is_debug,
+				**kargs):
 
 	graph = tf.Graph()
 	with graph.as_default():
