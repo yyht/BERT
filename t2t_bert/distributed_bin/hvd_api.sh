@@ -9,7 +9,7 @@ mpirun -np 2 \
  --train_file "jd_comment/train.tfrecords" \
  --dev_file "jd_comment/test.tfrecords" \
  --max_length 128 \
- --model_output "jd_comment/hvd/model_estimator" \
+ --model_output "jd_comment/hvd/model_estimator_new" \
  --epoch 2 \
  --num_classes 2 \
  --batch_size 32 \
