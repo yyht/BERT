@@ -14,7 +14,7 @@ class RuleDetector(object):
 			print("=succeeded in loading keywords==")
 
 		with open(self.config["label_dict"], "r") as frobj:
-			self.label_dict = json.laod(frobj)
+			self.label_dict = json.load(frobj)
 
 	def get_rule(self, keywords_found, tokenized_lst):
 		rule_type_lst = [self.config["background_label"]] * len(tokenized_lst)
@@ -39,5 +39,5 @@ class RuleDetector(object):
 		rule_type_lst = self.get_rule(keywords_found, tokenized_lst)
 		rule_id_lst = []
 		for rule_token in rule_type_lst:
-			rule_id_lst.append(self.label_dict["label2id"][rule_token])
+			rule_id_lst.append(int(self.label_dict["label2id"][rule_token]))
 		return rule_id_lst
