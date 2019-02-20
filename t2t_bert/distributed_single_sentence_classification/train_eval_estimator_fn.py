@@ -197,7 +197,7 @@ def train_eval_fn(FLAGS,
 						config=run_config)
 
 		train_being_time = time.time()
-		tf.logging.info("==training distribution_strategy=={}".foramt(kargs.get("distribution_strategy", "MirroredStrategy")))
+		tf.logging.info("==training distribution_strategy=={}".format(kargs.get("distribution_strategy", "MirroredStrategy")))
 		if kargs.get("distribution_strategy", "MirroredStrategy") == "MirroredStrategy":
 			print("==apply single machine multi-card training==")
 			model_estimator.train(input_fn=train_features,

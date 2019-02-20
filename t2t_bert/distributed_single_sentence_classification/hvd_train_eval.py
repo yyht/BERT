@@ -21,7 +21,8 @@ def monitored_sess(FLAGS,
 				init_checkpoint,
 				train_file,
 				dev_file,
-				checkpoint_dir):
+				checkpoint_dir,
+				**kargs):
 
 	sess_fn(FLAGS,
 			worker_count, 
@@ -32,7 +33,8 @@ def monitored_sess(FLAGS,
 			train_file,
 			dev_file,
 			checkpoint_dir,
-			FLAGS.is_debug)
+			FLAGS.is_debug,
+			**kargs)
 
 def monitored_estimator(FLAGS,
 				worker_count, 
@@ -43,7 +45,8 @@ def monitored_estimator(FLAGS,
 				init_checkpoint,
 				train_file,
 				dev_file,
-				checkpoint_dir):
+				checkpoint_dir,
+				**kargs):
 	
 	estimator_fn(FLAGS,
 				worker_count, 
@@ -54,4 +57,5 @@ def monitored_estimator(FLAGS,
 				train_file,
 				dev_file,
 				checkpoint_dir,
-				FLAGS.is_debug)
+				FLAGS.is_debug,
+				**Kargs)

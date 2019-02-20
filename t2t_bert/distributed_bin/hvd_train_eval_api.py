@@ -114,6 +114,11 @@ flags.DEFINE_string(
 	"run_type", "0",
 	"Input TF example files (can be a glob or comma separated).")
 
+flags.DEFINE_string(
+	"distribution_strategy", "ParameterServerStrategy",
+	"distribution strategy"
+	)
+
 def main(_):
 
 	print(FLAGS)
@@ -151,7 +156,8 @@ def main(_):
 			init_checkpoint=init_checkpoint,
 			train_file=train_file,
 			dev_file=dev_file,
-			checkpoint_dir=checkpoint_dir)
+			checkpoint_dir=checkpoint_dir,
+			distribution_strategy=FLAGS.distribution_strategy)
 
 	elif FLAGS.run_type == "estimator":
 		hvd_train_eval.monitored_estimator(
@@ -164,7 +170,8 @@ def main(_):
 			init_checkpoint=init_checkpoint,
 			train_file=train_file,
 			dev_file=dev_file,
-			checkpoint_dir=checkpoint_dir)
+			checkpoint_dir=checkpoint_dir,
+			distribution_strategy=FLAGS.distribution_strategy)
 
 if __name__ == "__main__":
 	tf.app.run()
