@@ -65,7 +65,7 @@ flags.DEFINE_string(
 	"export_type", None,
 	"Input TF example files (can be a glob or comma separated).")
 
-def export():
+def main(_):
 
 	init_checkpoint = os.path.join(FLAGS.buckets, FLAGS.init_checkpoint)
 	model_dir = os.path.join(FLAGS.buckets, FLAGS.model_dir)
