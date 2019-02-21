@@ -90,3 +90,5 @@ def export():
 	elif FLAGS.export_type == "2":
 		single_sentence_exporter.export_model_v2(model_config)
 
+if __name__ == "__main__":
+	tf.app.run()
