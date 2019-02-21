@@ -132,7 +132,8 @@ def export_model_v2(config):
 	opt_config = Bunch({"train_op":"adam"})
 	model_io_config = Bunch({"fix_lm":False})
 
-	model_fn = model_fn_interface(config, num_classes, config["init_checkpoint"], 
+	model_fn = model_fn_interface(model_config, num_classes, 
+								config["init_checkpoint"], 
 								model_reuse=None, 
 								load_pretrained=True,
 								opt_config=opt_config,
