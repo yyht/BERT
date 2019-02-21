@@ -1,4 +1,4 @@
-CUDA_VISIBLE_DEVICES="" python export.py \
+CUDA_VISIBLE_DEVICES="" python ./t2t_bert/distributed_bin/export.py \
  --buckets "/data/xuht" \
  --local_buckets "/data/xuht" \
  --config_file "chinese_L-12_H-768_A-12/bert_config.json" \
