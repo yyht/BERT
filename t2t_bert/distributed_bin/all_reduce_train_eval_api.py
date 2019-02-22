@@ -183,6 +183,3 @@ def main(_):
 
 if __name__ == "__main__":
 	tf.app.run()
-
-
-classifier_estimator.train(train_input_fn)
