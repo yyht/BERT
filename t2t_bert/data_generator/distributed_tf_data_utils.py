@@ -86,6 +86,39 @@ def eval_input_fn(input_file, _parse_fn, name_to_features,
 	features = iterator.get_next()
 	return features
 
+def train_batch_input_fn(input_file, _parse_fn, name_to_features,
+		params, **kargs):
+	if_shard = kargs.get("if_shard", "1")
+
+	worker_count = kargs.get("worker_count", 1)
+	task_index = kargs.get("task_index", 0)
+
+	dataset = tf.data.TFRecordDataset(input_file, buffer_size=params.get("buffer_size", 100))
+	dataset = dataset.repeat(params.get("epoch", 100))
+	print("==worker_count {}, task_index {}==".format(worker_count, task_index))
+	if if_shard == "1":
+		dataset = dataset.shard(worker_count, task_index)
+	dataset = dataset.shuffle(
+							buffer_size=params.get("buffer_size", 1024)+3*params.get("batch_size", 32),
+							seed=np.random.randint(0,1e10,1)[0],
+							reshuffle_each_iteration=True)
+	dataset = dataset.batch(params.get("batch_size", 32))
+	dataset = dataset.map(lambda x:_parse_fn(x, name_to_features))
+	iterator = dataset.make_one_shot_iterator()
+	features = iterator.get_next()
+	return features
+	
+def eval_batch_input_fn(input_file, _parse_fn, name_to_features,
+		params, **kargs):
+	if_shard = kargs.get("if_shard", "1")
+	dataset = tf.data.TFRecordDataset(input_file, buffer_size=params.get("buffer_size", 100))
+	dataset = dataset.repeat()
+	dataset = dataset.batch(params.get("batch_size", 32))
+	dataset = dataset.map(lambda x:_parse_fn(x, name_to_features))
+	iterator = dataset.make_one_shot_iterator()
+	features = iterator.get_next()
+	return features
+
 def all_reduce_train_input_fn(input_file, _parse_fn, name_to_features,
 		params, **kargs):
 	if_shard = kargs.get("if_shard", "1")
@@ -112,6 +145,34 @@ def all_reduce_eval_input_fn(input_file, _parse_fn, name_to_features,
 	dataset = dataset.map(lambda x:_parse_fn(x, name_to_features))
 	dataset = dataset.batch(params.get("batch_size", 32))
 	dataset = dataset.repeat(1)
+	return dataset
+
+def all_reduce_train_batch_input_fn(input_file, _parse_fn, name_to_features,
+		params, **kargs):
+	if_shard = kargs.get("if_shard", "1")
+
+	worker_count = kargs.get("worker_count", 1)
+	task_index = kargs.get("task_index", 0)
+
+	dataset = tf.data.TFRecordDataset(input_file, buffer_size=params.get("buffer_size", 100))
+	dataset = dataset.repeat(params.get("epoch", 100))
+	print("==worker_count {}, task_index {}==".format(worker_count, task_index))
+	if if_shard == "1":
+		dataset = dataset.shard(worker_count, task_index)
+	dataset = dataset.shuffle(
+							buffer_size=params.get("buffer_size", 1024)+3*params.get("batch_size", 32),
+							seed=np.random.randint(0,1e10,1)[0],
+							reshuffle_each_iteration=True)
+	dataset = dataset.batch(params.get("batch_size", 32))
+	dataset = dataset.map(lambda x:_parse_fn(x, name_to_features))
+	return dataset
+
+def all_reduce_eval_batch_input_fn(input_file, _parse_fn, name_to_features,
+		params, **kargs):
+	dataset = tf.data.TFRecordDataset(input_file, buffer_size=params.get("buffer_size", 100))
+	dataset = dataset.repeat(1)
+	dataset = dataset.batch(params.get("batch_size", 32))
+	dataset = dataset.map(lambda x:_parse_fn(x, name_to_features))
 	return dataset
 
 def _truncate_seq_pair(tokens_a, tokens_b, max_length):
