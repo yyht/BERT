@@ -74,8 +74,8 @@ def train_eval_fn(FLAGS,
 		num_eval_steps = int(FLAGS.eval_size / FLAGS.batch_size)
 
 		if is_debug == "0":
-			num_storage_steps = 190
-			num_eval_steps = 100
+			# num_storage_steps = 190
+			# num_eval_steps = 100
 			num_train_steps = 200
 		print("num_train_steps {}, num_eval_steps {}, num_storage_steps {}".format(num_train_steps, num_eval_steps, num_storage_steps))
 
