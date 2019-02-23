@@ -125,8 +125,8 @@ flags.DEFINE_string(
 	)
 
 flags.DEFINE_string(
-	"rule_model", "normal",
-	"distribution strategy"
+	"parse_type", "parse_single", 
+	"the required num_gpus"
 	)
 
 def main(_):
@@ -168,7 +168,8 @@ def main(_):
 			dev_file=dev_file,
 			checkpoint_dir=checkpoint_dir,
 			distribution_strategy=FLAGS.distribution_strategy,
-			rule_model=FLAGS.rule_model)
+			rule_model=FLAGS.rule_model,
+			parse_type=FLAGS.parse_type)
 
 	elif FLAGS.run_type == "estimator":
 		hvd_train_eval.monitored_estimator(
@@ -183,7 +184,8 @@ def main(_):
 			dev_file=dev_file,
 			checkpoint_dir=checkpoint_dir,
 			distribution_strategy=FLAGS.distribution_strategy,
-			rule_model=FLAGS.rule_model)
+			rule_model=FLAGS.rule_model,
+			parse_type=FLAGS.parse_type)
 
 if __name__ == "__main__":
 	tf.app.run()
