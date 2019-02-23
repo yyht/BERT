@@ -215,7 +215,7 @@ def train_eval_fn(FLAGS,
 										_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,
 										worker_count=worker_count,
 										task_index=task_index)
-		elif kargs.get("parse_type", "parse_single") == "parse_batch"::
+		elif kargs.get("parse_type", "parse_single") == "parse_batch":
 			train_features = tf_data_utils.train_batch_input_fn(train_file,
 										_decode_batch_record, name_to_features, params, if_shard=FLAGS.if_shard,
 										worker_count=worker_count,
