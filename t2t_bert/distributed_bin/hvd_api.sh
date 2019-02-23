@@ -5,16 +5,16 @@ mpirun -np 2 \
  --config_file "chinese_L-12_H-768_A-12/bert_config.json" \
  --init_checkpoint "chinese_L-12_H-768_A-12/bert_model.ckpt" \
  --vocab_file "chinese_L-12_H-768_A-12/vocab.txt" \
- --label_id "jd_comment/label_dict.json" \
- --train_file "jd_comment/rule_data/train.tfrecords" \
- --dev_file "jd_comment/rule_data/test.tfrecords" \
+ --label_id "porn/label_dict.json" \
+ --train_file "porn/rule/seqing_train_20180821_tf_records" \
+ --dev_file "porn/rule/seqing_test_20180821_tf_records" \
  --max_length 128 \
- --model_output "jd_comment/hvd/rule_data/model_sess" \
+ --model_output "porn/rule/model/sess" \
  --epoch 2 \
- --num_classes 2 \
+ --num_classes 5 \
  --batch_size 32 \
- --train_size 33033 \
- --eval_size 8589 \
+ --train_size 1402171 \
+ --eval_size 145019 \
  --model_type bert \
  --if_shard "1" \
  --is_debug "1" \
