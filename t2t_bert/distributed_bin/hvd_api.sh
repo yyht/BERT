@@ -21,6 +21,7 @@ mpirun -np 2 \
  --run_type "sess" \
  --opt_type "hvd" \
  --distribution_strategy "MirroredStrategy" \
- --rule_model "rule"
+ --rule_model "rule" \
+ --parse_type "parse_batch"
 
 

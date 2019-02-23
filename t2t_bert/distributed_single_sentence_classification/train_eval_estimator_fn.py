@@ -108,8 +108,10 @@ def train_eval_fn(FLAGS,
 
 		if kargs.get("rule_model", "rule"):
 			model_fn_interface = rule_model_fn_builder
+			print("==apply rule model==")
 		else:
 			model_fn_interface = model_fn_builder
+			print("==apply normal model==")
 
 		model_fn = 	model_fn_interface(config, num_classes, init_checkpoint, 
 									model_reuse=None, 
@@ -150,21 +152,41 @@ def train_eval_fn(FLAGS,
 					t = tf.to_int32(t)
 				example[name] = t
 
-			return example 
+			return example
+
+		def _decode_batch_record(record, name_to_features):
+			example = tf.parse_example(record, name_to_features)
+			# for name in list(example.keys()):
+			# 	t = example[name]
+			# 	if t.dtype == tf.int64:
+			# 		t = tf.to_int32(t)
+			# 	example[name] = t
+
+			return example
 
 		params = Bunch({})
 		params.epoch = FLAGS.epoch
 		params.batch_size = FLAGS.batch_size
 
 		if kargs.get("run_config", None):
-			train_features = lambda: tf_data_utils.all_reduce_train_input_fn(train_file,
-										_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,
-										worker_count=worker_count,
-										task_index=task_index)
-			eval_features = lambda: tf_data_utils.all_reduce_train_input_fn(dev_file,
-										_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,
-										worker_count=worker_count,
-										task_index=task_index)
+			if kargs.get("parse_type", "parse_single") == "parse_single":
+				train_features = lambda: tf_data_utils.all_reduce_train_input_fn(train_file,
+											_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,
+											worker_count=worker_count,
+											task_index=task_index)
+				eval_features = lambda: tf_data_utils.all_reduce_eval_input_fn(dev_file,
+											_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,
+											worker_count=worker_count,
+											task_index=task_index)
+			elif kargs.get("parse_type", "parse_single") == "parse_batch":
+				train_features = lambda: tf_data_utils.all_reduce_train_batch_input_fn(train_file,
+											_decode_batch_record, name_to_features, params, if_shard=FLAGS.if_shard,
+											worker_count=worker_count,
+											task_index=task_index)
+				eval_features = lambda: tf_data_utils.all_reduce_eval_batch_input_fn(dev_file,
+											_decode_batch_record, name_to_features, params, if_shard=FLAGS.if_shard,
+											worker_count=worker_count,
+											task_index=task_index)	
 		else:
 			train_features = lambda: tf_data_utils.train_input_fn(train_file,
 										_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,

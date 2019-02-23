@@ -21,6 +21,8 @@ flags = tf.flags
 
 FLAGS = flags.FLAGS
 
+tf.logging.set_verbosity(tf.logging.INFO)
+
 ## Required parameters
 flags.DEFINE_string(
 	"train_file", None,

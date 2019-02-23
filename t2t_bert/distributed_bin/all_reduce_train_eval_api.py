@@ -125,6 +125,16 @@ flags.DEFINE_string(
 	"the required num_gpus"
 	)
 
+flags.DEFINE_string(
+	"parse_type", "parse_single", 
+	"the required num_gpus"
+	)
+
+flags.DEFINE_string(
+	"rule_model", "normal", 
+	"the required num_gpus"
+	)
+
 def main(_):
 
 	print(FLAGS)
@@ -179,7 +189,9 @@ def main(_):
 		checkpoint_dir=checkpoint_dir,
 		run_config=run_config,
 		distribution_strategy=FLAGS.distribution_strategy,
-		profiler="profiler")
+		profiler="profiler",
+		parse_type=FLAGS.parse_type,
+		rule_model=FLAGS.rule_model)
 
 if __name__ == "__main__":
 	tf.app.run()
