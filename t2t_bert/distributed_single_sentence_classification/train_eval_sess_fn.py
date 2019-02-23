@@ -74,8 +74,8 @@ def train_eval_fn(FLAGS,
 		num_eval_steps = int(FLAGS.eval_size / FLAGS.batch_size)
 
 		if is_debug == "0":
-			# num_storage_steps = 190
-			# num_eval_steps = 100
+			num_storage_steps = 190
+			num_eval_steps = 100
 			num_train_steps = 200
 		print("num_train_steps {}, num_eval_steps {}, num_storage_steps {}".format(num_train_steps, num_eval_steps, num_storage_steps))
 
@@ -266,8 +266,10 @@ def train_eval_fn(FLAGS,
 			label_id = eval_total_dict["label_ids"]
 			pred_label = eval_total_dict["pred_label"]
 
+			label_id = sorted(list(label_dict["id2label"].keys()))
+
 			result = classification_report(label_id, pred_label, 
-				target_names=list(label_dict["label2id"].keys()))
+				target_names=[label_dict["id2label"][key] for key in label_id])
 
 			print(result, task_index)
 			eval_total_dict["classification_report"] = result
