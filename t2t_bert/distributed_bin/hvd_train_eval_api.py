@@ -124,6 +124,11 @@ flags.DEFINE_string(
 	"distribution strategy"
 	)
 
+flags.DEFINE_string(
+	"rule_model", "normal",
+	"distribution strategy"
+	)
+
 def main(_):
 
 	print(FLAGS)
