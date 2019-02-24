@@ -266,10 +266,10 @@ def train_eval_fn(FLAGS,
 			label_id = eval_total_dict["label_ids"]
 			pred_label = eval_total_dict["pred_label"]
 
-			label_id = sorted(list(label_dict["id2label"].keys()))
+			label_dict_id = sorted(list(label_dict["id2label"].keys()))
 
 			result = classification_report(label_id, pred_label, 
-				target_names=[label_dict["id2label"][key] for key in label_id])
+				target_names=[label_dict["id2label"][key] for key in label_dict_id])
 
 			print(result, task_index)
 			eval_total_dict["classification_report"] = result

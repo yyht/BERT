@@ -179,6 +179,7 @@ def train_eval_fn(FLAGS,
 											worker_count=worker_count,
 											task_index=task_index)
 			elif kargs.get("parse_type", "parse_single") == "parse_batch":
+				print("==apply parse example==")
 				train_features = lambda: tf_data_utils.all_reduce_train_batch_input_fn(train_file,
 											_decode_batch_record, name_to_features, params, if_shard=FLAGS.if_shard,
 											worker_count=worker_count,
