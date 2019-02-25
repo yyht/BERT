@@ -127,16 +127,17 @@ def all_reduce_train_input_fn(input_file, _parse_fn, name_to_features,
 	task_index = kargs.get("task_index", 0)
 
 	dataset = tf.data.TFRecordDataset(input_file, buffer_size=params.get("buffer_size", 100))
+	dataset = dataset.repeat(params.get("epoch", 100))
 	print("==worker_count {}, task_index {}==".format(worker_count, task_index))
 	if if_shard == "1":
 		dataset = dataset.shard(worker_count, task_index)
-	dataset = dataset.map(lambda x:_parse_fn(x, name_to_features))
 	dataset = dataset.shuffle(
 							buffer_size=params.get("buffer_size", 1024)+3*params.get("batch_size", 32),
 							seed=np.random.randint(0,1e10,1)[0],
 							reshuffle_each_iteration=True)
+	dataset = dataset.map(lambda x:_parse_fn(x, name_to_features))
 	dataset = dataset.batch(params.get("batch_size", 32))
-	dataset = dataset.repeat(params.get("epoch", 100))
+
 	return dataset
 
 def all_reduce_eval_input_fn(input_file, _parse_fn, name_to_features,

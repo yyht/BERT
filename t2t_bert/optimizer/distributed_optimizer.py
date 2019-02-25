@@ -4,6 +4,7 @@ from __future__ import print_function
 
 from optimizer import optimizer_utils
 from optimizer import adam_weight_decay_utils
+from optimizer import adam_weight_decay_exclude_utils
 
 import collections
 import copy
@@ -123,9 +124,10 @@ class Optimizer(object):
 							**kargs):
 		opt_type = self.config.get("train_op", "adam_decay")
 		tf.logging.info(" optimization method {}".format(opt_type))
-		if opt_type not in ["adam_decay", "adam", "adam_weight_decay"]:
+		if opt_type not in ["adam_decay", "adam", "adam_weight_decay", "adam_weight_decay_exclude"]:
 			raise NotImplementedError()
 		if opt_type == "adam_decay":
+			print("==apply bert adam weight decay==")
 			opt = optimizer_utils.AdamWeightDecayOptimizer(
 						learning_rate=learning_rate,
 						weight_decay_rate=self.config.get("opt_decay_rate", 0.01),
@@ -134,13 +136,25 @@ class Optimizer(object):
 						epsilon=self.config.get("epsilon", 1e-6),
 						exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"])
 		elif opt_type == "adam_weight_decay":
+			print("==apply original adam weight decay==")
 			opt = adam_weight_decay_utils.AdamWOptimizer(
 						weight_decay=self.config.get("opt_decay_rate", 0.01),
 						learning_rate=learning_rate,
 						beta1=self.config.get("beta_1", 0.9),
 						beta2=self.config.get("beta_2", 0.999),
 						epsilon=self.config.get("epsilon", 1e-6))
+		elif opt_type == "adam_weight_decay_exclude":
+			print("==apply adam weight decay==")
+			opt = adam_weight_decay_exclude_utils.AdamWOptimizer(
+						weight_decay=self.config.get("opt_decay_rate", 0.01),
+						learning_rate=learning_rate,
+						beta1=self.config.get("beta_1", 0.9),
+						beta2=self.config.get("beta_2", 0.999),
+						epsilon=self.config.get("epsilon", 1e-6),
+						exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"]
+						)
 		elif opt_type == "adam":
+			print("==apply adam==")
 			opt = tf.train.AdamOptimizer(learning_rate,
 										beta1=self.config.get("beta_1", 0.9),
 										beta2=self.config.get("beta_2", 0.999),
