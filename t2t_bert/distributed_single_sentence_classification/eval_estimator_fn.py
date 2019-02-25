@@ -30,7 +30,7 @@ except Exception as e:
 
 import time, os, sys
 
-def train_eval_fn(FLAGS,
+def eval_fn(FLAGS,
 				worker_count, 
 				task_index, 
 				is_chief, 
@@ -101,13 +101,10 @@ def train_eval_fn(FLAGS,
 
 		if FLAGS.opt_type == "hvd" and hvd:
 			checkpoint_dir = checkpoint_dir if task_index == 0 else None
-		elif FLAGS.opt_type == "all_reduce":
+		else:
 			checkpoint_dir = checkpoint_dir
-		elif FLAGS.opt_type == "collective_reduce":
-			checkpoint_dir = checkpoint_dir if task_index == 0 else None
-		elif FLAGS.opt_type == "ps" or FLAGS.opt_type == "ps_sync":
-			checkpoint_dir = checkpoint_dir if task_index == 0 else None
 		print("==checkpoint_dir==", checkpoint_dir, is_chief)
+
 
 		if kargs.get("rule_model", "rule"):
 			model_fn_interface = rule_model_fn_builder
@@ -173,30 +170,17 @@ def train_eval_fn(FLAGS,
 
 		if kargs.get("run_config", None):
 			if kargs.get("parse_type", "parse_single") == "parse_single":
-				train_features = lambda: tf_data_utils.all_reduce_train_input_fn(train_file,
-											_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,
-											worker_count=worker_count,
-											task_index=task_index)
 				eval_features = lambda: tf_data_utils.all_reduce_eval_input_fn(dev_file,
 											_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,
 											worker_count=worker_count,
 											task_index=task_index)
 			elif kargs.get("parse_type", "parse_single") == "parse_batch":
 				print("==apply parse example==")
-				train_features = lambda: tf_data_utils.all_reduce_train_batch_input_fn(train_file,
-											_decode_batch_record, name_to_features, params, if_shard=FLAGS.if_shard,
-											worker_count=worker_count,
-											task_index=task_index)
 				eval_features = lambda: tf_data_utils.all_reduce_eval_batch_input_fn(dev_file,
 											_decode_batch_record, name_to_features, params, if_shard=FLAGS.if_shard,
 											worker_count=worker_count,
 											task_index=task_index)	
 		else:
-			train_features = lambda: tf_data_utils.train_input_fn(train_file,
-										_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,
-										worker_count=worker_count,
-										task_index=task_index)
-
 			eval_features = lambda: tf_data_utils.eval_input_fn(dev_file,
 										_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,
 										worker_count=worker_count,
@@ -240,32 +224,15 @@ def train_eval_fn(FLAGS,
 						model_fn=model_fn,
 						config=run_config)
 
-		train_being_time = time.time()
-		tf.logging.info("==training distribution_strategy=={}".format(kargs.get("distribution_strategy", "MirroredStrategy")))
-		if kargs.get("distribution_strategy", "MirroredStrategy") == "MirroredStrategy":
-			print("==apply single machine multi-card training==")
-			model_estimator.train(input_fn=train_features,
-							max_steps=num_train_steps,
-							hooks=train_hooks)
+		train_spec = tf.estimator.TrainSpec(input_fn=train_features, 
+										max_steps=num_train_steps)
 
-			train_end_time = time.time()
-			print("==training time==", train_end_time - train_being_time)
-			tf.logging.info("==training time=={}".format(train_end_time - train_being_time))
-			eval_results = model_estimator.evaluate(input_fn=eval_features, steps=num_eval_steps)
-			print(eval_results)
-			
-		elif kargs.get("distribution_strategy", "MirroredStrategy") in ["ParameterServerStrategy", "CollectiveAllReduceStrategy"]: 
-			print("==apply multi-machine machine multi-card training==")
-			print(os.environ['TF_CONFIG'], "==tf_run_config==")
-			train_spec = tf.estimator.TrainSpec(input_fn=train_features, 
-											max_steps=num_train_steps)
+		eval_spec = tf.estimator.EvalSpec(input_fn=eval_features, 
+										steps=num_eval_steps)
 
-			eval_spec = tf.estimator.EvalSpec(input_fn=eval_features, 
-											steps=num_eval_steps)
-
-			tf.estimator.train_and_evaluate(model_estimator, train_spec, eval_spec)
-			train_end_time = time.time()
-			print("==training time==", train_end_time - train_being_time)
+		tf.estimator.train_and_evaluate(model_estimator, train_spec, eval_spec)
+		train_end_time = time.time()
+		print("==training time==", train_end_time - train_being_time)
 
 		
 		

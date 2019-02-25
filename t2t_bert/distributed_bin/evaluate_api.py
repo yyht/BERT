@@ -42,6 +42,9 @@ FLAGS = flags.FLAGS
 tf.logging.set_verbosity(tf.logging.INFO)
 
 flags.DEFINE_string("buckets", "", "oss buckets")
+flags.DEFINE_string('worker_hosts', '', 'must be list')
+flags.DEFINE_string('job_name', '', 'must be in ("", "worker", "ps")')
+flags.DEFINE_integer('task_index', 0, '')
 
 flags.DEFINE_string(
 	"config_file", None,
@@ -126,11 +129,6 @@ flags.DEFINE_string(
 	)
 
 flags.DEFINE_string(
-	"cross_tower_ops_type", "paisoar",
-	"the CollectiveAllReduceStrategy cross_tower_ops_type"
-	)
-
-flags.DEFINE_string(
 	"parse_type", "parse_single", 
 	"the required num_gpus"
 	)
@@ -145,7 +143,6 @@ flags.DEFINE_string(
 	"the required num_gpus"
 	)
 
-
 flags.DEFINE_string(
 	"train_op", "adam", 
 	"the required num_gpus"
@@ -155,6 +152,31 @@ def main(_):
 
 	print(FLAGS)
 	print(tf.__version__, "==tensorflow version==")
+
+	# make all to train and not evaluate while training
+	worker_hosts = FLAGS.worker_hosts.split(",")
+	worker_count = len(worker_hosts)
+	print("==numbers of workers==", worker_count)
+
+	if len(worker_hosts) > 1:
+		cluster = {"chief": [worker_hosts[0]],
+			   	"worker": worker_hosts[1:]}
+	else:
+		cluster = {"chief": [worker_hosts[0]]}
+  
+	if FLAGS.task_index == 0:
+		task_type = 'chief'
+		task_index = 0
+		os.environ['TF_CONFIG'] = json.dumps(
+			{'cluster': cluster,
+			 'task': {'type': "chief", 'index': 0}})
+  	else:
+		task_type = 'worker'
+		task_index = FLAGS.task_index - 1
+		os.environ['TF_CONFIG'] = json.dumps(
+			{'cluster': cluster,
+			 'task': {'type': FLAGS.job_name,
+			 'index': FLAGS.task_index - 1}})
 
 	init_checkpoint = os.path.join(FLAGS.buckets, FLAGS.init_checkpoint)
 	train_file = os.path.join(FLAGS.buckets, FLAGS.train_file)
@@ -170,8 +192,17 @@ def main(_):
 		worker_count = FLAGS.num_gpus
 	elif FLAGS.distribution_strategy == "CollectiveAllReduceStrategy":
 		distribution = tf.contrib.distribute.CollectiveAllReduceStrategy(
-						    num_gpus_per_worker=1，
-						    cross_tower_ops_type=FLAGS.get("cross_tower_ops_type", "paisoar"))
+							num_gpus_per_worker=1，
+							cross_tower_ops_type=FLAGS.get("opt_type", "paisoar"))
+	elif FLAGS.distribution_strategy == "ps_sync":
+		distribution = tf.contrib.distribute.ParameterServerStrategy(
+                		num_gpus_per_worker=1,
+		                mode='sync',
+		                replicas_to_aggregate=worker_count, 
+						total_num_replicas=worker_count)
+	elif FLAGS.distribution_strategy == "ps":
+		distribution = tf.contrib.distribute.ParameterServerStrategy(
+                		num_gpus_per_worker=1)
 	else:
 		cross_tower_ops = cross_tower_ops_lib.AllReduceCrossTowerOps("nccl", 10, 0, 0)
 		distribution = tf.contrib.distribute.MirroredStrategy(num_gpus=FLAGS.num_gpus, 
@@ -193,7 +224,6 @@ def main(_):
 	is_chief = run_config.is_chief
 
 	print("==worker_count==", worker_count, "==local_rank==", task_index, "==is is_chief==", is_chief)
-	cluster = ""
 	target = ""
 	
 	all_reduce_train_eval.monitored_estimator(
