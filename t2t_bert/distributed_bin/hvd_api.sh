@@ -18,9 +18,9 @@ mpirun -np 2 \
  --model_type bert \
  --if_shard "1" \
  --is_debug "1" \
- --run_type "sess" \
+ --run_type "estimator" \
  --opt_type "hvd" \
- --distribution_strategy "MirroredStrategy" \
+ --distribution_strategy "ParameterServerStrategy" \
  --rule_model "rule" \
  --parse_type "parse_batch"
 
