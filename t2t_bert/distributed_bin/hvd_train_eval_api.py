@@ -129,6 +129,11 @@ flags.DEFINE_string(
 	"the required num_gpus"
 	)
 
+flags.DEFINE_string(
+	"train_op", "adam_weight_decay_exclude", 
+	"the required num_gpus"
+	)
+
 def main(_):
 
 	print(FLAGS)
@@ -169,7 +174,8 @@ def main(_):
 			checkpoint_dir=checkpoint_dir,
 			distribution_strategy=FLAGS.distribution_strategy,
 			rule_model=FLAGS.rule_model,
-			parse_type=FLAGS.parse_type)
+			parse_type=FLAGS.parse_type,
+			train_op=FLAGS.train_op)
 
 	elif FLAGS.run_type == "estimator":
 		hvd_train_eval.monitored_estimator(
@@ -185,7 +191,8 @@ def main(_):
 			checkpoint_dir=checkpoint_dir,
 			distribution_strategy=FLAGS.distribution_strategy,
 			rule_model=FLAGS.rule_model,
-			parse_type=FLAGS.parse_type)
+			parse_type=FLAGS.parse_type,
+			train_op=FLAGS.train_op)
 
 if __name__ == "__main__":
 	tf.app.run()
