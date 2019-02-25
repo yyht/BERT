@@ -288,8 +288,6 @@ def extend_with_decoupled_weight_decay(base_optimizer):
 
   return OptimizerWithDecoupledWeightDecay
 
-
-@tf_export("contrib.opt.MomentumWOptimizer")
 class MomentumWOptimizer(DecoupledWeightDecayExtension,
                          momentum_opt.MomentumOptimizer):
   """Optimizer that implements the Momentum algorithm with weight_decay.
