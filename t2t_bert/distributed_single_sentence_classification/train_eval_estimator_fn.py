@@ -228,13 +228,14 @@ def train_eval_fn(FLAGS,
 											session_config=sess_config)
 
 		if kargs.get("profiler", "profiler") == "profiler":
-			hooks = tf.train.ProfilerHook(
-						save_steps=100,
-						save_secs=None,
-						output_dir=os.path.join(checkpoint_dir, "profiler"),
-				)
-			train_hooks.append(hooks)
-			print("==add profiler hooks==")
+			if checkpoint_dir:
+				hooks = tf.train.ProfilerHook(
+							save_steps=100,
+							save_secs=None,
+							output_dir=os.path.join(checkpoint_dir, "profiler"),
+					)
+				train_hooks.append(hooks)
+				print("==add profiler hooks==")
 
 		model_estimator = tf.estimator.Estimator(
 						model_fn=model_fn,
