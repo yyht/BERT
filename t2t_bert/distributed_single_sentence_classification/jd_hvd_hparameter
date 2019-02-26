@@ -18,4 +18,4 @@ run_type=estimator
 opt_type="all_reduce"
 num_gpus=4
 parse_type=parse_batch
-rule_model=rule
+rule_model=normal

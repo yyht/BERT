@@ -29,7 +29,7 @@ print(sys.path)
 
 import tensorflow as tf
 
-from distributed_single_sentence_classification import all_reduce_train_eval
+from distributed_single_sentence_classification import train_eval
 from tensorflow.contrib.distribute.python import cross_tower_ops as cross_tower_ops_lib
 
 import tensorflow as tf
@@ -153,6 +153,11 @@ flags.DEFINE_string(
 	"the required num_gpus"
 	)
 
+flags.DEFINE_string(
+	"running_type", "train", 
+	"the required num_gpus"
+	)
+
 def main(_):
 
 	print(FLAGS)
@@ -180,7 +185,7 @@ def main(_):
 		task_index = FLAGS.task_index - 1
 		os.environ['TF_CONFIG'] = json.dumps(
 			{'cluster': cluster,
-			 'task': {'type': FLAGS.job_name,
+			 'task': {'type': task_type,
 			 'index': FLAGS.task_index - 1}})
 
 	init_checkpoint = os.path.join(FLAGS.buckets, FLAGS.init_checkpoint)
@@ -197,17 +202,9 @@ def main(_):
 		worker_count = FLAGS.num_gpus
 	elif FLAGS.distribution_strategy == "CollectiveAllReduceStrategy":
 		distribution = tf.contrib.distribute.CollectiveAllReduceStrategy(
-							num_gpus_per_worker=1，
+							num_gpus_per_worker=1,
 							cross_tower_ops_type=FLAGS.get("cross_tower_ops_type", "paisoar"))
-	elif FLAGS.distribution_strategy == "ps_sync":
-		distribution = tf.contrib.distribute.ParameterServerStrategy(
-                		num_gpus_per_worker=1,
-		                mode='sync',
-		                replicas_to_aggregate=worker_count, 
-						total_num_replicas=worker_count)
-	elif FLAGS.distribution_strategy == "ps":
-		distribution = tf.contrib.distribute.ParameterServerStrategy(
-                		num_gpus_per_worker=1)
+		worker_count = len(worker_hosts)
 	else:
 		cross_tower_ops = cross_tower_ops_lib.AllReduceCrossTowerOps("nccl", 10, 0, 0)
 		distribution = tf.contrib.distribute.MirroredStrategy(num_gpus=FLAGS.num_gpus, 
@@ -231,7 +228,7 @@ def main(_):
 	print("==worker_count==", worker_count, "==local_rank==", task_index, "==is is_chief==", is_chief)
 	target = ""
 	
-	all_reduce_train_eval.monitored_estimator(
+	train_eval.monitored_estimator(
 		FLAGS=FLAGS,
 		worker_count=worker_count, 
 		task_index=task_index, 

@@ -29,7 +29,7 @@ print(sys.path)
 
 import tensorflow as tf
 
-from distributed_single_sentence_classification import all_reduce_train_eval
+from distributed_single_sentence_classification import train_eval
 from tensorflow.contrib.distribute.python import cross_tower_ops as cross_tower_ops_lib
 
 import tensorflow as tf
@@ -151,6 +151,11 @@ flags.DEFINE_string(
 	"the required num_gpus"
 	)
 
+flags.DEFINE_string(
+	"running_type", "train", 
+	"the required num_gpus"
+	)
+
 def main(_):
 
 	print(FLAGS)
@@ -168,10 +173,6 @@ def main(_):
 		distribution = tf.contrib.distribute.MirroredStrategy(num_gpus=FLAGS.num_gpus, 
 												cross_tower_ops=cross_tower_ops)
 		worker_count = FLAGS.num_gpus
-	elif FLAGS.distribution_strategy == "CollectiveAllReduceStrategy":
-		distribution = tf.contrib.distribute.CollectiveAllReduceStrategy(
-						    num_gpus_per_worker=1，
-						    cross_tower_ops_type=FLAGS.get("cross_tower_ops_type", "paisoar"))
 	else:
 		cross_tower_ops = cross_tower_ops_lib.AllReduceCrossTowerOps("nccl", 10, 0, 0)
 		distribution = tf.contrib.distribute.MirroredStrategy(num_gpus=FLAGS.num_gpus, 
@@ -196,7 +197,7 @@ def main(_):
 	cluster = ""
 	target = ""
 	
-	all_reduce_train_eval.monitored_estimator(
+	train_eval.monitored_estimator(
 		FLAGS=FLAGS,
 		worker_count=worker_count, 
 		task_index=task_index, 
@@ -212,7 +213,8 @@ def main(_):
 		profiler=FLAGS.profiler,
 		parse_type=FLAGS.parse_type,
 		rule_model=FLAGS.rule_model,
-		train_op=FLAGS.train_op)
+		train_op=FLAGS.train_op,
+		running_type=FLAGS.run_type)
 
 if __name__ == "__main__":
 	tf.app.run()
