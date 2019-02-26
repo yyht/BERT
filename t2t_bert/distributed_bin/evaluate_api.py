@@ -219,5 +219,49 @@ def main(_):
 			train_op=FLAGS.train_op,
 			running_type="eval")
 
+# def iterate_evaluate():
+# 	while True:
+#         checkpoint_file = os.path.join(FLAGS.buckets, FLAGS.model_output, "checkpoint")
+#         if not tf.gfile.Exists(checkpoint_file):
+#             time.sleep(60)
+#             continue
+#         with tf.gfile.GFile(checkpoint_file, 'rb') as f:
+#             ckpts = f.readlines()
+#         for line in ckpts:
+#             if 'all_model_checkpoint_paths:' not in line:
+#                 continue
+#             ckpt = '%s.index' % line.split(':')[-1].strip().strip('"')
+#             iteration = int(re.sub(r'^.*?(\d+).*', r'\1', ckpt))
+#             MIN_ITERATION_GAP = 10
+#             if iteration > (current + MIN_ITERATION_GAP) and tf.gfile.Exists(params["model_dir"].rstrip('\/')+'/'+ckpt):
+#                 if params['ema_decay'] > 0.0:
+#                     cvt(params["model_dir"].rstrip('\/')+'/'+ckpt.replace('.index',''),eval_model_dir)
+#                 else:
+#                     with tf.gfile.GFile(params["model_dir"].rstrip('\/')+'/checkpoint') as ck:
+#                         old=ck.readline()
+#                         keep=ck.read()
+#                     with tf.gfile.GFile(params["model_dir"].rstrip('\/')+'/checkpoint', 'w') as newck:
+#                         print >> newck, 'model_checkpoint_path: \"'+ckpt.replace('.index','')+'\"'
+#                         print >> newck, keep
+#                 # try:
+#                 #     transformer.evaluate(eval_input_fn, hooks=eval_hooks)
+#                 # except:
+#                 #     tf.logging.info( "Evaluation of checkpoint %s failed!" % ckpt)
+#                 bleu_lines = []
+#                 normal_bleu_lines = []
+#                 if tf.gfile.Exists(params["bleu_log"]):
+#                     with tf.gfile.GFile(params["bleu_log"], 'rb') as f:
+#                         bleu_lines = f.readlines()
+#                         for i in bleu_lines:
+#                             # normal bleu log: steps\tbleu1\tbleu2...
+#                             if len(i.strip('\t').split('\t')) >= 2:
+#                                 normal_bleu_lines.append(i)
+#                 # add new steps first
+#                 normal_bleu_lines.append('%s\t' % iteration)
+#                 with tf.gfile.GFile(params["bleu_log"], 'w') as f:
+#                     f.write(''.join(normal_bleu_lines))
+#                 transformer.evaluate(eval_input_fn, hooks=eval_hooks)
+#                 current = iteration
+
 if __name__ == "__main__":
 	tf.app.run()
