@@ -7,7 +7,7 @@ python data_processor.py \
 	--label_id /data/xuht/porn/label_dict.json \
 	--lower_case True \
 	--max_length 128 \
-	--if_rule False \
+	--if_rule no_rule \
 	--rule_word_dict /data/xuht/porn/rule/rule/phrases.json \
 	--rule_word_path /data/xuht/porn/rule/rule/mined_porn_domain_adaptation_v2.txt \
 	--rule_label_dict /data/xuht/porn/rule/rule/rule_label_dict.json \

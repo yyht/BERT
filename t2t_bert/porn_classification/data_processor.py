@@ -56,8 +56,8 @@ flags.DEFINE_integer(
 	"max_length", None,
 	"Input TF example files (can be a glob or comma separated).")
 
-flags.DEFINE_bool(
-	"if_rule", False,
+flags.DEFINE_string(
+	"if_rule", "rule",
 	"if apply rule detector"
 	)
 
@@ -82,7 +82,8 @@ def main(_):
 		vocab_file=FLAGS.vocab_file, 
 		do_lower_case=FLAGS.lower_case)
 
-	if not FLAGS.if_rule:
+	if FLAGS.if_rule != "rule":
+		print("==not apply rule==")
 		classifier_data_api = classifier_processor.PornClassifierProcessor()
 		classifier_data_api.get_labels(FLAGS.label_id)
 
@@ -100,7 +101,8 @@ def main(_):
 																FLAGS.max_length,
 																tokenizer,
 																FLAGS.test_result_file)
-	else:
+	elif FLAGS.if_rule == "rule":
+		print("==apply rule==")
 		with open(FLAGS.rule_word_path, "r") as frobj:
 			lines = frobj.read().splitlines()
 			freq_dict = []
