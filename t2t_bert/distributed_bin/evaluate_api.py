@@ -1,6 +1,6 @@
 
 # -*- coding: utf-8 -*-
-import sys,os
+import sys,os,json
 
 father_path = os.path.join(os.getcwd())
 print(father_path, "==father path==")
@@ -156,6 +156,7 @@ def main(_):
 	print(tf.__version__, "==tensorflow version==")
 
 	init_checkpoint = os.path.join(FLAGS.buckets, FLAGS.model_output)
+	train_file = os.path.join(FLAGS.buckets, FLAGS.train_file)
 	dev_file = os.path.join(FLAGS.buckets, FLAGS.dev_file)
 	checkpoint_dir = os.path.join(FLAGS.buckets, FLAGS.model_output)
 
@@ -177,27 +178,46 @@ def main(_):
 
 	task_index = run_config.task_id
 	is_chief = run_config.is_chief
+	worker_count = 0
 
 	print("==worker_count==", worker_count, "==local_rank==", task_index, "==is is_chief==", is_chief)
 	target = ""
-		
-	train_eval.monitored_estimator(
-		FLAGS=FLAGS,
-		worker_count=worker_count,
-		task_index=task_index, 
-		cluster=cluster, 
-		is_chief=is_chief, 
-		target=target,
-		init_checkpoint=init_checkpoint,
-		train_file=train_file,
-		dev_file=dev_file,
-		checkpoint_dir=checkpoint_dir,
-		run_config=run_config,
-		profiler=FLAGS.profiler,
-		parse_type=FLAGS.parse_type,
-		rule_model=FLAGS.rule_model,
-		train_op=FLAGS.train_op,
-		running_type="eval")
+
+	if FLAGS.run_type == "estimator":
+		train_eval.monitored_estimator(
+			FLAGS=FLAGS,
+			worker_count=worker_count,
+			task_index=task_index, 
+			cluster=cluster, 
+			is_chief=is_chief, 
+			target=target,
+			init_checkpoint=init_checkpoint,
+			train_file=train_file,
+			dev_file=dev_file,
+			checkpoint_dir=checkpoint_dir,
+			run_config=run_config,
+			profiler=FLAGS.profiler,
+			parse_type=FLAGS.parse_type,
+			rule_model=FLAGS.rule_model,
+			train_op=FLAGS.train_op,
+			running_type="eval")
+	elif FLAGS.run_type == "sess":
+		train_eval.monitored_sess(FLAGS=FLAGS,
+			worker_count=worker_count,
+			task_index=task_index, 
+			cluster=cluster, 
+			is_chief=is_chief, 
+			target=target,
+			init_checkpoint=init_checkpoint,
+			train_file=train_file,
+			dev_file=dev_file,
+			checkpoint_dir=checkpoint_dir,
+			run_config=run_config,
+			profiler=FLAGS.profiler,
+			parse_type=FLAGS.parse_type,
+			rule_model=FLAGS.rule_model,
+			train_op=FLAGS.train_op,
+			running_type="eval")
 
 if __name__ == "__main__":
 	tf.app.run()
