@@ -170,17 +170,30 @@ def eval_fn(FLAGS,
 
 		if kargs.get("run_config", None):
 			if kargs.get("parse_type", "parse_single") == "parse_single":
+				train_features = lambda: tf_data_utils.all_reduce_train_input_fn(train_file,
+											_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,
+											worker_count=worker_count,
+											task_index=task_index)
 				eval_features = lambda: tf_data_utils.all_reduce_eval_input_fn(dev_file,
 											_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,
 											worker_count=worker_count,
 											task_index=task_index)
 			elif kargs.get("parse_type", "parse_single") == "parse_batch":
 				print("==apply parse example==")
+				train_features = lambda: tf_data_utils.all_reduce_train_batch_input_fn(train_file,
+											_decode_batch_record, name_to_features, params, if_shard=FLAGS.if_shard,
+											worker_count=worker_count,
+											task_index=task_index)
 				eval_features = lambda: tf_data_utils.all_reduce_eval_batch_input_fn(dev_file,
 											_decode_batch_record, name_to_features, params, if_shard=FLAGS.if_shard,
 											worker_count=worker_count,
 											task_index=task_index)	
 		else:
+			train_features = lambda: tf_data_utils.train_input_fn(train_file,
+										_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,
+										worker_count=worker_count,
+										task_index=task_index)
+
 			eval_features = lambda: tf_data_utils.eval_input_fn(dev_file,
 										_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,
 										worker_count=worker_count,

@@ -29,7 +29,7 @@ print(sys.path)
 
 import tensorflow as tf
 
-from distributed_single_sentence_classification import all_reduce_train_eval
+from distributed_single_sentence_classification import train_eval
 from tensorflow.contrib.distribute.python import cross_tower_ops as cross_tower_ops_lib
 
 import tensorflow as tf
@@ -42,9 +42,6 @@ FLAGS = flags.FLAGS
 tf.logging.set_verbosity(tf.logging.INFO)
 
 flags.DEFINE_string("buckets", "", "oss buckets")
-flags.DEFINE_string('worker_hosts', '', 'must be list')
-flags.DEFINE_string('job_name', '', 'must be in ("", "worker", "ps")')
-flags.DEFINE_integer('task_index', 0, '')
 
 flags.DEFINE_string(
 	"config_file", None,
@@ -148,73 +145,31 @@ flags.DEFINE_string(
 	"the required num_gpus"
 	)
 
+flags.DEFINE_string(
+	"running_type", "eval", 
+	"the required num_gpus"
+	)
+
 def main(_):
 
 	print(FLAGS)
 	print(tf.__version__, "==tensorflow version==")
 
-	# make all to train and not evaluate while training
-	worker_hosts = FLAGS.worker_hosts.split(",")
-	worker_count = len(worker_hosts)
-	print("==numbers of workers==", worker_count)
-
-	if len(worker_hosts) > 1:
-		cluster = {"chief": [worker_hosts[0]],
-			   	"worker": worker_hosts[1:]}
-	else:
-		cluster = {"chief": [worker_hosts[0]]}
-  
-	if FLAGS.task_index == 0:
-		task_type = 'chief'
-		task_index = 0
-		os.environ['TF_CONFIG'] = json.dumps(
-			{'cluster': cluster,
-			 'task': {'type': "chief", 'index': 0}})
-  	else:
-		task_type = 'worker'
-		task_index = FLAGS.task_index - 1
-		os.environ['TF_CONFIG'] = json.dumps(
-			{'cluster': cluster,
-			 'task': {'type': FLAGS.job_name,
-			 'index': FLAGS.task_index - 1}})
-
-	init_checkpoint = os.path.join(FLAGS.buckets, FLAGS.init_checkpoint)
-	train_file = os.path.join(FLAGS.buckets, FLAGS.train_file)
+	init_checkpoint = os.path.join(FLAGS.buckets, FLAGS.model_output)
 	dev_file = os.path.join(FLAGS.buckets, FLAGS.dev_file)
 	checkpoint_dir = os.path.join(FLAGS.buckets, FLAGS.model_output)
 
 	print(init_checkpoint, train_file, dev_file, checkpoint_dir)
 
-	if FLAGS.distribution_strategy == "MirroredStrategy":
-		cross_tower_ops = cross_tower_ops_lib.AllReduceCrossTowerOps("nccl", 10, 0, 0)
-		distribution = tf.contrib.distribute.MirroredStrategy(num_gpus=FLAGS.num_gpus, 
-												cross_tower_ops=cross_tower_ops)
-		worker_count = FLAGS.num_gpus
-	elif FLAGS.distribution_strategy == "CollectiveAllReduceStrategy":
-		distribution = tf.contrib.distribute.CollectiveAllReduceStrategy(
-							num_gpus_per_worker=1，
-							cross_tower_ops_type=FLAGS.get("opt_type", "paisoar"))
-	elif FLAGS.distribution_strategy == "ps_sync":
-		distribution = tf.contrib.distribute.ParameterServerStrategy(
-                		num_gpus_per_worker=1,
-		                mode='sync',
-		                replicas_to_aggregate=worker_count, 
-						total_num_replicas=worker_count)
-	elif FLAGS.distribution_strategy == "ps":
-		distribution = tf.contrib.distribute.ParameterServerStrategy(
-                		num_gpus_per_worker=1)
-	else:
-		cross_tower_ops = cross_tower_ops_lib.AllReduceCrossTowerOps("nccl", 10, 0, 0)
-		distribution = tf.contrib.distribute.MirroredStrategy(num_gpus=FLAGS.num_gpus, 
-												cross_tower_ops=cross_tower_ops)
-
 	sess_config = tf.ConfigProto(allow_soft_placement=True,
 									log_device_placement=True)
 
+	cluster = {'chief': ['localhost:2221'], 'worker': ['localhost:2222']}
+	os.environ['TF_CONFIG'] = json.dumps({'cluster': cluster, 'task': {'type': 'evaluator', 'index': 0}})
+
 	run_config = tf.estimator.RunConfig(
 					  keep_checkpoint_max=5,
-					  model_dir=checkpoint_dir,
-					  distribute=distribution, 
+					  model_dir=checkpoint_dir, 
 					  session_config=sess_config,
 					  save_checkpoints_secs=None,
 					  save_checkpoints_steps=None,
@@ -225,10 +180,10 @@ def main(_):
 
 	print("==worker_count==", worker_count, "==local_rank==", task_index, "==is is_chief==", is_chief)
 	target = ""
-	
-	all_reduce_train_eval.monitored_estimator(
+		
+	train_eval.monitored_estimator(
 		FLAGS=FLAGS,
-		worker_count=worker_count, 
+		worker_count=worker_count,
 		task_index=task_index, 
 		cluster=cluster, 
 		is_chief=is_chief, 
@@ -238,11 +193,11 @@ def main(_):
 		dev_file=dev_file,
 		checkpoint_dir=checkpoint_dir,
 		run_config=run_config,
-		distribution_strategy=FLAGS.distribution_strategy,
 		profiler=FLAGS.profiler,
 		parse_type=FLAGS.parse_type,
 		rule_model=FLAGS.rule_model,
-		train_op=FLAGS.train_op)
+		train_op=FLAGS.train_op,
+		running_type="eval")
 
 if __name__ == "__main__":
 	tf.app.run()

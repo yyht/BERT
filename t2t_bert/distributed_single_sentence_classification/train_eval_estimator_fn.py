@@ -257,7 +257,10 @@ def train_eval_fn(FLAGS,
 			
 		elif kargs.get("distribution_strategy", "MirroredStrategy") in ["ParameterServerStrategy", "CollectiveAllReduceStrategy"]: 
 			print("==apply multi-machine machine multi-card training==")
-			print(os.environ['TF_CONFIG'], "==tf_run_config==")
+			try:
+				print(os.environ['TF_CONFIG'], "==tf_run_config==")
+			except:
+				print("==not tf config==")
 			train_spec = tf.estimator.TrainSpec(input_fn=train_features, 
 											max_steps=num_train_steps)
 
