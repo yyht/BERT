@@ -60,6 +60,9 @@ def eval_fn(FLAGS,
 		elif FLAGS.if_shard == "1":
 			train_size = int(FLAGS.train_size/worker_count)
 			epoch = FLAGS.epoch
+		else:
+			train_size = int(FLAGS.train_size/worker_count)
+			epoch = FLAGS.epoch
 
 		init_lr = 2e-5
 
@@ -196,6 +199,9 @@ def eval_fn(FLAGS,
 
 		print("==succeeded in building data and model==")
 
+		sess_config = tf.ConfigProto(allow_soft_placement=False,
+									log_device_placement=False)
+
 		sess = tf.Session(config=sess_config)
 		init_op = tf.group(tf.global_variables_initializer(), 
 					tf.local_variables_initializer())
@@ -223,8 +229,6 @@ def eval_fn(FLAGS,
 								eval_total_dict[key] += eval_result[key]
 
 					i += 1
-					if np.mod(i, num_eval_steps) == 0:
-						break
 				except tf.errors.OutOfRangeError:
 					print("End of dataset")
 					break
