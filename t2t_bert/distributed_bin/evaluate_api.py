@@ -155,7 +155,7 @@ def main(_):
 	print(FLAGS)
 	print(tf.__version__, "==tensorflow version==")
 
-	init_checkpoint = os.path.join(FLAGS.buckets, FLAGS.model_output)
+	init_checkpoint = os.path.join(FLAGS.buckets, FLAGS.init_checkpoint)
 	train_file = os.path.join(FLAGS.buckets, FLAGS.train_file)
 	dev_file = os.path.join(FLAGS.buckets, FLAGS.dev_file)
 	checkpoint_dir = os.path.join(FLAGS.buckets, FLAGS.model_output)
@@ -178,7 +178,7 @@ def main(_):
 
 	task_index = run_config.task_id
 	is_chief = run_config.is_chief
-	worker_count = 0
+	worker_count = 1
 
 	print("==worker_count==", worker_count, "==local_rank==", task_index, "==is is_chief==", is_chief)
 	target = ""
