@@ -138,13 +138,13 @@ def main(_):
 		classifier_data_api = classifier_processor.EvaluationProcessor()
 		classifier_data_api.get_labels(FLAGS.label_id)
 
-		train_examples = classifier_data_api.get_train_examples(FLAGS.train_file)
+		# train_examples = classifier_data_api.get_train_examples(FLAGS.train_file)
 
-		write_to_tfrecords.convert_classifier_examples_to_features(train_examples,
-																classifier_data_api.label2id,
-																FLAGS.max_length,
-																tokenizer,
-																FLAGS.eval_data_file)
+		# write_to_tfrecords.convert_classifier_examples_to_features(train_examples,
+		# 														classifier_data_api.label2id,
+		# 														FLAGS.max_length,
+		# 														tokenizer,
+		# 														FLAGS.eval_data_file)
 
 		init_lr = 2e-5
 
