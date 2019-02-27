@@ -262,7 +262,7 @@ def main(_):
 																					macro_f1,  micro_f1, accuracy))
 			import _pickle as pkl
 			pkl.dump({"pred_label":label, "true_label":label_id},
-						open("/data/xuht/porn/predict.pkl", "w"))
+						open("/data/xuht/porn/predict.pkl", "wb"))
 
 			label_dict_id = sorted(list(label_dict["id2label"].keys()))
 			result = classification_report(label_id, label, 
