@@ -268,7 +268,7 @@ def main(_):
 			result = classification_report(label_id, label, 
 				target_names=[label_dict["id2label"][key] for key in label_dict_id])
 
-			print(result, task_index)
+			print(result)
 			return total_accuracy/ i, label_id, label, prob
 		
 		import time
