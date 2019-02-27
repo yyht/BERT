@@ -260,6 +260,10 @@ def main(_):
 			accuracy = accuracy_score(label_id, label)
 			print("test accuracy {} macro_f1 score {} micro_f1 {} accuracy {}".format(total_accuracy/ i, 
 																					macro_f1,  micro_f1, accuracy))
+			import _pickle as pkl
+			pkl.dump({"pred_label":label, "true_label":label_id},
+						open("/data/xuht/porn/predict.pkl", "w"))
+
 			label_dict_id = sorted(list(label_dict["id2label"].keys()))
 			result = classification_report(label_id, label, 
 				target_names=[label_dict["id2label"][key] for key in label_dict_id])
