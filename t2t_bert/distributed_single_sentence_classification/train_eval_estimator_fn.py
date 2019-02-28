@@ -109,7 +109,7 @@ def train_eval_fn(FLAGS,
 			checkpoint_dir = checkpoint_dir if task_index == 0 else None
 		print("==checkpoint_dir==", checkpoint_dir, is_chief)
 
-		if kargs.get("rule_model", "rule"):
+		if kargs.get("rule_model", "normal") == "rule":
 			model_fn_interface = rule_model_fn_builder
 			print("==apply rule model==")
 		else:
