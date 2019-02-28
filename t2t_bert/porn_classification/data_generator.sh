@@ -1,5 +1,5 @@
 python data_processor.py \
-	--train_file /data/xuht/porn/actual_data/seqing_test_albert_20190228 \
+	--train_file /data/xuht/porn/actual_data/seqing_train_albert_20190228 \
 	--test_file /data/xuht/porn/actual_data/seqing_test_albert_20190228 \
 	--train_result_file /data/xuht/porn/actual_data/normal/seqing_train_20190228_tf_records \
 	--test_result_file  /data/xuht/porn/actual_data/normal/seqing_test_20190228_tf_records\
@@ -13,7 +13,7 @@ python data_processor.py \
 	--rule_label_dict /data/xuht/porn/rule/rule/rule_label_dict.json \
 
 python data_processor.py \
-	--train_file /data/xuht/porn/actual_data/seqing_test_albert_20190228 \
+	--train_file /data/xuht/porn/actual_data/seqing_train_albert_20190228 \
 	--test_file /data/xuht/porn/actual_data/seqing_test_albert_20190228 \
 	--train_result_file /data/xuht/porn/actual_data/rule/seqing_train_20190228_tf_records \
 	--test_result_file  /data/xuht/porn/actual_data/rule/seqing_test_20190228_tf_records\
