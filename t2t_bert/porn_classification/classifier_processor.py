@@ -63,7 +63,7 @@ class PornClassifierProcessor(data_processor.DataProcessor):
 									LABEL_SPLITTER="__label__"):
 
 
-		re_pattern = "({}{})".format(LABEL_SPLITTER, "\d.")
+		re_pattern = u"({}{})".format(LABEL_SPLITTER, "\d.")
 
 		examples = []
 		for (i, line) in enumerate(lines):
@@ -83,7 +83,7 @@ class PornClassifierProcessor(data_processor.DataProcessor):
 						label=input_labels
 					))
 			except:
-				print(line)
+				print(line, i)
 		return examples
 
 	def get_train_examples(self, train_file):
