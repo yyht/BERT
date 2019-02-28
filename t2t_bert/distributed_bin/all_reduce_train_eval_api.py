@@ -196,6 +196,8 @@ def main(_):
 	print("==worker_count==", worker_count, "==local_rank==", task_index, "==is is_chief==", is_chief)
 	cluster = ""
 	target = ""
+
+	print(FLAGS)
 	
 	train_eval.monitored_estimator(
 		FLAGS=FLAGS,
@@ -214,7 +216,7 @@ def main(_):
 		parse_type=FLAGS.parse_type,
 		rule_model=FLAGS.rule_model,
 		train_op=FLAGS.train_op,
-		running_type=FLAGS.run_type)
+		running_type=FLAGS.running_type)
 
 if __name__ == "__main__":
 	tf.app.run()

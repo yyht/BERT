@@ -25,6 +25,7 @@ def monitored_estimator(FLAGS,
 				**kargs):
 
 	if kargs.get("running_type", "train") == "train":
+		print("==begin to train==")
 		estimator_fn(FLAGS,
 					worker_count, 
 					task_index, 
@@ -37,6 +38,7 @@ def monitored_estimator(FLAGS,
 					FLAGS.is_debug,
 					**kargs)
 	elif kargs.get("running_type", "eval") == "eval":
+		print("==begin to eval==")
 		estimator_eval_fn(FLAGS,
 					worker_count, 
 					task_index, 
@@ -60,6 +62,7 @@ def monitored_sess(FLAGS,
 				dev_file,
 				checkpoint_dir,
 				**kargs):
+	print("==begin to eval==")
 	sess_eval_fn(FLAGS,
 					worker_count, 
 					task_index, 
