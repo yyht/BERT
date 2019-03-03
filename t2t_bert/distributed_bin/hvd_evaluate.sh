@@ -1,4 +1,4 @@
-python ./t2t_bert/distributed_bin/evaluate_api.py \
+CUDA_VISIBLE_DEVICES="0" python ./t2t_bert/distributed_bin/evaluate_api.py \
 	--buckets "/data/xuht" \
 	--config_file "/data/xuht/chinese_L-12_H-768_A-12/bert_config.json" \
 	--init_checkpoint "porn/clean_data/normal/model/estimator/all_reduce_4_adam_weight_0228/model.ckpt-79344" \
