@@ -104,6 +104,11 @@ flags.DEFINE_integer(
 	"if apply rule detector"
 	)
 
+flags.DEFINE_string(
+	"config", "",
+	"if apply rule detector"
+	)
+
 def main(_):
 
 	tokenizer = tokenization.Jieba_CHAR(
