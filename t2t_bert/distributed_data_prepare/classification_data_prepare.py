@@ -114,7 +114,12 @@ def main(_):
 	tokenizer = tokenization.Jieba_CHAR(
 		config=FLAGS.config)
 
-	tokenizer.load_vocab(FLAGS.vocab_file)
+	with tf.gfile.Open(FLAGS.vocab_file, "r") as f:
+		vocab_lst = []
+		for line in f:
+			vocab_lst.append(line.strip())
+
+	tokenizer.load_vocab(vocab_lst)
 
 	print("==not apply rule==")
 	classifier_data_api = classifier_processor.FasttextClassifierProcessor()
