@@ -30,7 +30,7 @@ print(sys.path)
 import tensorflow as tf
 
 from distributed_single_sentence_classification import train_eval
-from tensorflow.contrib.distribute.python import cross_tower_ops as cross_tower_ops_lib
+# from tensorflow.contrib.distribute.python import cross_tower_ops as cross_tower_ops_lib
 
 import tensorflow as tf
 import json
@@ -166,8 +166,8 @@ def main(_):
 	sess_config = tf.ConfigProto(allow_soft_placement=True,
 									log_device_placement=True)
 
-	cluster = {'chief': ['localhost:2221'], 'worker': ['localhost:2222']}
-	os.environ['TF_CONFIG'] = json.dumps({'cluster': cluster, 'task': {'type': 'evaluator', 'index': 0}})
+	# cluster = {'chief': ['localhost:2221'], 'worker': ['localhost:2222']}
+	# os.environ['TF_CONFIG'] = json.dumps({'cluster': cluster, 'task': {'type': 'evaluator', 'index': 0}})
 
 	run_config = tf.estimator.RunConfig(
 					  keep_checkpoint_max=5,
