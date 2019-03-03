@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 import sys,os,json
 
@@ -33,7 +32,6 @@ from distributed_single_sentence_classification import train_eval
 from tensorflow.contrib.distribute.python import cross_tower_ops as cross_tower_ops_lib
 
 import tensorflow as tf
-import json
 
 flags = tf.flags
 
@@ -184,45 +182,43 @@ def main(_):
 	print("==worker_count==", worker_count, "==local_rank==", task_index, "==is is_chief==", is_chief)
 	target = ""
 
-	if FLAGS.run_type == "estimator":
-		train_eval.monitored_estimator(
-			FLAGS=FLAGS,
-			worker_count=worker_count,
-			task_index=task_index, 
-			cluster=cluster, 
-			is_chief=is_chief, 
-			target=target,
-			init_checkpoint=init_checkpoint,
-			train_file=train_file,
-			dev_file=dev_file,
-			checkpoint_dir=checkpoint_dir,
-			run_config=run_config,
-			profiler=FLAGS.profiler,
-			parse_type=FLAGS.parse_type,
-			rule_model=FLAGS.rule_model,
-			train_op=FLAGS.train_op,
-			running_type="eval")
-	elif FLAGS.run_type == "sess":
-		result_dict = train_eval.monitored_sess(FLAGS=FLAGS,
-			worker_count=worker_count,
-			task_index=task_index, 
-			cluster=cluster, 
-			is_chief=is_chief, 
-			target=target,
-			init_checkpoint=init_checkpoint,
-			train_file=train_file,
-			dev_file=dev_file,
-			checkpoint_dir=checkpoint_dir,
-			run_config=run_config,
-			profiler=FLAGS.profiler,
-			parse_type=FLAGS.parse_type,
-			rule_model=FLAGS.rule_model,
-			train_op=FLAGS.train_op,
-			running_type="eval")
+	output_dict = []
 
-		result_log_file = os.path.join(checkpoint_dir, "result.info")
-		with tf.gfile.GFile(result_log_file, 'w') as f:
-			f.write(json.dumps(result_dict)+"\n")
+	checkpoint_file = os.path.join(FLAGS.buckets, FLAGS.model_output, "checkpoint")
+	
+	with tf.gfile.GFile(checkpoint_file, 'r') as f:
+		ckpts = f.readlines().split()
+	for line in ckpts:
+		if 'all_model_checkpoint_paths:' not in line:
+			continue
+		ckpt = '%s.index' % line.split(':')[-1].strip().strip('"')
+		iteration = int(re.sub(r'^.*?(\d+).*', r'\1', ckpt))
+		ckpt_path = checkpoint_dir.rstrip('\/')+'/'+ckpt
+		if tf.gfile.Exists(ckpt_path):
+			result_dict = train_eval.monitored_sess(FLAGS=FLAGS,
+							worker_count=worker_count,
+							task_index=task_index, 
+							cluster=cluster, 
+							is_chief=is_chief, 
+							target=target,
+							init_checkpoint=ckpt_path,
+							train_file=train_file,
+							dev_file=dev_file,
+							checkpoint_dir=checkpoint_dir,
+							run_config=run_config,
+							profiler=FLAGS.profiler,
+							parse_type=FLAGS.parse_type,
+							rule_model=FLAGS.rule_model,
+							train_op=FLAGS.train_op,
+							running_type="eval")
+			result_dict["index"] = iteration
+			import json
+			result_string = json.dumps(result_dict)
+			output_dict.append(result_string)
+	result_log_file = os.path.join(checkpoint_dir, "result.info")
+	with tf.gfile.GFile(result_log_file, 'w') as f:
+		for line in output_dict:
+			fwobj.write(line+"\n")
 
-if __name__ == "__main__":
-	tf.app.run()
+
+

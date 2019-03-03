@@ -2,21 +2,11 @@ import tensorflow as tf
 from utils.bert import bert_utils
 from loss import loss_utils
 
-# def attn_classifier(config, pooled_output, 
-# 						num_labels, labels,
-# 						dropout_prob):
-
-# 	output_layer = pooled_output
-# 	final_hidden_shape = bert_utils.get_shape_list(output_layer, 
-# 								expected_rank=3) # 
-
-
-
-
 def classifier(config, pooled_output, 
 						num_labels, labels,
 						dropout_prob,
-						ratio_weight=None):
+						ratio_weight=None,
+						**kargs):
 
 	output_layer = pooled_output
 
@@ -40,9 +30,10 @@ def classifier(config, pooled_output,
 												logits=logits, 
 												labels=tf.stop_gradient(labels))
 		elif config.get("loss", "entropy") == "focal_loss":
-			per_example_loss = loss_utils.focal_loss_multi_v1(config,
+			per_example_loss, _ = loss_utils.focal_loss_multi_v1(config,
 														logits=logits, 
 														labels=labels)
+            
 		try:
 			per_example_loss = loss_utils.weighted_loss_ratio(
 											config, per_example_loss, 
@@ -52,13 +43,19 @@ def classifier(config, pooled_output,
 		except:
 			loss = tf.reduce_mean(per_example_loss)
 
+		if config.get("with_center_loss", "no") == "center_loss":
+			center_loss, _ = loss_utils.center_loss_v2(config,
+                                            features=pooled_output, 
+                                            labels=labels)
+			loss += center_loss * config.get("center_loss_coef", 1e-3)
+
 		return (loss, per_example_loss, logits)
 	elif config.get("label_type", "single_label") == "multi_label":
 		logits = tf.log_sigmoid(logits)
 		per_example_loss = tf.nn.sigmoid_cross_entropy_with_logits(
 												logits=logits, 
 												labels=tf.stop_gradient(labels))
-		per_example_loss = tf.reduce_mean(per_example_loss, axis=-1)
+		per_example_loss = tf.reduce_sum(per_example_loss, axis=-1)
 		loss = tf.reduce_mean(per_example_loss)
 		return (loss, per_example_loss, logits)
 	else:

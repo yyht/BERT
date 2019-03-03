@@ -141,6 +141,57 @@ class Jieba(object):
 		token_id_lst = [self.word2id.get(word, self.word2id[unk]) for word in tokenized_text]
 		return token_id_lst
 
+class Jieba_CHAR(object):
+	def __init__(self, config):
+		print("----------using naive cut tool---------")
+		self.config = config
+		self.dt = POSTokenizer()
+
+	def load_vocab(self, vocab_lst=None):
+		try:
+			self.word2id = {}
+			for index, word in enumerate(vocab_lst):
+				self.dt.add_word(word, 1e5)
+				self.word2id[word] = index
+		except:
+			print("==not included word list==")
+		
+	def tokenize(self, text):
+		out = []
+		char_pattern = re.compile(u"[\u4e00-\u9fa5]+")
+		word_list = list(self.dt.lcut("".join(text.split())))
+		for word in word_list:
+			word = list(word)
+			char_cn = char_pattern.findall(word[0])
+			if len(char_cn) >= 1:
+				for item in word[0]:
+					if len(item) >= 1:
+						out.append(item)
+			else:
+				if len(word[0]) >= 1:
+					out.append(word[0])
+		return out
+
+	def convert_tokens_to_ids(self, token_lst, max_length):
+		token_id_lst = [self.word2id["pad"] for _ in range(max_length)]
+		for index, word in enumerate(token_lst):
+			if word in self.word2id:
+				token_id_lst[index] = self.word2id[word]
+			else:
+				token_id_lst[index] = self.word2id["unk"]
+		return token_id_lst
+
+	def covert_tokens_to_char_ids(self, token_lst, max_length, char_len=5):
+		char_id_lst = [[self.word2id["pad"] for _ in range(char_len)] for _ in range(max_length)]
+		for index, word in token_lst:
+			for char_index, char in enumerate(word):
+				if char in self.word2id:
+					char_id_lst[index][char_index] = self.word2id[char]
+				else:
+					char_id_lst[index][char_index] = self.word2id["unk"]
+		return char_id_lst
+
+
 """Tokenization classes."""
 
 import collections
