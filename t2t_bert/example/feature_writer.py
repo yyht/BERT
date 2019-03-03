@@ -122,19 +122,19 @@ class NormalEncoderFeatureWriter(FeatureWriter):
 		try:
 			features["input_char_ids_a"] = tf_data_utils.create_int_feature([feature.input_char_ids_a])
 		except:
-			print("==not apply char==")
+			s = 0
 		try:
 			features["input_ids_b"] = tf_data_utils.create_int_feature([feature.input_ids_b])
 		except:
-			print("==not use second sentence==")
+			s = 0
 		try:
 			features["input_char_ids_b"] = tf_data_utils.create_int_feature([feature.input_char_ids_b])
 		except:
-			print("==not use second sentence==")
+			s = 0
 		try:
 			features["label_probs"] = tf_data_utils.create_float_feature([feature.label_probs])
 		except:
-			print("==not use soft labels==")
+			s = 0
 
 		tf_example = tf.train.Example(features=tf.train.Features(feature=features))
 		self._writer.write(tf_example.SerializeToString())

@@ -94,8 +94,8 @@ flags.DEFINE_string(
 	"if apply rule detector"
 	)
 
-flags.DEFINE_bool(
-	"with_char", False,
+flags.DEFINE_string(
+	"with_char", "char",
 	"if apply rule detector"
 	)
 
@@ -114,10 +114,17 @@ def main(_):
 	tokenizer = tokenization.Jieba_CHAR(
 		config=FLAGS.config)
 
-	with tf.gfile.Open(FLAGS.vocab_file, "r") as f:
+	# with tf.gfile.Open(FLAGS.vocab_file, "r") as f:
+	# 	vocab_lst = []
+	# 	for line in f:
+	# 		vocab_lst.append(line.strip())
+	print(FLAGS.with_char)
+	with open(FLAGS.vocab_file, "r") as f:
+		lines = f.read().splitlines()
 		vocab_lst = []
-		for line in f:
-			vocab_lst.append(line.strip())
+		for line in lines:
+			vocab_lst.append(line)
+		print(len(vocab_lst))
 
 	tokenizer.load_vocab(vocab_lst)
 
