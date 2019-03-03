@@ -95,7 +95,7 @@ class PornClassifierProcessor(data_processor.DataProcessor):
 	def get_dev_examples(self, dev_file):
 		lines = self._read_data(dev_file)
 		examples = self._create_examples(lines)
-		random.shuffle(examples)
+		# random.shuffle(examples)
 		return examples
 
 class EvaluationProcessor(data_processor.DataProcessor):
