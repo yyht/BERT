@@ -95,7 +95,7 @@ flags.DEFINE_string(
 	)
 
 flags.DEFINE_bool(
-	"with_char", "",
+	"with_char", False,
 	"if apply rule detector"
 	)
 
