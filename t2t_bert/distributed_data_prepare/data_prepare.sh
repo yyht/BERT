@@ -1,4 +1,4 @@
-python classification_data_prepare.py \
+python ./t2t_bert/distributed_data_prepare/classification_data_prepare.py \
 	--train_file /data/xuht/porn/clean_data/train.txt \
 	--test_file /data/xuht/porn/clean_data/dev.txt \
 	--train_result_file /data/xuht/porn/clean_data/textcnn/train_tfrecords \
