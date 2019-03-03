@@ -495,16 +495,18 @@ class FasttextClassifierProcessor(data_processor.DataProcessor):
 				print(line, i)
 		return examples
 
-	def get_train_examples(self, train_file):
+	def get_train_examples(self, train_file, is_shuffle):
 		lines = self._read_data(train_file)
 		examples = self._create_examples(lines)
-		random.shuffle(examples)
+		if is_shuffle:
+			random.shuffle(examples)
 		return examples
 
-	def get_dev_examples(self, dev_file):
+	def get_dev_examples(self, dev_file, is_shuffle):
 		lines = self._read_data(dev_file)
 		examples = self._create_examples(lines)
-		# random.shuffle(examples)
+		if is_shuffle:
+			random.shuffle(examples)
 		return examples
 
 

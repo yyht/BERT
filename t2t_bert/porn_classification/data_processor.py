@@ -87,7 +87,7 @@ def main(_):
 		classifier_data_api = classifier_processor.PornClassifierProcessor()
 		classifier_data_api.get_labels(FLAGS.label_id)
 
-		train_examples = classifier_data_api.get_train_examples(FLAGS.train_file)
+		train_examples = classifier_data_api.get_train_examples(FLAGS.train_file, is_shuffle=True)
 
 		write_to_tfrecords.convert_classifier_examples_to_features(train_examples,
 																classifier_data_api.label2id,
@@ -95,7 +95,7 @@ def main(_):
 																tokenizer,
 																FLAGS.train_result_file)
 
-		test_examples = classifier_data_api.get_train_examples(FLAGS.test_file)
+		test_examples = classifier_data_api.get_train_examples(FLAGS.test_file, is_shuffle=False)
 		write_to_tfrecords.convert_classifier_examples_to_features(test_examples,
 																classifier_data_api.label2id,
 																FLAGS.max_length,
@@ -133,7 +133,8 @@ def main(_):
 		classifier_data_api.get_labels(FLAGS.label_id)
 
 		train_examples = classifier_data_api.get_train_examples(
-			FLAGS.train_file)
+												FLAGS.train_file,
+												 is_shuffle=True)
 
 		write_to_tfrecords.convert_classifier_examples_with_rule_to_features(train_examples,
 																classifier_data_api.label2id,
@@ -142,7 +143,8 @@ def main(_):
 																rule_api,
 																FLAGS.train_result_file)
 
-		test_examples = classifier_data_api.get_train_examples(FLAGS.test_file)
+		test_examples = classifier_data_api.get_train_examples(FLAGS.test_file,
+													 is_shuffle=False)
 		write_to_tfrecords.convert_classifier_examples_with_rule_to_features(test_examples,
 																classifier_data_api.label2id,
 																FLAGS.max_length,
