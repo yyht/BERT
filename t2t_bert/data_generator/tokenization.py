@@ -177,7 +177,7 @@ class Jieba_CHAR(object):
 
 	def convert_tokens_to_ids(self, token_lst, max_length):
 		token_id_lst = [self.word2id["pad"] for _ in range(max_length)]
-		for index, word in enumerate(token_lst):
+		for index, word in enumerate(token_lst[0:max_length]):
 			if word in self.word2id:
 				token_id_lst[index] = self.word2id[word]
 			else:
@@ -186,8 +186,8 @@ class Jieba_CHAR(object):
 
 	def covert_tokens_to_char_ids(self, token_lst, max_length, char_len=5):
 		char_id_lst = [[self.word2id["pad"] for _ in range(char_len)] for _ in range(max_length)]
-		for index, word in token_lst:
-			for char_index, char in enumerate(word):
+		for index, word in enumerate(token_lst[0:max_length]):
+			for char_index, char in enumerate(word[0:char_len]):
 				if char in self.word2id:
 					char_id_lst[index][char_index] = self.word2id[char]
 				else:

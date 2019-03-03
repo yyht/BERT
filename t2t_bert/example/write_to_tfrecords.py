@@ -780,7 +780,7 @@ def convert_normal_classifier_examples_to_features(examples, label_dict,
 			if len(tokens_b) > max_seq_length:
 				tokens_b = tokens_b[0:(max_seq_length)]
 			input_ids_b = tokenizer.convert_tokens_to_ids(tokens_b, max_seq_length)
-			if with_char:
+			if with_char == "char":
 				input_char_ids_b = tokenizer.covert_tokens_to_char_ids(tokens_b, 
 											max_seq_length, 
 											char_len=char_len)
@@ -789,14 +789,12 @@ def convert_normal_classifier_examples_to_features(examples, label_dict,
 			input_char_ids_b = None
 
 		input_ids_a = tokenizer.convert_tokens_to_ids(tokens_a, max_seq_length)
-		if with_char:
+		if with_char == "char":
 			input_char_ids_a = tokenizer.covert_tokens_to_char_ids(tokens_a, 
 											max_seq_length, 
 											char_len=char_len)
 		else:
 			input_char_ids_a = None		
-
-		input_mask = [1] * len(input_ids)
 
 		if len(example.label) == 1:
 			label_id = label_dict[example.label[0]]
@@ -806,7 +804,7 @@ def convert_normal_classifier_examples_to_features(examples, label_dict,
 				label_id[label_dict[item]] = 1
 
 		if ex_index < 5:
-			print(tokens)
+			print(tokens_a)
 			tf.logging.info("*** Example ***")
 			tf.logging.info("guid: %s" % (example.guid))
 			tf.logging.info("input_ids: %s" % " ".join([str(x) for x in input_ids_a]))
