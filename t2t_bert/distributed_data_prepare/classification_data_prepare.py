@@ -100,7 +100,7 @@ flags.DEFINE_bool(
 	)
 
 flags.DEFINE_integer(
-	"char_len", "",
+	"char_len", 10,
 	"if apply rule detector"
 	)
 
