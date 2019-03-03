@@ -137,7 +137,7 @@ class NormalEncoderFeatureWriter(FeatureWriter):
 			print("==not use soft labels==")
 
 		tf_example = tf.train.Example(features=tf.train.Features(feature=features))
-			self._writer.write(tf_example.SerializeToString())
+		self._writer.write(tf_example.SerializeToString())
 
 class PairPreTrainingFeature(FeatureWriter):
 	def __init__(self, filename, is_training):
