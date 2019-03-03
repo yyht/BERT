@@ -166,8 +166,11 @@ def main(_):
 	sess_config = tf.ConfigProto(allow_soft_placement=True,
 									log_device_placement=True)
 
-	# cluster = {'chief': ['localhost:2221'], 'worker': ['localhost:2222']}
-	# os.environ['TF_CONFIG'] = json.dumps({'cluster': cluster, 'task': {'type': 'evaluator', 'index': 0}})
+	cluster = {'chief': ['localhost:2221'], 'worker': ['localhost:2222']}
+	try:
+		os.environ['TF_CONFIG'] = json.dumps({'cluster': cluster, 'task': {'type': 'evaluator', 'index': 0}})
+	except:
+		print("==not tf config env==")
 
 	run_config = tf.estimator.RunConfig(
 					  keep_checkpoint_max=5,
