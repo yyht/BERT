@@ -8,6 +8,8 @@ from jieba.posseg import POSTokenizer
 import sentencepiece as spm
 import tensorflow as tf
 
+import re
+
 class SPM(object):
 	def __init__(self, config):
 		self.config = config
@@ -153,6 +155,7 @@ class Jieba_CHAR(object):
 			for index, word in enumerate(vocab_lst):
 				self.dt.add_word(word, 1e5)
 				self.word2id[word] = index
+			print("==total vocab==", len(self.word2id))
 		except:
 			print("==not included word list==")
 		
