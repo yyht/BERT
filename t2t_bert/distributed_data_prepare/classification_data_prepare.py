@@ -120,7 +120,8 @@ def main(_):
 	classifier_data_api = classifier_processor.FasttextClassifierProcessor()
 	classifier_data_api.get_labels(FLAGS.label_id)
 
-	train_examples = classifier_data_api.get_train_examples(FLAGS.train_file)
+	train_examples = classifier_data_api.get_train_examples(FLAGS.train_file,
+										is_shuffle=True)
 
 	write_to_tfrecords.convert_normal_classifier_examples_to_features(train_examples,
 															classifier_data_api.label2id,
@@ -130,7 +131,8 @@ def main(_):
 															FLAGS.with_char,
 															FLAGS.char_len)
 
-	test_examples = classifier_data_api.get_train_examples(FLAGS.test_file)
+	test_examples = classifier_data_api.get_train_examples(FLAGS.test_file,
+										is_shuffle=False)
 	write_to_tfrecords.convert_normal_classifier_examples_to_features(test_examples,
 															classifier_data_api.label2id,
 															FLAGS.max_length,
