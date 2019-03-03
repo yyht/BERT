@@ -5,6 +5,7 @@ from distributed_encoder.bert_encoder import bert_rule_encoder
 
 import tensorflow as tf
 import numpy as np
+import json
 
 # model_zoo = {
 # 	"bert":bert_encoder,
