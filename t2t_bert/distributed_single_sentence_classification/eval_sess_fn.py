@@ -3,12 +3,19 @@ import tensorflow as tf
 from optimizer import distributed_optimizer as optimizer
 from data_generator import distributed_tf_data_utils as tf_data_utils
 
+# try:
+# 	from .bert_model_fn import model_fn_builder
+# 	from .bert_model_fn import rule_model_fn_builder
+# except:
+# 	from bert_model_fn import model_fn_builder
+# 	from bert_model_fn import rule_model_fn_builder
+
 try:
-	from .bert_model_fn import model_fn_builder
-	from .bert_model_fn import rule_model_fn_builder
+	from .model_fn import model_fn_builder
+	from .model_interface import model_config_parser
 except:
-	from bert_model_fn import model_fn_builder
-	from bert_model_fn import rule_model_fn_builder
+	from .model_fn import model_fn_builder
+	from model_interface import model_config_parser
 
 import numpy as np
 import tensorflow as tf
@@ -44,13 +51,16 @@ def eval_fn(FLAGS,
 	with graph.as_default():
 		import json
 				
-		config = json.load(open(FLAGS.config_file, "r"))
+		# config = json.load(open(FLAGS.config_file, "r"))
 
-		config = Bunch(config)
-		config.use_one_hot_embeddings = True
-		config.scope = "bert"
-		config.dropout_prob = 0.1
-		config.label_type = "single_label"
+		# config = Bunch(config)
+		# config.use_one_hot_embeddings = True
+		# config.scope = "bert"
+		# config.dropout_prob = 0.1
+		# config.label_type = "single_label"
+		# config.model_type = FLAGS.model_type
+
+		config = model_config_parser(FLAGS)
 
 		print(config, "==model config==")
 		
@@ -104,15 +114,15 @@ def eval_fn(FLAGS,
 			checkpoint_dir = checkpoint_dir
 		print("==checkpoint_dir==", checkpoint_dir, is_chief)
 
-		if kargs.get("rule_model", "rule"):
-			model_fn_interface = rule_model_fn_builder
-			print("==apply rule model==")
-		else:
-			model_fn_interface = model_fn_builder
-			print("==apply normal model==")
+		# if kargs.get("rule_model", "rule") == "rule":
+		# 	model_fn_interface = rule_model_fn_builder
+		# 	print("==apply rule model==")
+		# else:
+		# 	model_fn_interface = model_fn_builder
+		# 	print("==apply normal model==")
 
 		
-		model_eval_fn = model_fn_interface(config, num_classes, init_checkpoint, 
+		model_eval_fn = model_fn_builder(config, num_classes, init_checkpoint, 
 												model_reuse=None, 
 												load_pretrained=True,
 												opt_config=opt_config,
@@ -139,7 +149,8 @@ def eval_fn(FLAGS,
 			accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
 
 			return {"accuracy":accuracy, "loss":eval_op_dict["loss"], 
-					"pred_label":pred_label, "label_ids":features["label_ids"]}
+					"pred_label":pred_label, "label_ids":features["label_ids"],
+					"prob":prob}
 		
 		name_to_features = {
 				"input_ids":
@@ -194,6 +205,8 @@ def eval_fn(FLAGS,
 										worker_count=worker_count,
 										task_index=task_index)
 
+		print("==dev_file==", dev_file, kargs.get("rule_model", "rule"))
+
 		eval_op_dict = model_eval_fn(eval_features, [], tf.estimator.ModeKeys.EVAL)
 		eval_dict = eval_metric_fn(eval_features, eval_op_dict["eval"])
 
@@ -216,17 +229,17 @@ def eval_fn(FLAGS,
 					eval_result = sess.run(eval_dict)
 					for key in eval_result:
 						if key not in eval_total_dict:
-							if key in ["pred_label", "label_ids"]:
+							if key in ["pred_label", "label_ids", "prob"]:
 								eval_total_dict[key] = []
-								eval_total_dict[key].extend(eval_result[key])
+								eval_total_dict[key].extend(eval_result[key].tolist())
 							if key in ["accuracy", "loss"]:
 								eval_total_dict[key] = 0.0
-								eval_total_dict[key] += eval_result[key]
+								eval_total_dict[key] += float(eval_result[key])
 						else:
-							if key in ["pred_label", "label_ids"]:
-								eval_total_dict[key].extend(eval_result[key])
+							if key in ["pred_label", "label_ids", "prob"]:
+								eval_total_dict[key].extend(eval_result[key].tolist())
 							if key in ["accuracy", "loss"]:
-								eval_total_dict[key] += eval_result[key]
+								eval_total_dict[key] += float(eval_result[key])
 
 					i += 1
 				except tf.errors.OutOfRangeError:
@@ -239,7 +252,8 @@ def eval_fn(FLAGS,
 			label_dict_id = sorted(list(label_dict["id2label"].keys()))
 
 			result = classification_report(label_id, pred_label, 
-				target_names=[label_dict["id2label"][key] for key in label_dict_id])
+				target_names=[label_dict["id2label"][key] for key in label_dict_id],
+				digits=4)
 
 			print(result, task_index)
 			eval_total_dict["classification_report"] = result
@@ -247,3 +261,4 @@ def eval_fn(FLAGS,
 
 		hooks = []
 		eval_finial_dict = eval_fn(eval_dict, sess)
+		return eval_finial_dict

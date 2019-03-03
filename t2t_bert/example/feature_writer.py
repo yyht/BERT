@@ -108,6 +108,37 @@ class MultiChoiceFeatureWriter(FeatureWriter):
 			tf_example = tf.train.Example(features=tf.train.Features(feature=features))
 			self._writer.write(tf_example.SerializeToString())
 
+class NormalEncoderFeatureWriter(FeatureWriter):
+	def __init__(self, filename, is_training):
+		super(NormalEncoderFeatureWriter, self).__init__(filename, is_training)
+
+	def process_feature(self, feature):
+		self.num_features += 1
+		features = collections.OrderedDict()
+
+		features["input_ids_a"] = tf_data_utils.create_int_feature(feature.input_ids_a)
+		features["label_ids"] = tf_data_utils.create_int_feature([feature.label_ids])
+
+		try:
+			features["input_char_ids_a"] = tf_data_utils.create_int_feature([feature.input_char_ids_a])
+		except:
+			print("==not apply char==")
+		try:
+			features["input_ids_b"] = tf_data_utils.create_int_feature([feature.input_ids_b])
+		except:
+			print("==not use second sentence==")
+		try:
+			features["input_char_ids_b"] = tf_data_utils.create_int_feature([feature.input_char_ids_b])
+		except:
+			print("==not use second sentence==")
+		try:
+			features["label_probs"] = tf_data_utils.create_float_feature([feature.label_probs])
+		except:
+			print("==not use soft labels==")
+
+		tf_example = tf.train.Example(features=tf.train.Features(feature=features))
+			self._writer.write(tf_example.SerializeToString())
+
 class PairPreTrainingFeature(FeatureWriter):
 	def __init__(self, filename, is_training):
 		super(PairPreTrainingFeature, self).__init__(filename, is_training)

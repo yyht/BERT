@@ -63,7 +63,7 @@ def monitored_sess(FLAGS,
 				checkpoint_dir,
 				**kargs):
 	print("==begin to eval==")
-	sess_eval_fn(FLAGS,
+	result_dict = sess_eval_fn(FLAGS,
 					worker_count, 
 					task_index, 
 					is_chief, 
@@ -74,5 +74,6 @@ def monitored_sess(FLAGS,
 					checkpoint_dir,
 					FLAGS.is_debug,
 					**kargs)
+	return result_dict
 	
 

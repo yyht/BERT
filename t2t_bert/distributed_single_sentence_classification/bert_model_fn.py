@@ -24,6 +24,9 @@ def model_fn_builder(
 					**kargs):
 
 	def model_fn(features, labels, mode):
+
+		if model_config.get("model_type", "bert") == "bert":
+
 		model = bert_encoder(model_config, features, labels,
 							mode, target, reuse=model_reuse)
 

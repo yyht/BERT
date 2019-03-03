@@ -2,12 +2,14 @@ import tensorflow as tf
 from data_generator import tf_data_utils
 from example.feature_writer import ClassifierFeatureWriter, SpanFeatureWriter, MultiChoiceFeatureWriter
 from data_generator import data_feature_classifier
+from data_generator import data_normal_feature_classifier
 from data_generator import data_feature_mrc
 from data_generator import tokenization
 import collections
 from data_generator import pair_data_feature_classifier
 from example.feature_writer import PairClassifierFeatureWriter
 from example.feature_writer import PairPreTrainingFeature
+from example.feature_writer import NormalEncoderFeatureWriter
 
 def convert_classifier_examples_to_features(examples, label_dict, 
 											max_seq_length,
@@ -749,5 +751,85 @@ def convert_classifier_examples_with_rule_to_features(examples, label_dict,
 					input_mask=input_mask,
 					segment_ids=segment_ids,
 					label_ids=label_id)
+		feature_writer.process_feature(feature)
+	feature_writer.close()
+
+def convert_normal_classifier_examples_to_features(examples, label_dict, 
+											max_seq_length,
+											tokenizer, output_file, with_char,
+											char_len):
+
+	feature_writer = NormalEncoderFeatureWriter(output_file, is_training=False)
+
+	for (ex_index, example) in enumerate(examples):
+		tokens_a = tokenizer.tokenize(example.text_a)
+		if ex_index % 10000 == 0:
+			tf.logging.info("Writing example %d of %d" % (ex_index, len(examples)))
+
+		tokens_b = None
+		if example.text_b:
+			try:
+				tokens_b = tokenizer.tokenize(example.text_b)
+			except:
+				print("==token b error==", example.text_b, ex_index)
+				break
+
+		if len(tokens_a) > max_seq_length:
+			tokens_a = tokens_a[0:(max_seq_length)]
+		if tokens_b:
+			if len(tokens_b) > max_seq_length:
+				tokens_b = tokens_b[0:(max_seq_length)]
+			input_ids_b = tokenizer.convert_tokens_to_ids(tokens_b)
+			if with_char:
+				input_char_ids_b = tokenizer.covert_tokens_to_char_ids(tokens_b, 
+											max_seq_length, 
+											char_len=char_len)
+		else:
+			input_ids_b = None
+			input_char_ids_b = None
+
+		input_ids_a = tokenizer.convert_tokens_to_ids(tokens_a)
+		if with_char:
+			input_char_ids_a = tokenizer.covert_tokens_to_char_ids(tokens_a, 
+											max_seq_length, 
+											char_len=char_len)
+		else:
+			input_char_ids_a = None		
+
+		input_mask = [1] * len(input_ids)
+
+		if len(example.label) == 1:
+			label_id = label_dict[example.label[0]]
+		else:
+			label_id = [0] * len(label_dict)
+			for item in example.label:
+				label_id[label_dict[item]] = 1
+		try:
+			prob_
+		if ex_index < 5:
+			print(tokens)
+			tf.logging.info("*** Example ***")
+			tf.logging.info("guid: %s" % (example.guid))
+			tf.logging.info("input_ids: %s" % " ".join([str(x) for x in input_ids_a]))
+			if input_char_ids_a:
+				tf.logging.info("input_ids: %s" % " ".join([str(x) for token in input_char_ids_a for x in token ]))
+			if input_ids_b:
+				tf.logging.info("input_ids: %s" % " ".join([str(x) for x in input_ids_b]))
+			if input_char_ids_b:
+				tf.logging.info("input_ids: %s" % " ".join([str(x) for token in input_char_ids_b for x in token ]))
+			tf.logging.info("label: {} (id = {})".format(example.label, label_id))
+		try:
+			label_probs = example.label_probs
+		except:
+			label_probs = [0.0]*len(label_dict)
+
+		feature = data_normal_feature_classifier.InputFeatures(
+					guid=example.guid,
+					input_ids_a=input_ids_a,
+					input_ids_b=input_ids_b,
+					input_char_ids_a=input_char_ids_a,
+					input_char_ids_b=input_char_ids_b,
+					label_ids=label_id,
+					label_probs=label_probs)
 		feature_writer.process_feature(feature)
 	feature_writer.close()

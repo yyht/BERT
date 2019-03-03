@@ -182,7 +182,7 @@ def main(_):
 									log_device_placement=True)
 
 	run_config = tf.estimator.RunConfig(
-					  keep_checkpoint_max=5,
+					  keep_checkpoint_max=10,
 					  model_dir=checkpoint_dir,
 					  distribute=distribution, 
 					  session_config=sess_config,
