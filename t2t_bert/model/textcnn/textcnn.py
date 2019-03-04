@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 
 from utils.textcnn import textcnn_utils
-from utile.embed import integration_func
+from utils.embed import integration_func
 from model.base_classify import base_model
 
 class TextCNN(base_model.BaseModel):

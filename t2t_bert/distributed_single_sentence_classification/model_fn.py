@@ -61,7 +61,7 @@ def model_fn_builder(
 
 		tvars = model_io_fn.get_params(model_config.scope, 
 										not_storage_params=not_storage_params)
-		if load_pretrained:
+		if load_pretrained == "yes":
 			model_io_fn.load_pretrained(tvars, 
 										init_checkpoint,
 										exclude_scope=exclude_scope)

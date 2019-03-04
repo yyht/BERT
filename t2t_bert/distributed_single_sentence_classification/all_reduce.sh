@@ -1,6 +1,7 @@
 odpscmd=$1
 model_folder=$2
 model_zip=$3
+model_type=$4
 
 if [ ! -f ${model_zip} ]
 then

@@ -156,6 +156,16 @@ flags.DEFINE_string(
 	"the required num_gpus"
 	)
 
+flags.DEFINE_string(
+	"load_pretrained", "yes", 
+	"the required num_gpus"
+	)
+
+flags.DEFINE_string(
+	"w2v_path", "",
+	"pretrained w2v"
+	)
+
 def main(_):
 
 	print(FLAGS)

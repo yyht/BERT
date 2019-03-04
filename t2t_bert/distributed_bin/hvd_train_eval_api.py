@@ -134,6 +134,37 @@ flags.DEFINE_string(
 	"the required num_gpus"
 	)
 
+flags.DEFINE_string(
+	"parse_type", "parse_batch", 
+	"the required num_gpus"
+	)
+
+flags.DEFINE_string(
+	"profiler", "normal", 
+	"the required num_gpus"
+	)
+
+
+flags.DEFINE_string(
+	"train_op", "adam_weight_decay_exclude", 
+	"the required num_gpus"
+	)
+
+flags.DEFINE_string(
+	"running_type", "train", 
+	"the required num_gpus"
+	)
+
+flags.DEFINE_string(
+	"load_pretrained", "no", 
+	"the required num_gpus"
+	)
+
+flags.DEFINE_string(
+	"w2v_path", "",
+	"pretrained w2v"
+	)
+
 def main(_):
 
 	print(FLAGS)
@@ -175,7 +206,8 @@ def main(_):
 			distribution_strategy=FLAGS.distribution_strategy,
 			rule_model=FLAGS.rule_model,
 			parse_type=FLAGS.parse_type,
-			train_op=FLAGS.train_op)
+			train_op=FLAGS.train_op,
+			running_type=FLAGS.running_type)
 
 	elif FLAGS.run_type == "estimator":
 		hvd_train_eval.monitored_estimator(
@@ -192,7 +224,8 @@ def main(_):
 			distribution_strategy=FLAGS.distribution_strategy,
 			rule_model=FLAGS.rule_model,
 			parse_type=FLAGS.parse_type,
-			train_op=FLAGS.train_op)
+			train_op=FLAGS.train_op,
+			running_type=FLAGS.running_type)
 
 if __name__ == "__main__":
 	tf.app.run()
