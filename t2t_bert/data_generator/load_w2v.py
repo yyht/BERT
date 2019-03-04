@@ -18,7 +18,7 @@ def load_pretrained_w2v(w2v_path):
 		token2id[word] = index
 		id2token[index] = word
 
-	w2v_embed = np.array(w2v_embed_lst).astype(np.float32)
+	w2v_embed = np.asarray(w2v_embed_lst).astype(np.float32)
 
 	return w2v_embed, token2id, id2token
 
