@@ -151,6 +151,11 @@ flags.DEFINE_string(
 	"the required num_gpus"
 	)
 
+flags.DEFINE_string(
+	"load_pretrained", "yes", 
+	"the required num_gpus"
+	)
+
 def main(_):
 
 	print(FLAGS)

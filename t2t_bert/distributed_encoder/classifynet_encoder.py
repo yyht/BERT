@@ -16,7 +16,7 @@ def textcnn_encoder(model_config, features, labels,
 		input_char_ids = features.get("input_char_ids_{}".format(target), None)
 	else:
 		input_ids = features["input_ids"]
-		input_char_ids = features.get("input_char_ids", None)
+		input_char_ids = features.get("input_char_ids_{}".format(target), None)
 
 	model = textcnn.TextCNN(model_config)
 	model.build_emebdder(input_ids, input_char_ids, is_training, reuse=reuse, **kargs)

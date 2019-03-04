@@ -22,6 +22,9 @@ mpirun -np 2 \
  --opt_type "hvd" \
  --distribution_strategy "ParameterServerStrategy" \
  --rule_model "rule" \
- --parse_type "parse_batch"
+ --parse_type "parse_batch" \
+ --profiler "no" \
+ --running_type "train" \
+ --load_pretrained "no"
 
 

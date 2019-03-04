@@ -13,9 +13,11 @@ from data_generator import distributed_tf_data_utils as tf_data_utils
 try:
 	from .model_fn import model_fn_builder
 	from .model_interface import model_config_parser
+	from .model_data_interface import data_interface
 except:
-	from .model_fn import model_fn_builder
+	from model_fn import model_fn_builder
 	from model_interface import model_config_parser
+	from model_data_interface import data_interface
 
 import numpy as np
 import tensorflow as tf
@@ -121,7 +123,7 @@ def train_eval_fn(FLAGS,
 
 		model_train_fn = model_fn_builder(config, num_classes, init_checkpoint, 
 												model_reuse=None, 
-												load_pretrained=True,
+												load_pretrained=FLAGS.load_pretrained,
 												opt_config=opt_config,
 												model_io_config=model_io_config,
 												exclude_scope="",
@@ -134,7 +136,7 @@ def train_eval_fn(FLAGS,
 		
 		model_eval_fn = model_fn_builder(config, num_classes, init_checkpoint, 
 												model_reuse=True, 
-												load_pretrained=True,
+												load_pretrained=FLAGS.load_pretrained,
 												opt_config=opt_config,
 												model_io_config=model_io_config,
 												exclude_scope="",
@@ -174,16 +176,18 @@ def train_eval_fn(FLAGS,
 			return {"accuracy":accuracy, "loss":train_op_dict["loss"], 
 					"train_op":train_op_dict["train_op"]}
 		
-		name_to_features = {
-				"input_ids":
-						tf.FixedLenFeature([FLAGS.max_length], tf.int64),
-				"input_mask":
-						tf.FixedLenFeature([FLAGS.max_length], tf.int64),
-				"segment_ids":
-						tf.FixedLenFeature([FLAGS.max_length], tf.int64),
-				"label_ids":
-						tf.FixedLenFeature([], tf.int64),
-		}
+		# name_to_features = {
+		# 		"input_ids":
+		# 				tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+		# 		"input_mask":
+		# 				tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+		# 		"segment_ids":
+		# 				tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+		# 		"label_ids":
+		# 				tf.FixedLenFeature([], tf.int64),
+		# }
+
+		name_to_features = data_interface(FLAGS)
 
 		def _decode_record(record, name_to_features):
 			"""Decodes a record to a TensorFlow example.
