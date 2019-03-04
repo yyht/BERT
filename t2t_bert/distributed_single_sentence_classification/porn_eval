@@ -24,3 +24,4 @@ train_op=adam_weight_decay_exclude
 running_type=eval
 cross_tower_ops_type=paisoar
 distribution_strategy=MirroredStrategy
+load_pretrained=yes

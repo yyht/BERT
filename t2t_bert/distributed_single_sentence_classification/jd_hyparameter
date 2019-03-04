@@ -23,3 +23,4 @@ running_type=train
 cross_tower_ops_type=paisoar
 opt_type="all_reduce"
 distribution_strategy=MirroredStrategy
+load_pretrained=yes
