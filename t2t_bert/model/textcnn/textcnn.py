@@ -33,7 +33,7 @@ class TextCNN(base_model.BaseModel):
 					self.emb_size, 
 					self.config.num_filters, 
 					max_pool_size=self.config.max_pool_size)
-			print("output shape====", output.get_shape())
+			print("output shape====", self.output.get_shape())
 
 	def get_pooled_output(self):
 		return self.output
