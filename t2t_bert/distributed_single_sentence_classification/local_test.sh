@@ -1,6 +1,6 @@
 python ./t2t_bert/distributed_single_sentence_classification/local_test.py \
  	--buckets "/data/xuht" \
-	--config_file ".BERT/data/textcnn/textcnn.json" \
+	--config_file "./data/textcnn/textcnn.json" \
 	--init_checkpoint "" \
 	--vocab_file "w2v/tencent_ai_lab/char_id.txt" \
 	--label_id "/data/xuht/porn/label_dict.json" \
@@ -10,8 +10,8 @@ python ./t2t_bert/distributed_single_sentence_classification/local_test.py \
 	--model_output "porn/clean_data/textcnn/model/estimator/all_reduce_4_adam_weight_0228/" \
 	--epoch 8 \
 	--num_classes 5 \
-	--train_size 1402171 \
-	--eval_size 145019 \
+	--train_size 952213 \
+	--eval_size 238054 \
 	--batch_size 24 \
 	--model_type "textcnn" \
 	--if_shard 2 \

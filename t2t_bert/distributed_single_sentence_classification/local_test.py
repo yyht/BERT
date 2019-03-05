@@ -186,7 +186,7 @@ def run(FLAGS):
 
 	task_index = run_config.task_id
 	is_chief = run_config.is_chief
-	worker_count = 0
+	worker_count = 1
 
 	print("==worker_count==", worker_count, "==local_rank==", task_index, "==is is_chief==", is_chief)
 	cluster = ""
