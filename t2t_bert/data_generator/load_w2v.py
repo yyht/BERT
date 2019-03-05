@@ -4,17 +4,18 @@ from collections import OrderedDict
 
 def load_pretrained_w2v(vocab_path, w2v_path):
 	with tf.gfile.Open(w2v_path, "r") as frobj:
+
+		header = frobj.readline()
+		vocab_size, vector_size = map(int, header.split())
+
 		vector = []
-		for index, line in enumerate(frobj):
-			if index == 0:
-				vocab_size, vector_size = map(int, line.strip().split())
-				continue
-			vector.append(line.strip())
+		for index in range(vocab_size):
+			vector.append(frobj.readline().strip())
 
 	with tf.gfile.Open(vocab_path, "r") as frobj:
 		vocab = []
-		for line in frobj:
-			vocab.append(line.strip())
+		for index in range(vocab_size):
+			vocab.append(frobj.readline().strip())
 
 	w2v = {}
 	for item in vector:
