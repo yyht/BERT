@@ -4,7 +4,6 @@ from collections import OrderedDict
 
 def load_pretrained_w2v(vocab_path, w2v_path):
 	with tf.gfile.Open(w2v_path, "r") as frobj:
-
 		header = frobj.readline()
 		vocab_size, vector_size = map(int, header.split())
 
@@ -20,7 +19,7 @@ def load_pretrained_w2v(vocab_path, w2v_path):
 	w2v = {}
 	for item in vector:
 		content = item.split()
-		w2v[content[0]] = map(float, content[1:])
+		w2v[content[0]] = [float(vec) for vec in content[1:]]
 
 	w2v_embed_lst = []
 	token2id, id2token = OrderedDict(), OrderedDict()
