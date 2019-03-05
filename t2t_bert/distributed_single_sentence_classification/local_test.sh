@@ -1,6 +1,6 @@
 python ./t2t_bert/distributed_single_sentence_classification/local_test.py \
  	--buckets "/data/xuht" \
-	--config_file ".BERT/data/textcnn/textcnn.json" \
+	--config_file "./data/textcnn/textcnn.json" \
 	--init_checkpoint "" \
 	--vocab_file "w2v/tencent_ai_lab/char_id.txt" \
 	--label_id "/data/xuht/porn/label_dict.json" \
@@ -27,6 +27,7 @@ python ./t2t_bert/distributed_single_sentence_classification/local_test.py \
 	--cross_tower_ops_type "paisoar" \
 	--distribution_strategy "MirroredStrategy" \
 	--load_pretrained "no" \
-	--w2v_path "w2v/tencent_ai_lab/char_w2v.txt"
+	--w2v_path "w2v/tencent_ai_lab/char_w2v.txt" \
+	--with_char "no_char"
 
  

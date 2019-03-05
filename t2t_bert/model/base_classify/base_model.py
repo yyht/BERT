@@ -20,7 +20,7 @@ class BaseModel(object):
 									 init_mat=self.token_emb_mat, 
 									 extra_symbol=self.extra_symbol, 
 									 scope=self.scope+'_token_embedding')
-		if self.config.with_char:
+		if self.config.with_char == "char":
 			self.char_mat = integration_func.generate_embedding_mat_v1(self.vocab_size, emb_len=self.emb_size,
 									 init_mat=self.token_emb_mat, 
 									 extra_symbol=self.extra_symbol, 
@@ -52,7 +52,7 @@ class BaseModel(object):
 							lambda:0.0)
 
 		word_emb = self.build_emebdder(input_ids)
-		if self.config.with_char:
+		if self.config.with_char == "char":
 			char_emb = self.build_char_embedding(input_char_ids, is_training, **kargs)
 			self.word_emb = tf.concat([word_emb, char_emb], axis=-1)
 		else:
