@@ -41,7 +41,8 @@ def model_config_parser(FLAGS):
 	elif FLAGS.model_type == "textcnn":
 		from data_generator import load_w2v
 		w2v_path = os.path.join(FLAGS.buckets, FLAGS.w2v_path)
-		w2v_embed, token2id, id2token = load_w2v.load_pretrained_w2v(w2v_path)
+		vocab_path = os.path.join(FLAGS.buckets, FLAGS.vocab_file)
+		w2v_embed, token2id, id2token = load_w2v.load_pretrained_w2v(vocab_path, w2v_path)
 		config = json.load(open(FLAGS.config_file, "r"))
 		config = Bunch(config)
 		config.token_emb_mat = w2v_embed

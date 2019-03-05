@@ -3,7 +3,7 @@ python ./t2t_bert/distributed_data_prepare/classification_data_prepare.py \
 	--test_file /data/xuht/porn/clean_data/dev.txt \
 	--train_result_file /data/xuht/porn/clean_data/textcnn/train_tfrecords \
 	--test_result_file  /data/xuht/porn/clean_data/textcnn/dev_tfrecords\
-	--vocab_file /data/xuht/w2v/tencent_ai_lab/char.txt \
+	--vocab_file /data/xuht/w2v/tencent_ai_lab/char_id.txt \
 	--label_id /data/xuht/porn/label_dict.json \
 	--lower_case True \
 	--max_length 128 \
