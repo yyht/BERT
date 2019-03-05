@@ -41,6 +41,8 @@ FLAGS = flags.FLAGS
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
+flags.DEFINE_string("buckets", "", "oss buckets")
+
 ## Required parameters
 flags.DEFINE_string(
 	"train_file", None,
@@ -118,8 +120,16 @@ def main(_):
 	# 	vocab_lst = []
 	# 	for line in f:
 	# 		vocab_lst.append(line.strip())
+
+	vocab_path = os.path.join(FLAGS.buckets, FLAGS.vocab_file)
+	train_file = os.path.join(FLAGS.buckets, FLAGS.train_file)
+	test_file = os.path.join(FLAGS.buckets, FLAGS.test_file)
+
+	train_result_file = os.path.join(FLAGS.buckets, FLAGS.train_result_file)
+	test_result_file = os.path.join(FLAGS.buckets, FLAGS.test_result_file)
+
 	print(FLAGS.with_char)
-	with open(FLAGS.vocab_file, "r") as f:
+	with tf.gfile.Open(vocab_path, "r") as f:
 		lines = f.read().splitlines()
 		vocab_lst = []
 		for line in lines:
@@ -132,24 +142,24 @@ def main(_):
 	classifier_data_api = classifier_processor.FasttextClassifierProcessor()
 	classifier_data_api.get_labels(FLAGS.label_id)
 
-	train_examples = classifier_data_api.get_train_examples(FLAGS.train_file,
+	train_examples = classifier_data_api.get_train_examples(train_file,
 										is_shuffle=True)
 
 	write_to_tfrecords.convert_normal_classifier_examples_to_features(train_examples,
 															classifier_data_api.label2id,
 															FLAGS.max_length,
 															tokenizer,
-															FLAGS.train_result_file,
+															train_result_file,
 															FLAGS.with_char,
 															FLAGS.char_len)
 
-	test_examples = classifier_data_api.get_train_examples(FLAGS.test_file,
+	test_examples = classifier_data_api.get_train_examples(test_file,
 										is_shuffle=False)
 	write_to_tfrecords.convert_normal_classifier_examples_to_features(test_examples,
 															classifier_data_api.label2id,
 															FLAGS.max_length,
 															tokenizer,
-															FLAGS.test_result_file,
+															test_result_file,
 															FLAGS.with_char,
 															FLAGS.char_len)
 	# elif FLAGS.if_rule == "rule":
