@@ -38,8 +38,8 @@ def generate_embedding_mat(dict_size, emb_len, init_mat=None, extra_symbol=None,
             emb_mat = tf.concat([emb_mat_ept_and_unk, emb_mat_other], 0)
         return emb_mat
 
-def generate_embedding_mat_v1(dict_size, emb_len, init_mat=None, extra_symbol=None, scope=None):
-      with tf.variable_scope(scope or 'gene_emb_mat'):
+def generate_embedding_mat_v1(dict_size, emb_len, init_mat=None, extra_symbol=None, scope=None, reuse=None):
+      with tf.variable_scope(scope or 'gene_emb_mat', reuse=reuse):
           if init_mat is None:
             emb_mat = tf.Variable(tf.random_uniform([dict_size, emb_len], -1.0, 1.0),
                                 name="emb_mat",
