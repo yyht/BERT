@@ -130,11 +130,6 @@ flags.DEFINE_string(
 	)
 
 flags.DEFINE_string(
-	"train_op", "adam_weight_decay_exclude", 
-	"the required num_gpus"
-	)
-
-flags.DEFINE_string(
 	"profiler", "normal", 
 	"the required num_gpus"
 	)
