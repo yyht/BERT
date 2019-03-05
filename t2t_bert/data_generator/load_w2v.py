@@ -27,9 +27,6 @@ def load_pretrained_w2v(vocab_path, w2v_path):
 		w2v_embed_lst.append(w2v[word])
 		token2id[word] = index
 		id2token[index] = word
-		embed_size.append(len(vector))
-	print(w2v_embed_lst[-1])
-	print(set(embed_size))
 	w2v_embed = np.asarray(w2v_embed_lst).astype(np.float32)
 
 	return w2v_embed, token2id, id2token
