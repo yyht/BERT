@@ -9,7 +9,7 @@ mpirun -np 2 \
  --train_file "porn/rule/seqing_train_20180821_tf_records" \
  --dev_file "porn/rule/seqing_test_20180821_tf_records" \
  --max_length 128 \
- --model_output "porn/rule/model/sess" \
+ --model_output "porn/rule/model/sess_new" \
  --epoch 2 \
  --num_classes 5 \
  --batch_size 32 \
@@ -26,5 +26,6 @@ mpirun -np 2 \
  --profiler "no" \
  --running_type "train" \
  --load_pretrained "no" \
- --w2v_path ""
+ --w2v_path "" \
+ --train_op "adam_decay"
 
