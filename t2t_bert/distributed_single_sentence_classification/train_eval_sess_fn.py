@@ -65,7 +65,7 @@ def train_eval_fn(FLAGS,
 
 		config = model_config_parser(FLAGS)
 
-		print(config, "==model config==")
+		# print(config, "==model config==")
 		
 		if FLAGS.if_shard == "0":
 			train_size = FLAGS.train_size
