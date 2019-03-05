@@ -135,11 +135,6 @@ flags.DEFINE_string(
 	)
 
 flags.DEFINE_string(
-	"parse_type", "parse_batch", 
-	"the required num_gpus"
-	)
-
-flags.DEFINE_string(
 	"profiler", "normal", 
 	"the required num_gpus"
 	)
