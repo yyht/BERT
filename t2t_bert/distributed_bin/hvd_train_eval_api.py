@@ -145,6 +145,11 @@ flags.DEFINE_string(
 	"the required num_gpus"
 	)
 
+flags.DEFINE_integer(
+	"num_gpus", 4, 
+	"the required num_gpus"
+	)
+
 flags.DEFINE_string(
 	"running_type", "train", 
 	"the required num_gpus"
