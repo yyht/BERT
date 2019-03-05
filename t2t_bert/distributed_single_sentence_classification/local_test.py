@@ -166,6 +166,11 @@ flags.DEFINE_string(
 	"pretrained w2v"
 	)
 
+flags.DEFINE_string(
+	"input_target", "a", 
+	"the required num_gpus"
+	)
+
 def run(FLAGS):
 
 	print(FLAGS)
@@ -216,7 +221,8 @@ def run(FLAGS):
 		parse_type=FLAGS.parse_type,
 		rule_model=FLAGS.rule_model,
 		train_op=FLAGS.train_op,
-		running_type=FLAGS.running_type)
+		running_type=FLAGS.running_type,
+		input_target="a")
 
 if __name__ == "__main__":
 	run(FLAGS)
