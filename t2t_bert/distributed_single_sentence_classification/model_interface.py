@@ -21,7 +21,7 @@ def model_zoo(model_config):
 	elif model_config.get("model_type", "bert") == "bert_rule":
 		print("==apply bert rule encoder==")
 		model_interface = bert_rule_encoder
-	elif model_config.get("model", "bert") == "textcnn":
+	elif model_config.get("model_type", "bert") == "textcnn":
 		print("==apply textcnn encoder==")
 		model_interface = textcnn_encoder
 
