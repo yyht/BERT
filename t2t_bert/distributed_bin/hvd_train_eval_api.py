@@ -165,6 +165,16 @@ flags.DEFINE_string(
 	"pretrained w2v"
 	)
 
+flags.DEFINE_string(
+	"with_char", "no_char",
+	"pretrained w2v"
+	)
+
+flags.DEFINE_string(
+	"input_target", "", 
+	"the required num_gpus"
+	)
+
 def main(_):
 
 	print(FLAGS)
@@ -207,7 +217,8 @@ def main(_):
 			rule_model=FLAGS.rule_model,
 			parse_type=FLAGS.parse_type,
 			train_op=FLAGS.train_op,
-			running_type=FLAGS.running_type)
+			running_type=FLAGS.running_type,
+			input_target=FLAGS.input_target)
 
 	elif FLAGS.run_type == "estimator":
 		hvd_train_eval.monitored_estimator(
@@ -225,7 +236,8 @@ def main(_):
 			rule_model=FLAGS.rule_model,
 			parse_type=FLAGS.parse_type,
 			train_op=FLAGS.train_op,
-			running_type=FLAGS.running_type)
+			running_type=FLAGS.running_type,
+			input_target=FLAGS.input_target)
 
 if __name__ == "__main__":
 	tf.app.run()
