@@ -222,7 +222,7 @@ def run(FLAGS):
 		rule_model=FLAGS.rule_model,
 		train_op=FLAGS.train_op,
 		running_type=FLAGS.running_type,
-		input_target="a")
+		input_target=FLAGS.input_target)
 
 if __name__ == "__main__":
 	run(FLAGS)
