@@ -7,7 +7,7 @@ def load_pretrained_w2v(vocab_path, w2v_path):
 		vector = []
 		for index, line in enumerate(frobj):
 			if index == 0:
-				vocab_size, vector_size = map(int, line.strip())
+				vocab_size, vector_size = map(int, line.strip().split())
 				continue
 			vector.append(line.strip())
 
