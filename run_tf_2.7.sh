@@ -1,8 +1,8 @@
 sudo nvidia-docker run -it -d -p 8618:8888 --name tensorflow_1.8_xuht_bert \
 --privileged \
 -e LANG=C.UTF-8 \
--v /home/xuht/source:/notebooks/source \
--v /data/xuht:/data/xuht \
+-v /home/albert.xht/source:/notebooks/source \
+-v /gruntdata/albert.xht:/data/xuht \
 -p 6552:6006 \
 -p 7999:8080 \
 -p 8399:8891 \

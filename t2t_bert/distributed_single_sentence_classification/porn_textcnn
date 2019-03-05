@@ -1,6 +1,6 @@
 config_file=./BERT/data/textcnn/textcnn.json
 init_checkpoint=chinese_L-12_H-768_A-12/bert_model.ckpt
-vocab_file=./BERT/data/chinese_L-12_H-768_A-12/vocab.txt
+vocab_file=w2v/tencent_ai_lab/char_id.txt
 label_id=./BERT/data/porn/label_dict.json
 max_length=128
 train_file=wesitanalyze-data-seqing20180821/data/clean_data/textcnn/train_tfrecords
