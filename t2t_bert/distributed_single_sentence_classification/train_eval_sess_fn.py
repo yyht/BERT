@@ -375,6 +375,8 @@ def train_eval_fn(FLAGS,
 												   save_checkpoint_steps=num_storage_steps)
 		else:
 			print("==single sess==")
+			sess_config = tf.ConfigProto(allow_soft_placement=False,
+									log_device_placement=False)
 			sess = tf.train.MonitoredTrainingSession(config=sess_config,
 												   hooks=hooks,
 												   checkpoint_dir=checkpoint_dir,
