@@ -3,7 +3,7 @@ import numpy as np
 from collections import OrderedDict
 
 def load_pretrained_w2v(vocab_path, w2v_path):
-	with tf.gfile.Open(w2v_path) as frobj:
+	with tf.gfile.Open(w2v_path, "r") as frobj:
 		vector = []
 		for index, line in enumerate(frobj):
 			if index == 0:
@@ -11,7 +11,7 @@ def load_pretrained_w2v(vocab_path, w2v_path):
 				continue
 			vector.append(line.strip())
 
-	with tf.gfile.Open(vocab_path) as frobj:
+	with tf.gfile.Open(vocab_path, "r") as frobj:
 		vocab = []
 		for line in frobj:
 			vocab.append(line.strip())
