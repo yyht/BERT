@@ -1,4 +1,4 @@
-python ./t2t_bert/distributed_single_sentence_classification/local_test.py \
+CUDA_VISIBLE_DEVICES="0" python ./t2t_bert/distributed_single_sentence_classification/local_test.py \
  	--buckets "/data/xuht" \
 	--config_file "./data/textcnn/textcnn.json" \
 	--init_checkpoint "" \

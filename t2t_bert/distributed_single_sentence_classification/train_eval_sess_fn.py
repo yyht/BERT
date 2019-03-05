@@ -383,8 +383,8 @@ def train_eval_fn(FLAGS,
 												   save_checkpoint_steps=num_storage_steps)
 						
 		print("==begin to train and eval==")
-		step = sess.run(tf.train.get_global_step())
-		print(step, task_index, "==task_index, global_step==")
+		# step = sess.run(tf.train.get_global_step())
+		# print(step, task_index, "==task_index, global_step==")
 		train_fn(train_dict, sess)
 
 		# for i in range(10):
