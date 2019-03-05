@@ -74,7 +74,7 @@ def train_eval_fn(FLAGS,
 			train_size = int(FLAGS.train_size/worker_count)
 			epoch = FLAGS.epoch
 
-		init_lr = 2e-5
+		init_lr = config.init_lr
 
 		label_dict = json.load(open(FLAGS.label_id))
 

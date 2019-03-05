@@ -37,6 +37,7 @@ def model_config_parser(FLAGS):
 		config.dropout_prob = 0.1
 		config.label_type = "single_label"
 		config.model_type = FLAGS.model_type
+		config.init_lr = 2e-5
 
 	elif FLAGS.model_type == "textcnn":
 		from data_generator import load_w2v
@@ -56,5 +57,6 @@ def model_config_parser(FLAGS):
 		config.char_embedding = None
 		config.model_type = FLAGS.model_type
 		config.dropout_prob = config.dropout_rate
+		config.init_lr = config.learning_rate
 
 	return config
