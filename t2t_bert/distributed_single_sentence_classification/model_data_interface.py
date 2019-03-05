@@ -14,7 +14,8 @@ def data_interface(FLAGS):
 		}
 	elif FLAGS.model_type in ["textcnn"]:
 		name_to_features = {
-			"input_ids_a":tf.FixedLenFeature([FLAGS.max_length], tf.int64)
+			"input_ids_a":tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+			"label_ids":tf.FixedLenFeature([], tf.int64)
 		}
 		if FLAGS.with_char == "char":
 			name_to_features["input_char_ids_a"] = tf.FixedLenFeature([FLAGS.max_length], tf.int64)
