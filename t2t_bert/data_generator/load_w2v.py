@@ -7,7 +7,7 @@ def load_pretrained_w2v(w2v_path):
 		lines = []
 		for line in frobj:
 			lines.append(line.strip())
-
+	embed_size = []
 	w2v_embed_lst = []
 	token2id, id2token = OrderedDict(), OrderedDict()
 	for index, item in enumerate(lines):
@@ -17,7 +17,9 @@ def load_pretrained_w2v(w2v_path):
 		w2v_embed_lst.append(vector)
 		token2id[word] = index
 		id2token[index] = word
-
+		embed_size.append(len(vector))
+	print(w2v_embed_lst[-1])
+	print(set(embed_size))
 	w2v_embed = np.asarray(w2v_embed_lst).astype(np.float32)
 
 	return w2v_embed, token2id, id2token
