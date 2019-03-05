@@ -2,7 +2,7 @@ python ./t2t_bert/distributed_single_sentence_classification/local_test.py \
  	--buckets "/data/xuht" \
 	--config_file ".BERT/data/textcnn/textcnn.json" \
 	--init_checkpoint "" \
-	--vocab_file "w2v/tencent_ai_lab/char.txt" \
+	--vocab_file "w2v/tencent_ai_lab/char_id.txt" \
 	--label_id "/data/xuht/porn/label_dict.json" \
 	--max_length 128 \
 	--train_file "porn/clean_data/textcnn/train_tfrecords" \
