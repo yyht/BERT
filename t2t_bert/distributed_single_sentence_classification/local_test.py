@@ -161,6 +161,11 @@ flags.DEFINE_string(
 	"pretrained w2v"
 	)
 
+flags.DEFINE_string(
+	"with_char", "no_char",
+	"pretrained w2v"
+	)
+
 def run(FLAGS):
 
 	print(FLAGS)
