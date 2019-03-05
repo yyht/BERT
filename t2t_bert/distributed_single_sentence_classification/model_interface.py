@@ -36,7 +36,7 @@ def model_config_parser(FLAGS):
 		config.scope = "bert"
 		config.dropout_prob = 0.1
 		config.label_type = "single_label"
-		config.model = FLAGS.model_type
+		config.model_type = FLAGS.model_type
 
 	elif FLAGS.model_type == "textcnn":
 		from data_generator import load_w2v
@@ -54,6 +54,6 @@ def model_config_parser(FLAGS):
 		config.char_dim = w2v_embed.shape[1]
 		config.char_vocab_size = w2v_embed.shape[0]
 		config.char_embedding = None
-		config.model = FLAGS.model_type
+		config.model_type = FLAGS.model_type
 
 	return config
