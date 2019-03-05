@@ -17,8 +17,7 @@ class BaseModel(object):
 		self.char_dim = self.config.get("char_emb_size", 300)
 
 		self.emb_mat = integration_func.generate_embedding_mat_v1(self.vocab_size, emb_len=self.emb_size,
-									 init_mat=self.token_emb_mat, 
-									 extra_symbol=self.extra_symbol, 
+									 init_mat=self.token_emb_mat,  
 									 scope=self.scope+'_token_embedding')
 		if self.config.with_char == "char":
 			self.char_mat = integration_func.generate_embedding_mat_v1(self.vocab_size, emb_len=self.emb_size,
