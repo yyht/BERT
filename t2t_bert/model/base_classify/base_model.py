@@ -53,7 +53,7 @@ class BaseModel(object):
 							lambda:self.config.dropout_rate,
 							lambda:0.0)
 
-		word_emb = self.build_word_embedding(input_ids, *kargs)
+		word_emb = self.build_word_embedding(input_ids, **kargs)
 		if self.config.with_char == "char":
 			char_emb = self.build_char_embedding(input_char_ids, is_training, **kargs)
 			self.word_emb = tf.concat([word_emb, char_emb], axis=-1)
