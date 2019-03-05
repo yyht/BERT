@@ -55,5 +55,6 @@ def model_config_parser(FLAGS):
 		config.char_vocab_size = w2v_embed.shape[0]
 		config.char_embedding = None
 		config.model_type = FLAGS.model_type
+		config.dropout_prob = config.dropout_rate
 
 	return config
