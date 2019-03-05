@@ -193,7 +193,7 @@ def main(_):
 	cluster = ""
 	target = ""
 
-	# FLAGS.config_file = os.path.join(FLAGS.buckets, FLAGS.config_file)
+	FLAGS.config_file = os.path.join(FLAGS.buckets, FLAGS.config_file)
 	FLAGS.label_id = os.path.join(FLAGS.buckets, FLAGS.label_id)
 	
 	if FLAGS.run_type == "sess":
