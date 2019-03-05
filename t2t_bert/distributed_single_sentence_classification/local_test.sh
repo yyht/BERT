@@ -28,6 +28,7 @@ python ./t2t_bert/distributed_single_sentence_classification/local_test.py \
 	--distribution_strategy "MirroredStrategy" \
 	--load_pretrained "no" \
 	--w2v_path "w2v/tencent_ai_lab/char_w2v.txt" \
-	--with_char "no_char"
+	--with_char "no_char" \
+	--input_target "a"
 
  

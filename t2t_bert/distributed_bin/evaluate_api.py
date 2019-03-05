@@ -156,6 +156,11 @@ flags.DEFINE_string(
 	"the required num_gpus"
 	)
 
+flags.DEFINE_string(
+	"input_target", "a", 
+	"the required num_gpus"
+	)
+
 def main(_):
 
 	print(FLAGS)
@@ -209,7 +214,8 @@ def main(_):
 			parse_type=FLAGS.parse_type,
 			rule_model=FLAGS.rule_model,
 			train_op=FLAGS.train_op,
-			running_type="eval")
+			running_type="eval",
+			input_target=FLAGS.input_target)
 	elif FLAGS.run_type == "sess":
 		result_dict = train_eval.monitored_sess(FLAGS=FLAGS,
 			worker_count=worker_count,
@@ -226,7 +232,8 @@ def main(_):
 			parse_type=FLAGS.parse_type,
 			rule_model=FLAGS.rule_model,
 			train_op=FLAGS.train_op,
-			running_type="eval")
+			running_type="eval",
+			input_target=FLAGS.input_target)
 
 		result_log_file = os.path.join(checkpoint_dir, "result.info")
 		with tf.gfile.GFile(result_log_file, 'w') as f:
