@@ -16,12 +16,12 @@ def load_pretrained_w2v(vocab_path, w2v_path):
 		vocab = []
 		for index in range(vocab_size):
 			vocab.append(frobj.readline().strip())
-
+	print(len(vocab))
 	w2v = {}
 	for item in vector:
 		content = item.split()
 		w2v[content[0]] = map(float, content[1:])
-
+	print(len(w2v))
 	w2v_embed_lst = []
 	token2id, id2token = OrderedDict(), OrderedDict()
 	for index, word in enumerate(vocab):
