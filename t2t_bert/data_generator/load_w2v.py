@@ -5,7 +5,10 @@ from collections import OrderedDict
 def load_pretrained_w2v(vocab_path, w2v_path):
 	with tf.gfile.Open(w2v_path) as frobj:
 		vector = []
-		for line in frobj:
+		for index, line in enumerate(frobj):
+			if index == 0:
+				vocab_size, vector_size = map(int, line.strip())
+				continue
 			vector.append(line.strip())
 
 	with tf.gfile.Open(vocab_path) as frobj:
@@ -21,7 +24,7 @@ def load_pretrained_w2v(vocab_path, w2v_path):
 	w2v_embed_lst = []
 	token2id, id2token = OrderedDict(), OrderedDict()
 	for index, word in enumerate(vocab):
-		w2v_embed_lst.append(w2v[vocab])
+		w2v_embed_lst.append(w2v[word])
 		token2id[word] = index
 		id2token[index] = word
 		embed_size.append(len(vector))
