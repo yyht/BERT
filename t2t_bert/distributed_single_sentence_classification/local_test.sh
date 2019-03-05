@@ -22,7 +22,7 @@ python ./t2t_bert/distributed_single_sentence_classification/local_test.py \
 	--parse_type "parse_batch" \
 	--rule_model "normal" \
 	--profiler "no" \
-	--train_op "adam_weight_decay_exclude" \
+	--train_op "adam" \
 	--running_type "train" \
 	--cross_tower_ops_type "paisoar" \
 	--distribution_strategy "MirroredStrategy" \
