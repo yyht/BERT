@@ -7,7 +7,7 @@ from model.base_classify import base_model
 
 class TextCNN(base_model.BaseModel):
 	def __init__(self, config):
-		self.super(TextCNN, self).__init__(config)
+		super(TextCNN, self).__init__(config)
 
 	def build_encoder(self, input_ids, input_char_ids, is_training, **kargs):
 		reuse = kargs["reuse"]
