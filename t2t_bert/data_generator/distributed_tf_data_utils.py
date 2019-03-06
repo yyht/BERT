@@ -81,7 +81,7 @@ def eval_input_fn(input_file, _parse_fn, name_to_features,
 	dataset = tf.data.TFRecordDataset(input_file, buffer_size=params.get("buffer_size", 100))
 	dataset = dataset.map(lambda x:_parse_fn(x, name_to_features))
 	dataset = dataset.batch(params.get("batch_size", 32))
-	dataset = dataset.repeat()
+	dataset = dataset.repeat(params.get("epoch", 100)+1)
 	iterator = dataset.make_one_shot_iterator()
 	features = iterator.get_next()
 	return features
@@ -112,7 +112,7 @@ def eval_batch_input_fn(input_file, _parse_fn, name_to_features,
 		params, **kargs):
 	if_shard = kargs.get("if_shard", "1")
 	dataset = tf.data.TFRecordDataset(input_file, buffer_size=params.get("buffer_size", 100))
-	dataset = dataset.repeat(1)
+	dataset = dataset.repeat(params.get("epoch", 100)+1)
 	dataset = dataset.batch(params.get("batch_size", 32))
 	dataset = dataset.map(lambda x:_parse_fn(x, name_to_features))
 	iterator = dataset.make_one_shot_iterator()
@@ -172,7 +172,7 @@ def all_reduce_eval_batch_input_fn(input_file, _parse_fn, name_to_features,
 		params, **kargs):
 	dataset = tf.data.TFRecordDataset(input_file, buffer_size=params.get("buffer_size", 100))
 	dataset = dataset.repeat(params.get("epoch", 100)+1)
-	dataset = dataset.batch(params.get("batch_size", 32))
+	dataset = dataset.batch(1)
 	dataset = dataset.map(lambda x:_parse_fn(x, name_to_features))
 	return dataset
 
