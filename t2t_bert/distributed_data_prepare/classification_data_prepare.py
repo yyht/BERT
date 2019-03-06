@@ -142,7 +142,7 @@ def main(_):
 	corpus_vocab_path = os.path.join(FLAGS.buckets, FLAGS.corpus_vocab_path)
 
 	print(FLAGS.with_char)
-	with tf.gfile.Open(vocab_path, "r") as f:
+	with tf.gfile.Open(corpus_vocab_path, "r") as f:
 		lines = f.read().splitlines()
 		vocab_lst = []
 		for line in lines:
