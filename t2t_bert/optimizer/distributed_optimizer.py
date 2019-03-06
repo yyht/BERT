@@ -163,8 +163,14 @@ class Optimizer(object):
 
 	def get_opt(self, init_lr, 
 				num_train_steps, **kargs):
-		learning_rate = self.lr_decay_fn(init_lr, num_train_steps, **kargs)
-		learning_rate = self.warm_up(learning_rate, init_lr, **kargs)
+
+		learning_rate = init_lr
+		if self.config.get("decay", "no") == "decay":
+			print("==apply lr decay==")
+			learning_rate = self.lr_decay_fn(init_lr, num_train_steps, **kargs)
+		if self.config.get("warmup", "no") == "warmup":
+			print("==apply warmup==")
+			learning_rate = self.warm_up(learning_rate, init_lr, **kargs)
 		
 		# add uber horvod distributed optimizer
 		if hvd and self.config["opt_type"] == "hvd":
