@@ -25,3 +25,4 @@ running_type=eval
 cross_tower_ops_type=paisoar
 distribution_strategy=MirroredStrategy
 load_pretrained=yes
+input_target=''

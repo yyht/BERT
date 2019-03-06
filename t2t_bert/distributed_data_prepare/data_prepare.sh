@@ -13,4 +13,6 @@ python ./t2t_bert/distributed_data_prepare/classification_data_prepare.py \
 	--rule_word_path /data/xuht/porn/rule/rule/mined_porn_domain_adaptation_v2.txt \
 	--rule_label_dict /data/xuht/porn/rule/rule/rule_label_dict.json \
 	--with_char "no" \
-	--char_len 5
+	--char_len 5 \
+	--predefined_vocab_size 50000 \
+	--corpus_vocab_path porn/clean_data/textcnn/char_id.txt
