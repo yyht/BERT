@@ -171,7 +171,7 @@ def main(_):
 		for line in lines:
 			vocab_lst.append(line)
 		print(len(vocab_lst))
-		print(vocab_lst)
+		# print(vocab_lst)
 
 	tokenizer_corpus.load_vocab(vocab_lst)
 
