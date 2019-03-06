@@ -26,10 +26,12 @@ def classifier(config, pooled_output,
 
 	if config.get("label_type", "single_label") == "single_label":
 		if config.get("loss", "entropy") == "entropy":
+			print("==standard cross entropy==")
 			per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
 												logits=logits, 
 												labels=tf.stop_gradient(labels))
 		elif config.get("loss", "entropy") == "focal_loss":
+			print("==multi_label focal loss==")
 			per_example_loss, _ = loss_utils.focal_loss_multi_v1(config,
 														logits=logits, 
 														labels=labels)
