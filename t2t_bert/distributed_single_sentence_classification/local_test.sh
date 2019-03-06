@@ -2,7 +2,7 @@ CUDA_VISIBLE_DEVICES="0" python ./t2t_bert/distributed_single_sentence_classific
  	--buckets "/data/xuht" \
 	--config_file "./data/textcnn/textcnn.json" \
 	--init_checkpoint "" \
-	--vocab_file "w2v/tencent_ai_lab/char_id.txt" \
+	--vocab_file "porn/clean_data/textcnn/char_id.txt" \
 	--label_id "/data/xuht/porn/label_dict.json" \
 	--max_length 128 \
 	--train_file "porn/clean_data/textcnn/train_tfrecords" \
