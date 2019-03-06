@@ -12,7 +12,7 @@ def vocab_filter(corpus, vocab, tokenizer, predefined_vocab_size, corpus_vocab_p
 	corpus_vocab = vocab[0:4] # pad, unk, <s>, </s>
 	word_lst = dic.most_common(predefined_vocab_size)
 
-	print(len(word_lst), word_lst[0][0])
+	print(len(word_lst), word_lst[0][0], corpus_vocab)
 
 	corpus_vocab += [item[0] for item in word_lst]
 	with tf.gfile.Open(corpus_vocab_path, "w") as fwobj:
