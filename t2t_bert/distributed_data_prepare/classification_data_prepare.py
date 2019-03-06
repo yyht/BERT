@@ -34,6 +34,7 @@ import json
 
 from example import feature_writer, write_to_tfrecords
 from example import classifier_processor
+from data_generator import vocab_filter
 
 flags = tf.flags
 
@@ -111,6 +112,16 @@ flags.DEFINE_string(
 	"if apply rule detector"
 	)
 
+flags.DEFINE_integer(
+	"predefined_vocab_size", 10000,
+	"if apply rule detector"
+	)
+
+flags.DEFINE_string(
+	"corpus_vocab_path", "",
+	"if apply rule detector"
+	)
+
 def main(_):
 
 	tokenizer = tokenization.Jieba_CHAR(
@@ -128,6 +139,8 @@ def main(_):
 	train_result_file = os.path.join(FLAGS.buckets, FLAGS.train_result_file)
 	test_result_file = os.path.join(FLAGS.buckets, FLAGS.test_result_file)
 
+	corpus_vocab_path = os.path.join(FLAGS.buckets, FLAGS.corpus_vocab_path)
+
 	print(FLAGS.with_char)
 	with tf.gfile.Open(vocab_path, "r") as f:
 		lines = f.read().splitlines()
@@ -144,6 +157,10 @@ def main(_):
 
 	train_examples = classifier_data_api.get_train_examples(train_file,
 										is_shuffle=True)
+
+	vocab_filter.vocab_filter(train_examples, vocab_lst, 
+							tokenizer, FLAGS.predefined_vocab_size, 
+							corpus_vocab_path)
 
 	write_to_tfrecords.convert_normal_classifier_examples_to_features(train_examples,
 															classifier_data_api.label2id,
