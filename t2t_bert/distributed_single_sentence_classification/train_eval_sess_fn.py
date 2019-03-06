@@ -102,7 +102,9 @@ def train_eval_fn(FLAGS,
 							"worker_count":worker_count,
 							"opt_type":FLAGS.opt_type,
 							"is_chief":is_chief,
-							"train_op":kargs.get("train_op", "adam")})
+							"train_op":kargs.get("train_op", "adam"),
+							"decay":kargs.get("decay", "no"),
+							"warmup":kargs.get("warmup", "no")})
 
 		model_io_config = Bunch({"fix_lm":False})
 		

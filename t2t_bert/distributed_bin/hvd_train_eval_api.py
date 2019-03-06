@@ -170,6 +170,16 @@ flags.DEFINE_string(
 	"the required num_gpus"
 	)
 
+flags.DEFINE_string(
+	"decay", "no",
+	"pretrained w2v"
+	)
+
+flags.DEFINE_string(
+	"warmup", "no",
+	"pretrained w2v"
+	)
+
 def main(_):
 
 	print(FLAGS)
@@ -213,7 +223,9 @@ def main(_):
 			parse_type=FLAGS.parse_type,
 			train_op=FLAGS.train_op,
 			running_type=FLAGS.running_type,
-			input_target=FLAGS.input_target)
+			input_target=FLAGS.input_target,
+			decay=FLAGS.decay,
+			warmup=FLAGS.warmup)
 
 	elif FLAGS.run_type == "estimator":
 		hvd_train_eval.monitored_estimator(
@@ -232,7 +244,9 @@ def main(_):
 			parse_type=FLAGS.parse_type,
 			train_op=FLAGS.train_op,
 			running_type=FLAGS.running_type,
-			input_target=FLAGS.input_target)
+			input_target=FLAGS.input_target,
+			decay=FLAGS.decay,
+			warmup=FLAGS.warmup)
 
 if __name__ == "__main__":
 	tf.app.run()

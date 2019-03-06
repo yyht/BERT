@@ -78,7 +78,8 @@ def model_fn_builder(
 			with tf.control_dependencies(update_ops):
 				train_op = optimizer_fn.get_train_op(loss, tvars, 
 								opt_config.init_lr, 
-								opt_config.num_train_steps)
+								opt_config.num_train_steps,
+								**kargs)
 
 				model_io_fn.set_saver()
 

@@ -166,6 +166,16 @@ flags.DEFINE_string(
 	"pretrained w2v"
 	)
 
+flags.DEFINE_string(
+	"decay", "no",
+	"pretrained w2v"
+	)
+
+flags.DEFINE_string(
+	"warmup", "no",
+	"pretrained w2v"
+	)
+
 def main(_):
 
 	print(FLAGS)
@@ -226,7 +236,9 @@ def main(_):
 		parse_type=FLAGS.parse_type,
 		rule_model=FLAGS.rule_model,
 		train_op=FLAGS.train_op,
-		running_type=FLAGS.running_type)
+		running_type=FLAGS.running_type,
+		decay=FLAGS.decay,
+		warmup=FLAGS.warmup)
 
 if __name__ == "__main__":
 	tf.app.run()
