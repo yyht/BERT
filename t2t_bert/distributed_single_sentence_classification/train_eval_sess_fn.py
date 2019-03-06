@@ -337,6 +337,8 @@ def train_eval_fn(FLAGS,
 				except tf.errors.OutOfRangeError:
 					print("==Succeeded in training model==")
 					break
+			return {"eval":monitoring_eval, 
+					"train":monitoring_train}
 
 		print("===========begin to train============")
 		# sess_config = tf.ConfigProto(allow_soft_placement=False,
@@ -385,7 +387,7 @@ def train_eval_fn(FLAGS,
 		print("==begin to train and eval==")
 		# step = sess.run(tf.train.get_global_step())
 		# print(step, task_index, "==task_index, global_step==")
-		train_fn(train_dict, sess)
+		monitoring_info = train_fn(train_dict, sess)
 
 		# for i in range(10):
 		# 	l = sess.run(train_features)
@@ -394,3 +396,9 @@ def train_eval_fn(FLAGS,
 		if task_index == 0:
 			print("===========begin to eval============")
 			eval_finial_dict = eval_fn(eval_dict, sess)
+
+			with tf.gfile.Open(os.path.join(checkpoint_dir, "train_and_eval_info.json"), "w") as fwobj:
+				import json
+				fwobj.write(json.dumps({"final_eval":eval_finial_dict, 
+										"train_and_eval":monitoring_info}))
+
