@@ -397,8 +397,8 @@ def train_eval_fn(FLAGS,
 			print("===========begin to eval============")
 			eval_finial_dict = eval_fn(eval_dict, sess)
 
-			with tf.gfile.Open(os.path.join(checkpoint_dir, "train_and_eval_info.json"), "w") as fwobj:
-				import json
-				fwobj.write(json.dumps({"final_eval":eval_finial_dict, 
-										"train_and_eval":monitoring_info}))
+			# with tf.gfile.Open(os.path.join(checkpoint_dir, "train_and_eval_info.json"), "w") as fwobj:
+			# 	import json
+			# 	fwobj.write(json.dumps({"final_eval":eval_finial_dict, 
+			# 							"train_and_eval":monitoring_info}))
 
