@@ -19,7 +19,7 @@ mpirun -np 2 \
  --if_shard 2 \
  --is_debug 1 \
  --run_type "sess" \
- --opt_type "all_reduce" \
+ --opt_type "hvd" \
  --num_gpus 4 \
  --parse_type "parse_batch" \
  --rule_model "normal" \
