@@ -142,7 +142,7 @@ def main(_):
 	corpus_vocab_path = os.path.join(FLAGS.buckets, FLAGS.corpus_vocab_path)
 
 	print(FLAGS.with_char)
-	with tf.gfile.Open(corpus_vocab_path, "r") as f:
+	with tf.gfile.Open(vocab_path, "r") as f:
 		lines = f.read().splitlines()
 		vocab_lst = []
 		for line in lines:
@@ -162,7 +162,7 @@ def main(_):
 							tokenizer, FLAGS.predefined_vocab_size, 
 							corpus_vocab_path)
 
-	tokenizer = tokenization.Jieba_CHAR(
+	tokenizer_corpus = tokenization.Jieba_CHAR(
 		config=FLAGS.config)
 
 	with tf.gfile.Open(corpus_vocab_path, "r") as f:
@@ -171,13 +171,14 @@ def main(_):
 		for line in lines:
 			vocab_lst.append(line)
 		print(len(vocab_lst))
+		print(vocab_lst)
 
-	tokenizer.load_vocab(vocab_lst)
+	tokenizer_corpus.load_vocab(vocab_lst)
 
 	write_to_tfrecords.convert_normal_classifier_examples_to_features(train_examples,
 															classifier_data_api.label2id,
 															FLAGS.max_length,
-															tokenizer,
+															tokenizer_corpus,
 															train_result_file,
 															FLAGS.with_char,
 															FLAGS.char_len)
@@ -187,7 +188,7 @@ def main(_):
 	write_to_tfrecords.convert_normal_classifier_examples_to_features(test_examples,
 															classifier_data_api.label2id,
 															FLAGS.max_length,
-															tokenizer,
+															tokenizer_corpus,
 															test_result_file,
 															FLAGS.with_char,
 															FLAGS.char_len)
