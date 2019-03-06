@@ -29,7 +29,7 @@ def load_pretrained_w2v(vocab_path, w2v_path):
 			w2v_embed_lst.append(w2v[word])
 		else:
 			w2v_embed_lst.append(np.random.uniform(low=-0.01, high=0.01, 
-								size=(1, vector_size)).astype(np.float32))
+								size=(vector_size,)).astype(np.float32).tolist())
 
 		token2id[word] = index
 		id2token[index] = word
