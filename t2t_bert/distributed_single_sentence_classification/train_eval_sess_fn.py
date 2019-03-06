@@ -23,7 +23,7 @@ import numpy as np
 import tensorflow as tf
 from bunch import Bunch
 from model_io import model_io
-import json
+import json, os
 
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, classification_report
 
