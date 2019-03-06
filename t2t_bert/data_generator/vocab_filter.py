@@ -5,7 +5,7 @@ from collections import Counter
 def vocab_filter(corpus, vocab, tokenizer, predefined_vocab_size, corpus_vocab_path):
 	dic = Counter()
 	for item in corpus:
-		token_lst = tokenizer.tokenize(item)
+		token_lst = tokenizer.tokenize(item.text_a)
 		for token in token_lst:
 			dic[token] += 1
 
