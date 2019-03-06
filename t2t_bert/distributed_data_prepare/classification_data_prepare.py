@@ -162,6 +162,18 @@ def main(_):
 							tokenizer, FLAGS.predefined_vocab_size, 
 							corpus_vocab_path)
 
+	tokenizer = tokenization.Jieba_CHAR(
+		config=FLAGS.config)
+
+	with tf.gfile.Open(corpus_vocab_path, "r") as f:
+		lines = f.read().splitlines()
+		vocab_lst = []
+		for line in lines:
+			vocab_lst.append(line)
+		print(len(vocab_lst))
+
+	tokenizer.load_vocab(vocab_lst)
+
 	write_to_tfrecords.convert_normal_classifier_examples_to_features(train_examples,
 															classifier_data_api.label2id,
 															FLAGS.max_length,
