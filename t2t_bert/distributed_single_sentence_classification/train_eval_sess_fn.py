@@ -284,7 +284,8 @@ def train_eval_fn(FLAGS,
 			label_dict_id = sorted(list(label_dict["id2label"].keys()))
 
 			result = classification_report(label_id, pred_label, 
-				target_names=[label_dict["id2label"][key] for key in label_dict_id])
+				target_names=[label_dict["id2label"][key] for key in label_dict_id],
+				digits=4)
 
 			print(result, task_index)
 			eval_total_dict["classification_report"] = result
