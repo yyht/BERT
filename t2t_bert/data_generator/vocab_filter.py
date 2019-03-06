@@ -1,6 +1,6 @@
 import tensorflow as tf
 import numpy as np
-from collection import Counter
+from collections import Counter
 
 def vocab_filter(corpus, vocab, tokenizer, predefined_vocab_size, corpus_vocab_path):
 	dic = Counter()
