@@ -11,11 +11,15 @@ def load_pretrained_w2v(vocab_path, w2v_path):
 		for index in range(vocab_size):
 			vector.append(frobj.readline().strip())
 
+	print("==size of vocab of w2v==", vocab_size, vector_size)
+
 	with tf.gfile.Open(vocab_path, "r") as frobj:
 		vocab = []
-		for index in range(vocab_size):
-			vocab.append(frobj.readline().strip())
-	print(len(vocab))
+		for line in frobj:
+			vocab.append(line.strip())
+
+	print("==actual corpus based vocab size==", len(vocab))
+
 	w2v = {}
 	for item in vector:
 		content = item.split()
