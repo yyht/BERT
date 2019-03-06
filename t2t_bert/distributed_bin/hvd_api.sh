@@ -18,8 +18,8 @@ mpirun -np 2 \
  --model_type "textcnn" \
  --if_shard 1 \
  --is_debug 1 \
- --run_type "estimator" \
- --opt_type "all_reduce" \
+ --run_type "sess" \
+ --opt_type "hvd" \
  --num_gpus 4 \
  --parse_type "parse_batch" \
  --rule_model "normal" \
