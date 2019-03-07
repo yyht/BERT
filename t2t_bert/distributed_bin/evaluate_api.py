@@ -152,11 +152,6 @@ flags.DEFINE_string(
 	)
 
 flags.DEFINE_string(
-	"load_pretrained", "yes", 
-	"the required num_gpus"
-	)
-
-flags.DEFINE_string(
 	"input_target", "a", 
 	"the required num_gpus"
 	)
@@ -174,11 +169,6 @@ flags.DEFINE_string(
 flags.DEFINE_string(
 	"with_char", "no_char",
 	"pretrained w2v"
-	)
-
-flags.DEFINE_string(
-	"input_target", "", 
-	"the required num_gpus"
 	)
 
 flags.DEFINE_string(

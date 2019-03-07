@@ -108,9 +108,9 @@ class MultiChoiceFeatureWriter(FeatureWriter):
 			tf_example = tf.train.Example(features=tf.train.Features(feature=features))
 			self._writer.write(tf_example.SerializeToString())
 
-class NormalEncoderFeatureWriter(FeatureWriter):
+class DistillationEncoderFeatureWriter(FeatureWriter):
 	def __init__(self, filename, is_training):
-		super(NormalEncoderFeatureWriter, self).__init__(filename, is_training)
+		super(DistillationEncoderFeatureWriter, self).__init__(filename, is_training)
 
 	def process_feature(self, feature):
 		self.num_features += 1
@@ -133,6 +133,11 @@ class NormalEncoderFeatureWriter(FeatureWriter):
 			s = 0
 		try:
 			features["label_probs"] = tf_data_utils.create_float_feature([feature.label_probs])
+		except:
+			s = 0
+
+		try:
+			features["label_ratio"] = tf_data_utils.create_float_feature([feature.label_ratio])
 		except:
 			s = 0
 

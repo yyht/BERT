@@ -2,14 +2,14 @@ import tensorflow as tf
 from data_generator import tf_data_utils
 from example.feature_writer import ClassifierFeatureWriter, SpanFeatureWriter, MultiChoiceFeatureWriter
 from data_generator import data_feature_classifier
-from data_generator import data_normal_feature_classifier
+from data_generator import data_distillation_feature_classifier
 from data_generator import data_feature_mrc
 from data_generator import tokenization
 import collections
 from data_generator import pair_data_feature_classifier
 from example.feature_writer import PairClassifierFeatureWriter
 from example.feature_writer import PairPreTrainingFeature
-from example.feature_writer import NormalEncoderFeatureWriter
+from example.feature_writer import DistillationEncoderFeatureWriter
 
 def convert_classifier_examples_to_features(examples, label_dict, 
 											max_seq_length,
@@ -754,12 +754,12 @@ def convert_classifier_examples_with_rule_to_features(examples, label_dict,
 		feature_writer.process_feature(feature)
 	feature_writer.close()
 
-def convert_normal_classifier_examples_to_features(examples, label_dict, 
+def convert_distillation_classifier_examples_to_features(examples, label_dict, 
 											max_seq_length,
 											tokenizer, output_file, with_char,
 											char_len):
 
-	feature_writer = NormalEncoderFeatureWriter(output_file, is_training=False)
+	feature_writer = DistillationEncoderFeatureWriter(output_file, is_training=False)
 
 	for (ex_index, example) in enumerate(examples):
 		tokens_a = tokenizer.tokenize(example.text_a)
@@ -803,6 +803,16 @@ def convert_normal_classifier_examples_to_features(examples, label_dict,
 			for item in example.label:
 				label_id[label_dict[item]] = 1
 
+		try:
+			label_probs = example.label_probs
+		except:
+			label_probs = [0.0]*len(label_dict)
+
+		try:
+			label_ratio = example.label_ratio
+		except:
+			label_ratio = 0.0
+
 		if ex_index < 5:
 			print(tokens_a)
 			tf.logging.info("*** Example ***")
@@ -814,19 +824,18 @@ def convert_normal_classifier_examples_to_features(examples, label_dict,
 				tf.logging.info("input_ids: %s" % " ".join([str(x) for x in input_ids_b]))
 			if input_char_ids_b:
 				tf.logging.info("input_ids: %s" % " ".join([str(x) for token in input_char_ids_b for x in token ]))
+			tf.logging.info("label probs {}".format(label_probs))
+			tf.logging.info("label_ratio {}".format(label_ratio))
 			tf.logging.info("label: {} (id = {})".format(example.label, label_id))
-		try:
-			label_probs = example.label_probs
-		except:
-			label_probs = [0.0]*len(label_dict)
-
-		feature = data_normal_feature_classifier.InputFeatures(
+		
+		feature = data_distillation_feature_classifier.InputFeatures(
 					guid=example.guid,
 					input_ids_a=input_ids_a,
 					input_ids_b=input_ids_b,
 					input_char_ids_a=input_char_ids_a,
 					input_char_ids_b=input_char_ids_b,
 					label_ids=label_id,
-					label_probs=label_probs)
+					label_probs=label_probs,
+					label_ratio=label_ratio)
 		feature_writer.process_feature(feature)
 	feature_writer.close()

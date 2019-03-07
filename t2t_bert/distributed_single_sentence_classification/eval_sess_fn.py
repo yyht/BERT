@@ -193,7 +193,7 @@ def eval_fn(FLAGS,
 			return example
 
 		params = Bunch({})
-		params.epoch = epoch
+		params.epoch = 0
 		params.batch_size = FLAGS.batch_size
 
 		print("==train_file==", train_file, params)
