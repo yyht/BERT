@@ -1,19 +1,19 @@
 CUDA_VISIBLE_DEVICES="0" python ./t2t_bert/distributed_bin/evaluate_api.py \
 	--buckets "/data/xuht" \
-	--config_file "/data/xuht/chinese_L-12_H-768_A-12/bert_config.json" \
-	--init_checkpoint "porn/clean_data/normal/model/estimator/all_reduce_4_adam_weight_0228/model.ckpt-79344" \
-	--vocab_file "/data/xuht/chinese_L-12_H-768_A-12/vocab.txt" \
+	--config_file "./data/textcnn/textcnn.json" \
+	--init_checkpoint "porn/clean_data/textcnn/model/estimator/all_reduce_4_adam_weight_0228/model.ckpt-337230" \
+	--vocab_file "porn/clean_data/textcnn/char_id.txt" \
 	--label_id "/data/xuht/porn/label_dict.json" \
 	--max_length 128 \
-	--train_file "porn/clean_data/normal/train_tfrecords" \
-	--dev_file "porn/clean_data/normal/dev_tfrecords" \
-	--model_output "porn/clean_data/normal/model/estimator/all_reduce_4_adam_weight_0228/" \
+	--train_file "porn/clean_data/textcnn/train_tfrecords" \
+	--dev_file "porn/clean_data/textcnn/dev_tfrecords" \
+	--model_output "porn/clean_data/textcnn/model/estimator/all_reduce_4_adam_weight_0228/" \
 	--epoch 8 \
 	--num_classes 5 \
-	--train_size 1402171 \
-	--eval_size 145019 \
+	--train_size 952213 \
+	--eval_size 238054 \
 	--batch_size 24 \
-	--model_type "bert" \
+	--model_type "tetxcnn" \
 	--if_shard 2 \
 	--is_debug 1 \
 	--run_type "sess" \
@@ -26,7 +26,7 @@ CUDA_VISIBLE_DEVICES="0" python ./t2t_bert/distributed_bin/evaluate_api.py \
 	--running_type "eval" \
 	--cross_tower_ops_type "paisoar" \
 	--distribution_strategy "MirroredStrategy" \
-	--load_pretrained "no" \
+	--load_pretrained "yes" \
 	--w2v_path "w2v/tencent_ai_lab/char_w2v.txt" \
 	--with_char "no_char" \
 	--input_target "a" \
