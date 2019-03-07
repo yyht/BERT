@@ -3,6 +3,7 @@ from data_generator import data_processor
 from data_generator.tokenization import WordpieceTokenizer
 from data_generator import tokenization
 from data_generator import data_feature_classifier
+from data_generator import data_distillation_feature_classifier
 from data_generator import data_feature_mrc
 import csv
 import json
@@ -494,6 +495,96 @@ class FasttextClassifierProcessor(data_processor.DataProcessor):
 			except:
 				print(line, i)
 		return examples
+
+	def get_train_examples(self, train_file, is_shuffle):
+		lines = self._read_data(train_file)
+		examples = self._create_examples(lines)
+		if is_shuffle:
+			random.shuffle(examples)
+		return examples
+
+	def get_dev_examples(self, dev_file, is_shuffle):
+		lines = self._read_data(dev_file)
+		examples = self._create_examples(lines)
+		if is_shuffle:
+			random.shuffle(examples)
+		return examples
+
+class FasttextDistillationProcessor(data_processor.DataProcessor):
+	def get_labels(self, label_file):
+		import json
+		with open(label_file, "r") as frobj:
+			label = json.load(frobj)
+		self.label2id = label["label2id"]
+		self.id2label = label["id2label"]
+
+	def _read_distillation(self, input_file):
+		import json
+		with tf.gfile.Open(input_file, "r") as f:
+			return json.load(f)["prob"]
+
+	def _read_data(self, input_file):
+		with tf.gfile.Open(input_file, "r") as f:
+			lines = []
+			for line in f:
+				lines.append(line.strip())
+			return lines
+
+	def _create_examples(self, lines,
+									LABEL_SPLITTER="__label__"):
+		re_pattern = u"({}{})".format(LABEL_SPLITTER, "\d.")
+
+		examples = []
+		for (i, line) in enumerate(lines):
+			try:
+				guid = i
+				element_list = re.split(re_pattern, line)
+				text_a = clean(element_list[-1])
+				input_labels = clean(element_list[1]).split(LABEL_SPLITTER)[-1]
+
+				text_a = tokenization.convert_to_unicode(text_a)
+				input_labels = [label.strip() for label in input_labels if label.strip() in list(self.label2id.keys())]
+				
+				examples.append(data_distillation_feature_classifier.InputExample(
+						guid=guid,
+						text_a=text_a,
+						text_b=None,
+						label=input_labels,
+						label_prob=[0.0]*len(self.label2id),
+						label_ratio=1.0
+					))
+			except:
+				print(line, i)
+		return examples
+
+	def _create_distillation_examples(self, lines, distillation_prob , LABEL_SPLITTER="__label__"):
+		re_pattern = u"({}{})".format(LABEL_SPLITTER, "\d.")
+
+		examples = []
+
+		assert len(lines) == len(distillation_prob)
+		for (i, line), prob in zip(enumerate(lines), distillation_prob):
+			try:
+				guid = i
+				element_list = re.split(re_pattern, line)
+				text_a = clean(element_list[-1])
+				input_labels = clean(element_list[1]).split(LABEL_SPLITTER)[-1]
+
+				text_a = tokenization.convert_to_unicode(text_a)
+				input_labels = [label.strip() for label in input_labels if label.strip() in list(self.label2id.keys())]
+				
+				examples.append(data_normal_feature_classifier.InputExample(
+						guid=guid,
+						text_a=text_a,
+						text_b=None,
+						label=input_labels,
+						label_prob=prob,
+						label_ratio=0.0
+					))
+			except:
+				print(line, i)
+		return examples
+
 
 	def get_train_examples(self, train_file, is_shuffle):
 		lines = self._read_data(train_file)
