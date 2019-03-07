@@ -1,11 +1,11 @@
 config_file=./BERT/data/textcnn/textcnn.json
 init_checkpoint=chinese_L-12_H-768_A-12/bert_model.ckpt
-vocab_file=w2v/tencent_ai_lab/char_id.txt
+vocab_file=wesitanalyze-data-seqing20180821/data/clean_data/textcnn/char_id.txt
 label_id=./BERT/data/porn/label_dict.json
 max_length=128
 train_file=wesitanalyze-data-seqing20180821/data/clean_data/textcnn/train_tfrecords
 dev_file=wesitanalyze-data-seqing20180821/data/clean_data/textcnn/dev_tfrecords
-model_output=wesitanalyze-data-seqing20180821/data/clean_data/normal/model/estimator/all_reduce_4_adam_weight_0228
+model_output=wesitanalyze-data-seqing20180821/data/clean_data/textcnn/model/estimator/all_reduce_4_adam_weight_0228
 epoch=8
 num_classes=5
 train_size=952213
@@ -25,8 +25,8 @@ cross_tower_ops_type=paisoar
 distribution_strategy=MirroredStrategy
 load_pretrained=no
 w2v_path=w2v/tencent_ai_lab/char_w2v.txt
-<<<<<<< HEAD
-=======
-warmup=no
-decay=no
->>>>>>> 5368576b93e169aa45cf992b8d5f222629a2b194
+with_target=a
+with_char="no_char"
+input_target="a"
+decay="no"
+warmup="no"

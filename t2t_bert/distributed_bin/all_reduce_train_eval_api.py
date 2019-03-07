@@ -157,13 +157,23 @@ flags.DEFINE_string(
 	)
 
 flags.DEFINE_string(
-	"load_pretrained", "yes", 
+	"load_pretrained", "no", 
 	"the required num_gpus"
 	)
 
 flags.DEFINE_string(
 	"w2v_path", "",
 	"pretrained w2v"
+	)
+
+flags.DEFINE_string(
+	"with_char", "no_char",
+	"pretrained w2v"
+	)
+
+flags.DEFINE_string(
+	"input_target", "", 
+	"the required num_gpus"
 	)
 
 flags.DEFINE_string(

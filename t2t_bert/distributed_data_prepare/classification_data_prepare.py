@@ -54,11 +54,19 @@ flags.DEFINE_string(
 	"Input TF example files (can be a glob or comma separated).")
 
 flags.DEFINE_string(
+	"dev_file", None,
+	"Input TF example files (can be a glob or comma separated).")
+
+flags.DEFINE_string(
 	"train_result_file", None,
 	"Input TF example files (can be a glob or comma separated).")
 
 flags.DEFINE_string(
 	"test_result_file", None,
+	"Input TF example files (can be a glob or comma separated).")
+
+flags.DEFINE_string(
+	"dev_result_file", None,
 	"Input TF example files (can be a glob or comma separated).")
 
 flags.DEFINE_string(
@@ -135,9 +143,11 @@ def main(_):
 	vocab_path = os.path.join(FLAGS.buckets, FLAGS.vocab_file)
 	train_file = os.path.join(FLAGS.buckets, FLAGS.train_file)
 	test_file = os.path.join(FLAGS.buckets, FLAGS.test_file)
+	dev_file = os.path.join(FLAGS.buckets, FLAGS.dev_file)
 
 	train_result_file = os.path.join(FLAGS.buckets, FLAGS.train_result_file)
 	test_result_file = os.path.join(FLAGS.buckets, FLAGS.test_result_file)
+	dev_result_file = os.path.join(FLAGS.buckets, FLAGS.dev_result_file)
 
 	corpus_vocab_path = os.path.join(FLAGS.buckets, FLAGS.corpus_vocab_path)
 
@@ -192,6 +202,17 @@ def main(_):
 															test_result_file,
 															FLAGS.with_char,
 															FLAGS.char_len)
+
+	dev_examples = classifier_data_api.get_train_examples(dev_file,
+										is_shuffle=False)
+	write_to_tfrecords.convert_normal_classifier_examples_to_features(dev_examples,
+															classifier_data_api.label2id,
+															FLAGS.max_length,
+															tokenizer_corpus,
+															dev_result_file,
+															FLAGS.with_char,
+															FLAGS.char_len)
+
 	# elif FLAGS.if_rule == "rule":
 	# 	print("==apply rule==")
 	# 	with open(FLAGS.rule_word_path, "r") as frobj:
