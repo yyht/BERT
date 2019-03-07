@@ -1,9 +1,11 @@
 python ./t2t_bert/distributed_data_prepare/classification_data_prepare.py \
 	--buckets /data/xuht \
 	--train_file porn/clean_data/train.txt \
-	--test_file porn/clean_data/dev.txt \
+	--dev_file por/clean_data/dev.txt \
+	--test_file porn/clean_data/test.txt \
 	--train_result_file porn/clean_data/textcnn/train_tfrecords \
-	--test_result_file  porn/clean_data/textcnn/dev_tfrecords\
+	--dev_result_file  porn/clean_data/textcnn/dev_tfrecords\
+	--test_result_file  porn/clean_data/textcnn/test_tfrecords\
 	--vocab_file w2v/tencent_ai_lab/char_id.txt \
 	--label_id /data/xuht/porn/label_dict.json \
 	--lower_case True \
