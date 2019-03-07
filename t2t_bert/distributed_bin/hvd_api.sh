@@ -32,6 +32,6 @@ mpirun -np 2 \
  --w2v_path "w2v/tencent_ai_lab/char_w2v.txt" \
  --with_char "no_char" \
  --input_target "a" \
- --distribution_strategy "MirroredStrategy"
-
+ --decay "no" \
+ --warmup "no"
 

@@ -25,3 +25,8 @@ cross_tower_ops_type=paisoar
 distribution_strategy=MirroredStrategy
 load_pretrained=no
 w2v_path=w2v/tencent_ai_lab/char_w2v.txt
+<<<<<<< HEAD
+=======
+warmup=no
+decay=no
+>>>>>>> 5368576b93e169aa45cf992b8d5f222629a2b194
