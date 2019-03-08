@@ -550,7 +550,7 @@ class FasttextDistillationProcessor(data_processor.DataProcessor):
 						text_a=text_a,
 						text_b=None,
 						label=input_labels,
-						label_prob=[0.0]*len(self.label2id),
+						label_probs=[0.0]*len(self.label2id),
 						label_ratio=1.0
 					))
 			except:
@@ -573,12 +573,12 @@ class FasttextDistillationProcessor(data_processor.DataProcessor):
 				text_a = tokenization.convert_to_unicode(text_a)
 				input_labels = [label.strip() for label in input_labels if label.strip() in list(self.label2id.keys())]
 				
-				examples.append(data_normal_feature_classifier.InputExample(
+				examples.append(data_distillation_feature_classifier.InputExample(
 						guid=guid,
 						text_a=text_a,
 						text_b=None,
 						label=input_labels,
-						label_prob=prob,
+						label_probs=prob,
 						label_ratio=0.0
 					))
 			except:
@@ -599,6 +599,15 @@ class FasttextDistillationProcessor(data_processor.DataProcessor):
 		if is_shuffle:
 			random.shuffle(examples)
 		return examples
+
+	def get_distillation_examples(self, dev_file, distillation_file, is_shuffle):
+		distillation = self._read_distillation(distillation_file)
+		lines = self._read_data(dev_file)
+		examples = self._create_distillation_examples(lines, distillation)
+		if is_shuffle:
+			random.shuffle(examples)
+		return examples
+
 
 
 
