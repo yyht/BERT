@@ -191,11 +191,23 @@ def main(_):
 
 	tokenizer_corpus.load_vocab(vocab_lst)
 
-	write_to_tfrecords.convert_distillation_classifier_examples_to_features(train_examples,
+	dev_examples = classifier_data_api.get_distillation_examples(dev_file,
+																distillation_file,
+																is_shuffle=True)
+
+	write_to_tfrecords.convert_distillation_classifier_examples_to_features(train_examples+dev_examples,
 															classifier_data_api.label2id,
 															FLAGS.max_length,
 															tokenizer_corpus,
 															train_result_file,
+															FLAGS.with_char,
+															FLAGS.char_len)
+
+	write_to_tfrecords.convert_distillation_classifier_examples_to_features(dev_examples,
+															classifier_data_api.label2id,
+															FLAGS.max_length,
+															tokenizer_corpus,
+															dev_result_file,
 															FLAGS.with_char,
 															FLAGS.char_len)
 
@@ -206,18 +218,6 @@ def main(_):
 															FLAGS.max_length,
 															tokenizer_corpus,
 															test_result_file,
-															FLAGS.with_char,
-															FLAGS.char_len)
-
-	dev_examples = classifier_data_api.get_distillation_examples(dev_file,
-																distillation_file,
-																is_shuffle=True)
-
-	write_to_tfrecords.convert_distillation_classifier_examples_to_features(dev_examples,
-															classifier_data_api.label2id,
-															FLAGS.max_length,
-															tokenizer_corpus,
-															dev_result_file,
 															FLAGS.with_char,
 															FLAGS.char_len)
 
