@@ -4,7 +4,7 @@ python ./t2t_bert/distributed_data_prepare/classification_distillation_data_prep
 	--dev_file porn/clean_data/dev.txt \
 	--test_file porn/clean_data/test.txt \
 	--train_result_file porn/clean_data/textcnn/distillation/train_tfrecords \
-	--dev_result_file  porn/clean_data/textcnn/distilaltion/dev_tfrecords\
+	--dev_result_file  porn/clean_data/textcnn/distillation/dev_tfrecords\
 	--test_result_file  porn/clean_data/textcnn/distillation/test_tfrecords\
 	--distillation_file porn/clean_data/textcnn/distillation/dev_distillation.info \
 	--vocab_file w2v/tencent_ai_lab/char_id.txt \
