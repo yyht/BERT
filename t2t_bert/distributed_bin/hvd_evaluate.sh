@@ -6,7 +6,7 @@ CUDA_VISIBLE_DEVICES="0" python ./t2t_bert/distributed_bin/evaluate_api.py \
 	--label_id "/data/xuht/porn/label_dict.json" \
 	--max_length 128 \
 	--train_file "porn/clean_data/textcnn/train_tfrecords" \
-	--dev_file "porn/clean_data/textcnn/dev_tfrecords" \
+	--dev_file "porn/clean_data/textcnn/test_tfrecords" \
 	--model_output "porn/clean_data/textcnn/model/estimator/all_reduce_4_adam_weight_0228/" \
 	--epoch 8 \
 	--num_classes 5 \
