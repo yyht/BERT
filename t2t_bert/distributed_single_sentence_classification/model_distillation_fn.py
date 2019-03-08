@@ -57,6 +57,14 @@ def model_fn_builder(
 											label_ids,
 											dropout_prob)
 
+		teacher_prob = features["label_probs"] / kargs.get("temperature", 2.0)
+		kl_divergence = teacher_prob * logits
+		
+		label_loss = tf.reduce_sum(per_example_loss * features["label_ratio"]) / (1e-10+tf.reduce_sum(features["label_ratio"]))
+		distillation_loss = -tf.reduce_sum(kl_divergence, axis=-1)
+
+		loss = label_loss + kargs.get("distillation_ratio", 1.0)*distillation_loss
+
 		model_io_fn = model_io.ModelIO(model_io_config)
 
 		tvars = model_io_fn.get_params(model_config.scope, 
@@ -183,7 +191,4 @@ def model_fn_builder(
 		else:
 			raise NotImplementedError()
 	return model_fn
-
-
-
 

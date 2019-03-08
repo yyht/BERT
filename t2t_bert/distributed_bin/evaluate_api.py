@@ -181,6 +181,11 @@ flags.DEFINE_string(
 	"pretrained w2v"
 	)
 
+flags.DEFINE_string(
+	"distillation", "normal",
+	"if apply distillation"
+	)
+
 def main(_):
 
 	print(FLAGS)

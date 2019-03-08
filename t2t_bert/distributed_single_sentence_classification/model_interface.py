@@ -39,7 +39,7 @@ def model_config_parser(FLAGS):
 		config.model_type = FLAGS.model_type
 		config.init_lr = 2e-5
 
-	elif FLAGS.model_type == "textcnn":
+	elif FLAGS.model_type in ["textcnn"]:
 		from data_generator import load_w2v
 		w2v_path = os.path.join(FLAGS.buckets, FLAGS.w2v_path)
 		vocab_path = os.path.join(FLAGS.buckets, FLAGS.vocab_file)

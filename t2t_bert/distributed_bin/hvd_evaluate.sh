@@ -31,4 +31,5 @@ CUDA_VISIBLE_DEVICES="0" python ./t2t_bert/distributed_bin/evaluate_api.py \
 	--with_char "no_char" \
 	--input_target "a" \
 	--decay "no" \
-	--warmup "no"
+	--warmup "no" \
+	--distillation "normal"

@@ -180,6 +180,21 @@ flags.DEFINE_string(
 	"pretrained w2v"
 	)
 
+flags.DEFINE_string(
+	"distillation", "normal",
+	"if apply distillation"
+	)
+
+flags.DEFINE_float(
+	"temperature", 2.0,
+	"if apply distillation"
+	)
+
+flags.DEFINE_float(
+	"distillation_ratio", 1.0,
+	"if apply distillation"
+	)
+
 def main(_):
 
 	print(FLAGS)
@@ -225,7 +240,10 @@ def main(_):
 			running_type=FLAGS.running_type,
 			input_target=FLAGS.input_target,
 			decay=FLAGS.decay,
-			warmup=FLAGS.warmup)
+			warmup=FLAGS.warmup,
+			distillation=FLAGS.distillation,
+			temperature=FLAGS.temperature,
+			distillation_ratio=FLAGS.distillation_ratio)
 
 	elif FLAGS.run_type == "estimator":
 		hvd_train_eval.monitored_estimator(
@@ -246,7 +264,10 @@ def main(_):
 			running_type=FLAGS.running_type,
 			input_target=FLAGS.input_target,
 			decay=FLAGS.decay,
-			warmup=FLAGS.warmup)
+			warmup=FLAGS.warmup,
+			distillation=FLAGS.distillation,
+			temperature=FLAGS.temperature,
+			distillation_ratio=FLAGS.distillation_ratio)
 
 if __name__ == "__main__":
 	tf.app.run()
