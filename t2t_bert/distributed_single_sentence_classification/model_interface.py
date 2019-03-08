@@ -21,7 +21,7 @@ def model_zoo(model_config):
 	elif model_config.get("model_type", "bert") == "bert_rule":
 		print("==apply bert rule encoder==")
 		model_interface = bert_rule_encoder
-	elif model_config.get("model_type", "bert") == "textcnn":
+	elif model_config.get("model_type", "bert") in ["textcnn", "textcnn_distillation"]:
 		print("==apply textcnn encoder==")
 		model_interface = textcnn_encoder
 
@@ -39,7 +39,7 @@ def model_config_parser(FLAGS):
 		config.model_type = FLAGS.model_type
 		config.init_lr = 2e-5
 
-	elif FLAGS.model_type in ["textcnn"]:
+	elif FLAGS.model_type in ["textcnn", 'textcnn_distillation']:
 		from data_generator import load_w2v
 		w2v_path = os.path.join(FLAGS.buckets, FLAGS.w2v_path)
 		vocab_path = os.path.join(FLAGS.buckets, FLAGS.vocab_file)
