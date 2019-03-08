@@ -840,6 +840,6 @@ def convert_distillation_classifier_examples_to_features(examples, label_dict,
 		feature_writer.process_feature(feature)
 		if ex_index <= 5:
 			print(feature.label_probs)
-		if ex_index == 100:
-			break
+		# if ex_index == 100:
+		# 	break
 	feature_writer.close()
