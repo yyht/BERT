@@ -116,23 +116,26 @@ class DistillationEncoderFeatureWriter(FeatureWriter):
 		self.num_features += 1
 		features = collections.OrderedDict()
 
+		# print(feature.label_probs)
+
 		features["input_ids_a"] = tf_data_utils.create_int_feature(feature.input_ids_a)
 		features["label_ids"] = tf_data_utils.create_int_feature([feature.label_ids])
 
 		try:
-			features["input_char_ids_a"] = tf_data_utils.create_int_feature([feature.input_char_ids_a])
+			features["input_char_ids_a"] = tf_data_utils.create_int_feature(feature.input_char_ids_a)
 		except:
 			s = 0
 		try:
-			features["input_ids_b"] = tf_data_utils.create_int_feature([feature.input_ids_b])
+			features["input_ids_b"] = tf_data_utils.create_int_feature(feature.input_ids_b)
 		except:
 			s = 0
 		try:
-			features["input_char_ids_b"] = tf_data_utils.create_int_feature([feature.input_char_ids_b])
+			features["input_char_ids_b"] = tf_data_utils.create_int_feature(feature.input_char_ids_b)
 		except:
 			s = 0
 		try:
-			features["label_probs"] = tf_data_utils.create_float_feature([feature.label_probs])
+			features["label_probs"] = tf_data_utils.create_float_feature(feature.label_probs)
+
 		except:
 			s = 0
 

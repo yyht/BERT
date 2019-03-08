@@ -77,6 +77,9 @@ def train_eval_fn(FLAGS,
 		elif FLAGS.if_shard == "1":
 			train_size = int(FLAGS.train_size/worker_count)
 			epoch = FLAGS.epoch
+		else:
+			train_size = int(FLAGS.train_size/worker_count)
+			epoch = FLAGS.epoch
 
 		init_lr = config.init_lr
 
