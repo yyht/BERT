@@ -12,7 +12,7 @@ mpirun -np 2 \
  --model_output "porn/clean_data/textcnn/model/estimator/distillation/all_reduce_4_adam_weight_0228/" \
  --epoch 20 \
  --num_classes 5 \
- --train_size 952213 \
+ --train_size 1190267 \
  --eval_size 238054 \
  --batch_size 24 \
  --model_type "textcnn_distillation" \
