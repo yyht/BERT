@@ -128,7 +128,7 @@ def train_eval_fn(FLAGS,
 		# 	print("==apply normal model==")
 
 		model_fn_builder = model_fn_interface(FLAGS)
-
+		print(model_fn_builder, type(model_fn_builder))
 		model_train_fn = model_fn_builder(config, num_classes, init_checkpoint, 
 												model_reuse=None, 
 												load_pretrained=FLAGS.load_pretrained,
