@@ -11,13 +11,17 @@ from data_generator import distributed_tf_data_utils as tf_data_utils
 # 	from bert_model_fn import rule_model_fn_builder
 
 try:
-	from .model_fn import model_fn_builder
+	# from .model_fn import model_fn_builder
 	from .model_interface import model_config_parser
 	from .model_data_interface import data_interface
+	from .model_fn_interface import model_fn_interface
+	# from .model_distillation_fn import model_fn_builder as model_distillation_fn
 except:
-	from model_fn import model_fn_builder
+	# from model_fn import model_fn_builder
 	from model_interface import model_config_parser
 	from model_data_interface import data_interface
+	# from model_distillation_fn import model_fn_builder as model_distillation_fn
+	from model_fn_interface import model_fn_interface
 
 import numpy as np
 import tensorflow as tf
@@ -123,6 +127,8 @@ def train_eval_fn(FLAGS,
 		# 	model_fn_interface = model_fn_builder
 		# 	print("==apply normal model==")
 
+		model_fn_builder = model_fn_interface(FLAGS)
+
 		model_train_fn = model_fn_builder(config, num_classes, init_checkpoint, 
 												model_reuse=None, 
 												load_pretrained=FLAGS.load_pretrained,
@@ -134,7 +140,8 @@ def train_eval_fn(FLAGS,
 												output_type="sess",
 												checkpoint_dir=checkpoint_dir,
 												num_storage_steps=num_storage_steps,
-												task_index=task_index)
+												task_index=task_index,
+												*kargs)
 		
 		model_eval_fn = model_fn_builder(config, num_classes, init_checkpoint, 
 												model_reuse=True, 
@@ -147,7 +154,8 @@ def train_eval_fn(FLAGS,
 												output_type="sess",
 												checkpoint_dir=checkpoint_dir,
 												num_storage_steps=num_storage_steps,
-												task_index=task_index)
+												task_index=task_index,
+												**kargs)
 
 		print("==succeeded in building model==")
 		

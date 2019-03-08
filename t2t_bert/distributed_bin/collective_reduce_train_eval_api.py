@@ -163,6 +163,46 @@ flags.DEFINE_string(
 	"the required num_gpus"
 	)
 
+flags.DEFINE_string(
+	"w2v_path", "",
+	"pretrained w2v"
+	)
+
+flags.DEFINE_string(
+	"with_char", "no_char",
+	"pretrained w2v"
+	)
+
+flags.DEFINE_string(
+	"input_target", "", 
+	"the required num_gpus"
+	)
+
+flags.DEFINE_string(
+	"decay", "no",
+	"pretrained w2v"
+	)
+
+flags.DEFINE_string(
+	"warmup", "no",
+	"pretrained w2v"
+	)
+
+flags.DEFINE_string(
+	"distillation", "normal",
+	"if apply distillation"
+	)
+
+flags.DEFINE_float(
+	"temperature", 2.0,
+	"if apply distillation"
+	)
+
+flags.DEFINE_float(
+	"distillation_ratio", 1.0,
+	"if apply distillation"
+	)
+
 def main(_):
 
 	print(FLAGS)
@@ -249,7 +289,14 @@ def main(_):
 		profiler=FLAGS.profiler,
 		parse_type=FLAGS.parse_type,
 		rule_model=FLAGS.rule_model,
-		train_op=FLAGS.train_op)
+		train_op=FLAGS.train_op,
+		running_type=FLAGS.running_type,
+		decay=FLAGS.decay,
+		warmup=FLAGS.warmup,
+		input_target=FLAGS.input_target,
+		distillation=FLAGS.distillation,
+		temperature=FLAGS.temperature,
+		distillation_ratio=FLAGS.distillation_ratio)
 
 if __name__ == "__main__":
 	tf.app.run()

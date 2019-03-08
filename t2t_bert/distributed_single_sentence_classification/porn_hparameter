@@ -28,3 +28,6 @@ load_pretrained=yes
 warmup=warmup
 decay=decay
 with_target=""
+distillation="normal"
+temperature=2.0
+distillation_ratio=1.0

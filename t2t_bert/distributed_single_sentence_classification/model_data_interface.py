@@ -19,5 +19,13 @@ def data_interface(FLAGS):
 		}
 		if FLAGS.with_char == "char":
 			name_to_features["input_char_ids_a"] = tf.FixedLenFeature([FLAGS.max_length], tf.int64)
-
+	elif FLAGS.model_type in ["textcnn_distillation"]:
+		name_to_features = {
+			"input_ids_a":tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+			"label_ids":tf.FixedLenFeature([], tf.int64),
+			"label_ratio":tf.FixedLenFeature([], tf.float32),
+			"label_probs":tf.FixedLenFeature([FLAGS.num_classes], tf.float32),
+		}
+		if FLAGS.with_char == "char":
+			name_to_features["input_char_ids_a"] = tf.FixedLenFeature([FLAGS.max_length], tf.int64)
 	return name_to_features

@@ -30,3 +30,6 @@ with_char="no_char"
 input_target="a"
 decay="no"
 warmup="no"
+distillation="normal"
+temperature=2.0
+distillation_ratio=1.0
