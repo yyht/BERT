@@ -187,6 +187,7 @@ def train_eval_fn(FLAGS,
 			)
 			accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
 			train_op_dict["accuracy"] = accuracy
+			train_op_dict.pop("logits")
 			# return {"accuracy":accuracy, "loss":train_op_dict["loss"], 
 			# 		"train_op":train_op_dict["train_op"]}
 			return train_op_dict
