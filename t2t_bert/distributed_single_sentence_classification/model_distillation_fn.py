@@ -65,7 +65,7 @@ def model_fn_builder(
 		label_loss = tf.reduce_sum(per_example_loss * features["label_ratio"]) / (1e-10+tf.reduce_sum(features["label_ratio"]))
 		distillation_loss = -tf.reduce_sum(kl_divergence, axis=-1) * (1 - features["label_ratio"])
 
-		loss = label_loss + kargs.get("distillation_ratio", 1.0)*tf.reduce_mean(distillation_loss)
+		loss = (1-kargs.get("distillation_ratio", 0.9))*label_loss + kargs.get("distillation_ratio", 0.9)*tf.reduce_mean(distillation_loss)
 
 		model_io_fn = model_io.ModelIO(model_io_config)
 
