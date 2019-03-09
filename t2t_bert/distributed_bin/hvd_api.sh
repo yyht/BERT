@@ -36,7 +36,7 @@ mpirun -np 2 \
  --warmup "no" \
  --distillation "distillation" \
  --temperature 1.0 \
- --distillation_ratio 0.9
+ --distillation_ratio 1.0
 
 
 
