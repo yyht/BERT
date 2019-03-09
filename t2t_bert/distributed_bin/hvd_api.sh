@@ -14,7 +14,7 @@ mpirun -np 2 \
  --num_classes 5 \
  --train_size 1190267 \
  --eval_size 238054 \
- --batch_size 24 \
+ --batch_size 128 \
  --model_type "textcnn_distillation" \
  --if_shard 1 \
  --is_debug 1 \
