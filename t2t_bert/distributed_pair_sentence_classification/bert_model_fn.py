@@ -1,8 +1,18 @@
-from distributed_encoder.bert_encoder import bert_encoder
+try:
+	from .model_interface import model_zoo
+except:
+	from model_interface import model_zoo
+
+import tensorflow as tf
+import numpy as np
+
 from model_io import model_io
 from task_module import classifier
 import tensorflow as tf
 from metric import tf_metrics
+
+from optimizer import distributed_optimizer as optimizer
+from model_io import model_io
 
 def model_fn_builder(
 					model_config,
@@ -10,16 +20,18 @@ def model_fn_builder(
 					init_checkpoint,
 					model_reuse=None,
 					load_pretrained=True,
-					model_io_fn=None,
-					optimizer_fn=None,
 					model_io_config={},
 					opt_config={},
 					exclude_scope="",
 					not_storage_params=[],
-					target=["a", "b"],
-					label_lst=None):
+					target="a",
+					label_lst=None,
+					output_type="sess",
+					**kargs):
 
 	def model_fn(features, labels, mode):
+
+		model_api = model_zoo(model_config)
 
 		model_lst = []
 		for index, name in enumerate(target):
@@ -27,8 +39,8 @@ def model_fn_builder(
 				reuse = True
 			else:
 				reuse = model_reuse
-			model_lst.append(bert_encoder(model_config, features, 
-								labels, mode, name, reuse=reuse))
+			model_lst.append(model_api(model_config, features, labels,
+							mode, target, reuse=reuse))
 
 		label_ids = features["label_ids"]
 
@@ -42,42 +54,70 @@ def model_fn_builder(
 		else:
 			scope = model_config.scope
 
-		with tf.variable_scope(scope, reuse=reuse):
+		with tf.variable_scope(scope, reuse=model_reuse):
 			seq_output_lst = [model.get_pooled_output() for model in model_lst]
 			[loss, 
-			per_example_loss, 
-			logits] = classifier.order_classifier(
-						model_config, seq_output_lst, 
-						num_labels, label_ids,
-						dropout_prob,ratio_weight)
+				per_example_loss, 
+				logits] = classifier.order_classifier(
+							model_config, seq_output_lst, 
+							num_labels, label_ids,
+							dropout_prob,ratio_weight)
+
+		model_io_fn = model_io.ModelIO(model_io_config)
 
 		tvars = model_io_fn.get_params(model_config.scope, 
 										not_storage_params=not_storage_params)
-		if load_pretrained:
+		print(tvars)
+		if load_pretrained == "yes":
 			model_io_fn.load_pretrained(tvars, 
 										init_checkpoint,
 										exclude_scope=exclude_scope)
 
-		model_io_fn.set_saver(var_lst=tvars)
+		
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
+
+			optimizer_fn = optimizer.Optimizer(opt_config)
+
 			model_io_fn.print_params(tvars, string=", trainable params")
 			update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 			with tf.control_dependencies(update_ops):
 				train_op = optimizer_fn.get_train_op(loss, tvars, 
 								opt_config.init_lr, 
-								opt_config.num_train_steps)
+								opt_config.num_train_steps,
+								**kargs)
+
+				model_io_fn.set_saver()
+
+				if kargs.get("task_index", 1) == 0 and kargs.get("run_config", None):
+					training_hooks = []
+				elif kargs.get("task_index", 1) == 0:
+					model_io_fn.get_hooks(kargs.get("checkpoint_dir", None), 
+														kargs.get("num_storage_steps", 1000))
+
+					training_hooks = model_io_fn.checkpoint_hook
+				else:
+					training_hooks = []
+
+				if len(optimizer_fn.distributed_hooks) >= 1:
+					training_hooks.extend(optimizer_fn.distributed_hooks)
+				print(training_hooks, "==training_hooks==", "==task_index==", kargs.get("task_index", 1))
 
 				estimator_spec = tf.estimator.EstimatorSpec(mode=mode, 
-								loss=loss, train_op=train_op)
-				return {
-							"estimator_spec":estimator_spec, 
-							"train":{
+								loss=loss, train_op=train_op,
+								training_hooks=training_hooks)
+				if output_type == "sess":
+					return {
+						"train":{
 										"loss":loss, 
 										"logits":logits,
 										"train_op":train_op
-									}
-						}
+									},
+						"hooks":training_hooks
+					}
+				elif output_type == "estimator":
+					return estimator_spec
+
 		elif mode == tf.estimator.ModeKeys.PREDICT:
 			print(logits.get_shape(), "===logits shape===")
 			pred_label = tf.argmax(logits, axis=-1, output_type=tf.int32)
@@ -89,7 +129,7 @@ def model_fn_builder(
 									predictions={
 												'pred_label':pred_label,
 												"max_prob":max_prob
-								  	},
+									},
 									export_outputs={
 										"output":tf.estimator.export.PredictOutput(
 													{
@@ -97,11 +137,10 @@ def model_fn_builder(
 														"max_prob":max_prob
 													}
 												)
-								  	}
+									}
 						)
-			return {
-						"estimator_spec":estimator_spec 
-					}
+			return estimator_spec
+
 		elif mode == tf.estimator.ModeKeys.EVAL:
 			def metric_fn(per_example_loss,
 						logits, 
@@ -123,7 +162,6 @@ def model_fn_builder(
 
 				eval_metric_ops = {
 									"f1": sentence_f,
-									"loss": sentence_mean_loss,
 									"acc":sentence_accuracy
 								}
 
@@ -137,13 +175,17 @@ def model_fn_builder(
 			estimator_spec = tf.estimator.EstimatorSpec(mode=mode, 
 								loss=loss,
 								eval_metric_ops=eval_metric_ops)
-			return {
-						"estimator_spec":estimator_spec, 
-						"eval":{
+
+			if output_type == "sess":
+				return {
+					"eval":{
 							"per_example_loss":per_example_loss,
-							"logits":logits
+							"logits":logits,
+							"loss":tf.reduce_mean(per_example_loss)
 						}
-					}
+				}
+			elif output_type == "estimator":
+				return estimator_spec
 		else:
 			raise NotImplementedError()
 	return model_fn
