@@ -187,7 +187,7 @@ def train_eval_fn(FLAGS,
 			)
 			accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
 			train_op_dict["accuracy"] = accuracy
-			train_op_dict.pop("logits")
+			# train_op_dict.pop("logits")
 			# return {"accuracy":accuracy, "loss":train_op_dict["loss"], 
 			# 		"train_op":train_op_dict["train_op"]}
 			return train_op_dict
@@ -320,14 +320,17 @@ def train_eval_fn(FLAGS,
 						if key == "train_op":
 							continue
 						else:
-							if np.isnan(train_result[key]):
-								print(train_loss, "get nan loss")
-								break
-							else:
-								if key in loss_dict:
-									loss_dict[key] += train_result[key]
+							try:
+								if np.isnan(train_result[key]):
+									print(train_loss, "get nan loss")
+									break
 								else:
-									loss_dict[key] = train_result[key]
+									if key in loss_dict:
+										loss_dict[key] += train_result[key]
+									else:
+										loss_dict[key] = train_result[key]
+							except:
+								continue
 					
 					i += 1
 					cnt += 1
