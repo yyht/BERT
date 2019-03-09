@@ -65,9 +65,9 @@ def model_fn_builder(
 		kl_divergence = teacher_prob * (tf.nn.log_softmax(logits/kargs.get("temperature", 2.0))) # logits normalization
 		
 		label_loss = tf.reduce_sum(per_example_loss * features["label_ratio"]) / (1e-10+tf.reduce_sum(features["label_ratio"]))
-		distillation_loss = -tf.reduce_sum(kl_divergence, axis=-1) * (1 - features["label_ratio"])
+		distillation_loss = -tf.reduce_mean(tf.reduce_sum(kl_divergence, axis=-1) * (1 - features["label_ratio"]))
 
-		loss = label_loss + kargs.get("distillation_ratio", 0.9)*tf.pow(kargs.get("temperature", 2.0), 2)*tf.reduce_mean(distillation_loss)
+		loss = label_loss + kargs.get("distillation_ratio", 0.9)*tf.pow(kargs.get("temperature", 2.0), 2)*distillation_loss
 
 		model_io_fn = model_io.ModelIO(model_io_config)
 
