@@ -58,9 +58,9 @@ def model_fn_builder(
 											dropout_prob)
 
 		# get teacher logits
-		teacher_logit = tf.nn.log_softmax(tf.log(features["label_probs"]+1e-10))/kargs.get("temperature", 2.0)
+		teacher_logit = tf.nn.log_softmax(tf.log(features["label_probs"]+1e-10)/kargs.get("temperature", 2.0))
 		teacher_prob = tf.exp(teacher_logit)
-		kl_divergence = teacher_prob * (tf.nn.log_softmax(logits)/kargs.get("temperature", 2.0)) # logits normalization
+		kl_divergence = teacher_prob * (tf.nn.log_softmax(logits/kargs.get("temperature", 2.0))) # logits normalization
 		
 		label_loss = tf.reduce_sum(per_example_loss * features["label_ratio"]) / (1e-10+tf.reduce_sum(features["label_ratio"]))
 		distillation_loss = -tf.reduce_sum(kl_divergence, axis=-1) * (1 - features["label_ratio"])
