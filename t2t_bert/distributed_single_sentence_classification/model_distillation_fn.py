@@ -57,6 +57,8 @@ def model_fn_builder(
 											label_ids,
 											dropout_prob)
 
+		print(kargs.get("temperature", 0.5), kargs.get("distillation_ratio", 0.5), "==distillation hyparameter==")
+
 		# get teacher logits
 		teacher_logit = tf.nn.log_softmax(tf.log(features["label_probs"]+1e-10)/kargs.get("temperature", 2.0))
 		teacher_prob = tf.exp(teacher_logit)
