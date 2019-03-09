@@ -80,8 +80,6 @@ def model_fn_builder(
 										init_checkpoint,
 										exclude_scope=exclude_scope)
 
-		
-
 		if mode == tf.estimator.ModeKeys.TRAIN:
 
 			optimizer_fn = optimizer.Optimizer(opt_config)
@@ -120,7 +118,9 @@ def model_fn_builder(
 										"logits":logits,
 										"train_op":train_op,
 										"cross_entropy":label_loss,
-										"kd_loss":distillation_loss
+										"kd_loss":distillation_loss,
+										"kd_num":tf.reduce_sum(1-features["label_ratio"]),
+										"ce_num":tf.reduce_sum(features["label_ratio"])
 									},
 						"hooks":training_hooks
 					}

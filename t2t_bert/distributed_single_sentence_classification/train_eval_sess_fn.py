@@ -186,8 +186,10 @@ def train_eval_fn(FLAGS,
 				tf.cast(features["label_ids"], tf.int32)
 			)
 			accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
-			return {"accuracy":accuracy, "loss":train_op_dict["loss"], 
-					"train_op":train_op_dict["train_op"]}
+			train_op_dict["accuracy"] = accuracy
+			# return {"accuracy":accuracy, "loss":train_op_dict["loss"], 
+			# 		"train_op":train_op_dict["train_op"]}
+			return train_op_dict
 		
 		# name_to_features = {
 		# 		"input_ids":
