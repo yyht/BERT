@@ -195,7 +195,11 @@ def main(_):
 																distillation_file,
 																is_shuffle=True)
 
-	write_to_tfrecords.convert_distillation_classifier_examples_to_features(train_examples+dev_examples,
+	import random
+	total_train_examples = train_examples+dev_examples
+	random.shuffle(total_train_examples)
+
+	write_to_tfrecords.convert_distillation_classifier_examples_to_features(total_train_examples,
 															classifier_data_api.label2id,
 															FLAGS.max_length,
 															tokenizer_corpus,
