@@ -193,7 +193,7 @@ def main(_):
 
 	dev_examples = classifier_data_api.get_distillation_examples(dev_file,
 																distillation_file,
-																is_shuffle=True)
+																is_shuffle=False)
 
 	import random
 	total_train_examples = train_examples+dev_examples

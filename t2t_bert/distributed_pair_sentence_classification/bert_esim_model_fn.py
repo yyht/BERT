@@ -1,4 +1,3 @@
-from dsitributed_encoder.bert_encoder import bert_encoder
 from model_io import model_io
 from task_module import classifier
 import tensorflow as tf
@@ -7,6 +6,22 @@ from metric import tf_metrics
 from utils.bert import bert_utils
 from utils.rnn import rnn_utils
 from utils.attention import attention_utils
+
+try:
+	from .model_interface import model_zoo
+except:
+	from model_interface import model_zoo
+
+import tensorflow as tf
+import numpy as np
+
+from model_io import model_io
+from task_module import classifier
+import tensorflow as tf
+from metric import tf_metrics
+
+from optimizer import distributed_optimizer as optimizer
+from model_io import model_io
 
 EPSILON = 1e-20
 
