@@ -17,7 +17,22 @@ from model_io import model_io
 def correlation(x, y):
 	x = tf.nn.l2_normalize(x, -1)
 	y = tf.nn.l2_normalize(y, -1)
-	return x*y
+	return -tf.reduce_sum(x*y, axis=-1) # higher the better
+
+def kd(x, y):
+	x_prob = tf.exp(x)
+	return -tf.reduce_sum(x_prob * y, axis=-1) # higher the better
+
+def mse(x, y):
+	return tf.reduce_sum((x-y)**2, axis=-1) # lower the better
+
+def kd_distance(x, y, dist_type):
+	if dist_type == "person":
+		return correlation(x,y)
+	elif dist_type == "kd":
+		return kd(x, y)
+	elif dist_type == "mse":
+		return mse(x, y)
 
 def model_fn_builder(
 					model_config,
@@ -65,18 +80,15 @@ def model_fn_builder(
 		print(kargs.get("temperature", 0.5), kargs.get("distillation_ratio", 0.5), "==distillation hyparameter==")
 
 		# get teacher logits
-		teacher_logit = tf.nn.log_softmax(tf.log(features["label_probs"]+1e-10)/kargs.get("temperature", 2.0))
-		student_logit = tf.nn.log_softmax(logits/kargs.get("temperature", 2.0))
-		# teacher_prob = tf.exp(teacher_logit)
-		# kl_divergence = teacher_prob * (tf.nn.log_softmax(logits/kargs.get("temperature", 2.0))) # logits normalization
-		# kl_divergence = teacher_prob * (tf.nn.log_softmax(logits))
+		teacher_logit = tf.nn.log_softmax(tf.log(features["label_probs"]+1e-10)/kargs.get("temperature", 2.0), axis=-1)
+		student_logit = tf.nn.log_softmax(logits/kargs.get("temperature", 2.0), axis=-1)
 
-		kl_divergence = correlation(teacher_logit, student_logit)
-		
-		label_loss = tf.reduce_sum(per_example_loss * features["label_ratio"]) / (1e-10+tf.reduce_sum(features["label_ratio"]))
-		distillation_loss = -(tf.reduce_sum(kl_divergence, axis=-1) * (1 - features["label_ratio"]))
+		distillation_loss = kd_distance(teacher_logit, student_logit, kargs.get("distillation_distance", "mse")) 
+		distillation_loss *= (1 - features["label_ratio"])
 		distillation_loss = tf.reduce_sum(distillation_loss) / (1e-10+tf.reduce_sum(1-features["label_ratio"]))
 
+		label_loss = tf.reduce_sum(per_example_loss * features["label_ratio"]) / (1e-10+tf.reduce_sum(features["label_ratio"]))
+	
 		print("==distillation loss ratio==", kargs.get("distillation_ratio", 0.9)*tf.pow(kargs.get("temperature", 2.0), 2))
 
 		# loss = label_loss + kargs.get("distillation_ratio", 0.9)*tf.pow(kargs.get("temperature", 2.0), 2)*distillation_loss

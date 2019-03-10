@@ -34,7 +34,7 @@ def focal_loss_multi_v1(config, logits, labels):
 
     labels = tf.cast(tf.expand_dims(labels, -1), tf.int32)
 
-    predictions = tf.exp(tf.nn.log_softmax(logits))
+    predictions = tf.exp(tf.nn.log_softmax(logits, axis=-1))
 
     batch_idxs = tf.range(0, tf.shape(labels)[0])
     batch_idxs = tf.expand_dims(batch_idxs, 1)
