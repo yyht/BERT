@@ -41,6 +41,11 @@ try:
 except Exception as e:
 	hvd = None
 
+try:
+	import _pickle as pkl
+except Exception as e:
+	pkl = None
+
 def train_eval_fn(FLAGS,
 				worker_count, 
 				task_index, 
@@ -331,6 +336,9 @@ def train_eval_fn(FLAGS,
 										loss_dict[key] = train_result[key]
 							except:
 								print(key, train_result[key])
+
+						if pkl:
+							pkl.dump(train_result, open("/data/xuht/distillation.pkl", "wb"))
 					
 					i += 1
 					cnt += 1
