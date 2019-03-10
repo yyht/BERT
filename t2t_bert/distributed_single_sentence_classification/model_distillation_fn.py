@@ -24,6 +24,7 @@ def correlation(x, y):
 def kd(x, y):
 	x_prob = tf.nn.softmax(x)
 	y = tf.nn.log_softmax(y, axis=-1)
+	print(x_prob.get_shape(), y.get_shape(), tf.reduce_sum(x_prob * y, axis=-1).get_shape())
 	return -tf.reduce_sum(x_prob * y, axis=-1) # higher the better
 
 def mse(x, y):
@@ -97,7 +98,7 @@ def model_fn_builder(
 		print("==distillation loss ratio==", kargs.get("distillation_ratio", 0.9)*tf.pow(kargs.get("temperature", 2.0), 2))
 
 		# loss = label_loss + kargs.get("distillation_ratio", 0.9)*tf.pow(kargs.get("temperature", 2.0), 2)*distillation_loss
-		loss = label_loss + kargs.get("distillation_ratio", 0.9) * distillation_loss
+		loss = (1-kargs.get("distillation_ratio", 0.9))*label_loss + kargs.get("distillation_ratio", 0.9) * distillation_loss
 
 		model_io_fn = model_io.ModelIO(model_io_config)
 
