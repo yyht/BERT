@@ -330,7 +330,7 @@ def train_eval_fn(FLAGS,
 									else:
 										loss_dict[key] = train_result[key]
 							except:
-								continue
+								print(key, train_result[key])
 					
 					i += 1
 					cnt += 1

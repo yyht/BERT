@@ -150,7 +150,10 @@ def model_fn_builder(
 										"cross_entropy":label_loss,
 										"kd_loss":distillation_loss,
 										"kd_num":tf.reduce_sum(1-features["label_ratio"]),
-										"ce_num":tf.reduce_sum(features["label_ratio"])
+										"ce_num":tf.reduce_sum(features["label_ratio"]),
+										"teacher_logit":teacher_logit,
+										"student_logit":student_logit,
+										"label_ratio":features["label_ratio"]
 									},
 						"hooks":training_hooks
 					}
