@@ -337,8 +337,8 @@ def train_eval_fn(FLAGS,
 							except:
 								continue
 
-						if pkl:
-							pkl.dump(train_result, open("/data/xuht/distillation.pkl", "wb"))
+					if pkl:
+						pkl.dump(train_result, open("/data/xuht/distillation.pkl", "wb"))
 					
 					i += 1
 					cnt += 1
