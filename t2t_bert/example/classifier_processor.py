@@ -550,7 +550,7 @@ class FasttextDistillationProcessor(data_processor.DataProcessor):
 						text_a=text_a,
 						text_b=None,
 						label=input_labels,
-						label_probs=[1.0]*len(self.label2id),
+						label_probs=[1.0/len(self.label2id)]*len(self.label2id),
 						label_ratio=1.0
 					))
 			except:
