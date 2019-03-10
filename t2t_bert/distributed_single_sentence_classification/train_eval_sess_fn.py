@@ -335,7 +335,7 @@ def train_eval_fn(FLAGS,
 									else:
 										loss_dict[key] = train_result[key]
 							except:
-								print(key, train_result[key])
+								continue
 
 						if pkl:
 							pkl.dump(train_result, open("/data/xuht/distillation.pkl", "wb"))
