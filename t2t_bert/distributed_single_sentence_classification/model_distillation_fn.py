@@ -14,6 +14,11 @@ from metric import tf_metrics
 from optimizer import distributed_optimizer as optimizer
 from model_io import model_io
 
+def correlation(x, y):
+	x = tf.nn.l2_normalize(x, -1)
+	y = tf.nn.l2_normalize(y, -1)
+	return x*y
+
 def model_fn_builder(
 					model_config,
 					num_labels,
@@ -61,8 +66,12 @@ def model_fn_builder(
 
 		# get teacher logits
 		teacher_logit = tf.nn.log_softmax(tf.log(features["label_probs"]+1e-10)/kargs.get("temperature", 2.0))
-		teacher_prob = tf.exp(teacher_logit)
-		kl_divergence = teacher_prob * (tf.nn.log_softmax(logits/kargs.get("temperature", 2.0))) # logits normalization
+		student_logit = tf.nn.log_softmax(logits/kargs.get("temperature", 2.0))
+		# teacher_prob = tf.exp(teacher_logit)
+		# kl_divergence = teacher_prob * (tf.nn.log_softmax(logits/kargs.get("temperature", 2.0))) # logits normalization
+		# kl_divergence = teacher_prob * (tf.nn.log_softmax(logits))
+
+		kl_divergence = correlation(teacher_logit, student_logit)
 		
 		label_loss = tf.reduce_sum(per_example_loss * features["label_ratio"]) / (1e-10+tf.reduce_sum(features["label_ratio"]))
 		distillation_loss = -(tf.reduce_sum(kl_divergence, axis=-1) * (1 - features["label_ratio"]))
@@ -70,7 +79,8 @@ def model_fn_builder(
 
 		print("==distillation loss ratio==", kargs.get("distillation_ratio", 0.9)*tf.pow(kargs.get("temperature", 2.0), 2))
 
-		loss = label_loss + kargs.get("distillation_ratio", 0.9)*tf.pow(kargs.get("temperature", 2.0), 2)*distillation_loss
+		# loss = label_loss + kargs.get("distillation_ratio", 0.9)*tf.pow(kargs.get("temperature", 2.0), 2)*distillation_loss
+		loss = label_loss + kargs.get("distillation_ratio", 0.9) * distillation_loss
 
 		model_io_fn = model_io.ModelIO(model_io_config)
 
