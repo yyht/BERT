@@ -16,7 +16,7 @@ from model_io import model_io
 
 def correlation(x, y):
 	x = x - tf.reduce_mean(x, axis=-1, keepdims=True)
-    y = y - tf.reduce_mean(y, axis=-1, keepdims=True)
+	y = y - tf.reduce_mean(y, axis=-1, keepdims=True)
 	x = tf.nn.l2_normalize(x, -1)
 	y = tf.nn.l2_normalize(y, -1)
 	return -tf.reduce_sum(x*y, axis=-1) # higher the better
@@ -28,7 +28,7 @@ def kd(x, y):
 
 def mse(x, y):
 	x = x - tf.reduce_mean(x, axis=-1, keepdims=True)
-    y = y - tf.reduce_mean(y, axis=-1, keepdims=True)
+	y = y - tf.reduce_mean(y, axis=-1, keepdims=True)
 	return tf.reduce_sum((x-y)**2, axis=-1) # lower the better
 
 def kd_distance(x, y, dist_type):
