@@ -15,15 +15,20 @@ from optimizer import distributed_optimizer as optimizer
 from model_io import model_io
 
 def correlation(x, y):
+	x = x - tf.reduce_mean(x, axis=-1, keepdims=True)
+    y = y - tf.reduce_mean(y, axis=-1, keepdims=True)
 	x = tf.nn.l2_normalize(x, -1)
 	y = tf.nn.l2_normalize(y, -1)
 	return -tf.reduce_sum(x*y, axis=-1) # higher the better
 
 def kd(x, y):
-	x_prob = tf.exp(x)
+	x_prob = tf.nn.softmax(x)
+	y = tf.nn.log_softmax(y, axis=-1)
 	return -tf.reduce_sum(x_prob * y, axis=-1) # higher the better
 
 def mse(x, y):
+	x = x - tf.reduce_mean(x, axis=-1, keepdims=True)
+    y = y - tf.reduce_mean(y, axis=-1, keepdims=True)
 	return tf.reduce_sum((x-y)**2, axis=-1) # lower the better
 
 def kd_distance(x, y, dist_type):
@@ -80,10 +85,10 @@ def model_fn_builder(
 		print(kargs.get("temperature", 0.5), kargs.get("distillation_ratio", 0.5), "==distillation hyparameter==")
 
 		# get teacher logits
-		teacher_logit = tf.nn.log_softmax(tf.log(features["label_probs"]+1e-10)/kargs.get("temperature", 2.0), axis=-1)
-		student_logit = tf.nn.log_softmax(logits/kargs.get("temperature", 2.0), axis=-1)
+		teacher_logit = tf.log(features["label_probs"]+1e-10)/kargs.get("temperature", 2.0)
+		student_logit = logits/kargs.get("temperature", 2.0)
 
-		distillation_loss = kd_distance(teacher_logit, student_logit, kargs.get("distillation_distance", "mse")) 
+		distillation_loss = kd_distance(teacher_logit, student_logit, kargs.get("distillation_distance", "kd")) 
 		distillation_loss *= (1 - features["label_ratio"])
 		distillation_loss = tf.reduce_sum(distillation_loss) / (1e-10+tf.reduce_sum(1-features["label_ratio"]))
 
