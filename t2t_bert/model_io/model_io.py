@@ -67,3 +67,4 @@ class ModelIO(object):
 		model_io_utils.init_pretrained(assignment_map, 
 										initialized_variable_names,
 										tvars, init_checkpoint, **kargs)
+		print("==succeeded in loading pretrained model==")

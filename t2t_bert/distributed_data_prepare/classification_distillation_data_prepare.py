@@ -131,7 +131,12 @@ flags.DEFINE_string(
 	)
 
 flags.DEFINE_string(
-	"distillation_file", "",
+	"unsupervised_distillation_file", "",
+	"if apply rule detector"
+	)
+
+flags.DEFINE_string(
+	"supervised_distillation_file", "",
 	"if apply rule detector"
 	)
 
@@ -155,7 +160,8 @@ def main(_):
 	dev_result_file = os.path.join(FLAGS.buckets, FLAGS.dev_result_file)
 
 	corpus_vocab_path = os.path.join(FLAGS.buckets, FLAGS.corpus_vocab_path)
-	distillation_file = os.path.join(FLAGS.buckets, FLAGS.distillation_file)
+	unsupervised_distillation_file = os.path.join(FLAGS.buckets, FLAGS.unsupervised_distillation_file)
+	supervised_distillation_file = os.path.join(FLAGS.buckets, FLAGS.supervised_distillation_file)
 
 	print(FLAGS.with_char)
 	with tf.gfile.Open(vocab_path, "r") as f:
@@ -171,7 +177,8 @@ def main(_):
 	classifier_data_api = classifier_processor.FasttextDistillationProcessor()
 	classifier_data_api.get_labels(FLAGS.label_id)
 
-	train_examples = classifier_data_api.get_train_examples(train_file,
+	train_examples = classifier_data_api.get_supervised_distillation_examples(train_file,
+										supervised_distillation_file,
 										is_shuffle=True)
 
 	vocab_filter.vocab_filter(train_examples, vocab_lst, 
@@ -191,12 +198,12 @@ def main(_):
 
 	tokenizer_corpus.load_vocab(vocab_lst)
 
-	dev_examples = classifier_data_api.get_distillation_examples(dev_file,
-																distillation_file,
+	dev_examples = classifier_data_api.get_unsupervised_distillation_examples(dev_file,
+																unsupervised_distillation_file,
 																is_shuffle=False)
 
 	import random
-	total_train_examples = train_examples+dev_examples
+	total_train_examples = train_examples#+dev_examples
 	random.shuffle(total_train_examples)
 
 	write_to_tfrecords.convert_distillation_classifier_examples_to_features(total_train_examples,

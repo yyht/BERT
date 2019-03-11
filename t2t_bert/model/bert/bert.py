@@ -77,8 +77,11 @@ class Bert(object):
 
 	def build_pooler(self, *args,**kargs):
 		reuse = kargs["reuse"]
+		layer_num = kargs.get("layer_num", -1)
 		with tf.variable_scope(self.config.get("scope", "bert"), reuse=reuse):
-			self.sequence_output = self.all_encoder_layers[-1]
+			# self.sequence_output = self.all_encoder_layers[-1]
+			self.sequence_output = self.get_encoder_layers(layer_num)
+
 			# The "pooler" converts the encoded sequence tensor of shape
 			# [batch_size, seq_length, hidden_size] to a tensor of shape
 			# [batch_size, hidden_size]. This is necessary for segment-level
@@ -111,3 +114,10 @@ class Bert(object):
 
 	def get_embedding_table(self):
 		return self.embedding_table
+
+	def get_encoder_layers(self, layer_num):
+		if layer_num >= 0 and layer_num <= len(self.all_encoder_layers) - 1:
+			print("==get encoder layer==", layer_num)
+			return self.all_encoder_layers[layer_num]
+		else:
+			return self.all_encoder_layers[-1]

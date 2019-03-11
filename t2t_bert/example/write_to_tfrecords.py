@@ -806,12 +806,18 @@ def convert_distillation_classifier_examples_to_features(examples, label_dict,
 		try:
 			label_probs = example.label_probs
 		except:
-			label_probs = [0.0]*len(label_dict)
+			label_probs = [1.0/len(label_dict)]*len(label_dict)
 
 		try:
 			label_ratio = example.label_ratio
 		except:
-			label_ratio = 0.0
+			label_ratio = 1.0
+
+		try:
+			distillation_ratio = example.distillation_ratio
+		except:
+			distillation_ratio = 0.0
+
 
 		if ex_index < 5:
 			print(tokens_a)
@@ -827,6 +833,7 @@ def convert_distillation_classifier_examples_to_features(examples, label_dict,
 			tf.logging.info("label_probs {}".format(label_probs))
 			tf.logging.info("label_ratio {}".format(label_ratio))
 			tf.logging.info("label: {} (id = {})".format(example.label, label_id))
+			tf.logging.info("distillation_ratio: {} (id = {})".format(example.label, label_id))
 		
 		feature = data_distillation_feature_classifier.InputFeatures(
 					guid=example.guid,
@@ -836,10 +843,11 @@ def convert_distillation_classifier_examples_to_features(examples, label_dict,
 					input_char_ids_b=input_char_ids_b,
 					label_ids=label_id,
 					label_probs=label_probs,
-					label_ratio=label_ratio)
+					label_ratio=label_ratio,
+					distillation_ratio=distillation_ratio)
 		feature_writer.process_feature(feature)
-		if ex_index <= 5:
-			print(feature.label_probs)
+		if ex_index < 5:
+			print(feature.label_probs, ex_index, "==id==")
 		# if ex_index == 100:
 		# 	break
 	feature_writer.close()
