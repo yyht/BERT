@@ -5,7 +5,7 @@ class InputExample(object):
 	"""A single training/test example for simple sequence classification."""
 
 	def __init__(self, guid, text_a, text_b=None, label=None,
-		label_ratio=None, label_probs=None):
+		label_ratio=None, label_probs=None, distillation_ratio=None):
 		"""Constructs a InputExample.
 
 		Args:
@@ -23,6 +23,7 @@ class InputExample(object):
 		self.label = label
 		self.label_probs = label_probs
 		self.label_ratio = label_ratio
+		self.distillation_ratio = distillation_ratio
 
 	def __str__(self):
 		return self.__repr__()
@@ -40,6 +41,8 @@ class InputExample(object):
 			s += ", label_ratio: {}".format(self.label_ratio)
 		if self.label_probs:
 			s += ", label_probs: {}".foramt(self.label_probs)
+		if self.distillation_ratio:
+			s += ", label_probs: {}".foramt(self.distillation_ratio)
 		return s
 
 class InputFeatures(object):
@@ -47,7 +50,7 @@ class InputFeatures(object):
 
 	def __init__(self, guid, input_ids_a, input_char_ids_a, 
 		input_ids_b, input_char_ids_b,
-		label_ids, label_probs, label_ratio):
+		label_ids, label_probs, label_ratio, distillation_ratio):
 		self.guid = guid
 		self.input_ids_a = input_ids_a
 		self.input_char_ids_a = input_char_ids_a
@@ -56,3 +59,4 @@ class InputFeatures(object):
 		self.label_ids = label_ids
 		self.label_probs = label_probs
 		self.label_ratio = label_ratio
+		self.distillation_ratio = distillation_ratio

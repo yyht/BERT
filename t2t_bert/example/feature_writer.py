@@ -143,6 +143,10 @@ class DistillationEncoderFeatureWriter(FeatureWriter):
 			features["label_ratio"] = tf_data_utils.create_float_feature([feature.label_ratio])
 		except:
 			s = 0
+		try:
+			features["distillation_ratio"] = tf_data_utils.create_float_feature([feature.distillation_ratio])
+		except:
+			s = 0
 
 		tf_example = tf.train.Example(features=tf.train.Features(feature=features))
 		self._writer.write(tf_example.SerializeToString())
