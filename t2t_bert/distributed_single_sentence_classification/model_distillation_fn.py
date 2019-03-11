@@ -86,8 +86,8 @@ def model_fn_builder(
 		print(kargs.get("temperature", 0.5), kargs.get("distillation_ratio", 0.5), "==distillation hyparameter==")
 
 		# get teacher logits
-		teacher_logit = tf.log(features["label_probs"]+1e-10)/kargs.get("temperature", 2.0)
-		student_logit = tf.nn.log_softmax(logits /kargs.get("temperature", 2.0))
+		teacher_logit = tf.log(features["label_probs"]+1e-10)/kargs.get("temperature", 2.0) # log_softmax logits
+		student_logit = tf.nn.log_softmax(logits /kargs.get("temperature", 2.0)) # log_softmax logits
 
 		distillation_loss = kd_distance(teacher_logit, student_logit, kargs.get("distillation_distance", "kd")) 
 		distillation_loss *= features["distillation_ratio"]
