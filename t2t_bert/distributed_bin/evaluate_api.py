@@ -186,6 +186,11 @@ flags.DEFINE_string(
 	"if apply distillation"
 	)
 
+flags.DEFINE_integer(
+	"num_hidden_layers", 12,
+	"if apply distillation"
+	)
+
 def main(_):
 
 	print(FLAGS)

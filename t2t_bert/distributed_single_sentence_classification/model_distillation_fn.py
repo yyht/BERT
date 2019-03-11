@@ -23,7 +23,6 @@ def correlation(x, y):
 
 def kd(x, y):
 	x_prob = tf.nn.softmax(x)
-	y = tf.nn.log_softmax(y, axis=-1)
 	print(x_prob.get_shape(), y.get_shape(), tf.reduce_sum(x_prob * y, axis=-1).get_shape())
 	return -tf.reduce_sum(x_prob * y, axis=-1) # higher the better
 

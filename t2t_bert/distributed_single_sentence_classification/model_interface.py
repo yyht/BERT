@@ -51,7 +51,7 @@ def model_config_parser(FLAGS):
 		config.label_type = "single_label"
 		config.model_type = FLAGS.model_type
 		config.init_lr = 2e-5
-		config.
+		config.num_hidden_layers = FLAGS.num_hidden_layers
 
 	elif FLAGS.model_type in ["textcnn", 'textcnn_distillation']:
 		from data_generator import load_w2v
