@@ -6,7 +6,8 @@ python ./t2t_bert/distributed_data_prepare/classification_distillation_data_prep
 	--train_result_file porn/clean_data/textcnn/distillation/train_tfrecords \
 	--dev_result_file  porn/clean_data/textcnn/distillation/dev_tfrecords\
 	--test_result_file  porn/clean_data/textcnn/distillation/test_tfrecords\
-	--distillation_file porn/clean_data/textcnn/distillation/dev_distillation.info \
+	--supervised_distillation_file porn/clean_data/textcnn/distillation/train_distillation.info \
+	--unsupervised_distillation_file porn/clean_data/textcnn/distillation/dev_distillation.info \
 	--vocab_file w2v/tencent_ai_lab/char_id.txt \
 	--label_id /data/xuht/porn/label_dict.json \
 	--lower_case True \

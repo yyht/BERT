@@ -87,11 +87,11 @@ def model_fn_builder(
 
 		# get teacher logits
 		teacher_logit = tf.log(features["label_probs"]+1e-10)/kargs.get("temperature", 2.0)
-		student_logit = logits/kargs.get("temperature", 2.0)
+		student_logit = tf.nn.log_softmax(logits /kargs.get("temperature", 2.0))
 
 		distillation_loss = kd_distance(teacher_logit, student_logit, kargs.get("distillation_distance", "kd")) 
-		distillation_loss *= (1 - features["label_ratio"])
-		distillation_loss = tf.reduce_sum(distillation_loss) / (1e-10+tf.reduce_sum(1-features["label_ratio"]))
+		distillation_loss *= features["distillation_ratio"]
+		distillation_loss = tf.reduce_sum(distillation_loss) / (1e-10+tf.reduce_sum(features["distillation_ratio"]))
 
 		label_loss = tf.reduce_sum(per_example_loss * features["label_ratio"]) / (1e-10+tf.reduce_sum(features["label_ratio"]))
 	

@@ -24,6 +24,9 @@ def model_zoo(model_config):
 	elif model_config.get("model_type", "bert") in ["textcnn", "textcnn_distillation"]:
 		print("==apply textcnn encoder==")
 		model_interface = textcnn_encoder
+	elif model_config.get("model_type", "bert_small") == "bert_small":
+		print("==apply bert small encoder==")
+		model_interface = bert_encoder
 
 	return model_interface
 
@@ -38,6 +41,17 @@ def model_config_parser(FLAGS):
 		config.label_type = "single_label"
 		config.model_type = FLAGS.model_type
 		config.init_lr = 2e-5
+
+	elif FLAGS.model_type in ["bert_small"]:
+		config = json.load(open(FLAGS.config_file, "r"))
+		config = Bunch(config)
+		config.use_one_hot_embeddings = True
+		config.scope = "bert"
+		config.dropout_prob = 0.1
+		config.label_type = "single_label"
+		config.model_type = FLAGS.model_type
+		config.init_lr = 2e-5
+		config.
 
 	elif FLAGS.model_type in ["textcnn", 'textcnn_distillation']:
 		from data_generator import load_w2v
