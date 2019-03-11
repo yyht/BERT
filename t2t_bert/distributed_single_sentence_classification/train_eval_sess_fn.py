@@ -336,10 +336,10 @@ def train_eval_fn(FLAGS,
 										loss_dict[key] = train_result[key]
 							except:
 								continue
-					print(pkl, "==pkl==")
+					# print(pkl, "==pkl==")
 
-					if pkl:
-						pkl.dump(train_result, open("/data/xuht/distillation.pkl", "wb"))
+					# if pkl:
+					# 	pkl.dump(train_result, open("/data/xuht/distillation.pkl", "wb"))
 					
 					i += 1
 					cnt += 1
