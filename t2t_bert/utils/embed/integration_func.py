@@ -2,7 +2,8 @@ import tensorflow as tf
 import numpy as np
 
 # -------------- emb mat--------------
-def generate_embedding_mat(dict_size, emb_len, init_mat=None, extra_symbol=None, scope=None):
+def generate_embedding_mat(dict_size, emb_len, init_mat=None, extra_symbol=None, 
+                scope=None, reuse=None, trainable=False):
     """
     generate embedding matrix for looking up
     :param dict_size: indices 0 and 1 corresponding to empty and unknown token
@@ -13,7 +14,7 @@ def generate_embedding_mat(dict_size, emb_len, init_mat=None, extra_symbol=None,
     :param scope:
     :return: if extra_mat is None, return[dict_size+extra_dict_size,emb_len], else [dict_size,emb_len]
     """
-    with tf.variable_scope(scope or 'gene_emb_mat'):
+    with tf.variable_scope(scope or 'gene_emb_mat', reuse=reuse):
         if init_mat is None:
             emb_mat = tf.Variable(tf.random_uniform([dict_size, emb_len], -1.0, 1.0),
                                 name="emb_mat",
@@ -33,12 +34,13 @@ def generate_embedding_mat(dict_size, emb_len, init_mat=None, extra_symbol=None,
                                   tf.float32,
                                   initializer=tf.constant_initializer(init_mat[len(extra_symbol):], 
                                                           dtype=tf.float32),
-                                  trainable=False)
+                                  trainable=trainable)
             
             emb_mat = tf.concat([emb_mat_ept_and_unk, emb_mat_other], 0)
         return emb_mat
 
-def generate_embedding_mat_v1(dict_size, emb_len, init_mat=None, extra_symbol=None, scope=None, reuse=None):
+def generate_embedding_mat_v1(dict_size, emb_len, init_mat=None, extra_symbol=None, scope=None, reuse=None,
+                            trainable=False):
       with tf.variable_scope(scope or 'gene_emb_mat', reuse=reuse):
           if init_mat is None:
             emb_mat = tf.Variable(tf.random_uniform([dict_size, emb_len], -1.0, 1.0),
@@ -50,5 +52,5 @@ def generate_embedding_mat_v1(dict_size, emb_len, init_mat=None, extra_symbol=No
                                   tf.float32,
                                   initializer=tf.constant_initializer(init_mat, 
                                                           dtype=tf.float32),
-                                  trainable=False)
+                                  trainable=trainable)
       return emb_mat

@@ -15,6 +15,7 @@ class BaseModel(object):
 		self.emb_size = int(self.config["emb_size"])
 		self.scope = self.config["scope"]
 		self.char_dim = self.config.get("char_emb_size", 300)
+		self.extra_symbol = self.config.get("extra_symbol", ["<pad>", "<unk>", "<s>", "</s>"])
 
 	def build_char_embedding(self, input_char_ids, is_training, **kargs):
 
@@ -23,10 +24,12 @@ class BaseModel(object):
 		reuse = kargs["reuse"]
 
 		if self.config.with_char == "char":
-			self.char_mat = integration_func.generate_embedding_mat_v1(self.vocab_size, emb_len=self.emb_size,
-									 init_mat=self.token_emb_mat, 
-									 scope=self.scope+'_char_embedding',
-									 reuse=reuse)
+			self.char_mat = integration_func.generate_embedding_mat(self.vocab_size, emb_len=self.emb_size,
+                                     init_mat=self.token_emb_mat, 
+                                     extra_symbol=self.extra_symbol, 
+                                     scope=self.scope+'_char_embedding',
+                                     reuse=kargs.get("reuse", None),
+                                     trainable=kargs.get("trainable", False))
 
 		if self.config.char_embedding == "lstm":
 			char_emb = char_embedding_utils.lstm_char_embedding(input_char_ids, input_char_len, self.char_mat, 
@@ -38,12 +41,23 @@ class BaseModel(object):
 
 	def build_word_embedding(self, input_ids, **kargs):
 
-		self.emb_mat = integration_func.generate_embedding_mat_v1(self.vocab_size, emb_len=self.emb_size,
-									 init_mat=self.token_emb_mat,  
-									 scope=self.scope+'_token_embedding',
-									 reuse=kargs.get("reuse", None))
-
+		self.emb_mat = integration_func.generate_embedding_mat(self.vocab_size, emb_len=self.emb_size,
+                                     init_mat=self.token_emb_mat, 
+                                     extra_symbol=self.extra_symbol, 
+                                     scope=self.scope+'_token_embedding',
+                                     reuse=kargs.get("reuse", None),
+                                     trainable=False)
 		word_emb = tf.nn.embedding_lookup(self.emb_mat, input_ids)
+		if self.config.get("trainable_embedding", False):
+			self.trainable_emb_mat = integration_func.generate_embedding_mat(self.vocab_size, emb_len=self.emb_size,
+                                     init_mat=self.token_emb_mat, 
+                                     extra_symbol=self.extra_symbol, 
+                                     scope=self.scope+'_token_embedding',
+                                     reuse=kargs.get("reuse", None),
+                                     trainable=True)
+			trainable_word_emb = tf.nn.embedding_lookup(self.trainable_emb_mat, input_ids)
+			word_emb = tf.concat([word_emb, trainable_word_emb], axis=-1)
+
 		return word_emb
 
 	def build_emebdder(self, input_ids, input_char_ids, is_training, **kargs):
@@ -62,30 +76,6 @@ class BaseModel(object):
 
 	def get_pooled_output(self):
 		raise NotImplementedError
-
-	# def build_predictor(self, features, is_training, labels, **kargs):
-	# 	reuse = kargs["reuse"]
-	# 	num_classes = self.config.num_classes
-	# 	dropout_rate = tf.cond(is_training, 
-	# 						lambda:self.config.dropout_rate,
-	# 						lambda:0.0)
-
-	# 	with tf.variable_scope(self.config.scope+"_prediction_module", reuse=reuse):
-
-	# 		features = tf.nn.dropout(features, (1 - dropout_rate))
-	# 		self.logits = tf.layers.dense(features, num_classes, use_bias=False)
-
-	# 		if self.config.loss_type == "cross_entropy":
-	# 			predictions = tf.nn.softmax(logits)
-	# 			per_sample_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, 
- #                        		labels=labels)
-	# 		elif self.config.loss_type == "focal_loss_multi_v1":
-	# 			per_sample_loss, predictions = focal_loss_multi_v1(self.config, logits, labels)
-	# 		elif self.config.loss_type == "center_loss_v2":
-	# 			predictions = tf.nn.softmax(logits)
-	# 			closs, centers = center_loss_v2(self.config, features, labels, centers=None)
-	# 		loss = tf.reduce_mean(per_sample_loss)
-	# 		return loss, per_sample_loss, predictions
 
 
 
