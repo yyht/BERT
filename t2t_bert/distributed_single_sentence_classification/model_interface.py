@@ -2,7 +2,7 @@ from distributed_encoder.bert_encoder import bert_encoder
 from distributed_encoder.bert_encoder import bert_rule_encoder
 
 from distributed_encoder.classifynet_encoder import textcnn_encoder
-from distributed_encoder.classifynet_encoder import textlstm_encoder
+# from distributed_encoder.classifynet_encoder import textlstm_encoder
 
 import tensorflow as tf
 import numpy as np
@@ -10,10 +10,6 @@ import json
 from bunch import Bunch
 import os, sys
 
-# model_zoo = {
-# 	"bert":bert_encoder,
-# 	"bert_rule":bert_rule_encoder
-# }
 
 def model_zoo(model_config):
 	if model_config.get("model_type", "bert") == "bert":
@@ -28,12 +24,14 @@ def model_zoo(model_config):
 	elif model_config.get("model_type", "bert_small") == "bert_small":
 		print("==apply bert small encoder==")
 		model_interface = bert_encoder
-	elif model_config.get("model_type", "bert") in ["textlstm"]:
-		model_interface = textlstm_encoder
+	# elif model_config.get("model_type", "bert") in ["textlstm"]:
+	# 	model_interface = textlstm_encoder
 
 	return model_interface
 
 def model_config_parser(FLAGS):
+
+	print(FLAGS.model_type)
 
 	if FLAGS.model_type in ["bert", "bert_rule"]:
 		config = json.load(open(FLAGS.config_file, "r"))
