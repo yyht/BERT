@@ -7,7 +7,7 @@ mpirun -np 2 \
  --vocab_file "porn/clean_data/textcnn/distillation/char_id.txt" \
  --label_id "porn/label_dict.json" \
  --max_length 128 \
- --train_file "porn/clean_data/textcnn/distillation/dev_tfrecords" \
+ --train_file "porn/clean_data/textcnn/distillation/train_tfrecords" \
  --dev_file "porn/clean_data/textcnn/distillation/dev_tfrecords" \
  --model_output "porn/clean_data/textcnn/model/estimator/distillation/all_reduce_4_adam_weight_0310/" \
  --epoch 20 \
