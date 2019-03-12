@@ -12,7 +12,7 @@
     "batch_size": 32,
     "max_epochs": 1000,
     "dropout_rate": 0.2,
-    "learning_rate": 5e-4,
+    "learning_rate": 1e-4,
     "optimizer": "adam",
     "lambda_l2": 0.0,
     "grad_clipper": 10.0,
@@ -63,5 +63,6 @@
     "num_heads":4,
 
     "output_folder_name":"textcnn",
-    "with_target":false
+    "with_target":false,
+    "trainable_embedding":false
 }

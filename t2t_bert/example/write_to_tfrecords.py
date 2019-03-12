@@ -872,27 +872,38 @@ def convert_bert_distillation_classifier_examples_to_features(examples, label_di
 				print("==token b error==", example.text_b, ex_index)
 				break
 
-		if len(tokens_a) > max_seq_length:
-			tokens_a = tokens_a[0:(max_seq_length)]
 		if tokens_b:
-			if len(tokens_b) > max_seq_length:
-				tokens_b = tokens_b[0:(max_seq_length)]
-			input_ids_b = tokenizer.convert_tokens_to_ids(tokens_b, max_seq_length)
-			if with_char == "char":
-				input_char_ids_b = tokenizer.covert_tokens_to_char_ids(tokens_b, 
-											max_seq_length, 
-											char_len=char_len)
-		else:
-			input_ids_b = None
-			input_char_ids_b = None
+			tf_data_utils._truncate_seq_pair(tokens_a, tokens_b, max_seq_length-3)
 
-		input_ids_a = tokenizer.convert_tokens_to_ids(tokens_a, max_seq_length)
-		if with_char == "char":
-			input_char_ids_a = tokenizer.covert_tokens_to_char_ids(tokens_a, 
-											max_seq_length, 
-											char_len=char_len)
 		else:
-			input_char_ids_a = None		
+			if len(tokens_a) > max_seq_length - 2:
+				tokens_a = tokens_a[0:(max_seq_length - 2)]
+		tokens = []
+		segment_ids = []
+		tokens.append("[CLS]")
+		segment_ids.append(0)
+
+		for token in tokens_a:
+			tokens.append(token)
+			segment_ids.append(0)
+		tokens.append("[SEP]")
+		segment_ids.append(0)
+
+		if tokens_b:
+			for token in tokens_b:
+				tokens.append(token)
+				segment_ids.append(1)
+			tokens.append("[SEP]")
+			segment_ids.append(1)
+
+		input_ids = tokenizer.convert_tokens_to_ids(tokens)
+		input_mask = [1] * len(input_ids)
+
+		# Zero-pad up to the sequence length.
+		while len(input_ids) < max_seq_length:
+			input_ids.append(0)
+			input_mask.append(0)
+			segment_ids.append(0)		
 
 		if len(example.label) == 1:
 			label_id = label_dict[example.label[0]]
@@ -915,7 +926,6 @@ def convert_bert_distillation_classifier_examples_to_features(examples, label_di
 			distillation_ratio = example.distillation_ratio
 		except:
 			distillation_ratio = 0.0
-
 
 		if ex_index < 5:
 			print(tokens_a)
