@@ -2,7 +2,7 @@ from distributed_encoder.bert_encoder import bert_encoder
 from distributed_encoder.bert_encoder import bert_rule_encoder
 
 from distributed_encoder.classifynet_encoder import textcnn_encoder
-# from distributed_encoder.classifynet_encoder import textlstm_encoder
+from distributed_encoder.classifynet_encoder import textlstm_encoder
 
 import tensorflow as tf
 import numpy as np
@@ -24,8 +24,8 @@ def model_zoo(model_config):
 	elif model_config.get("model_type", "bert_small") == "bert_small":
 		print("==apply bert small encoder==")
 		model_interface = bert_encoder
-	# elif model_config.get("model_type", "bert") in ["textlstm"]:
-	# 	model_interface = textlstm_encoder
+	elif model_config.get("model_type", "bert") in ["textlstm"]:
+		model_interface = textlstm_encoder
 
 	return model_interface
 
@@ -78,7 +78,7 @@ def model_config_parser(FLAGS):
 		config.init_lr = config.learning_rate
 		config.extra_symbol = ["<pad>", "<unk>", "<s>", "</s>"]
 
-	elif FLAGS.model_type in ["textlstm"]:
+	elif FLAGS.model_type in ["textlstm", "textlstm_distillation"]:
 		from data_generator import load_w2v
 		w2v_path = os.path.join(FLAGS.buckets, FLAGS.w2v_path)
 		vocab_path = os.path.join(FLAGS.buckets, FLAGS.vocab_file)
@@ -93,7 +93,7 @@ def model_config_parser(FLAGS):
 		config.vocab_size = w2v_embed.shape[0]
 		config.max_length = FLAGS.max_length
 		config.emb_size = w2v_embed.shape[1]
-		config.scope = "textcnn"
+		config.scope = "textlstm"
 		config.char_dim = w2v_embed.shape[1]
 		config.char_vocab_size = w2v_embed.shape[0]
 		config.char_embedding = None
