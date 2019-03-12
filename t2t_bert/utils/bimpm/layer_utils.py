@@ -20,6 +20,7 @@ def my_lstm_layer(input_reps, lstm_dim, input_lengths=None, scope_name=None, reu
     with tf.variable_scope(scope_name, reuse=reuse):
         
         if use_cudnn:
+            print("==apply cudnn_rnn==")
             # inputs = tf.transpose(input_reps, [1, 0, 2])
             # lstm = tf.contrib.cudnn_rnn.CudnnLSTM(1, lstm_dim, direction="bidirectional",
             #                         name="{}_cudnn_bi_lstm".format(scope_name), dropout=dropout_rate if is_training else 0)
