@@ -2,20 +2,20 @@ mpirun -np 2 \
  -H localhost:2 \
  python ./t2t_bert/distributed_bin/hvd_train_eval_api.py \
  --buckets "/data/xuht" \
- --config_file "./data/textcnn/textcnn.json" \
+ --config_file "./data/textlstm/textlstm.json" \
  --init_checkpoint "" \
  --vocab_file "porn/clean_data/textcnn/distillation/char_id.txt" \
  --label_id "porn/label_dict.json" \
  --max_length 128 \
- --train_file "porn/clean_data/textcnn/distillation/train_tfrecords" \
- --dev_file "porn/clean_data/textcnn/distillation/dev_tfrecords" \
- --model_output "porn/clean_data/textcnn/model/estimator/distillation/all_reduce_4_adam_weight_0311/" \
+ --train_file "porn/clean_data/textlstm/distillation/train_tfrecords" \
+ --dev_file "porn/clean_data/textlstm/distillation/dev_tfrecords" \
+ --model_output "porn/clean_data/textlstm/model/estimator/distillation/all_reduce_4_adam_weight_0311/" \
  --epoch 20 \
  --num_classes 5 \
  --train_size 952213 \
  --eval_size 238054 \
  --batch_size 32 \
- --model_type "textcnn_distillation" \
+ --model_type "textlstm" \
  --if_shard 1 \
  --is_debug 1 \
  --run_type "sess" \
