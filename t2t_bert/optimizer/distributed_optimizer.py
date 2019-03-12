@@ -200,6 +200,10 @@ class Optimizer(object):
 			self.opt = self.optimizer_op(learning_rate*self.config.get("worker_count", 1), **kargs)
 			self.distributed_hooks = []
 
+	def moving_average_opt(self, opt):
+		opt = tf.contrib.opt.MovingAverageOptimizer(opt)
+		return opt
+
 	def get_train_op(self, loss, tvars, init_lr, num_train_steps, **kargs):
 		
 		self.get_opt(init_lr, num_train_steps)

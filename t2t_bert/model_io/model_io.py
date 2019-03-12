@@ -15,6 +15,10 @@ class ModelIO(object):
 	def __init__(self, config, **kargs):
 		print(" initializing ModelIO ")
 		self.config = config
+
+	def moving_average_saver(self, opt, max_keep, **kargs):
+		saver = opt.swapping_saver(var_list=kargs.get("var_lst", None),
+								max_to_keep=self.config.get("max_to_keep", 100))
 		
 	def set_saver(self, max_keep=10, **kargs):
 		if len(kargs.get("var_lst", [])) >= 1:
