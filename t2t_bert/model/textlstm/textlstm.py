@@ -36,6 +36,7 @@ class TextLSTM(base_model.BaseModel):
 			sent_repres = match_utils.multi_highway_layer(word_emb, input_dim, self.config.highway_layer_num)
 			
 			if self.config.rnn == "lstm":
+				print("==apply lstm==")
 				[sent_repres_fw, sent_repres_bw, sent_repres] = layer_utils.my_lstm_layer(sent_repres, 
 								self.config.context_lstm_dim, 
 								input_lengths=input_len, 
@@ -46,7 +47,7 @@ class TextLSTM(base_model.BaseModel):
 								use_cudnn=self.config.use_cudnn)
 
 			elif self.config.rnn == "slstm":
-
+				print("==apply state lstm==")
 				word_emb_proj = tf.layers.dense(word_emb, 
 										self.config.slstm_hidden_size)
 
@@ -67,6 +68,7 @@ class TextLSTM(base_model.BaseModel):
 				sent_repres = new_hidden_states
 
 			if self.config.multi_head:
+				print("==apply multi head==")
 				mask = tf.cast(input_mask, tf.float32)
 				ignore_padding = (1 - mask)
 				ignore_padding = label_network_utils.attention_bias_ignore_padding(ignore_padding)
@@ -87,11 +89,11 @@ class TextLSTM(base_model.BaseModel):
 			
 			mask = tf.expand_dims(input_mask, -1)
 			v_sum = tf.reduce_sum(sent_repres*tf.cast(mask, tf.float32), 1)
-			v_ave = tf.div(v_sum, tf.expand_dims(tf.cast(input_lengths, tf.float32)+EPSILON, -1))
+			v_ave = tf.div(v_sum, tf.expand_dims(tf.cast(input_len, tf.float32)+EPSILON, -1))
 
 			v_max = tf.reduce_max(qanet_layers.mask_logits(sent_repres, mask), axis=1)
 
-			v_last = esim_utils.last_relevant_output(sent_repres, input_lengths)
+			v_last = esim_utils.last_relevant_output(sent_repres, input_len)
 
 			self.output = tf.concat([v_ave, v_max, v_last, v_attn], axis=-1)
 
