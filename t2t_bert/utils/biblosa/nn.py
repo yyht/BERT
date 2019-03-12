@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import tensorflow as tf
 from utils.biblosa.general import flatten, reconstruct, exp_mask, add_reg_without_bias,\
     exp_mask_for_high_rank, mask_for_high_rank, add_var_reg
@@ -281,7 +283,7 @@ def feature_combination(org_tensor, new_features, wd=0., keep_prob=1., is_train=
     Features Combination 1: ruminating layer implementation
     z = tanh(Wz0*in + Wz1*x1+..Wzn*xn+b);
     f = tanh(Wf0*in + Wf1*x1+..Wfn*xn+b)
-    out = fquan\elem∗⁆t in+(1-f)\elem∗z
+    out = fquanelem∗⁆t in+(1-f)elem∗z
     :param org_tensor: rank 3 with shape [bs,sl,vec]
     :param new_features: list of tensor with rank 2 [bs,vec_x1] or [bs,sl,vec_x2]
     :param wd: 
