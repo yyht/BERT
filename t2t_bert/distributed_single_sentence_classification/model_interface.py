@@ -24,7 +24,7 @@ def model_zoo(model_config):
 	elif model_config.get("model_type", "bert_small") == "bert_small":
 		print("==apply bert small encoder==")
 		model_interface = bert_encoder
-	elif model_config.get("model_type", "bert") in ["textlstm"]:
+	elif model_config.get("model_type", "bert") in ["textlstm", "textlstm_distillation"]:
 		model_interface = textlstm_encoder
 
 	return model_interface
