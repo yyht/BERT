@@ -55,7 +55,7 @@
 
     "elmo_pca":false,
     "with_target":false,
-    "multi_head":true,
+    "multi_head":false,
     "with_idf":false,
 
     "output_folder_name":"esim_multi_head_no_cudnn"
