@@ -193,7 +193,7 @@ def eval_fn(FLAGS,
 			return example
 
 		params = Bunch({})
-		params.epoch = FLAGS.epoch
+		params.epoch = 0
 		params.batch_size = FLAGS.batch_size
 
 		if kargs.get("run_config", None):
