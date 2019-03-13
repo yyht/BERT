@@ -46,7 +46,7 @@ class Bert(object):
 						use_token_type=True,
 						token_type_ids=token_type_ids,
 						token_type_vocab_size=self.config.type_vocab_size,
-						token_type_embedding_name="token_type_embeddings", # rule type to incoroperate mined rule
+						token_type_embedding_name="rule_type_embeddings", # rule type to incoroperate mined rule
 						use_position_embeddings=True,
 						position_embedding_name="position_embeddings",
 						initializer_range=self.config.initializer_range,
