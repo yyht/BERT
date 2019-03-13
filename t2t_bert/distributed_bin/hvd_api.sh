@@ -9,10 +9,10 @@ mpirun -np 2 \
  --max_length 128 \
  --train_file "porn/clean_data/textcnn/distillation/train_tfrecords" \
  --dev_file "porn/clean_data/textcnn/distillation/dev_tfrecords" \
- --model_output "porn/clean_data/textlstm/model/estimator/distillation/all_reduce_4_adam_weight_0311/" \
+ --model_output "porn/clean_data/textlstm/model/estimator/all_reduce_4_adam_weight_0312/" \
  --epoch 20 \
  --num_classes 5 \
- --train_size 1190267 \
+ --train_size 952213 \
  --eval_size 238054 \
  --batch_size 32 \
  --model_type "textlstm" \
