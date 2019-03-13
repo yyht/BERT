@@ -1,7 +1,7 @@
 CUDA_VISIBLE_DEVICES="0" python ./t2t_bert/distributed_bin/evaluate_api.py \
 	--buckets "/data/xuht" \
 	--config_file "./data/textcnn/textcnn.json" \
-	--init_checkpoint "porn/clean_data/textcnn/model/estimator/distillation/all_reduce_4_adam_weight_0310/model.ckpt-260359" \
+	--init_checkpoint "porn/clean_data/textcnn/model/estimator/distillation/bert_small/all_reduce_4_adam_weight_0312_no_temperature/model.ckpt-238049" \
 	--vocab_file "porn/clean_data/textcnn/distillation/char_id.txt" \
 	--label_id "/data/xuht/porn/label_dict.json" \
 	--max_length 128 \

@@ -7,16 +7,16 @@ mpirun -np 2 \
  --vocab_file "porn/clean_data/textcnn/distillation/char_id.txt" \
  --label_id "porn/label_dict.json" \
  --max_length 128 \
- --train_file "porn/clean_data/textcnn/distillation/bert_small/train_tfrecords" \
- --dev_file "porn/clean_data/textcnn/distillation/bert_small/dev_tfrecords" \
- --model_output "porn/clean_data/textcnn/model/estimator/distillation/bert_small/all_reduce_4_adam_weight_0312/" \
+ --train_file "porn/clean_data/textcnn/distillation/train_tfrecords" \
+ --dev_file "porn/clean_data/textcnn/distillation/dev_tfrecords" \
+ --model_output "porn/clean_data/textcnn/model/estimator/distillation/bert_small/all_reduce_4_adam_weight_0312_no_temperature/" \
  --epoch 20 \
  --num_classes 5 \
  --train_size 952213 \
  --eval_size 238054 \
  --batch_size 32 \
  --model_type "textcnn_distillation" \
- --if_shard 1 \
+ `--if_shard 1 \
  --is_debug 1 \
  --run_type "sess" \
  --opt_type "hvd" \
@@ -35,7 +35,7 @@ mpirun -np 2 \
  --decay "no" \
  --warmup "no" \
  --distillation "distillation" \
- --temperature 2.0 \
+ --temperature 1.0 \
  --distillation_ratio 0.5
 
 
