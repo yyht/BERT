@@ -1,7 +1,7 @@
 try:
-	from .model_interface import model_zoo
+	from distributed_single_sentence_classification.model_interface import model_zoo
 except:
-	from model_interface import model_zoo
+	from distributed_single_sentence_classification.model_interface import model_zoo
 
 import tensorflow as tf
 import numpy as np
@@ -36,13 +36,15 @@ def model_fn_builder(
 		model_lst = []
 
 		assert len(target.split(",")) == 2
-		for index, name in enumerate(target.split(",")):
+		target_name_lst = target.split(",")
+		print(target_name_lst)
+		for index, name in enumerate(target_name_lst):
 			if index > 0:
 				reuse = True
 			else:
 				reuse = model_reuse
 			model_lst.append(model_api(model_config, features, labels,
-							mode, target, reuse=reuse))
+							mode, name, reuse=reuse))
 
 		label_ids = features["label_ids"]
 
@@ -63,7 +65,7 @@ def model_fn_builder(
 				logits] = classifier.order_classifier(
 							model_config, seq_output_lst, 
 							num_labels, label_ids,
-							dropout_prob,ratio_weight)
+							dropout_prob, ratio_weight=None)
 
 		model_io_fn = model_io.ModelIO(model_io_config)
 
