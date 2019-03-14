@@ -95,7 +95,9 @@ class TextLSTM(base_model.BaseModel):
 
 			v_last = esim_utils.last_relevant_output(sent_repres, input_len)
 
-			self.output = tf.concat([v_ave, v_max, v_last, v_attn], axis=-1)
+			output = tf.concat([v_ave, v_max, v_last, v_attn], axis=-1)
+			input_dim = output.get_shape()[-1]
+			self.output = match_utils.multi_highway_layer(output, input_dim, self.config.highway_layer_num)
 
 	def get_pooled_output(self):
 		return self.output
