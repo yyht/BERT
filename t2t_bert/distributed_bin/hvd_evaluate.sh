@@ -26,7 +26,7 @@ CUDA_VISIBLE_DEVICES="0" python ./t2t_bert/distributed_bin/evaluate_api.py \
 	--running_type "eval" \
 	--cross_tower_ops_type "paisoar" \
 	--distribution_strategy "MirroredStrategy" \
-	--load_pretrained "yes" \
+	--load_pretrained "no" \
 	--w2v_path "w2v/tencent_ai_lab/char_w2v.txt" \
 	--with_char "no_char" \
 	--input_target "a" \

@@ -236,6 +236,11 @@ def eval_fn(FLAGS,
 		sess = tf.Session(config=sess_config)
 		init_op = tf.group(tf.global_variables_initializer(), 
 					tf.local_variables_initializer())
+
+		if FLAGS.load_pretrained != "yes":
+			saver = tf.train.Saver(var_list=kargs.get("var_lst", None))
+			saver.restore(init_checkpoint)
+
 		sess.run(init_op)
 		
 		def eval_fn(eval_dict, sess):
