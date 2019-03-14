@@ -117,7 +117,9 @@ def train_eval_fn(FLAGS,
 							"is_chief":is_chief,
 							"train_op":kargs.get("train_op", "adam"),
 							"decay":kargs.get("decay", "no"),
-							"warmup":kargs.get("warmup", "no")})
+							"warmup":kargs.get("warmup", "no"),
+							"grad_clip":config.get("grad_clip", "global_norm"),
+							"clip_norm":config.get("clip_norm", 1.0)})
 
 		model_io_config = Bunch({"fix_lm":False})
 		

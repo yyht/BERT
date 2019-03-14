@@ -33,3 +33,4 @@ distillation="normal"
 temperature=2.0
 distillation_ratio=1.0
 num_hidden_layers=12
+task_type=single_sentence_classification

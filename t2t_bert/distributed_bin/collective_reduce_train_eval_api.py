@@ -208,6 +208,11 @@ flags.DEFINE_integer(
 	"if apply distillation"
 	)
 
+flags.DEFINE_string(
+	"task_type", "single_sentence_classification",
+	"if apply distillation"
+	)
+
 def main(_):
 
 	print(FLAGS)

@@ -402,9 +402,12 @@ class LCQMCProcessor(data_processor.DataProcessor):
 	def _read_data(self, input_file):
 		import json
 		data = []
-		with open(input_file, "r") as frobj:
+		with tf.gfile.Open(input_file, "r") as frobj:
 			for line in frobj:
-				data.append(json.loads(line))
+				data.append(json.loads(line.strip()))
+		# with open(input_file, "r") as frobj:
+		# 	for line in frobj:
+		# 		data.append(json.loads(line))
 		return data
 
 	def _create_examples(self, data, lang="zh"):
@@ -424,16 +427,18 @@ class LCQMCProcessor(data_processor.DataProcessor):
 				))
 		return examples
 
-	def get_train_examples(self, train_file, lang="zh"):
+	def get_train_examples(self, train_file, lang="zh", is_shuffle=True):
 		data = self._read_data(train_file)
 		examples = self._create_examples(data, lang)
-		random.shuffle(examples)
+		if is_shuffle:
+			random.shuffle(examples)
 		return examples
 
-	def get_dev_examples(self, dev_file, lang="zh"):
+	def get_dev_examples(self, dev_file, lang="zh", is_shuffle=False):
 		data = self._read_data(dev_file)
 		examples = self._create_examples(data, lang)
-		random.shuffle(examples)
+		if is_shuffle:
+			random.shuffle(examples)
 		return examples
 
 	def _create_test_examples(self, data, lang="zh"):

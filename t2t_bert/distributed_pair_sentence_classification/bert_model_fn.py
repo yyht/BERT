@@ -34,7 +34,9 @@ def model_fn_builder(
 		model_api = model_zoo(model_config)
 
 		model_lst = []
-		for index, name in enumerate(target):
+
+		assert len(target.split(",")) == 2
+		for index, name in enumerate(target.split(",")):
 			if index > 0:
 				reuse = True
 			else:
@@ -72,8 +74,6 @@ def model_fn_builder(
 			model_io_fn.load_pretrained(tvars, 
 										init_checkpoint,
 										exclude_scope=exclude_scope)
-
-		
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
 
