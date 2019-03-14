@@ -33,4 +33,4 @@ CUDA_VISIBLE_DEVICES="0" python ./t2t_bert/distributed_bin/evaluate_api.py \
 	--decay "no" \
 	--warmup "no" \
 	--distillation "distillation" \
-        --task_type "single_sentence_classification"
+    --task_type "single_sentence_classification"
