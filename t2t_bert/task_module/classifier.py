@@ -261,6 +261,7 @@ def order_classifier(config, output_lst,
 
 	if config.get("label_type", "single_label") == "single_label":
 		if config.get("loss", "entropy") == "entropy":
+			print("==apply entropy loss==")
 			per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
 												logits=logits, 
 												labels=tf.stop_gradient(labels))

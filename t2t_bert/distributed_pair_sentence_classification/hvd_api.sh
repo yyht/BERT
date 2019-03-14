@@ -2,20 +2,20 @@ mpirun -np 2 \
  -H localhost:2 \
  python ./t2t_bert/distributed_bin/hvd_train_eval_api.py \
  --buckets "/data/xuht" \
- --config_file "./data/textlstm/textlstm.json" \
- --init_checkpoint "" \
- --vocab_file "porn/clean_data/textcnn/distillation/char_id.txt" \
- --label_id "porn/label_dict.json" \
+ --config_file "/data/xuht/chinese_L-12_H-768_A-12/bert_config.json" \
+ --init_checkpoint "chinese_L-12_H-768_A-12/bert_model.ckpt" \
+ --vocab_file "/data/xuht/chinese_L-12_H-768_A-12/vocab.txt" \
+ --label_id "/data/xuht/lcqmc/data/label_dict.json" \
  --max_length 128 \
- --train_file "porn/clean_data/textcnn/distillation/train_tfrecords" \
- --dev_file "porn/clean_data/textcnn/distillation/dev_tfrecords" \
- --model_output "porn/clean_data/textlstm/model/estimator/distillation/all_reduce_4_adam_weight_0314_temperature_2/" \
- --epoch 50 \
- --num_classes 5 \
- --train_size 952213 \
- --eval_size 238054 \
+ --train_file "lcqmc/data/normal/train_tfrecords" \
+ --dev_file "lcqmc/data/normal/dev_tfrecords" \
+ --model_output "lcqmc/data/normal/model/estimator/bert_0314" \
+ --epoch 5 \
+ --num_classes 2 \
+ --train_size 238766 \
+ --eval_size 8802 \
  --batch_size 32 \
- --model_type "textlstm_distillation" \
+ --model_type "bert" \
  --if_shard 1 \
  --is_debug 1 \
  --run_type "sess" \
@@ -36,6 +36,7 @@ mpirun -np 2 \
  --warmup "no" \
  --distillation "normal" \
  --temperature 2.0 \
- --distillation_ratio 0.5
+ --distillation_ratio 0.5 \
+ --task_type "pair_sentence_classification"
 
 

@@ -1,19 +1,19 @@
 CUDA_VISIBLE_DEVICES="0" python ./t2t_bert/distributed_bin/evaluate_api.py \
 	--buckets "/data/xuht" \
-	--config_file "./data/textcnn/textcnn.json" \
-	--init_checkpoint "porn/clean_data/textcnn/model/estimator/distillation/bert_small/all_reduce_4_adam_weight_0312_no_temperature/model.ckpt-238049" \
+	--config_file "./data/textlstm/textlstm.json" \
+	--init_checkpoint "porn/clean_data/textlstm/model/estimator/distillation/all_reduce_4_adam_weight_0312_no_temperature/model.ckpt-252927" \
 	--vocab_file "porn/clean_data/textcnn/distillation/char_id.txt" \
 	--label_id "/data/xuht/porn/label_dict.json" \
 	--max_length 128 \
-	--train_file "porn/clean_data/textcnn//distillation/train_tfrecords" \
-	--dev_file "porn/clean_data/textcnn//distillation/test_tfrecords" \
-	--model_output "porn/clean_data/textcnn/model/estimator/distillation/all_reduce_4_adam_weight_0310/" \
+	--train_file "porn/clean_data/textcnn/distillation/train_tfrecords" \
+	--dev_file "porn/clean_data/textcnn/distillation/test_tfrecords" \
+	--model_output "porn/clean_data/textlstm/model/estimator/distillation/all_reduce_4_adam_weight_0312_no_temperature/" \
 	--epoch 8 \
 	--num_classes 5 \
 	--train_size 952213 \
 	--eval_size 238054 \
 	--batch_size 24 \
-	--model_type "textcnn" \
+	--model_type "textlstm_distillation" \
 	--if_shard 2 \
 	--is_debug 1 \
 	--run_type "sess" \
@@ -32,4 +32,5 @@ CUDA_VISIBLE_DEVICES="0" python ./t2t_bert/distributed_bin/evaluate_api.py \
 	--input_target "a" \
 	--decay "no" \
 	--warmup "no" \
-	--distillation "normal"
+	--distillation "distillation" \
+        --task_type "single_sentence_classification"

@@ -42,6 +42,7 @@ def model_config_parser(FLAGS):
 		config.label_type = "single_label"
 		config.model_type = FLAGS.model_type
 		config.init_lr = 2e-5
+		config.loss = "entropy"
 
 	elif FLAGS.model_type in ["bert_small"]:
 		config = json.load(open(FLAGS.config_file, "r"))
@@ -53,6 +54,7 @@ def model_config_parser(FLAGS):
 		config.model_type = FLAGS.model_type
 		config.init_lr = 2e-5
 		config.num_hidden_layers = FLAGS.num_hidden_layers
+		config.loss = "entropy"
 
 	elif FLAGS.model_type in ["textcnn", 'textcnn_distillation']:
 		from data_generator import load_w2v
