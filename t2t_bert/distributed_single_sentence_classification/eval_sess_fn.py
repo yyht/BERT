@@ -239,7 +239,7 @@ def eval_fn(FLAGS,
 
 		if FLAGS.load_pretrained != "yes":
 			saver = tf.train.Saver(var_list=kargs.get("var_lst", None))
-			saver.restore(init_checkpoint)
+			saver.restore(sess, init_checkpoint)
 
 		sess.run(init_op)
 		
