@@ -95,11 +95,11 @@ class TextLSTM(base_model.BaseModel):
 
 			v_last = esim_utils.last_relevant_output(sent_repres, input_len)
 
-			output = tf.concat([v_ave, v_max, v_last, v_attn], axis=-1)
+			sent_repres = tf.concat([v_ave, v_max, v_last, v_attn], axis=-1)
 
-			# trans_output = tf.layers.dense(output, 
-			# 							output.get_shape()[-1],
-			# 							activation=tf.nn.tanh)
+			output = tf.layers.dense(sent_repres, 
+										output.get_shape()[-1],
+										activation=tf.nn.tanh)
 
 
 
