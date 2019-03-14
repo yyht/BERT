@@ -338,8 +338,8 @@ def train_eval_fn(FLAGS,
 									else:
 										loss_dict[key] = train_result[key]
 							except:
-								if key == "student_logit":
-									print(train_result[key])
+								# if key == "student_logit":
+								# 	print(train_result[key])
 								continue
 					# print(pkl, "==pkl==")
 

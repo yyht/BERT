@@ -615,6 +615,11 @@ class FasttextDistillationProcessor(data_processor.DataProcessor):
 
 			text_a = tokenization.convert_to_unicode(text_a)
 			input_labels = [label.strip() for label in input_labels if label.strip() in list(self.label2id.keys())]
+
+			if int(np.argmax(np.array(distillation_prob[cnt]))) == self.label2id[input_labels[0]]:
+				distillation_ratio = 1.0
+			else:
+				distillation_ratio = 0.0
 			
 			examples.append(data_distillation_feature_classifier.InputExample(
 					guid=guid,
@@ -623,7 +628,7 @@ class FasttextDistillationProcessor(data_processor.DataProcessor):
 					label=input_labels,
 					label_probs=distillation_prob[cnt],
 					label_ratio=1.0,
-					distillation_ratio=1.0
+					distillation_ratio=distillation_ratio
 				))
 			cnt += 1
 		assert cnt == len(distillation_prob)
