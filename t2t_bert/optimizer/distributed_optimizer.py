@@ -109,6 +109,7 @@ class Optimizer(object):
 			clip_norm = self.config.get("clip_norm", 1.0)
 			[grads, _] = tf.clip_by_global_norm(grads, 
 								clip_norm=clip_norm)
+			print("==global norm==", clip_norm)
 		elif grad_clip == "norm":
 			clip_norm = self.config.get("clip_norm", 1.0)
 			grads = [tf.clip_by_norm(grad, clip_norm) for grad in grads]
