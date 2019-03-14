@@ -147,7 +147,8 @@ flags.DEFINE_string(
 
 def main(_):
 
-	vocab_path = os.path.join(FLAGS.buckets, FLAGS.vocab_file)
+	# vocab_path = os.path.join(FLAGS.buckets, FLAGS.vocab_file)
+	vocab_path = FLAGS.vocab_file
 	train_file = os.path.join(FLAGS.buckets, FLAGS.train_file)
 	test_file = os.path.join(FLAGS.buckets, FLAGS.test_file)
 	dev_file = os.path.join(FLAGS.buckets, FLAGS.dev_file)
@@ -184,7 +185,7 @@ def main(_):
 															tokenizer,
 															dev_result_file)
 	
-	write_to_tfrecords.convert_distillation_classifier_examples_to_features(test_examples,
+	write_to_tfrecords.convert_pair_order_classifier_examples_to_features(test_examples,
 															classifier_data_api.label2id,
 															FLAGS.max_length,
 															tokenizer,

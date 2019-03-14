@@ -8,7 +8,7 @@ python ./t2t_bert/distributed_data_prepare/bert_pair_classification_prepare.py \
 	--test_result_file lcqmc/data/normal/test_tfrecords\
 	--supervised_distillation_file porn/clean_data/bert_small/train_distillation.info \
 	--unsupervised_distillation_file porn/clean_data/bert_small/dev_distillation.info \
-	--vocab_file chinese_L-12_H-768_A-12/vocab.txt \
+	--vocab_file ./data/chinese_L-12_H-768_A-12/vocab.txt \
 	--label_id /data/xuht/lcqmc/data/label_dict.json \
 	--lower_case True \
 	--max_length 128 \
