@@ -36,6 +36,7 @@ mpirun -np 2 \
  --warmup "no" \
  --distillation "normal" \
  --temperature 2.0 \
- --distillation_ratio 0.5
+ --distillation_ratio 0.5 \
+ --task_type "single_sentence_classification"
 
 
