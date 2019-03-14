@@ -100,6 +100,8 @@ def model_config_parser(FLAGS):
 		config.model_type = FLAGS.model_type
 		config.dropout_prob = config.dropout_rate
 		config.init_lr = config.learning_rate
+		config.grad_clip = "gloabl_norm"
+		config.clip_norm = 5.0
 		config.extra_symbol = ["<pad>", "<unk>", "<s>", "</s>"]
 
 
