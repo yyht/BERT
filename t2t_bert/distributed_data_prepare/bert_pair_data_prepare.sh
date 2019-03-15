@@ -3,9 +3,9 @@ python ./t2t_bert/distributed_data_prepare/bert_pair_classification_prepare.py \
 	--train_file lcqmc/data/LCQMC_train.json \
 	--dev_file lcqmc/data/LCQMC_dev.json \
 	--test_file lcqmc/data/LCQMC_test.json \
-	--train_result_file lcqmc/data/normal/train_tfrecords \
-	--dev_result_file lcqmc/data/normal/dev_tfrecords\
-	--test_result_file lcqmc/data/normal/test_tfrecords\
+	--train_result_file lcqmc/data/normal/distillation/train_tfrecords \
+	--dev_result_file lcqmc/data/normal/distillation/dev_tfrecords\
+	--test_result_file lcqmc/data/normal/distillation/test_tfrecords\
 	--supervised_distillation_file porn/clean_data/bert_small/train_distillation.info \
 	--unsupervised_distillation_file porn/clean_data/bert_small/dev_distillation.info \
 	--vocab_file ./data/chinese_L-12_H-768_A-12/vocab.txt \

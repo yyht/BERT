@@ -205,6 +205,11 @@ flags.DEFINE_string(
 	"if apply distillation"
 	)
 
+flags.DEFINE_string(
+	"classifier", "order_classifier",
+	"if apply distillation"
+	)
+
 def main(_):
 
 	print(FLAGS)

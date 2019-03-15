@@ -37,6 +37,7 @@ mpirun -np 2 \
  --distillation "distillation" \
  --temperature 2.0 \
  --distillation_ratio 0.5 \
- --task_type "single_sentence_classification"
+ --task_type "single_sentence_classification" \
+ --classifier order_classifier
 
 
