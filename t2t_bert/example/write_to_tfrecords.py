@@ -833,7 +833,7 @@ def convert_distillation_classifier_examples_to_features(examples, label_dict,
 			tf.logging.info("label_probs {}".format(label_probs))
 			tf.logging.info("label_ratio {}".format(label_ratio))
 			tf.logging.info("label: {} (id = {})".format(example.label, label_id))
-			tf.logging.info("distillation_ratio: {} (id = {})".format(example.label, label_id))
+			tf.logging.info("distillation_ratio: {} (id = {})".format(example.distillation_ratio, label_id))
 		
 		feature = data_distillation_feature_classifier.InputFeatures(
 					guid=example.guid,
