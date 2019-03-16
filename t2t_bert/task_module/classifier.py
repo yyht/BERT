@@ -35,7 +35,7 @@ def classifier(config, pooled_output,
 			per_example_loss, _ = loss_utils.focal_loss_multi_v1(config,
 														logits=logits, 
 														labels=labels)
-            
+			
 		try:
 			per_example_loss = loss_utils.weighted_loss_ratio(
 											config, per_example_loss, 
@@ -47,8 +47,8 @@ def classifier(config, pooled_output,
 
 		if config.get("with_center_loss", "no") == "center_loss":
 			center_loss, _ = loss_utils.center_loss_v2(config,
-                                            features=pooled_output, 
-                                            labels=labels)
+											features=pooled_output, 
+											labels=labels)
 			loss += center_loss * config.get("center_loss_coef", 1e-3)
 
 		return (loss, per_example_loss, logits)
@@ -393,6 +393,10 @@ def siamese_classifier(config, pooled_output, num_labels,
 
 		output_layer = tf.concat([repres_a, repres_b, tf.abs(repres_a-repres_b), repres_a*repres_b], axis=-1)
 		hidden_size = output_layer.shape[-1].value
+
+		output_weights = tf.get_variable(
+			"output_weights", [num_labels, hidden_size],
+			initializer=tf.truncated_normal_initializer(stddev=0.02))
 
 		output_bias = tf.get_variable(
 			"output_bias", [num_labels], initializer=tf.zeros_initializer())
