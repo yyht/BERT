@@ -406,6 +406,8 @@ def siamese_classifier(config, pooled_output, num_labels,
 		logits = tf.matmul(output_layer, output_weights, transpose_b=True)
 		logits = tf.nn.bias_add(logits, output_bias)
 
+		print("==logits shape==", logits.get_shape())
+
 		if config.get("label_type", "single_label") == "single_label":
 			if config.get("loss", "entropy") == "entropy":
 				per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
@@ -415,6 +417,7 @@ def siamese_classifier(config, pooled_output, num_labels,
 				per_example_loss = loss_utils.focal_loss_multi_v1(config,
 															logits=logits, 
 															labels=labels)
+			print("==per_example_loss shape==", per_example_loss.get_shape())
 			loss = tf.reduce_mean(per_example_loss)
 
 			return (loss, per_example_loss, logits)
