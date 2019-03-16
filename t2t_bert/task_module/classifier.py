@@ -381,3 +381,48 @@ def distributed_classifier(config, pooled_output,
 		return (loss, per_example_loss, logits)
 	else:
 		raise NotImplementedError()
+
+def siamese_classifier(config, pooled_output, num_labels,
+						labels, dropout_prob,
+						ratio_weight=None):
+
+	if config.get("output_layer", "interaction") == "interaction":
+		repres_a = pooled_output[0]
+		repres_b = pooled_output[1]
+
+		output_layer = tf.concat([repres_a, repres_b, tf.abs(repres_a-repres_b), repres_a*repres_b], axis=-1)
+		hidden_size = output_layer.shape[-1].value
+
+		output_bias = tf.get_variable(
+			"output_bias", [num_labels], initializer=tf.zeros_initializer())
+
+		output_layer = tf.nn.dropout(output_layer, keep_prob=1 - dropout_prob)
+
+		logits = tf.matmul(output_layer, output_weights, transpose_b=True)
+		logits = tf.nn.bias_add(logits, output_bias)
+
+		if config.get("label_type", "single_label") == "single_label":
+			if config.get("loss", "entropy") == "entropy":
+				per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+													logits=logits, 
+													labels=tf.stop_gradient(labels))
+			elif config.get("loss", "entropy") == "focal_loss":
+				per_example_loss = loss_utils.focal_loss_multi_v1(config,
+															logits=logits, 
+															labels=labels)
+			loss = tf.reduce_mean(per_example_loss)
+
+			return (loss, per_example_loss, logits)
+		elif config.get("label_type", "single_label") == "multi_label":
+			logits = tf.log_sigmoid(logits)
+			per_example_loss = tf.nn.sigmoid_cross_entropy_with_logits(
+													logits=logits, 
+													labels=tf.stop_gradient(labels))
+			per_example_loss = tf.reduce_mean(per_example_loss, axis=-1)
+			loss = tf.reduce_mean(per_example_loss)
+			return (loss, per_example_loss, logits)
+		else:
+			raise NotImplementedError()
+
+
+

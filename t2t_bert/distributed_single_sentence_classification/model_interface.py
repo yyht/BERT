@@ -43,6 +43,8 @@ def model_config_parser(FLAGS):
 		config.model_type = FLAGS.model_type
 		config.init_lr = 2e-5
 		config.loss = "entropy"
+		if FLAGS.task_type in ["pair_sentence_classification"]:
+			config.classifier = FLAGS.classifier
 
 	elif FLAGS.model_type in ["bert_small"]:
 		config = json.load(open(FLAGS.config_file, "r"))
@@ -55,6 +57,8 @@ def model_config_parser(FLAGS):
 		config.init_lr = 2e-5
 		config.num_hidden_layers = FLAGS.num_hidden_layers
 		config.loss = "entropy"
+		if FLAGS.task_type in ["pair_sentence_classification"]:
+			config.classifier = FLAGS.classifier
 
 	elif FLAGS.model_type in ["textcnn", 'textcnn_distillation']:
 		from data_generator import load_w2v
@@ -79,6 +83,8 @@ def model_config_parser(FLAGS):
 		config.dropout_prob = config.dropout_rate
 		config.init_lr = config.learning_rate
 		config.extra_symbol = ["<pad>", "<unk>", "<s>", "</s>"]
+		if FLAGS.task_type in ["pair_sentence_classification"]:
+			config.classifier = FLAGS.classifier
 
 	elif FLAGS.model_type in ["textlstm", "textlstm_distillation"]:
 		from data_generator import load_w2v
@@ -105,6 +111,8 @@ def model_config_parser(FLAGS):
 		config.grad_clip = "gloabl_norm"
 		config.clip_norm = 5.0
 		config.extra_symbol = ["<pad>", "<unk>", "<s>", "</s>"]
+		if FLAGS.task_type in ["pair_sentence_classification"]:
+			config.classifier = FLAGS.classifier
 
 
 	return config
