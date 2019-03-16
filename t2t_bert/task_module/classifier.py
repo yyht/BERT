@@ -414,7 +414,7 @@ def siamese_classifier(config, pooled_output, num_labels,
 													logits=logits, 
 													labels=tf.stop_gradient(labels))
 			elif config.get("loss", "entropy") == "focal_loss":
-				per_example_loss = loss_utils.focal_loss_multi_v1(config,
+				per_example_loss, _ = loss_utils.focal_loss_multi_v1(config,
 															logits=logits, 
 															labels=labels)
 			print("==per_example_loss shape==", per_example_loss.get_shape())
