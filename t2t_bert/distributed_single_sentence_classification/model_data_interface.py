@@ -37,6 +37,10 @@ def data_interface(FLAGS):
 		}
 		if FLAGS.with_char == "char":
 			name_to_features["input_char_ids_a"] = tf.FixedLenFeature([FLAGS.max_length], tf.int64)
+			name_to_features["input_char_ids_b"] = tf.FixedLenFeature([FLAGS.max_length], tf.int64)
+		if FLAGS.task_type == "pair_sentence_classification":
+			name_to_features["input_ids_b"] = tf.FixedLenFeature([FLAGS.max_length], tf.int64)
+
 	elif FLAGS.model_type in ["textcnn_distillation", "textlstm_distillation"]:
 		name_to_features = {
 			"input_ids_a":tf.FixedLenFeature([FLAGS.max_length], tf.int64),
@@ -47,13 +51,8 @@ def data_interface(FLAGS):
 		}
 		if FLAGS.with_char == "char":
 			name_to_features["input_char_ids_a"] = tf.FixedLenFeature([FLAGS.max_length], tf.int64)
-	elif FLAGS.model_type in ["bert_small_distillation"]:
-		 name_to_features = {
-			"input_ids_a":tf.FixedLenFeature([FLAGS.max_length], tf.int64),
-			"label_ids":tf.FixedLenFeature([], tf.int64),
-			"label_ratio":tf.FixedLenFeature([], tf.float32),
-			"label_probs":tf.FixedLenFeature([FLAGS.num_classes], tf.float32),
-			"distillation_ratio":tf.FixedLenFeature([], tf.float32)
-		}
-		
+			name_to_features["input_char_ids_b"] = tf.FixedLenFeature([FLAGS.max_length], tf.int64)
+		if FLAGS.task_type == "pair_sentence_classification":
+			name_to_features["input_ids_b"] = tf.FixedLenFeature([FLAGS.max_length], tf.int64)
+
 	return name_to_features
