@@ -9,7 +9,7 @@ mpirun -np 2 \
  --max_length 128 \
  --train_file "lcqmc/data/distillation/train_tfrecords" \
  --dev_file "lcqmc/data/distillation/dev_tfrecords" \
- --model_output "lcqmc/data/distillation/model/estimator/siamese_cnn_interaction_0316" \
+ --model_output "lcqmc/data/model/estimator/siamese_cnn_interaction_0316" \
  --epoch 5 \
  --num_classes 2 \
  --train_size 238766 \
