@@ -2,9 +2,9 @@ mpirun -np 2 \
  -H localhost:2 \
  python ./t2t_bert/distributed_bin/hvd_train_eval_api.py \
  --buckets "/data/xuht" \
- --config_file "/data/xuht/chinese_L-12_H-768_A-12/bert_config.json" \
- --init_checkpoint "chinese_L-12_H-768_A-12/bert_model.ckpt" \
- --vocab_file "/data/xuht/chinese_L-12_H-768_A-12/vocab.txt" \
+ --config_file "./data/textcnn/textcnn.json" \
+ --init_checkpoint "" \
+ --vocab_file "lcqmc/data/distillation/char_id.txt" \
  --label_id "/data/xuht/lcqmc/data/label_dict.json" \
  --max_length 128 \
  --train_file "lcqmc/data/distillation/train_tfrecords" \
