@@ -59,6 +59,7 @@ def model_config_parser(FLAGS):
 		config.loss = "entropy"
 		if FLAGS.task_type in ["pair_sentence_classification"]:
 			config.classifier = FLAGS.classifier
+			config.output_layer = FLAGS.output_layer
 
 	elif FLAGS.model_type in ["textcnn", 'textcnn_distillation']:
 		from data_generator import load_w2v
@@ -85,6 +86,7 @@ def model_config_parser(FLAGS):
 		config.extra_symbol = ["<pad>", "<unk>", "<s>", "</s>"]
 		if FLAGS.task_type in ["pair_sentence_classification"]:
 			config.classifier = FLAGS.classifier
+			config.output_layer = FLAGS.output_layer
 
 	elif FLAGS.model_type in ["textlstm", "textlstm_distillation"]:
 		from data_generator import load_w2v
@@ -113,6 +115,6 @@ def model_config_parser(FLAGS):
 		config.extra_symbol = ["<pad>", "<unk>", "<s>", "</s>"]
 		if FLAGS.task_type in ["pair_sentence_classification"]:
 			config.classifier = FLAGS.classifier
-
+			config.output_layer = FLAGS.output_layer
 
 	return config

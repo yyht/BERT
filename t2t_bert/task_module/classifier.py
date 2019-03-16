@@ -387,6 +387,7 @@ def siamese_classifier(config, pooled_output, num_labels,
 						ratio_weight=None):
 
 	if config.get("output_layer", "interaction") == "interaction":
+		print("==apply interaction layer==")
 		repres_a = pooled_output[0]
 		repres_b = pooled_output[1]
 
