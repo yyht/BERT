@@ -60,12 +60,20 @@ def model_fn_builder(
 
 		with tf.variable_scope(scope, reuse=model_reuse):
 			seq_output_lst = [model.get_pooled_output() for model in model_lst]
-			[loss, 
-				per_example_loss, 
-				logits] = classifier.order_classifier(
-							model_config, seq_output_lst, 
-							num_labels, label_ids,
-							dropout_prob, ratio_weight=None)
+			if model_config.get("classifier", "order_classifier") == "order_classifier":
+				[loss, 
+					per_example_loss, 
+					logits] = classifier.order_classifier(
+								model_config, seq_output_lst, 
+								num_labels, label_ids,
+								dropout_prob, ratio_weight=None)
+			elif model_config.get("classifier", "order_classifier") == "siamese_interaction_classifier":
+				[loss, 
+					per_example_loss, 
+					logits] = classifier.siamese_classifier(
+								model_config, seq_output_lst, 
+								num_labels, label_ids,
+								dropout_prob, ratio_weight=None)
 
 		model_io_fn = model_io.ModelIO(model_io_config)
 

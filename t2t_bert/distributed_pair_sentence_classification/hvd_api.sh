@@ -7,15 +7,15 @@ mpirun -np 2 \
  --vocab_file "/data/xuht/chinese_L-12_H-768_A-12/vocab.txt" \
  --label_id "/data/xuht/lcqmc/data/label_dict.json" \
  --max_length 128 \
- --train_file "lcqmc/data/normal/train_tfrecords" \
- --dev_file "lcqmc/data/normal/dev_tfrecords" \
- --model_output "lcqmc/data/normal/model/estimator/bert_0314" \
+ --train_file "lcqmc/data/distillation/train_tfrecords" \
+ --dev_file "lcqmc/data/distillation/dev_tfrecords" \
+ --model_output "lcqmc/data/distillation/model/estimator/siamese_cnn_interaction_0316" \
  --epoch 5 \
  --num_classes 2 \
  --train_size 238766 \
  --eval_size 8802 \
  --batch_size 32 \
- --model_type "bert" \
+ --model_type "textcnn" \
  --if_shard 1 \
  --is_debug 1 \
  --run_type "sess" \
@@ -37,6 +37,7 @@ mpirun -np 2 \
  --distillation "normal" \
  --temperature 2.0 \
  --distillation_ratio 0.5 \
- --task_type "pair_sentence_classification"
+ --task_type "pair_sentence_classification" \
+ --classifier "siamese_interaction_classifier"
 
 
