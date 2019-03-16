@@ -216,6 +216,11 @@ flags.DEFINE_string(
 	"if apply distillation"
 	)
 
+flags.DEFINE_string(
+	"output_layer", "",
+	"if apply distillation"
+	)
+
 def main(_):
 
 	print(FLAGS)
