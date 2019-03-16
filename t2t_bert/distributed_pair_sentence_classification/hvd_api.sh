@@ -10,7 +10,7 @@ mpirun -np 2 \
  --train_file "lcqmc/data/distillation/train_tfrecords" \
  --dev_file "lcqmc/data/distillation/dev_tfrecords" \
  --model_output "lcqmc/data/model/estimator/siamese_cnn_interaction_0316" \
- --epoch 5 \
+ --epoch 50 \
  --num_classes 2 \
  --train_size 238766 \
  --eval_size 8802 \
@@ -31,13 +31,14 @@ mpirun -np 2 \
  --load_pretrained "no" \
  --w2v_path "w2v/tencent_ai_lab/char_w2v.txt" \
  --with_char "no_char" \
- --input_target "a" \
+ --input_target "a,b" \
  --decay "no" \
  --warmup "no" \
  --distillation "normal" \
  --temperature 2.0 \
  --distillation_ratio 0.5 \
  --task_type "pair_sentence_classification" \
- --classifier "siamese_interaction_classifier"
+ --classifier "siamese_interaction_classifier" \
+ --output_layer "interaction"
 
 
