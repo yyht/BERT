@@ -37,7 +37,8 @@ def data_interface(FLAGS):
 		}
 		if FLAGS.with_char == "char":
 			name_to_features["input_char_ids_a"] = tf.FixedLenFeature([FLAGS.max_length], tf.int64)
-			name_to_features["input_char_ids_b"] = tf.FixedLenFeature([FLAGS.max_length], tf.int64)
+			if FLAGS.task_type == "pair_sentence_classification":
+				name_to_features["input_char_ids_b"] = tf.FixedLenFeature([FLAGS.max_length], tf.int64)
 		if FLAGS.task_type == "pair_sentence_classification":
 			name_to_features["input_ids_b"] = tf.FixedLenFeature([FLAGS.max_length], tf.int64)
 
@@ -51,7 +52,8 @@ def data_interface(FLAGS):
 		}
 		if FLAGS.with_char == "char":
 			name_to_features["input_char_ids_a"] = tf.FixedLenFeature([FLAGS.max_length], tf.int64)
-			name_to_features["input_char_ids_b"] = tf.FixedLenFeature([FLAGS.max_length], tf.int64)
+			if FLAGS.task_type == "pair_sentence_classification":
+				name_to_features["input_char_ids_b"] = tf.FixedLenFeature([FLAGS.max_length], tf.int64)
 		if FLAGS.task_type == "pair_sentence_classification":
 			name_to_features["input_ids_b"] = tf.FixedLenFeature([FLAGS.max_length], tf.int64)
 
