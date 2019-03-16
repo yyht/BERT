@@ -131,6 +131,11 @@ flags.DEFINE_string(
 	)
 
 flags.DEFINE_string(
+	"data_type", "",
+	"if apply rule detector"
+	)
+
+flags.DEFINE_string(
 	"unsupervised_distillation_file", "",
 	"if apply rule detector"
 	)
@@ -142,6 +147,9 @@ flags.DEFINE_string(
 
 def main(_):
 
+	tokenizer = tokenization.Jieba_CHAR(
+		config=FLAGS.config)
+
 	vocab_path = os.path.join(FLAGS.buckets, FLAGS.vocab_file)
 	train_file = os.path.join(FLAGS.buckets, FLAGS.train_file)
 	test_file = os.path.join(FLAGS.buckets, FLAGS.test_file)
@@ -151,104 +159,80 @@ def main(_):
 	test_result_file = os.path.join(FLAGS.buckets, FLAGS.test_result_file)
 	dev_result_file = os.path.join(FLAGS.buckets, FLAGS.dev_result_file)
 
+	corpus_vocab_path = os.path.join(FLAGS.buckets, FLAGS.corpus_vocab_path)
 	unsupervised_distillation_file = os.path.join(FLAGS.buckets, FLAGS.unsupervised_distillation_file)
 	supervised_distillation_file = os.path.join(FLAGS.buckets, FLAGS.supervised_distillation_file)
 
-	tokenizer = tokenization.FullTokenizer(
-		vocab_file=vocab_path, 
-		do_lower_case=FLAGS.lower_case)
+	print(FLAGS.with_char)
+	with tf.gfile.Open(vocab_path, "r") as f:
+		lines = f.read().splitlines()
+		vocab_lst = []
+		for line in lines:
+			vocab_lst.append(line)
+		print(len(vocab_lst))
 
-	if FLAGS.if_rule != "rule":
-		print("==not apply rule==")
+	tokenizer.load_vocab(vocab_lst)
 
-		classifier_data_api = classifier_processor.FasttextDistillationProcessor()
-		classifier_data_api.get_labels(FLAGS.label_id)
+	print("==not apply rule==")
+	if FLAGS.data_type == "lcqmc":
+		classifier_data_api = classifier_processor.LCQMCDistillationProcessor()
 
-		train_examples = classifier_data_api.get_supervised_distillation_examples(train_file,
-											supervised_distillation_file,
-											is_shuffle=True)
-		dev_examples = classifier_data_api.get_unsupervised_distillation_examples(dev_file,
+	classifier_data_api.get_labels(FLAGS.label_id)
+
+	train_examples = classifier_data_api.get_supervised_distillation_examples(train_file,
+										supervised_distillation_file,
+										is_shuffle=True)
+
+	vocab_filter.vocab_filter(train_examples, vocab_lst, 
+							tokenizer, FLAGS.predefined_vocab_size, 
+							corpus_vocab_path)
+
+	tokenizer_corpus = tokenization.Jieba_CHAR(
+		config=FLAGS.config)
+
+	with tf.gfile.Open(corpus_vocab_path, "r") as f:
+		lines = f.read().splitlines()
+		vocab_lst = []
+		for line in lines:
+			vocab_lst.append(line)
+		print(len(vocab_lst))
+
+	tokenizer_corpus.load_vocab(vocab_lst)
+
+	dev_examples = classifier_data_api.get_unsupervised_distillation_examples(dev_file,
 																unsupervised_distillation_file,
 																is_shuffle=False)
-		test_examples = classifier_data_api.get_train_examples(test_file,
-											is_shuffle=False)
 
-		write_to_tfrecords.convert_distillation_classifier_examples_to_features(train_examples,
-																classifier_data_api.label2id,
-																FLAGS.max_length,
-																tokenizer_corpus,
-																train_result_file,
-																FLAGS.with_char,
-																FLAGS.char_len)
+	import random
+	total_train_examples = train_examples#+dev_examples
+	random.shuffle(total_train_examples)
 
-		write_to_tfrecords.convert_distillation_classifier_examples_to_features(dev_examples,
-																classifier_data_api.label2id,
-																FLAGS.max_length,
-																tokenizer_corpus,
-																dev_result_file,
-																FLAGS.with_char,
-																FLAGS.char_len)
+	write_to_tfrecords.convert_distillation_classifier_examples_to_features(total_train_examples,
+															classifier_data_api.label2id,
+															FLAGS.max_length,
+															tokenizer_corpus,
+															train_result_file,
+															FLAGS.with_char,
+															FLAGS.char_len)
 
-		
-		write_to_tfrecords.convert_distillation_classifier_examples_to_features(test_examples,
-																classifier_data_api.label2id,
-																FLAGS.max_length,
-																tokenizer_corpus,
-																test_result_file,
-																FLAGS.with_char,
-																FLAGS.char_len)
-	# elif FLAGS.if_rule == "rule":
-	# 	rule_word_path = os.path.join(FLAGS.buckets, FLAGS.rule_word_path)
-	# 	print("==apply rule==")
-	# 	with tf.gfile.Open(rule_word_path, "r") as frobj:
-	# 		lines = frobj.read().splitlines()
-	# 		freq_dict = []
-	# 		for line in lines:
-	# 			content = line.split("&&&&")
-	# 			word = "".join(content[0].split("&"))
-	# 			label = "rule"
-	# 			tmp = {}
-	# 			tmp["word"] = word
-	# 			tmp["label"] = "rule"
-	# 			freq_dict.append(tmp)
-	# 		print(len(freq_dict))
-	# 		json.dump(freq_dict, open(FLAGS.rule_word_dict, "w"))
-	# 	from data_generator import rule_detector
+	write_to_tfrecords.convert_distillation_classifier_examples_to_features(dev_examples,
+															classifier_data_api.label2id,
+															FLAGS.max_length,
+															tokenizer_corpus,
+															dev_result_file,
+															FLAGS.with_char,
+															FLAGS.char_len)
 
-	# 	# label_dict = {"label2id":{"正常":0,"rule":1}, "id2label":{0:"正常", 1:"rule"}}
-	# 	# json.dump(label_dict, open("/data/xuht/websiteanalyze-data-seqing20180821/data/rule/rule_label_dict.json", "w"))
-
-	# 	rule_config = {
-	# 		"keyword_path":FLAGS.rule_word_dict,
-	# 		"background_label":"正常",
-	# 		"label_dict":FLAGS.rule_label_dict
-	# 	}
-	# 	rule_api = rule_detector.RuleDetector(rule_config)
-	# 	rule_api.load(tokenizer)
-
-	# 	classifier_data_api = classifier_processor.PornClassifierProcessor()
-	# 	classifier_data_api.get_labels(FLAGS.label_id)
-
-	# 	train_examples = classifier_data_api.get_train_examples(
-	# 											FLAGS.train_file,
-	# 											 is_shuffle=False)
-
-	# 	write_to_tfrecords.convert_classifier_examples_with_rule_to_features(train_examples,
-	# 															classifier_data_api.label2id,
-	# 															FLAGS.max_length,
-	# 															tokenizer,
-	# 															rule_api,
-	# 															FLAGS.train_result_file)
-
-	# 	test_examples = classifier_data_api.get_train_examples(FLAGS.test_file,
-	# 												 is_shuffle=False)
-	# 	write_to_tfrecords.convert_classifier_examples_with_rule_to_features(test_examples,
-	# 															classifier_data_api.label2id,
-	# 															FLAGS.max_length,
-	# 															tokenizer,
-	# 															rule_api,
-	# 															FLAGS.test_result_file)
-
+	test_examples = classifier_data_api.get_train_examples(test_file,
+										is_shuffle=False)
+	write_to_tfrecords.convert_distillation_classifier_examples_to_features(test_examples,
+															classifier_data_api.label2id,
+															FLAGS.max_length,
+															tokenizer_corpus,
+															test_result_file,
+															FLAGS.with_char,
+															FLAGS.char_len)
 
 if __name__ == "__main__":
 	tf.app.run()
+

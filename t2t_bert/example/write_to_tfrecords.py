@@ -784,6 +784,8 @@ def convert_distillation_classifier_examples_to_features(examples, label_dict,
 				input_char_ids_b = tokenizer.covert_tokens_to_char_ids(tokens_b, 
 											max_seq_length, 
 											char_len=char_len)
+			else:
+				input_char_ids_b = None
 		else:
 			input_ids_b = None
 			input_char_ids_b = None
@@ -823,17 +825,17 @@ def convert_distillation_classifier_examples_to_features(examples, label_dict,
 			print(tokens_a)
 			tf.logging.info("*** Example ***")
 			tf.logging.info("guid: %s" % (example.guid))
-			tf.logging.info("input_ids: %s" % " ".join([str(x) for x in input_ids_a]))
+			tf.logging.info("input_ids_a: %s" % " ".join([str(x) for x in input_ids_a]))
 			if input_char_ids_a:
-				tf.logging.info("input_ids: %s" % " ".join([str(x) for token in input_char_ids_a for x in token ]))
+				tf.logging.info("input_char_ids_a: %s" % " ".join([str(x) for token in input_char_ids_a for x in token ]))
 			if input_ids_b:
-				tf.logging.info("input_ids: %s" % " ".join([str(x) for x in input_ids_b]))
+				tf.logging.info("input_ids_b: %s" % " ".join([str(x) for x in input_ids_b]))
 			if input_char_ids_b:
-				tf.logging.info("input_ids: %s" % " ".join([str(x) for token in input_char_ids_b for x in token ]))
+				tf.logging.info("input_char_ids_b: %s" % " ".join([str(x) for token in input_char_ids_b for x in token ]))
 			tf.logging.info("label_probs {}".format(label_probs))
 			tf.logging.info("label_ratio {}".format(label_ratio))
 			tf.logging.info("label: {} (id = {})".format(example.label, label_id))
-			tf.logging.info("distillation_ratio: {} (id = {})".format(example.distillation_ratio, label_id))
+			tf.logging.info("distillation_ratio: {} (id = {})".format(distillation_ratio, label_id))
 		
 		feature = data_distillation_feature_classifier.InputFeatures(
 					guid=example.guid,
