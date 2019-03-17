@@ -2,7 +2,7 @@ mpirun -np 2 \
  -H localhost:2 \
  python ./t2t_bert/distributed_bin/hvd_train_eval_api.py \
  --buckets "/data/xuht" \
- --config_file "./data/textcnn/textcnn.json" \
+ --config_file "./data/match_pyramid/match_pyramid.json" \
  --init_checkpoint "" \
  --vocab_file "lcqmc/data/distillation/char_id.txt" \
  --label_id "/data/xuht/lcqmc/data/label_dict.json" \
@@ -15,7 +15,7 @@ mpirun -np 2 \
  --train_size 238766 \
  --eval_size 8802 \
  --batch_size 32 \
- --model_type "textcnn_distillation" \
+ --model_type "match_pyramid" \
  --if_shard 1 \
  --is_debug 1 \
  --run_type "sess" \
@@ -34,7 +34,7 @@ mpirun -np 2 \
  --input_target "a,b" \
  --decay "no" \
  --warmup "no" \
- --distillation "distillation" \
+ --distillation "normal" \
  --temperature 2.0 \
  --distillation_ratio 0.5 \
  --task_type "interaction_pair_sentence_classification" \
