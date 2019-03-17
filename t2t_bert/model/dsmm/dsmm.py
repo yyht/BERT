@@ -2,6 +2,9 @@ import tensorflow as tf
 import numpy as np
 from utils.embed import integration_func
 
+from utils.textcnn import textcnn_utils
+from utils.bimpm import match_utils
+
 import tensorflow as tf
 import numpy as np
 

@@ -2,8 +2,7 @@ from model.dsmm import dsmm
 import tensorflow as tf
 import numpy as np
 from utils.dsmm.tf_common.nn_module import encode, attend, mlp_layer
-from utils.textcnn import textcnn_utils
-from utils.bimpm import match_utils
+
 from model.match_pyramid import mp_cnn
 
 class MatchPyramid(dsmm.DSMM):
