@@ -88,7 +88,7 @@ class MatchPyramid(dsmm.DSMM):
 													match_matrix, 
 													kargs.get("dpool_index", None),
 													reuse=kargs.get("reuse", None))
-
+		print("==aggerate feature==", self.self.aggerate_feature.get_shape())
 	def get_pooled_output(self):
 		return self.aggerate_feature
 
