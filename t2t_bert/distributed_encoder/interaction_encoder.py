@@ -1,4 +1,4 @@
-from model.match_pyramid import MatchPyramid
+from model.match_pyramid import match_pyramid
 
 def match_pyramid_encoder(model_config, features, labels, 
 			mode, target, reuse=None):
@@ -14,7 +14,7 @@ def match_pyramid_encoder(model_config, features, labels,
 	input_ids_b = features["input_ids_b"]
 	input_char_ids_b = features.get("input_char_ids_b", None)
 
-	model = MatchPyramid.MatchPyramid(model_config)
+	model = match_pyramid.MatchPyramid(model_config)
 	[emb_seq_a, enc_seq_a, 
 	emb_seq_b, enc_seq_b] = model._semantic_encode(input_ids_a, 
 											input_char_ids_a, 

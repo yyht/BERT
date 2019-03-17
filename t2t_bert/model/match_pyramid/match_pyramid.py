@@ -36,7 +36,7 @@ class MatchPyramid(dsmm.DSMM):
 		return emb_seq, enc_seq
 
 	def _semantic_encode(self, input_ids_a, input_char_ids_a, 
-				input_ids_b, input_char_ids_b
+				input_ids_b, input_char_ids_b,
 				is_training, **kargs):
 
 		emb_seq_a, enc_seq_a = self._encode(input_ids_a, 
@@ -68,9 +68,9 @@ class MatchPyramid(dsmm.DSMM):
 			emb_seq_b, 1)
 
 		enc_match_matrix_dot_product = tf.expand_dims(
-            tf.einsum("abd,acd->abc", enc_seq_a, enc_seq_b), axis=-1)
-        enc_match_matrix_element_product = tf.expand_dims(enc_seq_a, 2) * tf.expand_dims(
-            enc_seq_b, 1)
+			tf.einsum("abd,acd->abc", enc_seq_a, enc_seq_b), axis=-1)
+		enc_match_matrix_element_product = tf.expand_dims(enc_seq_a, 2) * tf.expand_dims(
+			enc_seq_b, 1)
 
 		match_matrix = tf.concat([
 			emb_match_matrix_dot_product,
@@ -83,7 +83,7 @@ class MatchPyramid(dsmm.DSMM):
 		return match_matrix
 
 	def _semantic_aggerate(self, match_matrix,
-				is_training, **kargs)
+				is_training, **kargs):
 
 		self.aggerate_feature = mp_cnn._mp_semantic_feature_layer(match_matrix, kargs.get("dpool_index", None))
 
