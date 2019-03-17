@@ -145,6 +145,7 @@ def model_config_parser(FLAGS):
 		config.grad_clip = "gloabl_norm"
 		config.clip_norm = 5.0
 		config.extra_symbol = ["<pad>", "<unk>", "<s>", "</s>"]
+		config.max_seq_len = FLAGS.max_length
 		if FLAGS.task_type in ["interaction_pair_sentence_classification"]:
 			config.classifier = FLAGS.classifier
 			config.output_layer = FLAGS.output_layer
