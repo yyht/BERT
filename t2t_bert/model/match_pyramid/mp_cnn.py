@@ -55,5 +55,5 @@ def _mp_semantic_feature_layer(config, match_matrix, dpool_index, reuse=None):
 	conv2_flatten = tf.reshape(conv2, [-1, config["mp_num_filters"][1] * (pool_size1 * pool_size1)])
 
 	# cross = tf.concat([conv1_flatten, conv2_flatten], axis=-1)
-
+	print("==aggerate shape==", conv2_flatten.get_shape())
 	return conv2_flatten
