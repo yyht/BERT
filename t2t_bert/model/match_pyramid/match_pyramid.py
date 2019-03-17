@@ -23,7 +23,7 @@ class MatchPyramid(dsmm.DSMM):
 			input_mask = tf.cast(input_ids, tf.bool)
 			input_len = tf.reduce_sum(tf.cast(input_mask, tf.int32), -1)
 
-			enc_seq = encode(seq_input, method=self.config["encode_method"],
+			enc_seq = encode(emb_seq, method=self.config["encode_method"],
 								 input_dim=input_dim,
 								 params=self.config,
 								 sequence_length=input_len,
