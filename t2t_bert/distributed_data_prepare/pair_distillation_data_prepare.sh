@@ -11,7 +11,7 @@ python ./t2t_bert/distributed_data_prepare/bert_distillation_data_prepare.py \
 	--vocab_file w2v/tencent_ai_lab/char_id.txt \
 	--label_id /data/xuht/lcqmc/data/label_dict.json \
 	--lower_case True \
-	--max_length 128 \
+	--max_length 64 \
 	--if_rule "no_rule" \
 	--rule_word_dict /data/xuht/porn/rule/rule/phrases.json \
 	--rule_word_path /data/xuht/porn/rule/rule/mined_porn_domain_adaptation_v2.txt \

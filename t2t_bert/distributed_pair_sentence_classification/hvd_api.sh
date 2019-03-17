@@ -6,10 +6,10 @@ mpirun -np 2 \
  --init_checkpoint "" \
  --vocab_file "lcqmc/data/distillation/char_id.txt" \
  --label_id "/data/xuht/lcqmc/data/label_dict.json" \
- --max_length 128 \
+ --max_length 64 \
  --train_file "lcqmc/data/distillation/train_tfrecords" \
  --dev_file "lcqmc/data/distillation/dev_tfrecords" \
- --model_output "lcqmc/data/model/estimator/siamese_cnn_interaction_0316" \
+ --model_output "lcqmc/data/model/estimator/match_pyramid_0316" \
  --epoch 50 \
  --num_classes 2 \
  --train_size 238766 \
@@ -37,7 +37,7 @@ mpirun -np 2 \
  --distillation "distillation" \
  --temperature 2.0 \
  --distillation_ratio 0.5 \
- --task_type "pair_sentence_classification" \
+ --task_type "interaction_pair_sentence_classification" \
  --classifier "siamese_interaction_classifier" \
  --output_layer "interaction"
 
