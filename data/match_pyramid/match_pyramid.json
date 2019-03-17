@@ -11,7 +11,7 @@
 
     "batch_size": 32,
     "max_epochs": 100,
-    "dropout_rate": 0.4,
+    "dropout_rate": 0.2,
     "learning_rate": 1e-3,
     "optimizer": "adam",
     "lambda_l2": 0.0,
@@ -106,8 +106,7 @@
     "mp_filter_sizes": [5, 3],
     "mp_activation": "relu",
     "mp_dynamic_pooling": true,
-    "mp_pool_sizes": [6, 3],
-    "mp_pool_sizes": [10, 5],
+    "mp_pool_sizes": [5, 3],
 
     "bcnn_num_layers": 2,
     "bcnn_num_filters": 16,
