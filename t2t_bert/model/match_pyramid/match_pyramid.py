@@ -17,7 +17,7 @@ class MatchPyramid(dsmm.DSMM):
 
 		with tf.variable_scope(self.config.scope+"_semantic_encode", reuse=reuse):
 
-			emb_seq = self._embd_seq(input_ids_a, input_char_ids_a, is_training, reuse=reuse)
+			emb_seq = self._embd_seq(input_ids, input_char_ids, is_training, reuse=reuse)
 
 			input_dim = emb_seq.shape[-1].value
 
