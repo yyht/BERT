@@ -57,21 +57,10 @@ def model_fn_builder(
 	def model_fn(features, labels, mode):
 
 		model_api = model_zoo(model_config)
-
-		model_lst = []
-
-		assert len(target.split(",")) == 2
-		target_name_lst = target.split(",")
-		print(target_name_lst)
-		for index, name in enumerate(target_name_lst):
-			if index > 0:
-				reuse = True
-			else:
-				reuse = model_reuse
-			model_lst.append(model_api(model_config, features, labels,
-							mode, name, reuse=reuse))
-
 		label_ids = features["label_ids"]
+
+		model = model_api(model_config, features, labels,
+							mode, target, reuse=model_reuse)
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
 			dropout_prob = model_config.dropout_prob
@@ -84,20 +73,13 @@ def model_fn_builder(
 			scope = model_config.scope
 
 		with tf.variable_scope(scope, reuse=model_reuse):
-			if config.get("classifier", "order_classifier") == "order_classifier":
-				[loss, 
-					per_example_loss, 
-					logits] = classifier.order_classifier(
-								model_config, seq_output_lst, 
-								num_labels, label_ids,
-								dropout_prob, ratio_weight=None)
-			elif config.get("classifier", "order_classifier") == "siamese_interaction_classifier":
-				[loss, 
-					per_example_loss, 
-					logits] = classifier.siamese_classifier(
-								model_config, seq_output_lst, 
-								num_labels, label_ids,
-								dropout_prob, ratio_weight=None)
+			(loss, 
+				per_example_loss, 
+				logits) = classifier.classifier(model_config,
+											model.get_pooled_output(),
+											num_labels,
+											label_ids,
+											dropout_prob)
 
 		print(kargs.get("temperature", 0.5), kargs.get("distillation_ratio", 0.5), "==distillation hyparameter==")
 
