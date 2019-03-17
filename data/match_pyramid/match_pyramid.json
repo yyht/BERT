@@ -36,11 +36,11 @@
 
     "with_moving_average": 0.999,
 
-    "loss":"focal_loss_binary_v2",
+    "loss":"entropy",
 
     "alpha":0.5,
     "gamma":2.0,
-    "name":"focal_loss_binary_v2",
+    "name":"entropy",
 
     "scale":30,
     "margin":0.35,
