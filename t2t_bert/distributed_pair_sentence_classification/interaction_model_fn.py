@@ -35,7 +35,7 @@ def model_fn_builder(
 		label_ids = features["label_ids"]
 
 		model = model_api(model_config, features, labels,
-							mode, name, reuse=reuse)
+							mode, target, reuse=model_reuse)
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
 			dropout_prob = model_config.dropout_prob
