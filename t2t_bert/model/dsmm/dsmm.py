@@ -84,7 +84,7 @@ class DSMM(object):
 		with tf.variable_scope(self.config.scope+"_input_highway", reuse=reuse):
 			input_dim = word_emb_dropout.get_shape()[-1]
 			seq_input = match_utils.multi_highway_layer(word_emb_dropout, input_dim, self.config.highway_layer_num)
-			seq_input *= input_mask
+			seq_input *= tf.cast(input_mask, tf.float32)
 
 		return seq_input
 
