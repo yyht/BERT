@@ -38,6 +38,7 @@ def match_pyramid_encoder(model_config, features, labels,
 	print("==match_matrix shape==", match_matrix.get_shape())
 
 	model._semantic_aggerate(match_matrix, is_training, reuse=reuse, 
-								dpool_index=features.get("dpool_index", None))
+								dpool_index=features.get("dpool_index", None),
+								reuse=reuse)
 
 	return model

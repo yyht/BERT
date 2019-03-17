@@ -84,7 +84,10 @@ class MatchPyramid(dsmm.DSMM):
 	def _semantic_aggerate(self, match_matrix,
 				is_training, **kargs):
 
-		self.aggerate_feature = mp_cnn._mp_semantic_feature_layer(match_matrix, kargs.get("dpool_index", None))
+		self.aggerate_feature = mp_cnn._mp_semantic_feature_layer(self.config,
+													match_matrix, 
+													kargs.get("dpool_index", None),
+													reuse=kargs.get("reuse", None))
 
 	def get_pooled_output(self):
 		return self.aggerate_feature
