@@ -1,7 +1,7 @@
 CUDA_VISIBLE_DEVICES="0" python ./t2t_bert/distributed_bin/hvd_train_eval_api.py \
  --buckets "/data/xuht" \
  --config_file "./data/match_pyramid/match_pyramid.json" \
- --init_checkpoint "" \
+ --init_checkpoint "lcqmc/data/model/estimator/match_pyramid_0316/model.ckpt-186501" \
  --vocab_file "lcqmc/data/distillation/char_id.txt" \
  --label_id "/data/xuht/lcqmc/data/label_dict.json" \
  --max_length 64 \
@@ -26,7 +26,7 @@ CUDA_VISIBLE_DEVICES="0" python ./t2t_bert/distributed_bin/hvd_train_eval_api.py
  --running_type "train" \
  --cross_tower_ops_type "paisoar" \
  --distribution_strategy "MirroredStrategy" \
- --load_pretrained "no" \
+ --load_pretrained "yes" \
  --w2v_path "w2v/tencent_ai_lab/char_w2v.txt" \
  --with_char "no_char" \
  --input_target "a,b" \
