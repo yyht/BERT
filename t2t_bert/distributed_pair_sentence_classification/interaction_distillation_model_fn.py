@@ -1,7 +1,7 @@
 try:
-	from .model_interface import model_zoo
+	from distributed_single_sentence_classification.model_interface import model_zoo
 except:
-	from model_interface import model_zoo
+	from distributed_single_sentence_classification.model_interface import model_zoo
 
 import tensorflow as tf
 import numpy as np
