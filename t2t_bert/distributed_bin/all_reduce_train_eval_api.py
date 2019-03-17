@@ -217,7 +217,7 @@ flags.DEFINE_string(
 	)
 
 flags.DEFINE_string(
-	"output_layer", "",
+	"output_layer", "interaction",
 	"if apply distillation"
 	)
 
