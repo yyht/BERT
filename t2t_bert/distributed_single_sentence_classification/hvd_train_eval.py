@@ -9,9 +9,11 @@ try:
 except:
 	from train_eval_sess_fn import train_eval_fn as sess_fn
 	from train_eval_estimator_fn import train_eval_fn as estimator_fn
-
-import horovod.tensorflow as hvd
-
+try:
+	import horovod.tensorflow as hvd
+except:
+	hvd = None
+	
 def monitored_sess(FLAGS,
 				worker_count, 
 				task_index, 
