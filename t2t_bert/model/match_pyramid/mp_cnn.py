@@ -39,7 +39,7 @@ def _mp_semantic_feature_layer(config, match_matrix, dpool_index, reuse=None):
 	pool_size0 = config["mp_pool_sizes"][0]
 	pool_sizes = [seq_len / pool_size0, seq_len / pool_size0]
 	strides = [seq_len / pool_size0, seq_len / pool_size0]
-	conv1 = _mp_cnn_layer(match_matrix, dpool_index, filters, kernel_size, pool_sizes, strides, 
+	conv1 = _mp_cnn_layer(config, match_matrix, dpool_index, filters, kernel_size, pool_sizes, strides, 
 							name=config.scope+"mp_semantic_aggerate_"+"1", reuse=reuse)
 	conv1_flatten = tf.reshape(conv1, [-1, config["mp_num_filters"][0] * (pool_size0 * pool_size0)])
 
@@ -49,7 +49,7 @@ def _mp_semantic_feature_layer(config, match_matrix, dpool_index, reuse=None):
 	pool_size1 = config["mp_pool_sizes"][1]
 	pool_sizes = [pool_size0 / pool_size1, pool_size0 / pool_size1]
 	strides = [pool_size0 / pool_size1, pool_size0 / pool_size1]
-	conv2 = _mp_cnn_layer(conv1, None, filters, kernel_size, pool_sizes, strides, 
+	conv2 = _mp_cnn_layer(config, conv1, None, filters, kernel_size, pool_sizes, strides, 
 							name=config.scope+"mp_semantic_aggerate_" + "2",
 							reuse=reuse)
 	conv2_flatten = tf.reshape(conv2, [-1, config["mp_num_filters"][1] * (pool_size1 * pool_size1)])
