@@ -1,4 +1,5 @@
 from model.match_pyramid import match_pyramid
+import tensorflow as tf
 
 def match_pyramid_encoder(model_config, features, labels, 
 			mode, target, reuse=None):
