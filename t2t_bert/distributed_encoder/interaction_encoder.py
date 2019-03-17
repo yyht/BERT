@@ -24,7 +24,7 @@ def match_pyramid_encoder(model_config, features, labels,
 											is_training,
 											reuse=reuse)
 
-	model._semantic_interaction(input_ids_a, 
+	match_matrix = model._semantic_interaction(input_ids_a, 
 								input_char_ids_a, 
 								input_ids_b, 
 								input_char_ids_b,
@@ -34,6 +34,8 @@ def match_pyramid_encoder(model_config, features, labels,
 								enc_seq_b,
 								is_training,
 								reuse=reuse)
+
+	print("==match_matrix shape==", match_matrix.get_shape())
 
 	model._semantic_aggerate(match_matrix, is_training, reuse=reuse, 
 								dpool_index=features.get("dpool_index", None))
