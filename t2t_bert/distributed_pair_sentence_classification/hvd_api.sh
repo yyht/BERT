@@ -31,7 +31,7 @@ mpirun -np 2 \
  --load_pretrained "no" \
  --w2v_path "w2v/tencent_ai_lab/char_w2v.txt" \
  --with_char "no_char" \
- --input_target "a" \
+ --input_target "a,b" \
  --decay "no" \
  --warmup "no" \
  --distillation "normal" \
