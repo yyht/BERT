@@ -15,7 +15,7 @@ mpirun -np 2 \
  --train_size 238766 \
  --eval_size 8802 \
  --batch_size 32 \
- --model_type "textcnn" \
+ --model_type "textcnn_distillation" \
  --if_shard 1 \
  --is_debug 1 \
  --run_type "sess" \
@@ -34,7 +34,7 @@ mpirun -np 2 \
  --input_target "a,b" \
  --decay "no" \
  --warmup "no" \
- --distillation "normal" \
+ --distillation "distillation" \
  --temperature 2.0 \
  --distillation_ratio 0.5 \
  --task_type "pair_sentence_classification" \
