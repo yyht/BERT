@@ -312,7 +312,8 @@ def encode(x, method, params, input_dim,
         elif m == "textcnn":
             dim_c = params["cnn_num_layers"] * len(params["cnn_filter_sizes"]) * params["cnn_num_filters"]
             z = textcnn(x, num_layers=params["cnn_num_layers"], num_filters=params["cnn_num_filters"], filter_sizes=params["cnn_filter_sizes"],
-                        timedistributed=params["cnn_timedistributed"], scope_name=scope_name, reuse=reuse)
+                        timedistributed=params["cnn_timedistributed"], scope_name=scope_name, reuse=reuse,
+                        gated_conv=params["cnn_gated_conv"], residual=params["cnn_residual"])
             out_list.append(z)
             params["encode_dim"] += dim_c
         elif m == "textrnn":
