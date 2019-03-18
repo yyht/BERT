@@ -20,4 +20,5 @@ python ./t2t_bert/distributed_data_prepare/bert_distillation_data_prepare.py \
 	--char_len 5 \
 	--predefined_vocab_size 50000 \
 	--corpus_vocab_path lcqmc/data/distillation/char_id.txt \
-	--data_type "lcqmc"
+	--data_type "lcqmc" \
+	--if_add_unlabeled_distillation "no"

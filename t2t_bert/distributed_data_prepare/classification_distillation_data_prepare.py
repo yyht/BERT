@@ -140,6 +140,11 @@ flags.DEFINE_string(
 	"if apply rule detector"
 	)
 
+flags.DEFINE_string(
+	"if_add_unlabeled_distillation", "",
+	"if apply rule detector"
+	)
+
 def main(_):
 
 	tokenizer = tokenization.Jieba_CHAR(
@@ -194,7 +199,6 @@ def main(_):
 		for line in lines:
 			vocab_lst.append(line)
 		print(len(vocab_lst))
-		# print(vocab_lst)
 
 	tokenizer_corpus.load_vocab(vocab_lst)
 
@@ -203,7 +207,10 @@ def main(_):
 																is_shuffle=False)
 
 	import random
-	total_train_examples = train_examples#+dev_examples
+	if FLAGS.if_add_unlabeled_distillation == "yes":
+		total_train_examples = train_examples+dev_examples
+	else:
+		total_train_examples = train_examples
 	random.shuffle(total_train_examples)
 
 	write_to_tfrecords.convert_distillation_classifier_examples_to_features(total_train_examples,

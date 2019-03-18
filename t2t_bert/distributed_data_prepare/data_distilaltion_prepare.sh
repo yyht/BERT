@@ -3,9 +3,9 @@ python ./t2t_bert/distributed_data_prepare/classification_distillation_data_prep
 	--train_file porn/clean_data/train.txt \
 	--dev_file porn/clean_data/dev.txt \
 	--test_file porn/clean_data/test.txt \
-	--train_result_file porn/clean_data/textcnn/distillation/modify/train_tfrecords \
-	--dev_result_file  porn/clean_data/textcnn/distillation/modify/dev_tfrecords\
-	--test_result_file  porn/clean_data/textcnn/distillation/modify/test_tfrecords\
+	--train_result_file porn/clean_data/textcnn/distillation/train_tfrecords \
+	--dev_result_file  porn/clean_data/textcnn/distillation/dev_tfrecords\
+	--test_result_file  porn/clean_data/textcnn/distillation/test_tfrecords\
 	--supervised_distillation_file porn/clean_data/textcnn/distillation/train_distillation.info \
 	--unsupervised_distillation_file porn/clean_data/textcnn/distillation/dev_distillation.info \
 	--vocab_file w2v/tencent_ai_lab/char_id.txt \
@@ -19,4 +19,5 @@ python ./t2t_bert/distributed_data_prepare/classification_distillation_data_prep
 	--with_char "no" \
 	--char_len 5 \
 	--predefined_vocab_size 50000 \
-	--corpus_vocab_path porn/clean_data/char_id.txt
+	--corpus_vocab_path porn/clean_data/char_id.txt \
+	--if_add_unlabeled_distillation "no"

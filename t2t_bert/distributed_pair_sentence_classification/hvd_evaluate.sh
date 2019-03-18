@@ -1,4 +1,4 @@
-CUDA_VISIBLE_DEVICES="0" python ./t2t_bert/distributed_bin/hvd_train_eval_api.py \
+CUDA_VISIBLE_DEVICES="0" python ./t2t_bert/distributed_bin/evaluate_api.py \
  --buckets "/data/xuht" \
  --config_file "./data/match_pyramid/match_pyramid.json" \
  --init_checkpoint "lcqmc/data/model/estimator/match_pyramid_0316/model.ckpt-186501" \
