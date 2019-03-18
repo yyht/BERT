@@ -18,7 +18,7 @@ def print_params(tvars, string):
 
 def count_variables(scope, **kargs):
 	not_storage_params = kargs.get("not_storage_params", [])
-	tvars = tf.get_collection(tf.GraphKeys.MODEL_VARIABLES, scope)
+	tvars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope)
 	total_params = np.sum([np.prod(v.get_shape().as_list()) for v in tvars])
 	return total_params
 	
