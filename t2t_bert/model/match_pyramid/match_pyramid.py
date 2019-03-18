@@ -70,11 +70,15 @@ class MatchPyramid(dsmm.DSMM):
 
 		emb_match_matrix_element_product = tf.expand_dims(emb_seq_a, 2) * tf.expand_dims(
 			emb_seq_b, 1)
+		emb_match_matrix_element_product *= tf.expand_dims(input_mask_a*input_mask_b, axis=-1)
 
 		enc_match_matrix_dot_product = tf.expand_dims(
 			tf.einsum("abd,acd->abc", enc_seq_a, enc_seq_b), axis=-1)
+		enc_match_matrix_dot_product *= tf.expand_dims(input_mask_a*input_mask_b, axis=-1)
+		
 		enc_match_matrix_element_product = tf.expand_dims(enc_seq_a, 2) * tf.expand_dims(
 			enc_seq_b, 1)
+		enc_match_matrix_element_product *= tf.expand_dims(input_mask_a*input_mask_b, axis=-1)
 
 		match_matrix = tf.concat([
 			emb_match_matrix_dot_product,
