@@ -47,6 +47,8 @@ try:
 except Exception as e:
 	pkl = None
 
+import time
+
 def train_eval_fn(FLAGS,
 				worker_count, 
 				task_index, 
@@ -429,8 +431,11 @@ def train_eval_fn(FLAGS,
 		# print(l, task_index)
 
 		if task_index == 0:
+			start_time = time.time()
 			print("===========begin to eval============")
 			eval_finial_dict = eval_fn(eval_dict, sess)
+			end_time = time.time()
+			print("==total forward time==", end_time - start_time)
 
 			# with tf.gfile.Open(os.path.join(checkpoint_dir, "train_and_eval_info.json"), "w") as fwobj:
 			# 	import json

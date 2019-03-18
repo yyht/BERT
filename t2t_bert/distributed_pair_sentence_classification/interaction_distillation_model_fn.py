@@ -100,6 +100,9 @@ def model_fn_builder(
 
 		model_io_fn = model_io.ModelIO(model_io_config)
 
+		params_size = model_io_fn.count_params(model_config.scope)
+		print("==total params==", params_size)
+
 		tvars = model_io_fn.get_params(model_config.scope, 
 										not_storage_params=not_storage_params)
 		print(tvars)
