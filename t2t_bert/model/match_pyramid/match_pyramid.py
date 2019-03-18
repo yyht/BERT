@@ -63,6 +63,11 @@ class MatchPyramid(dsmm.DSMM):
 				tf.expand_dims(input_ids_b, 1)
 			), tf.float32), axis=-1) # batch x seq_len_a x seq_len_b x 1
 
+		input_mask_a = tf.expand_dims(tf.cast(tf.cast(input_ids_a, tf.bool), tf.float32), axis=2) # batch x seq_len_a x 1
+		input_mask_b = tf.expand_dims(tf.cast(tf.cast(input_ids_b, tf.bool), tf.float32), axis=1) # batch x 1 x seq_len_b
+
+		match_matrix_identity *= tf.expand_dims(input_mask_a*input_mask_b, axis=-1)
+
 		emb_match_matrix_element_product = tf.expand_dims(emb_seq_a, 2) * tf.expand_dims(
 			emb_seq_b, 1)
 
