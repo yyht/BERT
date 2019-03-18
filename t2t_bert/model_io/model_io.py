@@ -57,8 +57,8 @@ class ModelIO(object):
 		tvars = model_io_utils.get_params(scope, **kargs)
 		return tvars
 
-	def count_params(self, **kargs):
-		return model_io_utils.count_variables(scope)
+	def count_params(self, scope, **kargs):
+		return model_io_utils.count_variables(scope, **kargs)
 
 	def print_params(self, tvars, string):
 		model_io_utils.print_params(tvars, string)
