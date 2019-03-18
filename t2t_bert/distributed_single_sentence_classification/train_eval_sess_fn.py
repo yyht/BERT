@@ -313,7 +313,10 @@ def train_eval_fn(FLAGS,
 				target_names=[label_dict["id2label"][key] for key in label_dict_id],
 				digits=4)
 
+			accuracy = accuracy_score(label_id, pred_label)
+			print("==classification report==")
 			print(result, task_index)
+			print("==accuracy==", accuracy)
 			eval_total_dict["classification_report"] = result
 			return eval_total_dict
 
