@@ -9,6 +9,7 @@ import math
 import re
 import six
 import tensorflow as tf
+import numpy as np
 
 def print_params(tvars, string):
 	for var in tvars:
