@@ -123,6 +123,11 @@ def train_eval_fn(FLAGS,
 							"grad_clip":config.get("grad_clip", "global_norm"),
 							"clip_norm":config.get("clip_norm", 1.0)})
 
+		anneal_config = Bunch({
+					"initial_value":1.0,
+					"num_train_steps":num_train_steps
+			})
+
 		model_io_config = Bunch({"fix_lm":False})
 		
 		num_classes = FLAGS.num_classes
@@ -154,6 +159,7 @@ def train_eval_fn(FLAGS,
 												checkpoint_dir=checkpoint_dir,
 												num_storage_steps=num_storage_steps,
 												task_index=task_index,
+												anneal_config=anneal_config,
 												**kargs)
 		
 		model_eval_fn = model_fn_builder(config, num_classes, init_checkpoint, 
@@ -168,6 +174,7 @@ def train_eval_fn(FLAGS,
 												checkpoint_dir=checkpoint_dir,
 												num_storage_steps=num_storage_steps,
 												task_index=task_index,
+												anneal_config=anneal_config,
 												**kargs)
 
 		print("==succeeded in building model==")

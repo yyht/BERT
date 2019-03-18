@@ -14,6 +14,8 @@ from metric import tf_metrics
 from optimizer import distributed_optimizer as optimizer
 from model_io import model_io
 
+# from optimizer import anneal_strategy
+
 def correlation(x, y):
 	x = x - tf.reduce_mean(x, axis=-1, keepdims=True)
 	y = y - tf.reduce_mean(y, axis=-1, keepdims=True)
@@ -83,6 +85,8 @@ def model_fn_builder(
 
 		print(kargs.get("temperature", 0.5), kargs.get("distillation_ratio", 0.5), "==distillation hyparameter==")
 
+		# anneal_fn = anneal_strategy.AnnealStrategy(kargs.get("anneal_config", {}))
+
 		# get teacher logits
 		teacher_logit = tf.log(features["label_probs"]+1e-10)/kargs.get("temperature", 2.0) # log_softmax logits
 		student_logit = tf.nn.log_softmax(logits /kargs.get("temperature", 2.0)) # log_softmax logits
@@ -96,7 +100,7 @@ def model_fn_builder(
 		print("==distillation loss ratio==", kargs.get("distillation_ratio", 0.9)*tf.pow(kargs.get("temperature", 2.0), 2))
 
 		# loss = label_loss + kargs.get("distillation_ratio", 0.9)*tf.pow(kargs.get("temperature", 2.0), 2)*distillation_loss
-		loss = (1-kargs.get("distillation_ratio", 0.9))*label_loss + kargs.get("distillation_ratio", 0.9) * distillation_loss
+		loss = (1-kargs.get("distillation_ratio", 0.9))*label_loss + tf.pow(kargs.get("temperature", 2.0), 2)*kargs.get("distillation_ratio", 0.9) * distillation_loss
 
 		model_io_fn = model_io.ModelIO(model_io_config)
 

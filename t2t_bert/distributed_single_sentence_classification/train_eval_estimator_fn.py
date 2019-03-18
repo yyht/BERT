@@ -125,6 +125,11 @@ def train_eval_fn(FLAGS,
 							"decay":kargs.get("decay", "no"),
 							"warmup":kargs.get("warmup", "no")})
 
+		anneal_config = Bunch({
+					"initial_value":1.0,
+					"num_train_steps":num_train_steps
+			})
+
 		model_io_config = Bunch({"fix_lm":False})
 		model_io_fn = model_io.ModelIO(model_io_config)
 		
@@ -162,6 +167,7 @@ def train_eval_fn(FLAGS,
 									checkpoint_dir=checkpoint_dir,
 									num_storage_steps=num_storage_steps,
 									task_index=task_index,
+									anneal_config=anneal_config,
 									**kargs)
 
 		name_to_features = data_interface(FLAGS)
