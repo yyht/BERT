@@ -50,6 +50,8 @@ try:
 except Exception as e:
 	hvd = None
 
+import time
+
 def eval_fn(FLAGS,
 				worker_count, 
 				task_index, 
@@ -283,5 +285,8 @@ def eval_fn(FLAGS,
 			return eval_total_dict
 
 		hooks = []
+		start_time = time.time()
 		eval_finial_dict = eval_fn(eval_dict, sess)
+		end_time = time.time()
+		print("==forward time==", end_time - start_time)
 		return eval_finial_dict
