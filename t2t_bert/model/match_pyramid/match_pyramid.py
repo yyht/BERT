@@ -20,13 +20,13 @@ class MatchPyramid(dsmm.DSMM):
 
 			if self.config.compress_emb:
 
-				eW = tf.get_variable("eW" % (self.model_name),
+				eW = tf.get_variable(self.scope+"_eW",
 							 initializer=tf.truncated_normal_initializer(mean=0.0, stddev=0.2, dtype=tf.float32),
 							 dtype=tf.float32,
 							 shape=[emb_seq.shape[-1].value,
 									self.config["embedding_dim_compressed"]],
 							 reuse=reuse)
-				
+
 				emb_seq = tf.einsum("abd,dc->abc", emb_seq, eW)
 
 			input_dim = emb_seq.shape[-1].value
