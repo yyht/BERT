@@ -30,7 +30,8 @@ sys.path.extend([bert_path, t2t_bert_path])
 
 print(sys.path)
 
-from distributed_single_sentence_classification import tf_serving_data_prepare as tf_s_dp
+from distributed_single_sentence_classification import tf_serving_data_prepare as single_sent_data_prepare
+from distributed_pair_sentence_classification import tf_serving_data_prepare as pair_sent_data_prepare
 
 flags = tf.flags
 
@@ -103,7 +104,7 @@ flags.DEFINE_string(
 	"This specifies the model architecture.")
 
 flags.DEFINE_string(
-	"query_path", "",
+	"input_data", "",
 	"The config json file corresponding to the pre-trained BERT model. "
 	"This specifies the model architecture.")
 
@@ -112,9 +113,23 @@ flags.DEFINE_string(
 	"The config json file corresponding to the pre-trained BERT model. "
 	"This specifies the model architecture.")
 
+flags.DEFINE_string(
+	"task_type", "",
+	"The config json file corresponding to the pre-trained BERT model. "
+	"This specifies the model architecture.")
+
+flags.DEFINE_string(
+	"model_type", "",
+	"The config json file corresponding to the pre-trained BERT model. "
+	"This specifies the model architecture.")
+
 def main(_):
 
-	feed_dict = tf_s_dp(FLAGS)
+	# if FLAGS.task_type == "single_sentence":
+	# 	if FLAGS.model_type == "bert":
+	# 		single_sent_data_prepare
+
+	
 
 	results = requests.post("http://%s:%s/v1/models/%s:predict" % (FLAGS.url, FLAGS.port, FLAGS.model_name), json=feed_dict)
 	try:

@@ -215,6 +215,11 @@ flags.DEFINE_string(
 	"if apply distillation"
 	)
 
+flags.DEFINE_integer(
+	"char_limit", 5,
+	"if apply distillation"
+	)
+
 def main(_):
 
 	print(FLAGS)

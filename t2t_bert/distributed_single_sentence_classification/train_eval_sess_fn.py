@@ -91,7 +91,7 @@ def train_eval_fn(FLAGS,
 
 		init_lr = config.init_lr
 
-		label_dict = json.load(open(FLAGS.label_id))
+		label_dict = json.load(tf.gfile.Open(FLAGS.label_id))
 
 		num_train_steps = int(
 			train_size / FLAGS.batch_size * epoch)

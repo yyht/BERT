@@ -1,5 +1,6 @@
 import tensorflow as tf
 import os
+import horovod.tensorflow as hvd
 
 flags = tf.flags
 
