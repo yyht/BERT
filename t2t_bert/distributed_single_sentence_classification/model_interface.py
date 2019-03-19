@@ -150,4 +150,7 @@ def model_config_parser(FLAGS):
 			config.classifier = FLAGS.classifier
 			config.output_layer = FLAGS.output_layer
 
+		if config.compress_emb:
+			config.embedding_dim_compressed = config.cnn_num_filters
+
 	return config

@@ -18,8 +18,18 @@ class MatchPyramid(dsmm.DSMM):
 
 			emb_seq = self._embd_seq(input_ids, input_char_ids, is_training, reuse=reuse)
 
-			input_dim = emb_seq.shape[-1].value
+			if self.config.compress_emb:
 
+				eW = tf.get_variable("eW" % (self.model_name),
+							 initializer=tf.truncated_normal_initializer(mean=0.0, stddev=0.2, dtype=tf.float32),
+							 dtype=tf.float32,
+							 shape=[emb_seq.shape[-1].value,
+									self.config["embedding_dim_compressed"]],
+							 reuse=reuse)
+				
+				emb_seq = tf.einsum("abd,dc->abc", emb_seq, eW)
+
+			input_dim = emb_seq.shape[-1].value
 			input_mask = tf.cast(input_ids, tf.bool)
 			input_len = tf.reduce_sum(tf.cast(input_mask, tf.int32), -1)
 
