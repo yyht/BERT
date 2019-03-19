@@ -1,4 +1,4 @@
-python ./t2t_bert/distributed_bin/export_api.py \
+CUDA_VISIBLE_DEVICES="" python ./t2t_bert/distributed_bin/export_api.py \
  --buckets "/data/xuht" \
  --config_file "/data/xuht/lcqmc/data/model/estimator/distillation/match_pyramid_0317_focal_loss_distillation_0.9_mask/match_pyramid.json" \
  --init_checkpoint "lcqmc/data/model/estimator/distillation/match_pyramid_0317_focal_loss_distillation_0.9_mask/restore/model.ckpt-186501" \
