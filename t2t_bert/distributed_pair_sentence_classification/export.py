@@ -33,7 +33,8 @@ def export_model(FLAGS,
 
 	def serving_input_receiver_fn():
 		receiver_features = data_interface_server(FLAGS)
-		input_fn = tf.estimator.export.build_raw_serving_input_receiver_fn()()
+		print(receiver_features, "==input receiver_features==")
+		input_fn = tf.estimator.export.build_raw_serving_input_receiver_fn(receiver_features)()
 		return input_fn
 
 	model_fn_builder = model_fn_interface(FLAGS)
