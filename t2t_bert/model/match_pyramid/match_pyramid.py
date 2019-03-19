@@ -24,8 +24,7 @@ class MatchPyramid(dsmm.DSMM):
 							 initializer=tf.truncated_normal_initializer(mean=0.0, stddev=0.2, dtype=tf.float32),
 							 dtype=tf.float32,
 							 shape=[emb_seq.shape[-1].value,
-									self.config["embedding_dim_compressed"]],
-							 reuse=reuse)
+									self.config["embedding_dim_compressed"]])
 
 				emb_seq = tf.einsum("abd,dc->abc", emb_seq, eW)
 
