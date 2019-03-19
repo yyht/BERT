@@ -55,7 +55,7 @@ def main(_):
 		print("==succeeded in loading meta graph==")
 		saver.restore(sess, input_checkpoint)
 		print("==succeeded in loading model==")
-		saver.save(sess, Foutput_checkpoint)
+		saver.save(sess, output_checkpoint)
 		print("==succeeded in restoring model==")
 		saver.export_meta_graph(output_meta_graph, clear_devices=True)
 
