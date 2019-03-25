@@ -130,6 +130,11 @@ flags.DEFINE_string(
 	"if apply rule detector"
 	)
 
+flags.DEFINE_string(
+	"data_type", "",
+	"if apply rule detector"
+	)
+
 def main(_):
 
 	tokenizer = tokenization.Jieba_CHAR(
@@ -162,7 +167,9 @@ def main(_):
 	tokenizer.load_vocab(vocab_lst)
 
 	print("==not apply rule==")
-	classifier_data_api = classifier_processor.FasttextClassifierProcessor()
+	if FLAGS.data_type == "fasttext":
+		classifier_data_api = classifier_processor.FasttextClassifierProcessor()
+	
 	classifier_data_api.get_labels(FLAGS.label_id)
 
 	train_examples = classifier_data_api.get_train_examples(train_file,

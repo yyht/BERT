@@ -16,7 +16,7 @@ import tensorflow as tf
 
 # pai_soar optimizer
 try:
-	import tensorflow.contrib.pai_soar as pai
+	import paisoar as pai
 except Exception as e:
 	pai = None
 

@@ -2,7 +2,7 @@
 
 import requests
 import json
-
+import tensorflow as tf
 import sys,os
 
 father_path = os.path.join(os.getcwd())
@@ -30,7 +30,7 @@ sys.path.extend([bert_path, t2t_bert_path])
 
 print(sys.path)
 
-from distributed_single_sentence_classification import tf_serving_data_prepare as single_sent_data_prepare
+# from distributed_single_sentence_classification import tf_serving_data_prepare as single_sent_data_prepare
 from distributed_pair_sentence_classification import tf_serving_data_prepare as pair_sent_data_prepare
 
 flags = tf.flags
@@ -38,6 +38,11 @@ flags = tf.flags
 FLAGS = flags.FLAGS
 
 ## Required parameters
+flags.DEFINE_string(
+	"buckets", None,
+	"The config json file corresponding to the pre-trained BERT model. "
+	"This specifies the model architecture.")
+
 flags.DEFINE_string(
 	"vocab", None,
 	"The config json file corresponding to the pre-trained BERT model. "
@@ -65,11 +70,6 @@ flags.DEFINE_string(
 
 flags.DEFINE_string(
 	"signature_name", None,
-	"The config json file corresponding to the pre-trained BERT model. "
-	"This specifies the model architecture.")
-
-flags.DEFINE_string(
-	"input_keys", None,
 	"The config json file corresponding to the pre-trained BERT model. "
 	"This specifies the model architecture.")
 
@@ -123,30 +123,49 @@ flags.DEFINE_string(
 	"The config json file corresponding to the pre-trained BERT model. "
 	"This specifies the model architecture.")
 
+flags.DEFINE_string(
+	"tokenizer", "",
+	"The config json file corresponding to the pre-trained BERT model. "
+	"This specifies the model architecture.")
+
+flags.DEFINE_string(
+	"with_char", "",
+	"The config json file corresponding to the pre-trained BERT model. "
+	"This specifies the model architecture.")
+
+flags.DEFINE_string(
+	"versions", "",
+	"The config json file corresponding to the pre-trained BERT model. "
+	"This specifies the model architecture.")
+
+flags.DEFINE_integer(
+	"max_seq_length", 64,
+	"The config json file corresponding to the pre-trained BERT model. "
+	"This specifies the model architecture.")
+
 def main(_):
 
-	# if FLAGS.task_type == "single_sentence":
-	# 	if FLAGS.model_type == "bert":
-	# 		single_sent_data_prepare
+	if FLAGS.task_type == "pair_sentence_classification":
+		vocab_path = os.path.join(FLAGS.buckets, FLAGS.vocab)
+		corpus_path = os.path.join(FLAGS.buckets, FLAGS.input_data)
+		print(corpus_path, vocab_path)
+		feed_dict = pair_sent_data_prepare.get_feeddict(FLAGS, vocab_path, corpus_path)
+		output_path = os.path.join(FLAGS.buckets, FLAGS.output_path)
 
-	
 
-	results = requests.post("http://%s:%s/v1/models/%s:predict" % (FLAGS.url, FLAGS.port, FLAGS.model_name), json=feed_dict)
+
+	results = requests.post("http://%s:%s/v1/models/%s/versions/%s:predict" % (FLAGS.url, 
+															FLAGS.port, FLAGS.model_name, 
+															FLAGS.versions), 
+															json=feed_dict)
 	try:
-		with open(FLAGS.output_path, "w") as fwobj:
+		with tf.gfile.Open(output_path, "w") as fwobj:
 			pred_lst = results.content.decode()
-			output_lst = []
-			for q, l, p in zip(query_lst, label_lst, pred_lst):
-				tmp = {
-					"query":q,
-					"label":l,
-					"predict":p
-				}
-				output_lst.append(tmp)
-			json.dump(fwobj)
+			json.dump(pred_lst, fwobj)
+		print(results.content.decode())
 	except:
 		predict_info = []
-		print(results.content)
+		print(results.content.decode())
 
 if __name__ == "__main__":
 	tf.app.run()
