@@ -33,7 +33,7 @@ import json, os
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, classification_report
 
 try:
-	import tensorflow.contrib.pai_soar as pai
+	import paisoar as pai
 except Exception as e:
 	pai = None
 
@@ -399,17 +399,21 @@ def train_eval_fn(FLAGS,
 		hooks = []
 		hooks.extend(train_op_dict["hooks"])
 		if FLAGS.opt_type == "ps" or FLAGS.opt_type == "ps_sync":
+			sess_config = tf.ConfigProto(allow_soft_placement=False,
+									log_device_placement=False)
 			print("==create monitored training session==", FLAGS.opt_type, is_chief)
 			sess = tf.train.MonitoredTrainingSession(master=target,
 												 is_chief=is_chief,
-												 config=sess_config,
+												 config=kargs.get("sess_config",sess_config),
 												 hooks=hooks,
 												 checkpoint_dir=checkpoint_dir,
 												 save_checkpoint_steps=num_storage_steps)
 		elif FLAGS.opt_type == "pai_soar" and pai:
+			sess_config = tf.ConfigProto(allow_soft_placement=False,
+									log_device_placement=False)
 			sess = tf.train.MonitoredTrainingSession(master=target,
 												 is_chief=is_chief,
-												 config=sess_config,
+												 config=kargs.get("sess_config",sess_config),
 												 hooks=hooks,
 												 checkpoint_dir=checkpoint_dir,
 												 save_checkpoint_steps=num_storage_steps)

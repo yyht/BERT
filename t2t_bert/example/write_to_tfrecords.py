@@ -4,12 +4,17 @@ from example.feature_writer import ClassifierFeatureWriter, SpanFeatureWriter, M
 from data_generator import data_feature_classifier
 from data_generator import data_distillation_feature_classifier
 from data_generator import data_feature_mrc
+from data_generator import extra_mask_feature_classifier
+from data_generator import pair_data_feature_classifier
+
 from data_generator import tokenization
 import collections
-from data_generator import pair_data_feature_classifier
+
 from example.feature_writer import PairClassifierFeatureWriter
 from example.feature_writer import PairPreTrainingFeature
 from example.feature_writer import DistillationEncoderFeatureWriter
+from example.feature_writer import ClassifierRuleFeatureWriter
+
 
 def convert_classifier_examples_to_features(examples, label_dict, 
 											max_seq_length,
@@ -670,7 +675,7 @@ def convert_classifier_examples_with_rule_to_features(examples, label_dict,
 											tokenizer, rule_detector, 
 											output_file):
 
-	feature_writer = ClassifierFeatureWriter(output_file, is_training=False)
+	feature_writer = ClassifierRuleFeatureWriter(output_file, is_training=False)
 
 	for (ex_index, example) in enumerate(examples):
 		tokens_a = tokenizer.tokenize(example.text_a)
@@ -691,23 +696,22 @@ def convert_classifier_examples_with_rule_to_features(examples, label_dict,
 		else:
 			if len(tokens_a) > max_seq_length - 2:
 				tokens_a = tokens_a[0:(max_seq_length - 2)]
-		tokens = []
-		segment_ids = [0]
-		rule_ids = rule_detector.infer(tokens_a) # input is tokenized list
-		tokens.append("[CLS]")
+	
+		rule_id_lst = rule_detector.infer(tokens_a)
 
-		for index, token in enumerate(tokens_a):
+		tokens = []
+		segment_ids = []
+		rule_ids = []
+		tokens.append("[CLS]")
+		segment_ids.append(0)
+		rule_ids.append(0)
+		for token in tokens_a:
 			tokens.append(token)
-			segment_ids.append(rule_ids[index])
+			segment_ids.append(0)
+			rule_ids.append(rule_id_lst[index])
 		tokens.append("[SEP]")
 		segment_ids.append(0)
-
-		if tokens_b:
-			for token in tokens_b:
-				tokens.append(token)
-				segment_ids.append(1)
-			tokens.append("[SEP]")
-			segment_ids.append(1)
+		rule_ids.append(0)
 
 		input_ids = tokenizer.convert_tokens_to_ids(tokens)
 		input_mask = [1] * len(input_ids)
@@ -717,12 +721,13 @@ def convert_classifier_examples_with_rule_to_features(examples, label_dict,
 			input_ids.append(0)
 			input_mask.append(0)
 			segment_ids.append(0)
+			rule_ids.append(0)
 
 		try:
-
 			assert len(input_ids) == max_seq_length
 			assert len(input_mask) == max_seq_length
 			assert len(segment_ids) == max_seq_length
+			assert len(rule_ids) == max_seq_length
 		except:
 			print(len(input_ids), max_seq_length, ex_index, "length error")
 			break
@@ -743,9 +748,11 @@ def convert_classifier_examples_with_rule_to_features(examples, label_dict,
 			tf.logging.info("input_mask: %s" % " ".join([str(x) for x in input_mask]))
 			tf.logging.info(
 					"segment_ids: %s" % " ".join([str(x) for x in segment_ids]))
+			tf.logging.info(
+					"rule_ids: %s" % " ".join([str(x) for x in rule_ids]))
 			tf.logging.info("label: {} (id = {})".format(example.label, label_id))
 
-		feature = data_feature_classifier.InputFeatures(
+		feature = extra_mask_feature_classifier.InputFeatures(
 					guid=example.guid,
 					input_ids=input_ids,
 					input_mask=input_mask,

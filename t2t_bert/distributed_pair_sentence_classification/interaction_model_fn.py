@@ -76,7 +76,17 @@ def model_fn_builder(
 			model_io_fn.print_params(tvars, string=", trainable params")
 			update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 			with tf.control_dependencies(update_ops):
-				train_op = optimizer_fn.get_train_op(loss, tvars, 
+
+				if opt_config.get("opt_type", "pai_soar") == "pai_soar":
+					def loss_fn():
+						return loss
+
+					train_op = optimizer_fn.get_train_op(loss_fn, tvars, 
+								opt_config.init_lr, 
+								opt_config.num_train_steps,
+								**kargs)
+				else:
+					train_op = optimizer_fn.get_train_op(loss, tvars, 
 								opt_config.init_lr, 
 								opt_config.num_train_steps,
 								**kargs)

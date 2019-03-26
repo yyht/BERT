@@ -118,8 +118,8 @@ def main(_):
 			json.dump(freq_dict, open(FLAGS.rule_word_dict, "w"))
 		from data_generator import rule_detector
 
-		# label_dict = {"label2id":{"正常":0,"rule":1}, "id2label":{0:"正常", 1:"rule"}}
-		# json.dump(label_dict, open("/data/xuht/websiteanalyze-data-seqing20180821/data/rule/rule_label_dict.json", "w"))
+		label_dict = {"label2id":{"正常":0,"rule":1}, "id2label":{0:"正常", 1:"rule"}}
+		json.dump(label_dict, open("/data/xuht/websiteanalyze-data-seqing20180821/data/rule/rule_label_dict.json", "w"))
 
 		rule_config = {
 			"keyword_path":FLAGS.rule_word_dict,
@@ -134,7 +134,7 @@ def main(_):
 
 		train_examples = classifier_data_api.get_train_examples(
 												FLAGS.train_file,
-												 is_shuffle=False)
+												 is_shuffle=True)
 
 		write_to_tfrecords.convert_classifier_examples_with_rule_to_features(train_examples,
 																classifier_data_api.label2id,

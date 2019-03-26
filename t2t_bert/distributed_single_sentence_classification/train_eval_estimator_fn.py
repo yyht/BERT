@@ -44,7 +44,7 @@ import json
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, classification_report
 
 try:
-	import tensorflow.contrib.pai_soar as pai
+	import paisoar as pai
 except Exception as e:
 	pai = None
 

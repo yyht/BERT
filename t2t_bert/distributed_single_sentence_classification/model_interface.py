@@ -46,6 +46,7 @@ def model_config_parser(FLAGS):
 		config.model_type = FLAGS.model_type
 		config.init_lr = 2e-5
 		config.loss = "entropy"
+		config.rule_type_size = 2
 		if FLAGS.task_type in ["pair_sentence_classification"]:
 			config.classifier = FLAGS.classifier
 
@@ -60,6 +61,7 @@ def model_config_parser(FLAGS):
 		config.init_lr = 2e-5
 		config.num_hidden_layers = FLAGS.num_hidden_layers
 		config.loss = "entropy"
+		config.rule_type_size = 2
 		if FLAGS.task_type in ["pair_sentence_classification"]:
 			config.classifier = FLAGS.classifier
 			config.output_layer = FLAGS.output_layer

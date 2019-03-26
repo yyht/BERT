@@ -13,9 +13,10 @@ class Bert(object):
 		tf.logging.info(" begin to build {}".format(self.config.get("scope", "bert")))
 
 	def build_embedder(self, input_ids, token_type_ids, 
-									hidden_dropout_prob, 
-									attention_probs_dropout_prob,
-									**kargs):
+						rule_type_ids,
+						hidden_dropout_prob, 
+						attention_probs_dropout_prob,
+						**kargs):
 
 		reuse = kargs["reuse"]
 		with tf.variable_scope(self.config.get("scope", "bert"), reuse=reuse):
@@ -41,14 +42,18 @@ class Bert(object):
 				# [0,1] for class-unrelated and class-related
 				# [0,1,2,3,4] for specific class type
 
-				self.embedding_output = bert_modules.embedding_postprocessor(
+				self.embedding_output = bert_modules.embedding_rule_type_postprocessor(
 						input_tensor=self.embedding_output_word,
 						use_token_type=True,
 						token_type_ids=token_type_ids,
+						rule_type_ids=rule_type_ids,
 						token_type_vocab_size=self.config.type_vocab_size,
-						token_type_embedding_name="rule_type_embeddings", # rule type to incoroperate mined rule
+						rule_type_size=self.config.rule_type_size,
+						token_type_embedding_name="token_type_embeddings", # rule type to incoroperate mined rule
 						use_position_embeddings=True,
 						position_embedding_name="position_embeddings",
+						rule_type_embedding_name="rule_type_embedding",
+						use_rule_type_embeddings=True,
 						initializer_range=self.config.initializer_range,
 						max_position_embeddings=self.config.max_position_embeddings,
 						dropout_prob=hidden_dropout_prob)

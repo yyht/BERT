@@ -57,6 +57,31 @@ class ClassifierFeatureWriter(FeatureWriter):
 			tf_example = tf.train.Example(features=tf.train.Features(feature=features))
 			self._writer.write(tf_example.SerializeToString())
 
+class ClassifierRuleFeatureWriter(FeatureWriter):
+	def __init__(self, filename, is_training):
+		super(ClassifierRuleFeatureWriter, self).__init__(filename, is_training)
+
+	def process_feature(self, feature):
+		"""Write a InputFeature to the TFRecordWriter as a tf.train.Example."""
+		self.num_features += 1
+
+		features = collections.OrderedDict()
+		features["input_ids"] = tf_data_utils.create_int_feature(feature.input_ids)
+		features["input_mask"] = tf_data_utils.create_int_feature(feature.input_mask)
+		features["segment_ids"] = tf_data_utils.create_int_feature(feature.segment_ids)
+		features["label_ids"] = tf_data_utils.create_int_feature([feature.label_ids])
+		try:
+			features["qas_id"] = tf_data_utils.create_int_feature([feature.guid])
+		except:
+			pass
+		try:
+			features["rule_ids"] = tf_data_utils.create_int_feature(feature.rule_ids)
+		except:
+			pass
+
+		tf_example = tf.train.Example(features=tf.train.Features(feature=features))
+		self._writer.write(tf_example.SerializeToString())
+			
 class PairClassifierFeatureWriter(FeatureWriter):
 	def __init__(self, filename, is_training):
 		super(PairClassifierFeatureWriter, self).__init__(filename, is_training)

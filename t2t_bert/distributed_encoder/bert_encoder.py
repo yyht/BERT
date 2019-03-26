@@ -48,10 +48,12 @@ def bert_rule_encoder(model_config, features, labels,
 		input_ids = features["input_ids_{}".format(target)]
 		input_mask = features["input_mask_{}".format(target)]
 		segment_ids = features["segment_ids_{}".format(target)]
+		rule_ids = features["rule_ids_{}".format(target)]
 	else:
 		input_ids = features["input_ids"]
 		input_mask = features["input_mask"]
 		segment_ids = features["segment_ids"]
+		rule_ids = features["rule_ids"]
 
 	if mode == tf.estimator.ModeKeys.TRAIN:
 		hidden_dropout_prob = model_config.hidden_dropout_prob
@@ -65,6 +67,7 @@ def bert_rule_encoder(model_config, features, labels,
 	model = bert_rule.Bert(model_config)
 	model.build_embedder(input_ids, 
 						segment_ids,
+						rule_ids,
 						hidden_dropout_prob,
 						attention_probs_dropout_prob,
 						reuse=reuse)

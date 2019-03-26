@@ -1,0 +1,12 @@
+bunch
+sentencepiece
+hanziconv
+tornado
+pandas
+sklearn
+jupyter
+networkx
+pyemd
+jieba
+fuzzywuzzy[speedup]
+requests
