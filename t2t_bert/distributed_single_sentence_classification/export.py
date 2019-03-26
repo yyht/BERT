@@ -1,158 +1,65 @@
-import tensorflow as tf
-
-from optimizer import distributed_optimizer as optimizer
-from data_generator import distributed_tf_data_utils as tf_data_utils
-
 try:
-	from .bert_model_fn import model_fn_builder
-	from .bert_model_fn import rule_model_fn_builder
+	from distributed_single_sentence_classification.model_interface import model_config_parser
+	from distributed_single_sentence_classification.model_data_interface import data_interface_server
+	from distributed_single_sentence_classification.model_fn_interface import model_fn_interface
 except:
-	from bert_model_fn import model_fn_builder
-	from bert_model_fn import rule_model_fn_builder
+	from distributed_single_sentence_classification.model_interface import model_config_parser
+	from distributed_single_sentence_classification.model_data_interface import data_interface_server
+	from distributed_single_sentence_classification.model_fn_interface import model_fn_interface
+
+import json
 
 import numpy as np
 import tensorflow as tf
 from bunch import Bunch
 from model_io import model_io
-import json
+import json, os
 
-def export_model_v1(config,
-					**kargs):
+def export_model(FLAGS,
+				init_checkpoint,
+				checkpoint_dir,
+				export_dir,
+				**kargs):
 
-	bert_config = json.load(open(config["config_file"], "r"))
-	model_config = Bunch(bert_config)
-
-	model_config.use_one_hot_embeddings = True
-	model_config.scope = "bert"
-	model_config.dropout_prob = 0.1
-	model_config.label_type = "single_label"
-
-	with open(config["label2id"], "r") as frobj:
-		label_dict = json.load(frobj)
-
-	num_classes = len(label_dict["id2label"])
-	max_seq_length = config["max_length"]
-
-	def serving_input_receiver_fn():
-		# receive tensors
-		receiver_tensors = {
-				"input_ids":
-						tf.placeholder(tf.int32, [None, max_seq_length], name='input_ids'),
-				"input_mask":
-						tf.placeholder(tf.int32, [None, max_seq_length], name='input_mask'),
-				"segment_ids":
-						tf.placeholder(tf.int32, [None, max_seq_length], name='segment_ids'),
-				"label_ids":
-						tf.placeholder(tf.int32, [None], name='label_ids'),
-		}
-
-		# Convert give inputs to adjust to the model.
-		features = {}
-		for key in receiver_tensors:
-			features[key] = receiver_tensors[key]
-		return tf.estimator.export.ServingInputReceiver(receiver_tensors=receiver_tensors,
-													features=features)
-
-	# def serving_input_receiver_fn():
-	# 	receive serialized example
-	# 	serialized_tf_example = tf.placeholder(dtype=tf.string,
-	# 									shape=None,
-	# 									name='input_example_tensor')
-	# 	receiver_tensors = {'examples': serialized_tf_example}
-	# 	features = tf.parse_example(serialized_tf_example, feature_spec)
-	# 	return tf.estimator.export.ServingInputReceiver(features, receiver_tensors)
-
-	if config.get("rule_model", "rule"):
-		model_fn_interface = rule_model_fn_builder
-	else:
-		model_fn_interface = model_fn_builder
-
-	opt_config = Bunch({"train_op":"adam"})
+	config = model_config_parser(FLAGS)
+	opt_config = Bunch({})
+	anneal_config = Bunch({})
 	model_io_config = Bunch({"fix_lm":False})
 
-	model_fn = model_fn_interface(config, num_classes, init_checkpoint, 
-								model_reuse=None, 
-								load_pretrained=True,
-								opt_config=opt_config,
-								model_io_config=model_io_config,
-								exclude_scope="",
-								not_storage_params=[],
-								target="",
-								output_type="estimator",
-								checkpoint_dir=self.config["model_dir"],
-								num_storage_steps=1000,
-								task_index=0)
-
-	estimator = tf.estimator.Estimator(
-				model_fn=model_fn,
-				model_dir=config["model_dir"])
-
-	export_dir = estimator.export_savedmodel(config["export_path"], 
-									serving_input_receiver_fn,
-									checkpoint_path=config["init_checkpoint"])
-
-	print("===Succeeded in exporting saved model==={}".format(export_dir))
-
-def export_model_v2(config):
-
-	bert_config = json.load(open(config["config_file"], "r"))
-	model_config = Bunch(bert_config)
-
-	model_config.use_one_hot_embeddings = True
-	model_config.scope = "bert"
-	model_config.dropout_prob = 0.1
-	model_config.label_type = "single_label"
-
-	with open(config["label2id"], "r") as frobj:
+	with tf.gfile.Open(FLAGS.label_id, "r") as frobj:
 		label_dict = json.load(frobj)
 
 	num_classes = len(label_dict["id2label"])
-	max_seq_length = config["max_length"]
 
 	def serving_input_receiver_fn():
-		label_ids = tf.placeholder(tf.int32, [None], name='label_ids')
-
-		input_ids = tf.placeholder(tf.int32, [None, max_seq_length], name='input_ids')
-		input_mask = tf.placeholder(tf.int32, [None, max_seq_length], name='input_mask')
-		segment_ids = tf.placeholder(tf.int32, [None, max_seq_length], name='segment_ids')
-
-		input_fn = tf.estimator.export.build_raw_serving_input_receiver_fn({
-			'label_ids': label_ids,
-			'input_ids': input_ids,
-			'input_mask': input_mask,
-			'segment_ids': segment_ids
-		})()
+		receiver_features = data_interface_server(FLAGS)
+		print(receiver_features, "==input receiver_features==")
+		input_fn = tf.estimator.export.build_raw_serving_input_receiver_fn(receiver_features)()
 		return input_fn
 
-	if config.get("rule_model", "rule"):
-		model_fn_interface = rule_model_fn_builder
-	else:
-		model_fn_interface = model_fn_builder
-
-	opt_config = Bunch({"train_op":"adam"})
-	model_io_config = Bunch({"fix_lm":False})
-
-	model_fn = model_fn_interface(model_config, num_classes, 
-								config["init_checkpoint"], 
-								model_reuse=None, 
-								load_pretrained=True,
-								opt_config=opt_config,
-								model_io_config=model_io_config,
-								exclude_scope="",
-								not_storage_params=[],
-								target="",
-								output_type="estimator",
-								checkpoint_dir=config["model_dir"],
-								num_storage_steps=1000,
-								task_index=0)
+	model_fn_builder = model_fn_interface(FLAGS)
+	model_fn = model_fn_builder(config, num_classes, init_checkpoint, 
+											model_reuse=None, 
+											load_pretrained=FLAGS.load_pretrained,
+											opt_config=opt_config,
+											model_io_config=model_io_config,
+											exclude_scope="",
+											not_storage_params=[],
+											target=kargs.get("input_target", ""),
+											output_type="estimator",
+											checkpoint_dir=checkpoint_dir,
+											num_storage_steps=100,
+											task_index=0,
+											anneal_config=anneal_config,
+											**kargs)
 
 	estimator = tf.estimator.Estimator(
 				model_fn=model_fn,
-				model_dir=config["model_dir"])
+				model_dir=checkpoint_dir)
 
-	export_dir = estimator.export_savedmodel(config["export_path"], 
+	export_dir = estimator.export_savedmodel(export_dir, 
 									serving_input_receiver_fn,
-									checkpoint_path=config["init_checkpoint"])
+									checkpoint_path=init_checkpoint)
 	print("===Succeeded in exporting saved model==={}".format(export_dir))
 
 
