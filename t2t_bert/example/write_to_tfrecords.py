@@ -705,7 +705,7 @@ def convert_classifier_examples_with_rule_to_features(examples, label_dict,
 		tokens.append("[CLS]")
 		segment_ids.append(0)
 		rule_ids.append(0)
-		for token in tokens_a:
+		for index, token in enumerate(tokens_a):
 			tokens.append(token)
 			segment_ids.append(0)
 			rule_ids.append(rule_id_lst[index])
