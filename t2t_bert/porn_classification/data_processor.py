@@ -118,8 +118,8 @@ def main(_):
 			json.dump(freq_dict, open(FLAGS.rule_word_dict, "w"))
 		from data_generator import rule_detector
 
-		label_dict = {"label2id":{"正常":0,"rule":1}, "id2label":{0:"正常", 1:"rule"}}
-		json.dump(label_dict, open("/data/xuht/websiteanalyze-data-seqing20180821/data/rule/rule_label_dict.json", "w"))
+		# label_dict = {"label2id":{"正常":0,"rule":1}, "id2label":{0:"正常", 1:"rule"}}
+		# json.dump(label_dict, open("/data/xuht/websiteanalyze-data-seqing20180821/data/rule/rule_label_dict.json", "w"))
 
 		rule_config = {
 			"keyword_path":FLAGS.rule_word_dict,
