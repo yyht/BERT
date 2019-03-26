@@ -757,6 +757,7 @@ def convert_classifier_examples_with_rule_to_features(examples, label_dict,
 					input_ids=input_ids,
 					input_mask=input_mask,
 					segment_ids=segment_ids,
+					rule_ids=rule_ids,
 					label_ids=label_id)
 		feature_writer.process_feature(feature)
 	feature_writer.close()
