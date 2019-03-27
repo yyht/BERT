@@ -1,7 +1,7 @@
 import tensorflow as tf
 
 def data_interface(FLAGS):
-	if FLAGS.model_type in ["bert", "bert_rule", "bert_small"]:
+	if FLAGS.model_type in ["bert","bert_small"]:
 		if FLAGS.task_type == "single_sentence_classification":
 			name_to_features = {
 					"input_ids":
@@ -30,6 +30,22 @@ def data_interface(FLAGS):
 				"label_ids":
 						tf.FixedLenFeature([], tf.int64),
 				}
+
+	if FLAGS.model_type in ["bert_rule"]:
+		if FLAGS.task_type == "single_sentence_classification":
+			name_to_features = {
+					"input_ids":
+							tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+					"input_mask":
+							tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+					"segment_ids":
+							tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+					"rule_ids":
+							tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+					"label_ids":
+							tf.FixedLenFeature([], tf.int64),
+			}
+
 	elif FLAGS.model_type in ["textcnn", "textlstm"]:
 		name_to_features = {
 			"input_ids_a":tf.FixedLenFeature([FLAGS.max_length], tf.int64),
