@@ -478,8 +478,8 @@ class FasttextClassifierProcessor(data_processor.DataProcessor):
 
 	def _create_examples(self, lines,
 									LABEL_SPLITTER="__label__"):
-		# re_pattern = u"({}{})".format(LABEL_SPLITTER, "\d.")
-		re_pattern = "(?<={})(\d+)".format(LABEL_SPLITTER)
+		re_pattern = u"({}{})".format(LABEL_SPLITTER, "\d.")
+		label_pattern = "(?<={})(\d+)".format(LABEL_SPLITTER)
 
 		examples = []
 		for (i, line) in enumerate(lines):
@@ -487,7 +487,7 @@ class FasttextClassifierProcessor(data_processor.DataProcessor):
 				guid = i
 				element_list = re.split(re_pattern, line)
 				text_a = clean(element_list[-1])
-				tmp_label = clean(element_list[-1])
+				tmp_label = clean(line)
 
 				input_labels = []
 				for l in re.finditer(re_pattern, tmp_label):
