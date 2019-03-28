@@ -490,7 +490,7 @@ class FasttextClassifierProcessor(data_processor.DataProcessor):
 				tmp_label = clean(line)
 
 				input_labels = []
-				for l in re.finditer(re_pattern, tmp_label):
+				for l in re.finditer(label_pattern, tmp_label):
 					input_labels.append(l.group())
 
 				text_a = tokenization.convert_to_unicode(text_a)
