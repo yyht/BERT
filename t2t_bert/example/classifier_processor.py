@@ -478,7 +478,8 @@ class FasttextClassifierProcessor(data_processor.DataProcessor):
 
 	def _create_examples(self, lines,
 									LABEL_SPLITTER="__label__"):
-		re_pattern = u"({}{})".format(LABEL_SPLITTER, "\d.")
+		# re_pattern = u"({}{})".format(LABEL_SPLITTER, "\d.")
+		re_pattern = "(?<={})(\d+)".format(LABEL_SPLITTER)
 
 		examples = []
 		for (i, line) in enumerate(lines):
@@ -486,10 +487,14 @@ class FasttextClassifierProcessor(data_processor.DataProcessor):
 				guid = i
 				element_list = re.split(re_pattern, line)
 				text_a = clean(element_list[-1])
-				input_labels = clean(element_list[1]).split(LABEL_SPLITTER)[-1]
+				tmp_label = clean(element_list[-1])
+
+				input_labels = []
+				for l in re.finditer(re_pattern, tmp_label):
+					input_labels.append(l.group())
 
 				text_a = tokenization.convert_to_unicode(text_a)
-				input_labels = [label.strip() for label in input_labels if label.strip() in list(self.label2id.keys())]
+				# input_labels = [label.strip() for label in input_labels if label.strip() in list(self.label2id.keys())]
 				
 				examples.append(data_feature_classifier.InputExample(
 						guid=guid,
