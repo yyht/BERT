@@ -169,11 +169,12 @@ def main(_):
 	print("==not apply rule==")
 	if FLAGS.data_type == "fasttext":
 		classifier_data_api = classifier_processor.FasttextClassifierProcessor()
-	
+
 	classifier_data_api.get_labels(FLAGS.label_id)
 
 	train_examples = classifier_data_api.get_train_examples(train_file,
 										is_shuffle=True)
+	print("==total train examples==", len(train_examples))
 
 	vocab_filter.vocab_filter(train_examples, vocab_lst, 
 							tokenizer, FLAGS.predefined_vocab_size, 

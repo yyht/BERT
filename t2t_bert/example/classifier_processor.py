@@ -487,10 +487,9 @@ class FasttextClassifierProcessor(data_processor.DataProcessor):
 				guid = i
 				element_list = re.split(re_pattern, line)
 				text_a = clean(element_list[-1])
-				tmp_label = clean(line)
 
 				input_labels = []
-				for l in re.finditer(label_pattern, tmp_label):
+				for l in re.finditer(label_pattern, line):
 					input_labels.append(l.group())
 
 				text_a = tokenization.convert_to_unicode(text_a)
@@ -502,6 +501,7 @@ class FasttextClassifierProcessor(data_processor.DataProcessor):
 						text_b=None,
 						label=input_labels
 					))
+				
 			except:
 				print(line, i)
 		return examples

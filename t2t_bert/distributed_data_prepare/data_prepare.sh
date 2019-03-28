@@ -1,13 +1,13 @@
 python ./t2t_bert/distributed_data_prepare/classification_data_prepare.py \
 	--buckets /data/xuht \
-	--train_file porn/clean_data/train.txt \
-	--dev_file porn/clean_data/dev.txt \
-	--test_file porn/clean_data/test.txt \
-	--train_result_file porn/clean_data/textcnn/train_tfrecords \
-	--dev_result_file  porn/clean_data/textcnn/dev_tfrecords\
-	--test_result_file  porn/clean_data/textcnn/test_tfrecords\
+	--train_file sentence_embedding/cluster_corpus_fasttext.txt \
+	--dev_file sentence_embedding/cluster_corpus_fasttext.txt \
+	--test_file sentence_embedding/cluster_corpus_fasttext.txt \
+	--train_result_file sentence_embedding/data/train_tfrecords \
+	--dev_result_file  sentence_embedding/data/dev_tfrecords\
+	--test_result_file  sentence_embedding/data/test_tfrecords\
 	--vocab_file w2v/tencent_ai_lab/char_id.txt \
-	--label_id /data/xuht/porn/label_dict.json \
+	--label_id /data/xuht/sentence_embedding/cluster_corpus_label_dict.json \
 	--lower_case True \
 	--max_length 128 \
 	--if_rule "no_rule" \
@@ -17,4 +17,5 @@ python ./t2t_bert/distributed_data_prepare/classification_data_prepare.py \
 	--with_char "no" \
 	--char_len 5 \
 	--predefined_vocab_size 50000 \
-	--corpus_vocab_path porn/clean_data/textcnn/char_id.txt
+	--corpus_vocab_path sentence_embedding/data/char_id.txt \
+	--data_type fasttext
