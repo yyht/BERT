@@ -5,6 +5,7 @@ from __future__ import print_function
 from optimizer import optimizer_utils
 from optimizer import adam_weight_decay_utils
 from optimizer import adam_weight_decay_exclude_utils
+from optimizer import pai_soar_optimizer_utils
 
 import collections
 import copy
@@ -101,31 +102,38 @@ class Optimizer(object):
 		return learning_rate
 
 	def grad_clip_fn(self, opt, loss, tvars, **kargs):
-		grads_and_vars = opt.compute_gradients(loss, tvars)
-		grads = [grad for grad, _ in grads_and_vars]
-		grad_clip = self.config.get("grad_clip", "global_norm")
-		tf.logging.info(" gradient clip method {}".format(grad_clip))
-		if grad_clip == "global_norm":
-			clip_norm = self.config.get("clip_norm", 1.0)
-			[grads, _] = tf.clip_by_global_norm(grads, 
-								clip_norm=clip_norm)
-			print("==global norm==", clip_norm)
-		elif grad_clip == "norm":
-			clip_norm = self.config.get("clip_norm", 1.0)
-			grads = [tf.clip_by_norm(grad, clip_norm) for grad in grads]
-		elif grad_clip == "value":
-			clip_min_value = self.config.get("clip_min_value", -1.0)
-			clip_max_value = self.config.get("clip_max_value", 1.0)
-			grads = [tf.clip_by_value(grad, clip_norm) for grad in grads]
-		else:
-			grads = grads
-		return grads
+
+		if self.config.get("opt_type", "pai_soar") == "pai_soar":
+			loss_fn = opt.compute_loss(loss, loss_scale=self.config.get("loss_scale", 1))
+			grads_and_vars = opt.compute_gradients(loss_fn, colocate_gradients_with_ops=True)
+		else:	
+			grads_and_vars = opt.compute_gradients(loss, tvars)
+			grads = [grad for grad, _ in grads_and_vars]
+			grad_clip = self.config.get("grad_clip", "global_norm")
+			tf.logging.info(" gradient clip method {}".format(grad_clip))
+			if grad_clip == "global_norm":
+				clip_norm = self.config.get("clip_norm", 1.0)
+				[grads, _] = tf.clip_by_global_norm(grads, 
+									clip_norm=clip_norm)
+				print("==global norm==", clip_norm)
+			elif grad_clip == "norm":
+				clip_norm = self.config.get("clip_norm", 1.0)
+				grads = [tf.clip_by_norm(grad, clip_norm) for grad in grads]
+			elif grad_clip == "value":
+				clip_min_value = self.config.get("clip_min_value", -1.0)
+				clip_max_value = self.config.get("clip_max_value", 1.0)
+				grads = [tf.clip_by_value(grad, clip_norm) for grad in grads]
+			else:
+				grads = grads
+			grads_and_vars = zip(grads, tvars)
+		return grads_and_vars
 
 	def optimizer_op(self, learning_rate,
 							**kargs):
 		opt_type = self.config.get("train_op", "adam_decay")
 		tf.logging.info(" optimization method {}".format(opt_type))
-		if opt_type not in ["adam_decay", "adam", "adam_weight_decay", "adam_weight_decay_exclude"]:
+		if opt_type not in ["adam_decay", "adam", "adam_weight_decay", 
+					"adam_weight_decay_exclude", "pai_soar_adam_decay"]:
 			raise NotImplementedError()
 		if opt_type == "adam_decay":
 			print("==apply bert adam weight decay==")
@@ -154,6 +162,15 @@ class Optimizer(object):
 						epsilon=self.config.get("epsilon", 1e-6),
 						exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"]
 						)
+		elif opt_type == "pai_soar_adam_decay":
+			print("==apply pai soar adam decay==")
+			opt = pai_soar_optimizer_utils.AdamWeightDecayOptimizer(
+						learning_rate=learning_rate,
+						weight_decay_rate=self.config.get("opt_decay_rate", 0.01),
+						beta_1=self.config.get("beta_1", 0.9),
+						beta_2=self.config.get("beta_2", 0.999),
+						epsilon=self.config.get("epsilon", 1e-6),
+						exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"])
 		elif opt_type == "adam":
 			print("==apply adam==")
 			opt = tf.train.AdamOptimizer(learning_rate,
@@ -183,7 +200,7 @@ class Optimizer(object):
 		elif pai and self.config["opt_type"] == "pai_soar":
 			print("==optimizer pai_soar size=={}".format(self.config.get("worker_count", 4)))
 			opt = self.optimizer_op(learning_rate*self.config.get("worker_count", 4), **kargs)
-			self.opt = pai.ReplicatedVarsOptimizer(opt)
+			self.opt = pai.ReplicatedVarsOptimizer(opt, clip_norm=self.config.get("clip_norm", 1.0))
 			self.distributed_hooks = []
 		# add tensorflow ps sync distributed optimizer
 		elif self.config["opt_type"] == "ps_sync":
@@ -209,11 +226,12 @@ class Optimizer(object):
 		
 		self.get_opt(init_lr, num_train_steps)
 
-		grads = self.grad_clip_fn(self.opt, loss, tvars, **kargs)
+		grads_and_vars = self.grad_clip_fn(self.opt, loss, tvars, **kargs)
 
 		train_op = self.opt.apply_gradients(
-					zip(grads, tvars), global_step=self.global_step)
+					grads_and_vars, global_step=self.global_step)
 		new_global_step = self.global_step + 1
-		# train_op = tf.group(train_op, [self.global_step.assign(new_global_step)])
+		if self.config.get("train_op", None) == "adam_decay":
+			train_op = tf.group(train_op, [self.global_step.assign(new_global_step)])
 		train_op = train_op
 		return train_op

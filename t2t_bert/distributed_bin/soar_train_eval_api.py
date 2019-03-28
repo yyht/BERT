@@ -254,6 +254,11 @@ flags.DEFINE_integer("tensor_fusion_max_bytes", 32<<20, '')
 
 flags.DEFINE_bool('enable_bfloat16_sendrecv', False, '')
 
+try:
+	import paisoar as pai
+except Exception as e:
+	pai = None
+
 def get_cluster_manager(config_proto):
 	"""Returns the cluster manager to be used."""
 	return GrpcClusterManager(config_proto)
@@ -316,6 +321,11 @@ def create_config_proto():
 def main(_):
 
 	print(tf.__version__, "==tensorflow version==")
+	print(pai, "===pai")
+	try:
+		print(pai.__version__, "==pai soar version==")
+	except:
+		print("==no pai soar==")
 	print("job name = %s" % FLAGS.job_name)
 	print("task index = %d" % FLAGS.task_index)
 	import os
