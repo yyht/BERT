@@ -840,8 +840,9 @@ def convert_distillation_classifier_examples_to_features(examples, label_dict,
 				tf.logging.info("input_ids_b: %s" % " ".join([str(x) for x in input_ids_b]))
 			if input_char_ids_b:
 				tf.logging.info("input_char_ids_b: %s" % " ".join([str(x) for token in input_char_ids_b for x in token ]))
-			tf.logging.info("label_probs {}".format(label_probs))
-			tf.logging.info("label_ratio {}".format(label_ratio))
+			if len(label_dict) <= 10:
+				tf.logging.info("label_probs {}".format(label_probs))
+				tf.logging.info("label_ratio {}".format(label_ratio))
 			tf.logging.info("label: {} (id = {})".format(example.label, label_id))
 			tf.logging.info("distillation_ratio: {} (id = {})".format(distillation_ratio, label_id))
 		
