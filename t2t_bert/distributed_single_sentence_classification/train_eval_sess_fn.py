@@ -316,6 +316,8 @@ def train_eval_fn(FLAGS,
 
 			label_dict_id = sorted(list(label_dict["id2label"].keys()))
 
+			print(len(label_id), len(pred_label), len(set(label_id)))
+
 			accuracy = accuracy_score(label_id, pred_label)
 			print("==accuracy==", accuracy)
 			if len(label_dict["id2label"]) < 10:
