@@ -128,6 +128,7 @@ def center_loss_v2(config, features, labels, centers=None, **kargs):
     alpha = config.alpha
     num_classes = config.num_classes
     with tf.variable_scope(config.scope+"_center_loss"):
+        print("==center loss==")
         len_features = features.get_shape()[1]
         if centers is None:
             centers = tf.get_variable('centers', 
@@ -135,6 +136,7 @@ def center_loss_v2(config, features, labels, centers=None, **kargs):
                             dtype=tf.float32,
                             initializer=tf.contrib.layers.xavier_initializer(),
                             trainable=False)
+            print("==add center parameters==")
      
         centers_batch = tf.gather(centers, labels)
 
