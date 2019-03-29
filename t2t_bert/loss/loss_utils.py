@@ -130,7 +130,7 @@ def center_loss_v2(config, features, labels, centers=None, **kargs):
     with tf.variable_scope(config.scope+"_center_loss"):
         print("==center loss==")
         len_features = features.get_shape()[1]
-        if centers is None:
+        if not centers:
             centers = tf.get_variable('centers', 
                             [num_classes, len_features], 
                             dtype=tf.float32,
