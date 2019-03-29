@@ -282,15 +282,16 @@ def eval_fn(FLAGS,
 
 			label_dict_id = sorted(list(label_dict["id2label"].keys()))
 
-			result = classification_report(label_id, pred_label, 
-				target_names=[label_dict["id2label"][key] for key in label_dict_id],
-				digits=4)
+			if len(label_dict_id) <= 10:
+				result = classification_report(label_id, pred_label, 
+					target_names=[label_dict["id2label"][key] for key in label_dict_id],
+					digits=4)
+				eval_total_dict["classification_report"] = result
+				print("==classification report==")
+				print(result, task_index)
 
-			print("==classification report==")
-			print(result, task_index)
 			accuracy = accuracy_score(label_id, pred_label)
 			print("==accuracy==", accuracy)
-			eval_total_dict["classification_report"] = result
 			return eval_total_dict
 
 		hooks = []
