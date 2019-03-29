@@ -31,6 +31,7 @@ def full2half(s):
 
 def clean(text):
 	text = text.strip()
+	# text = text.lower()
 	text = HanziConv.toSimplified(text)
 	text = full2half(text)
 	text = re.sub("\\#.*?#|\\|.*?\\||\\[.*?]", "", text)

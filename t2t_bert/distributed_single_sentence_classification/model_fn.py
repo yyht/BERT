@@ -161,15 +161,6 @@ def model_fn_builder(
 
 				return eval_metric_ops
 
-			eval_metric_ops = metric_fn( 
-							per_example_loss,
-							logits, 
-							label_ids)
-			
-			estimator_spec = tf.estimator.EstimatorSpec(mode=mode, 
-								loss=loss,
-								eval_metric_ops=eval_metric_ops)
-
 			if output_type == "sess":
 				return {
 					"eval":{
@@ -179,6 +170,14 @@ def model_fn_builder(
 						}
 				}
 			elif output_type == "estimator":
+				eval_metric_ops = metric_fn( 
+							per_example_loss,
+							logits, 
+							label_ids)
+			
+				estimator_spec = tf.estimator.EstimatorSpec(mode=mode, 
+								loss=loss,
+								eval_metric_ops=eval_metric_ops)
 				return estimator_spec
 		else:
 			raise NotImplementedError()
