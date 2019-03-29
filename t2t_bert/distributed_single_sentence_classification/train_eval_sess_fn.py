@@ -322,7 +322,8 @@ def train_eval_fn(FLAGS,
 
 			accuracy = accuracy_score(label_id, pred_label)
 			print("==classification report==")
-			print(result, task_index)
+			if len(label_dict["id2label"]) < 10:
+				print(result, task_index)
 			print("==accuracy==", accuracy)
 			eval_total_dict["classification_report"] = result
 			return eval_total_dict
