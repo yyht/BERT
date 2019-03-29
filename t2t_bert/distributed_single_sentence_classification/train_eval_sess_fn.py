@@ -440,7 +440,7 @@ def train_eval_fn(FLAGS,
 		print("==begin to train and eval==")
 		# step = sess.run(tf.train.get_global_step())
 		# print(step, task_index, "==task_index, global_step==")
-		# monitoring_info = train_fn(train_dict, sess)
+		monitoring_info = train_fn(train_dict, sess)
 
 		# for i in range(10):
 		# 	l = sess.run(train_features)
