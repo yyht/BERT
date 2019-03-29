@@ -316,16 +316,15 @@ def train_eval_fn(FLAGS,
 
 			label_dict_id = sorted(list(label_dict["id2label"].keys()))
 
-			result = classification_report(label_id, pred_label, 
-				target_names=[label_dict["id2label"][key] for key in label_dict_id],
-				digits=4)
-
 			accuracy = accuracy_score(label_id, pred_label)
-			print("==classification report==")
-			if len(label_dict["id2label"]) < 10:
-				print(result, task_index)
 			print("==accuracy==", accuracy)
-			eval_total_dict["classification_report"] = result
+			if len(label_dict["id2label"]) < 10:
+				result = classification_report(label_id, pred_label, 
+										target_names=[label_dict["id2label"][key] for key in label_dict_id],
+										digits=4)
+				print(result, task_index)
+				eval_total_dict["classification_report"] = result
+				print("==classification report==")
 			return eval_total_dict
 
 		def train_fn(train_op_dict, sess):
@@ -439,7 +438,7 @@ def train_eval_fn(FLAGS,
 		print("==begin to train and eval==")
 		# step = sess.run(tf.train.get_global_step())
 		# print(step, task_index, "==task_index, global_step==")
-		monitoring_info = train_fn(train_dict, sess)
+		# monitoring_info = train_fn(train_dict, sess)
 
 		# for i in range(10):
 		# 	l = sess.run(train_features)
