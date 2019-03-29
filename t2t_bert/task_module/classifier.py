@@ -46,6 +46,7 @@ def classifier(config, pooled_output,
 			loss = tf.reduce_mean(per_example_loss)
 
 		if config.get("with_center_loss", "no") == "center_loss":
+			print("==apply with center loss==")
 			center_loss, _ = loss_utils.center_loss_v2(config,
 											features=pooled_output, 
 											labels=labels)
