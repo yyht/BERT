@@ -415,7 +415,10 @@ class LCQMCProcessor(data_processor.DataProcessor):
 		examples = []
 		for index in range(len(data)):
 			content = data[index]
-			guid = int(content["ID"])
+			try:
+				guid = int(content["ID"])
+			except:
+				guid = index
 			text_a = content["sentence1"]
 			text_b = content["sentence2"]
 			label = content["gold_label"]
@@ -446,7 +449,10 @@ class LCQMCProcessor(data_processor.DataProcessor):
 		examples = []
 		for index in range(data.shape[0]):
 			content = data[index]
-			guid = int(content["id"])
+			try:
+				guid = int(content["id"])
+			except:
+				guid = index
 			text_a = content["sentence1"]
 			text_b = content["sentence2"]
 			if isinstance(text_a, str) and isinstance(text_b, str):
