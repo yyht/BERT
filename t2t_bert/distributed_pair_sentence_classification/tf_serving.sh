@@ -2,7 +2,7 @@ python ./t2t_bert/distributed_bin/tf_serving_api.py \
 	--buckets "/data/xuht" \
 	--vocab "lcqmc/data/distillation/char_id.txt" \
 	--do_lower_case True \
-	--url "30.8.112.252" \
+	--url "30.8.113.58" \
 	--port "7901" \
 	--model_name "match_pyramid" \
 	--signature_name "serving_default" \

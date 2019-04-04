@@ -34,7 +34,7 @@
     "with_aggregation_highway": true,
 
     "use_cudnn": true,
-    "with_center_loss":false,
+    "with_center_loss":"center_loss",
 
     "with_moving_average": 0.999,
 
