@@ -135,7 +135,7 @@ def center_loss_v2(config, features, labels, centers=None, **kargs):
 							[num_classes, len_features], 
 							dtype=tf.float32,
 							initializer=tf.contrib.layers.xavier_initializer(),
-							trainable=True)
+							trainable=False)
 			print("==add center parameters==")
 	 
 		centers_batch = tf.gather(centers, labels)
