@@ -77,5 +77,8 @@ class BaseModel(object):
 	def get_pooled_output(self):
 		raise NotImplementedError
 
+	def get_pooled_feature(self):
+		raise NotImplementedError
+
 
 

@@ -75,6 +75,7 @@ def model_fn_builder(
 
 			model_io_fn.print_params(tvars, string=", trainable params")
 			update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+			print("==update_ops==", update_ops)
 			with tf.control_dependencies(update_ops):
 				train_op = optimizer_fn.get_train_op(loss, tvars, 
 								opt_config.init_lr, 
