@@ -176,7 +176,15 @@ def main(_):
 										is_shuffle=True)
 	print("==total train examples==", len(train_examples))
 
-	vocab_filter.vocab_filter(train_examples, vocab_lst, 
+	test_examples = classifier_data_api.get_train_examples(test_file,
+										is_shuffle=False)
+	print("==total test examples==", len(test_examples))
+
+	dev_examples = classifier_data_api.get_train_examples(dev_file,
+										is_shuffle=False)
+	print("==total dev examples==", len(dev_examples))
+
+	vocab_filter.vocab_filter(train_examples+test_examples+dev_examples, vocab_lst, 
 							tokenizer, FLAGS.predefined_vocab_size, 
 							corpus_vocab_path)
 
@@ -201,8 +209,6 @@ def main(_):
 															FLAGS.with_char,
 															FLAGS.char_len)
 
-	test_examples = classifier_data_api.get_train_examples(test_file,
-										is_shuffle=False)
 	write_to_tfrecords.convert_distillation_classifier_examples_to_features(test_examples,
 															classifier_data_api.label2id,
 															FLAGS.max_length,
@@ -211,8 +217,6 @@ def main(_):
 															FLAGS.with_char,
 															FLAGS.char_len)
 
-	dev_examples = classifier_data_api.get_train_examples(dev_file,
-										is_shuffle=False)
 	write_to_tfrecords.convert_distillation_classifier_examples_to_features(dev_examples,
 															classifier_data_api.label2id,
 															FLAGS.max_length,

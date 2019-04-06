@@ -2,7 +2,7 @@
     "max_length": 100,
     "char_limit": 10,
     "scope":"ESIM",
-    "num_classes":165579,
+    "num_classes":100000,
 
     "with_char": false,
     "char_embedding":"conv",

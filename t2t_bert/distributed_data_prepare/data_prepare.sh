@@ -1,11 +1,11 @@
 python ./t2t_bert/distributed_data_prepare/classification_data_prepare.py \
 	--buckets /data/xuht \
-	--train_file sentence_embedding/cluster_corpus_fasttext.txt \
-	--dev_file sentence_embedding/cluster_corpus_fasttext.txt \
-	--test_file sentence_embedding/cluster_corpus_fasttext.txt \
-	--train_result_file sentence_embedding/data/train_tfrecords \
-	--dev_result_file  sentence_embedding/data/dev_tfrecords\
-	--test_result_file  sentence_embedding/data/test_tfrecords\
+	--train_file sentence_embedding/new_data/cluster_corpus_fasttext_train.txt \
+	--dev_file sentence_embedding/new_data/cluster_corpus_fasttext_eval.txt \
+	--test_file sentence_embedding/new_data/cluster_corpus_fasttext_test.txt \
+	--train_result_file sentence_embedding/new_data/data/train_tfrecords \
+	--dev_result_file  sentence_embedding/new_data/data/dev_tfrecords\
+	--test_result_file  sentence_embedding/new_data/data/test_tfrecords\
 	--vocab_file w2v/tencent_ai_lab/char_id.txt \
 	--label_id /data/xuht/sentence_embedding/cluster_corpus_label_dict.json \
 	--lower_case True \
@@ -17,5 +17,5 @@ python ./t2t_bert/distributed_data_prepare/classification_data_prepare.py \
 	--with_char "no" \
 	--char_len 5 \
 	--predefined_vocab_size 50000 \
-	--corpus_vocab_path sentence_embedding/data/char_id.txt \
+	--corpus_vocab_path sentence_embedding/new_data/data/char_id.txt \
 	--data_type fasttext

@@ -485,7 +485,7 @@ class FasttextClassifierProcessor(data_processor.DataProcessor):
 
 	def _create_examples(self, lines,
 									LABEL_SPLITTER="__label__"):
-		re_pattern = u"({}{})".format(LABEL_SPLITTER, "\d.")
+		re_pattern = u"({}{})".format(LABEL_SPLITTER, "\d+")
 		label_pattern = "(?<={})(\d+)".format(LABEL_SPLITTER)
 
 		examples = []
@@ -549,7 +549,7 @@ class FasttextDistillationProcessor(data_processor.DataProcessor):
 
 	def _create_examples(self, lines,
 									LABEL_SPLITTER="__label__"):
-		re_pattern = u"({}{})".format(LABEL_SPLITTER, "\d.")
+		re_pattern = u"({}{})".format(LABEL_SPLITTER, "\d+")
 
 		examples = []
 		for (i, line) in enumerate(lines):
@@ -576,7 +576,7 @@ class FasttextDistillationProcessor(data_processor.DataProcessor):
 		return examples
 
 	def _create_unsupervised_distillation_examples(self, lines, distillation_prob , LABEL_SPLITTER="__label__"):
-		re_pattern = u"({}{})".format(LABEL_SPLITTER, "\d.")
+		re_pattern = u"({}{})".format(LABEL_SPLITTER, "\d+")
 
 		examples = []
 		cnt = 0
@@ -609,7 +609,7 @@ class FasttextDistillationProcessor(data_processor.DataProcessor):
 		return examples
 
 	def _create_supervised_distillation_examples(self, lines, distillation_prob , LABEL_SPLITTER="__label__"):
-		re_pattern = u"({}{})".format(LABEL_SPLITTER, "\d.")
+		re_pattern = u"({}{})".format(LABEL_SPLITTER, "\d+")
 
 		examples = []
 
@@ -818,7 +818,7 @@ class FasttextProductClassifierProcessor(data_processor.DataProcessor):
 
 	def _create_examples(self, lines,
 									LABEL_SPLITTER="__label__"):
-		re_pattern = u"({}{})".format(LABEL_SPLITTER, "\d.")
+		re_pattern = u"({}{})".format(LABEL_SPLITTER, "\d+")
 
 		examples = []
 		for (i, line) in enumerate(lines):
