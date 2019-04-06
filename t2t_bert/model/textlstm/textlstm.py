@@ -97,7 +97,7 @@ class TextLSTM(base_model.BaseModel):
 
 			sent_repres = tf.concat([v_ave, v_max, v_last, v_attn], axis=-1)
 
-			self.output = tf.layers.dense(sent_repres, 
+			output = tf.layers.dense(sent_repres, 
 										sent_repres.get_shape()[-1],
 										activation=tf.nn.tanh)
 
