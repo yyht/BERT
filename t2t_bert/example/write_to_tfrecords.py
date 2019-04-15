@@ -807,7 +807,7 @@ def convert_distillation_classifier_examples_to_features(examples, label_dict,
 			input_char_ids_a = None		
 
 		if len(example.label) == 1:
-			# print(example.label, len(label_dict), tokens_a)
+			print(example.label, len(label_dict), tokens_a)
 			label_id = label_dict[example.label[0]]
 		else:
 			label_id = [0] * len(label_dict)
@@ -829,6 +829,10 @@ def convert_distillation_classifier_examples_to_features(examples, label_dict,
 		except:
 			distillation_ratio = 0.0
 
+		try:
+			feature = example.feature
+		except:
+			feature = [0.0,0.0,0.0]
 
 		if ex_index < 5:
 			print(tokens_a)
@@ -856,7 +860,8 @@ def convert_distillation_classifier_examples_to_features(examples, label_dict,
 					label_ids=label_id,
 					label_probs=label_probs,
 					label_ratio=label_ratio,
-					distillation_ratio=distillation_ratio)
+					distillation_ratio=distillation_ratio,
+					feature=feature)
 		feature_writer.process_feature(feature)
 		# if ex_index < 5:
 		# 	print(feature.label_probs, ex_index, "==id==")

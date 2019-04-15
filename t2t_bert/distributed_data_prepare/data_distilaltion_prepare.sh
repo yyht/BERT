@@ -20,4 +20,6 @@ python ./t2t_bert/distributed_data_prepare/classification_distillation_data_prep
 	--char_len 5 \
 	--predefined_vocab_size 50000 \
 	--corpus_vocab_path porn/clean_data/char_id.txt \
-	--if_add_unlabeled_distillation "no"
+	--if_add_unlabeled_distillation "no" \
+	--distillation_type "structure" \
+	--tokenizer_type "jieba"

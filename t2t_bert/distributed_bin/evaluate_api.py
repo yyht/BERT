@@ -30,6 +30,7 @@ print(sys.path)
 import tensorflow as tf
 
 from distributed_single_sentence_classification import train_eval
+from data_generator import tf_data_utils
 # from tensorflow.contrib.distribute.python import cross_tower_ops as cross_tower_ops_lib
 
 import tensorflow as tf
@@ -287,8 +288,19 @@ def main(_):
 
 		result_log_file = os.path.join(checkpoint_dir, "result.info")
 		print(result_log_file, "==result log path==")
-		with tf.gfile.GFile(result_log_file, 'w') as f:
-			f.write(json.dumps(result_dict)+"\n")
+		# with tf.gfile.GFile(result_log_file, 'w') as f:
+		# 	f.write(json.dumps(result_dict)+"\n")
+		writer = tf.python_io.TFRecordWriter(result_log_file)
+		for label_id, feature, prob in zip(result_dict["label_ids"], 
+											result_dict["feature"],
+											result_dict["prob"]):
+			features = {}
+			features["label_id"] = tf_data_utils.create_int_feature([label_id])
+			features["feature"] = tf_data_utils.create_float_feature(feature)
+			features["prob"] = tf_data_utils.create_float_feature(prob)
+
+			tf_example = tf.train.Example(features=tf.train.Features(feature=features))
+			writer.write(tf_example.SerializeToString())
 
 if __name__ == "__main__":
 	tf.app.run()

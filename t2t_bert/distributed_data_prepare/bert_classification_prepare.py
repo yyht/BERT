@@ -165,11 +165,13 @@ def main(_):
 		classifier_data_api = classifier_processor.LCQMCProcessor()
 	elif FLAGS.data_type == "fasttext_product":
 		classifier_data_api = classifier_processor.FasttextProductClassifierProcessor()
+	elif FLAGS.data_type == "fasttext":
+		classifier_data_api = classifier_processor.FasttextClassifierProcessor()
 
 	classifier_data_api.get_labels(FLAGS.label_id)
 
 	train_examples = classifier_data_api.get_train_examples(train_file,
-										is_shuffle=False)
+										is_shuffle=True)
 	dev_examples = classifier_data_api.get_train_examples(dev_file,
 														is_shuffle=False)
 	test_examples = classifier_data_api.get_train_examples(test_file,
@@ -193,7 +195,8 @@ def main(_):
 																FLAGS.max_length,
 																tokenizer,
 																test_result_file)
-	elif FLAGS.data_type == "fasttext_product":
+		
+	elif FLAGS.data_type in ["fasttext_product", "fasttext"]:
 
 		write_to_tfrecords.convert_classifier_examples_to_features(train_examples,
 																classifier_data_api.label2id,

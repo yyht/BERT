@@ -307,6 +307,8 @@ class FullTokenizer(object):
 	def convert_ids_to_tokens(self, ids):
 		return convert_by_vocab(self.inv_vocab, ids)
 
+	def covert_tokens_to_char_ids(self, tokens):
+		pass
 
 class BasicTokenizer(object):
 	"""Runs basic tokenization (punctuation splitting, lower casing, etc.)."""
