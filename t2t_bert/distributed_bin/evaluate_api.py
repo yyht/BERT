@@ -286,6 +286,7 @@ def main(_):
 			input_target=FLAGS.input_target)
 
 		result_log_file = os.path.join(checkpoint_dir, "result.info")
+		print(result_log_file, "==result log path==")
 		with tf.gfile.GFile(result_log_file, 'w') as f:
 			f.write(json.dumps(result_dict)+"\n")
 

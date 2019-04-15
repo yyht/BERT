@@ -174,7 +174,8 @@ def eval_fn(FLAGS,
 
 			return {"accuracy":accuracy, "loss":eval_op_dict["loss"], 
 					"pred_label":pred_label, "label_ids":features["label_ids"],
-					"prob":prob}
+					"prob":prob,
+					"feature":eval_op_dict["feature"]}
 		
 		# name_to_features = {
 		# 		"input_ids":
@@ -260,19 +261,21 @@ def eval_fn(FLAGS,
 					eval_result = sess.run(eval_dict)
 					for key in eval_result:
 						if key not in eval_total_dict:
-							if key in ["pred_label", "label_ids", "prob"]:
+							if key in ["pred_label", "label_ids", "prob", "feature"]:
 								eval_total_dict[key] = []
 								eval_total_dict[key].extend(eval_result[key].tolist())
 							if key in ["accuracy", "loss"]:
 								eval_total_dict[key] = 0.0
 								eval_total_dict[key] += float(eval_result[key])
 						else:
-							if key in ["pred_label", "label_ids", "prob"]:
+							if key in ["pred_label", "label_ids", "prob", "feature"]:
 								eval_total_dict[key].extend(eval_result[key].tolist())
 							if key in ["accuracy", "loss"]:
 								eval_total_dict[key] += float(eval_result[key])
 
 					i += 1
+					# if len(set(eval_total_dict["pred_label"])) == len(list(label_dict["id2label"].keys())):
+					# 	break
 				except tf.errors.OutOfRangeError:
 					print("End of dataset")
 					break

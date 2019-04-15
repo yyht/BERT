@@ -1,11 +1,11 @@
 config_file=./BERT/data/chinese_L-12_H-768_A-12/bert_config.json
-init_checkpoint=wesitanalyze-data-seqing20180821/data/clean_data/rule/model/estimator/all_reduce_20190328/model.ckpt-138853
+init_checkpoint=wesitanalyze-data-seqing20180821/data/clean_data/normal/model/estimator/all_reduce_4_adam_weight_0228/model.ckpt-79344
 vocab_file=./BERT/data/chinese_L-12_H-768_A-12/vocab.txt
 label_id=./BERT/data/porn/label_dict.json
 max_length=128
-train_file=wesitanalyze-data-seqing20180821/data/clean_data/rule/train_tfrecords
-dev_file=wesitanalyze-data-seqing20180821/data/clean_data/rule/test_tfrecords
-model_output=wesitanalyze-data-seqing20180821/data/clean_data/rule/model/estimator/all_reduce_20190328/
+train_file=wesitanalyze-data-seqing20180821/data/clean_data/textcnn/distillation/train_distillation_tfrecords
+dev_file=wesitanalyze-data-seqing20180821/data/clean_data/textcnn/distillation/train_distillation_tfrecords
+model_output=wesitanalyze-data-seqing20180821/data/clean_data/textcnn/distillation/feature_distillation/
 epoch=8
 num_classes=5
 train_size=1402171
