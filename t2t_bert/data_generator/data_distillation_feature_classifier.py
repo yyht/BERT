@@ -42,9 +42,9 @@ class InputExample(object):
 		if self.label_ratio:
 			s += ", label_ratio: {}".format(self.label_ratio)
 		if self.label_probs:
-			s += ", label_probs: {}".foramt(self.label_probs)
+			s += ", label_probs: {}".format(self.label_probs)
 		if self.distillation_ratio:
-			s += ", label_probs: {}".foramt(self.distillation_ratio)
+			s += ", distillation_ratio: {}".format(self.distillation_ratio)
 		return s
 
 class InputFeatures(object):

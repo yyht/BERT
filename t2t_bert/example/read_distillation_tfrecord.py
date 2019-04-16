@@ -3,25 +3,24 @@ from bunch import Bunch
 import numpy as np
 import os, sys
 
-def read_distilaltion(name_to_features, input_data):
+os.environ["CUDA_VISIBLE_DEVICES"] = ""
+
+name_to_features = {
+				"label_id":tf.FixedLenFeature([], tf.int64),
+				"feature":tf.FixedLenFeature([768], tf.float32),
+				"prob":tf.FixedLenFeature([5], tf.float32)
+		        }
+
+def read_distilaltion(input_data):
 
 	graph = tf.Graph()
 	with graph.as_default():
-		# name_to_features = {
-		#                 "label_id":
-		#                         tf.FixedLenFeature([], tf.int64),
-		#                 "feature":
-		#                         tf.FixedLenFeature([768], tf.float32),
-		#                 "prob":
-		#                         tf.FixedLenFeature([5], tf.float32)
-		#         }
+		
 
 		params = Bunch({})
 		params.epoch = 1
 		params.batch_size = 32
-		# jd_test = "/data/xuht/result.info"
 		print(params["batch_size"], "===batch size===")
-		# input_fn = tf_data_utils.train_input_fn(jd_test, tf_data_utils._decode_record, name_to_features, params)
 
 		def _decode_record(record, name_to_features):
 			example = tf.parse_example(record, name_to_features)
@@ -49,14 +48,23 @@ def read_distilaltion(name_to_features, input_data):
 		i = 0
 		cnt = 0
 		feature_dict_lst = []
+		feature, prob, label_id = [], [], []
 		while True:
 			try:
 				features = sess.run(input_fn)
 				i += 1
 				cnt += 1
-				feature_dict_lst.append({"feature":features["feature"].tolist(),
-										"prob":features["prob"].tolist()})
+				feature.extend(features["feature"].tolist())
+				prob.extend(features["prob"].tolist())
+				label_id.extend(features["label_id"].tolist())
 			except tf.errors.OutOfRangeError:
 				print("End of dataset")
 				break
+		for index in range(len(label_id)):
+			tmp = {
+					"feature":feature[index], 
+					"prob":prob[index],
+					"label_id":label_id[index]
+					}
+			feature_dict_lst.append(tmp)
 		return feature_dict_lst

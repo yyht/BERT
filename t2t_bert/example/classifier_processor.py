@@ -864,9 +864,10 @@ class FasttextStructureDistillationProcessor(data_processor.DataProcessor):
 		self.label2id = label["label2id"]
 		self.id2label = label["id2label"]
 
-	def _read_distillation(self, name_to_features, input_file):
+	def _read_distillation(self, input_file):
 		from example.read_distillation_tfrecord import read_distilaltion
-		distilaltion_dict_lst = read_distilaltion(name_to_features, input_file)
+		distilaltion_dict_lst = read_distilaltion(input_file)
+		print("==total size of distillation==", len(distilaltion_dict_lst))
 		return distilaltion_dict_lst
 
 	def _read_data(self, input_file):
@@ -879,18 +880,23 @@ class FasttextStructureDistillationProcessor(data_processor.DataProcessor):
 	def _create_examples(self, lines,
 									LABEL_SPLITTER="__label__"):
 		re_pattern = u"({}{})".format(LABEL_SPLITTER, "\d+")
+		label_pattern = "(?<={})(\d+)".format(LABEL_SPLITTER)
 
 		examples = []
 		for (i, line) in enumerate(lines):
 			try:
 				guid = i
+				
 				element_list = re.split(re_pattern, line)
 				text_a = clean(element_list[-1])
-				input_labels = clean(element_list[1]).split(LABEL_SPLITTER)[-1]
+
+				input_labels = []
+				for l in re.finditer(label_pattern, line):
+					input_labels.append(l.group())
 
 				text_a = tokenization.convert_to_unicode(text_a)
 				input_labels = [label.strip() for label in input_labels if label.strip() in list(self.label2id.keys())]
-				
+
 				examples.append(data_structure_distillation.InputExample(
 						guid=guid,
 						text_a=text_a,
@@ -907,6 +913,7 @@ class FasttextStructureDistillationProcessor(data_processor.DataProcessor):
 
 	def _create_unsupervised_distillation_examples(self, lines, distillation_dict_lst , LABEL_SPLITTER="__label__"):
 		re_pattern = u"({}{})".format(LABEL_SPLITTER, "\d+")
+		label_pattern = "(?<={})(\d+)".format(LABEL_SPLITTER)
 
 		examples = []
 		cnt = 0
@@ -916,31 +923,35 @@ class FasttextStructureDistillationProcessor(data_processor.DataProcessor):
 				guid = i
 				element_list = re.split(re_pattern, line)
 				text_a = clean(element_list[-1])
-				input_labels = clean(element_list[1]).split(LABEL_SPLITTER)[-1]
+
+				input_labels = []
+				for l in re.finditer(label_pattern, line):
+					input_labels.append(l.group())
+
+				text_a = tokenization.convert_to_unicode(text_a)
+				input_labels = [label.strip() for label in input_labels if label.strip() in list(self.label2id.keys())]
+				
+				examples.append(data_distillation_feature_classifier.InputExample(
+						guid=guid,
+						text_a=text_a,
+						text_b=None,
+						label=input_labels,
+						label_probs=distillation_dict_lst[cnt]["prob"],
+						label_ratio=0.0,
+						distillation_ratio=1.0,
+						feature=distillation_dict_lst[cnt]["feature"]
+					))
+				cnt += 1
 			except:
 				print(line, i)
 				continue
-
-			text_a = tokenization.convert_to_unicode(text_a)
-			input_labels = [label.strip() for label in input_labels if label.strip() in list(self.label2id.keys())]
-			
-			examples.append(data_distillation_feature_classifier.InputExample(
-					guid=guid,
-					text_a=text_a,
-					text_b=None,
-					label=input_labels,
-					label_probs=distillation_dict_lst[cnt]["prob"],
-					label_ratio=0.0,
-					distillation_ratio=1.0,
-					feature=distillation_dict_lst[cnt]["feature"]
-				))
-			cnt += 1
 		assert cnt == len(distillation_dict_lst)
 
 		return examples
 
 	def _create_supervised_distillation_examples(self, lines, distillation_dict_lst, LABEL_SPLITTER="__label__"):
 		re_pattern = u"({}{})".format(LABEL_SPLITTER, "\d+")
+		label_pattern = "(?<={})(\d+)".format(LABEL_SPLITTER)
 
 		examples = []
 		cnt = 0
@@ -949,25 +960,31 @@ class FasttextStructureDistillationProcessor(data_processor.DataProcessor):
 				guid = i
 				element_list = re.split(re_pattern, line)
 				text_a = clean(element_list[-1])
-				input_labels = clean(element_list[1]).split(LABEL_SPLITTER)[-1]
+
+				input_labels = []
+				for l in re.finditer(label_pattern, line):
+					input_labels.append(l.group())
+				text_a = tokenization.convert_to_unicode(text_a)
+				input_labels = [label.strip() for label in input_labels if label.strip() in list(self.label2id.keys())]
+				
+				if len(input_labels) == 1:
+					assert int(input_labels[0]) == distillation_dict_lst[cnt]["label_id"]
+
+				examples.append(data_distillation_feature_classifier.InputExample(
+						guid=guid,
+						text_a=text_a,
+						text_b=None,
+						label=input_labels,
+						label_probs=distillation_dict_lst[cnt]["prob"],
+						label_ratio=1.0,
+						distillation_ratio=1.0,
+						feature=distillation_dict_lst[cnt]["feature"]
+					))
+				cnt += 1
 			except:
 				print(line, i)
 				continue
-
-			text_a = tokenization.convert_to_unicode(text_a)
-			input_labels = [label.strip() for label in input_labels if label.strip() in list(self.label2id.keys())]
 			
-			examples.append(data_distillation_feature_classifier.InputExample(
-					guid=guid,
-					text_a=text_a,
-					text_b=None,
-					label=input_labels,
-					label_probs=distillation_dict_lst[cnt]["prob"],
-					label_ratio=1.0,
-					distillation_ratio=1.0,
-					feature=distillation_dict_lst[cnt]["feature"]
-				))
-			cnt += 1
 		assert cnt == len(distillation_dict_lst)
 		return examples
 

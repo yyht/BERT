@@ -301,13 +301,13 @@ class FullTokenizer(object):
 
 		return split_tokens
 
-	def convert_tokens_to_ids(self, tokens):
+	def convert_tokens_to_ids(self, tokens, max_length=None):
 		return convert_by_vocab(self.vocab, tokens)
 
 	def convert_ids_to_tokens(self, ids):
 		return convert_by_vocab(self.inv_vocab, ids)
 
-	def covert_tokens_to_char_ids(self, tokens):
+	def covert_tokens_to_char_ids(self, tokens, max_length=None, char_len=5):
 		pass
 
 class BasicTokenizer(object):
