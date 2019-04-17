@@ -15,7 +15,7 @@ class BaseModel(object):
 		self.emb_size = int(self.config["emb_size"])
 		self.scope = self.config["scope"]
 		self.char_dim = self.config.get("char_emb_size", 300)
-		self.extra_symbol = self.config.get("extra_symbol", ["<pad>", "<unk>", "<s>", "</s>"])
+		self.extra_symbol = self.config.get("extra_symbol", None)
 
 	def build_char_embedding(self, input_char_ids, is_training, **kargs):
 

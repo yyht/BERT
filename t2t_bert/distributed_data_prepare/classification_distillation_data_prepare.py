@@ -236,31 +236,60 @@ def main(_):
 		total_train_examples = train_examples
 	random.shuffle(total_train_examples)
 
-	write_to_tfrecords.convert_distillation_classifier_examples_to_features(total_train_examples,
-															classifier_data_api.label2id,
-															FLAGS.max_length,
-															tokenizer_corpus,
-															train_result_file,
-															FLAGS.with_char,
-															FLAGS.char_len)
+	if FLAGS.tokenizer_type == "jieba":
 
-	write_to_tfrecords.convert_distillation_classifier_examples_to_features(dev_examples,
-															classifier_data_api.label2id,
-															FLAGS.max_length,
-															tokenizer_corpus,
-															dev_result_file,
-															FLAGS.with_char,
-															FLAGS.char_len)
+		write_to_tfrecords.convert_distillation_classifier_examples_to_features(total_train_examples,
+																classifier_data_api.label2id,
+																FLAGS.max_length,
+																tokenizer_corpus,
+																train_result_file,
+																FLAGS.with_char,
+																FLAGS.char_len)
 
-	test_examples = classifier_data_api.get_train_examples(test_file,
-										is_shuffle=False)
-	write_to_tfrecords.convert_distillation_classifier_examples_to_features(test_examples,
-															classifier_data_api.label2id,
-															FLAGS.max_length,
-															tokenizer_corpus,
-															test_result_file,
-															FLAGS.with_char,
-															FLAGS.char_len)
+		write_to_tfrecords.convert_distillation_classifier_examples_to_features(dev_examples,
+																classifier_data_api.label2id,
+																FLAGS.max_length,
+																tokenizer_corpus,
+																dev_result_file,
+																FLAGS.with_char,
+																FLAGS.char_len)
+
+		test_examples = classifier_data_api.get_train_examples(test_file,
+											is_shuffle=False)
+		write_to_tfrecords.convert_distillation_classifier_examples_to_features(test_examples,
+																classifier_data_api.label2id,
+																FLAGS.max_length,
+																tokenizer_corpus,
+																test_result_file,
+																FLAGS.with_char,
+																FLAGS.char_len)
+	elif FLAGS.tokenizer_type == "full_bpe":
+		write_to_tfrecords.convert_bert_distillation_classifier_examples_to_features(total_train_examples,
+																classifier_data_api.label2id,
+																FLAGS.max_length,
+																tokenizer_corpus,
+																train_result_file,
+																FLAGS.with_char,
+																FLAGS.char_len)
+
+		write_to_tfrecords.convert_bert_distillation_classifier_examples_to_features(dev_examples,
+																classifier_data_api.label2id,
+																FLAGS.max_length,
+																tokenizer_corpus,
+																dev_result_file,
+																FLAGS.with_char,
+																FLAGS.char_len)
+
+		test_examples = classifier_data_api.get_train_examples(test_file,
+											is_shuffle=False)
+		write_to_tfrecords.convert_bert_distillation_classifier_examples_to_features(test_examples,
+																classifier_data_api.label2id,
+																FLAGS.max_length,
+																tokenizer_corpus,
+																test_result_file,
+																FLAGS.with_char,
+																FLAGS.char_len)
+		
 
 
 if __name__ == "__main__":

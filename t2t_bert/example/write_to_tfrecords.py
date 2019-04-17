@@ -889,40 +889,36 @@ def convert_bert_distillation_classifier_examples_to_features(examples, label_di
 				print("==token b error==", example.text_b, ex_index)
 				break
 
+		if len(tokens_a) > max_seq_length:
+			tokens_a = tokens_a[0:(max_seq_length)]
 		if tokens_b:
-			tf_data_utils._truncate_seq_pair(tokens_a, tokens_b, max_seq_length-3)
-
+			if len(tokens_b) > max_seq_length:
+				tokens_b = tokens_b[0:(max_seq_length)]
+			input_ids_b = tokenizer.convert_tokens_to_ids(tokens_b, max_seq_length)
+			if len(input_ids_b) < max_seq_length:
+				input_ids_b += [0]*(max_seq_length-len(input_ids_b))
+			if with_char == "char":
+				input_char_ids_b = tokenizer.covert_tokens_to_char_ids(tokens_b, 
+											max_seq_length, 
+											char_len=char_len)
+			else:
+				input_char_ids_b = None
 		else:
-			if len(tokens_a) > max_seq_length - 2:
-				tokens_a = tokens_a[0:(max_seq_length - 2)]
-		tokens = []
-		segment_ids = []
-		tokens.append("[CLS]")
-		segment_ids.append(0)
+			input_ids_b = None
+			input_char_ids_b = None
 
-		for token in tokens_a:
-			tokens.append(token)
-			segment_ids.append(0)
-		tokens.append("[SEP]")
-		segment_ids.append(0)
-
-		if tokens_b:
-			for token in tokens_b:
-				tokens.append(token)
-				segment_ids.append(1)
-			tokens.append("[SEP]")
-			segment_ids.append(1)
-
-		input_ids = tokenizer.convert_tokens_to_ids(tokens)
-		input_mask = [1] * len(input_ids)
-
-		# Zero-pad up to the sequence length.
-		while len(input_ids) < max_seq_length:
-			input_ids.append(0)
-			input_mask.append(0)
-			segment_ids.append(0)		
+		input_ids_a = tokenizer.convert_tokens_to_ids(tokens_a, max_seq_length)
+		if len(input_ids_a) < max_seq_length:
+				input_ids_a += [0]*(max_seq_length-len(input_ids_a))
+		if with_char == "char":
+			input_char_ids_a = tokenizer.covert_tokens_to_char_ids(tokens_a, 
+											max_seq_length, 
+											char_len=char_len)
+		else:
+			input_char_ids_a = None		
 
 		if len(example.label) == 1:
+			# print(example.label, len(label_dict), tokens_a)
 			label_id = label_dict[example.label[0]]
 		else:
 			label_id = [0] * len(label_dict)
@@ -944,21 +940,27 @@ def convert_bert_distillation_classifier_examples_to_features(examples, label_di
 		except:
 			distillation_ratio = 0.0
 
+		try:
+			feature = example.feature
+		except:
+			feature = [0.0,0.0,0.0]
+
 		if ex_index < 5:
 			print(tokens_a)
 			tf.logging.info("*** Example ***")
 			tf.logging.info("guid: %s" % (example.guid))
-			tf.logging.info("input_ids: %s" % " ".join([str(x) for x in input_ids_a]))
+			tf.logging.info("input_ids_a: %s" % " ".join([str(x) for x in input_ids_a]))
 			if input_char_ids_a:
-				tf.logging.info("input_ids: %s" % " ".join([str(x) for token in input_char_ids_a for x in token ]))
+				tf.logging.info("input_char_ids_a: %s" % " ".join([str(x) for token in input_char_ids_a for x in token ]))
 			if input_ids_b:
-				tf.logging.info("input_ids: %s" % " ".join([str(x) for x in input_ids_b]))
+				tf.logging.info("input_ids_b: %s" % " ".join([str(x) for x in input_ids_b]))
 			if input_char_ids_b:
-				tf.logging.info("input_ids: %s" % " ".join([str(x) for token in input_char_ids_b for x in token ]))
-			tf.logging.info("label_probs {}".format(label_probs))
-			tf.logging.info("label_ratio {}".format(label_ratio))
+				tf.logging.info("input_char_ids_b: %s" % " ".join([str(x) for token in input_char_ids_b for x in token ]))
+			if len(label_dict) <= 10:
+				tf.logging.info("label_probs {}".format(label_probs))
+				tf.logging.info("label_ratio {}".format(label_ratio))
 			tf.logging.info("label: {} (id = {})".format(example.label, label_id))
-			tf.logging.info("distillation_ratio: {} (id = {})".format(example.label, label_id))
+			tf.logging.info("distillation_ratio: {} (id = {})".format(distillation_ratio, label_id))
 		
 		feature = data_distillation_feature_classifier.InputFeatures(
 					guid=example.guid,
@@ -969,10 +971,11 @@ def convert_bert_distillation_classifier_examples_to_features(examples, label_di
 					label_ids=label_id,
 					label_probs=label_probs,
 					label_ratio=label_ratio,
-					distillation_ratio=distillation_ratio)
+					distillation_ratio=distillation_ratio,
+					feature=feature)
 		feature_writer.process_feature(feature)
-		if ex_index < 5:
-			print(feature.label_probs, ex_index, "==id==")
+		# if ex_index < 5:
+		# 	print(feature.label_probs, ex_index, "==id==")
 		# if ex_index == 100:
 		# 	break
 	feature_writer.close()

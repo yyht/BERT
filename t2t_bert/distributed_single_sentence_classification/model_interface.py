@@ -88,7 +88,8 @@ def model_config_parser(FLAGS):
 		config.model_type = FLAGS.model_type
 		config.dropout_prob = config.dropout_rate
 		config.init_lr = config.learning_rate
-		config.extra_symbol = ["<pad>", "<unk>", "<s>", "</s>"]
+		# config.extra_symbol = ["<pad>", "<unk>", "<s>", "</s>"]
+		
 		if FLAGS.task_type in ["pair_sentence_classification"]:
 			config.classifier = FLAGS.classifier
 			config.output_layer = FLAGS.output_layer

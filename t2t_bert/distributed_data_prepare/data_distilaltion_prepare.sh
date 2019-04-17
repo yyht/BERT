@@ -1,7 +1,7 @@
 python ./t2t_bert/distributed_data_prepare/classification_distillation_data_prepare.py \
 	--buckets /data/xuht \
-	--train_file porn/clean_data/train.txt \
-	--dev_file porn/clean_data/dev.txt \
+	--train_file porn/clean_data/test.txt \
+	--dev_file porn/clean_data/test.txt \
 	--test_file porn/clean_data/test.txt \
 	--train_result_file porn/clean_data/textcnn/distillation/feature_distillation/train_tfrecords \
 	--dev_result_file  porn/clean_data/textcnn/distillation/feature_distillation/dev_tfrecords\
