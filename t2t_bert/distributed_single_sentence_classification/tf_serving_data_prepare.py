@@ -95,11 +95,30 @@ def get_single_features(FLAGS,
 
 	feature_dict = {
 		"input_ids_a":input_ids_a,
-		"input_ids_b":input_ids_b,
 		"label_ids":[0]
 	}
 	if input_char_ids_a:
 		feature_dict["input_char_ids_a"] = input_char_ids_a
+
+	return feature_dict
+
+def get_bert_like_single_features(FLAGS,
+								tokenizer, 
+								query,
+								max_seq_length):
+
+	tokens_a = tokenizer.tokenize((query))
+	if len(tokens_a) > max_seq_length:
+		tokens_a = tokens_a[0:max_seq_length]
+
+	input_ids_a = tokenizer.convert_tokens_to_ids(tokens_a, max_seq_length)
+	if len(input_ids_a) < max_seq_length:
+			input_ids_a += [0]*(max_seq_length-len(input_ids_a))
+
+	feature_dict = {
+				"input_ids_a":input_ids_a,
+				"label_ids":[0]
+			}
 
 	return feature_dict
 
@@ -125,6 +144,12 @@ def get_feeddict(FLAGS, vocab_path,
 								FLAGS.max_seq_length)
 			elif FLAGS.model_type == "single_sentence_classification":
 				feature_dict = get_single_features(
+								FLAGS, 
+								tokenizer_api, 
+								query, 
+								FLAGS.max_seq_length)
+			elif FLAGS.model_type == "bert_like_single_sentence_classification":
+				feature_dict = get_bert_like_single_features(
 								FLAGS, 
 								tokenizer_api, 
 								query, 
