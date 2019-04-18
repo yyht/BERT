@@ -61,6 +61,9 @@ def model_fn_builder(
 
 		tvars = model_io_fn.get_params(model_config.scope, 
 										not_storage_params=not_storage_params)
+
+		params_size = model_io_fn.count_params(model_config.scope)
+		print("==total params==", params_size)
 		print(tvars)
 		if load_pretrained == "yes":
 			model_io_fn.load_pretrained(tvars, 

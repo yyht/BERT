@@ -38,7 +38,11 @@ def load_pretrained_w2v(vocab_path, w2v_path):
 		token2id[word] = index
 		id2token[index] = word
 	w2v_embed = np.asarray(w2v_embed_lst).astype(np.float32)
+	if vocab_size == vector_size:
+		is_extral_symbol = 0
+	else:
+		is_extral_symbol = 1
 
-	return w2v_embed, token2id, id2token
+	return w2v_embed, token2id, id2token, is_extral_symbol
 
 
