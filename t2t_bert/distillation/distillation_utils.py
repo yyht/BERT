@@ -1,5 +1,6 @@
 import tensorflow as tf
 import numpy as np
+from distillation.flip_gradient import flip_gradient
 
 def correlation(x, y):
 	x = x - tf.reduce_mean(x, axis=-1, keepdims=True)

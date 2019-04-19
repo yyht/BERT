@@ -74,7 +74,7 @@ class KnowledgeDistillation(object):
 				teacher_tensor = features["teacher_feature_tensor"]
 				student_label = features["student_label"]
 				teacher_label = features["teacher_label"]
-				with tf.variable_scope(self.config.scope+"/dann_distillation", reuse=model_reuse):
+				with tf.variable_scope(self.config.get("scope", "bert")+"/dann_distillation", reuse=model_reuse):
 					[student_loss, 
 					student_example_loss, 
 					student_logits] = feature_distillation(student_tensor, 1.0, 
