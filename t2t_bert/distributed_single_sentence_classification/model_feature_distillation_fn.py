@@ -5,6 +5,7 @@ except:
 
 import tensorflow as tf
 import numpy as np
+from bunch import Bunch
 
 from model_io import model_io
 from task_module import classifier
@@ -87,7 +88,7 @@ def model_fn_builder(
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
 
-			distillation_api = KnowledgeDistillation(kargs.get("disitllation_config", {
+			distillation_api = KnowledgeDistillation(kargs.get("disitllation_config", Bunch({
 														"logits_ratio_decay":"constant",
 														"logits_ratio":0.5,
 														"logits_decay_rate":0.999,
@@ -97,7 +98,7 @@ def model_fn_builder(
 														"feature_decay_rate":0.999,
 														"kd_type":"kd",
 														"scope":scope
-														}))
+														})))
 			# get teacher logits
 			teacher_logit = tf.log(features["label_probs"]+1e-10)/kargs.get("temperature", 2.0) # log_softmax logits
 			student_logit = tf.nn.log_softmax(logits /kargs.get("temperature", 2.0)) # log_softmax logits
