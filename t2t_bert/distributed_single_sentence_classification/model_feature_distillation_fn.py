@@ -116,7 +116,7 @@ def model_fn_builder(
 			}
 
 			distillation_loss = distillation_api.distillation(distillation_features,
-										num_labels, dropout_prob,
+										2, dropout_prob,
 										model_reuse,
 										opt_config.num_train_steps,
 										**kargs)
