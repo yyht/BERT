@@ -103,7 +103,7 @@ class KnowledgeDistillation(object):
 														kargs.get("feature_ratio_decay", "constant"),
 														 kargs.get("feature_decay_rate", 0.999),
 														num_train_steps)
-					output_dict["distillation_loss"] += distillation_feature_loss
+					output_dict["distillation_loss"] += distillation_feature_loss / 2.0
 					output_dict["distillation_feature_loss"] = distillation_feature_loss
 					output_dict["st_logits"] = student_logits
 					output_dict["te_logits"] = teacher_logits
