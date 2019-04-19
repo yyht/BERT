@@ -95,7 +95,8 @@ def model_fn_builder(
 														"feature_ratio":0.5,
 														"feature_ratio_decay":"constant",
 														"feature_decay_rate":0.999,
-														"kd_type":"kd"
+														"kd_type":"kd",
+														"scope":scope
 														}))
 			# get teacher logits
 			teacher_logit = tf.log(features["label_probs"]+1e-10)/kargs.get("temperature", 2.0) # log_softmax logits
@@ -110,8 +111,7 @@ def model_fn_builder(
 				"teacher_label":tf.zeros_like(label_ids, dtype=tf.int32),
 				"logits_ratio":kargs.get("logits_ratio", 0.5),
 				"feature_ratio":kargs.get("logits_ratio", 0.5),
-				"distillation_ratio":features["distillation_ratio"],
-				"scope":scope
+				"distillation_ratio":features["distillation_ratio"]
 			}
 
 			distillation_loss = distillation_api.distillation(distillation_features,
