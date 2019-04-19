@@ -72,7 +72,7 @@ def data_interface(FLAGS):
 				name_to_features["input_char_ids_b"] = tf.FixedLenFeature([FLAGS.max_length], tf.int64)
 		if FLAGS.task_type == "pair_sentence_classification":
 			name_to_features["input_ids_b"] = tf.FixedLenFeature([FLAGS.max_length], tf.int64)
-		if FLAGS.distillation_type == "feature_distillation":
+		if FLAGS.distillation == "feature_distillation":
 			name_to_features["distillation_feature"] = tf.FixedLenFeature([768], tf.float32)
 
 	elif FLAGS.model_type in ["match_pyramid", "match_pyramid_distillation"]:
