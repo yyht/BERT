@@ -110,7 +110,8 @@ def model_fn_builder(
 				"teacher_label":tf.zeros_like(label_ids, dtype=tf.int32),
 				"logits_ratio":kargs.get("logits_ratio", 0.5),
 				"feature_ratio":kargs.get("logits_ratio", 0.5),
-				"distillation_ratio":features["distillation_ratio"]
+				"distillation_ratio":features["distillation_ratio"],
+				"scope":scope
 			}
 
 			distillation_loss = distillation_api.distillation(distillation_features,
