@@ -22,7 +22,7 @@ def logits_distillation(student_tensor, teacher_tensor, kd_type):
 	if kd_type == "person":
 		return correlation(student_tensor, teacher_tensor)
 	elif kd_type == "kd":
-		return kd(student_tensor, teacher_tensor)
+		return kd(teacher_tensor, student_tensor)
 	elif kd_type == "mse":
 		return mse(student_tensor, teacher_tensor)
 

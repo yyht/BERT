@@ -45,33 +45,39 @@ class KnowledgeDistillation(object):
 					num_labels, dropout_prob, model_reuse,
 					num_train_steps, **kargs):
 
-		student_tensor = features["student_tensor"]
-		teacher_tensor = features["teacher_tensor"]
-
-		total_distillation_loss = 0.0
+		output_dict = {
+			"distillation_loss":0.0,
+			"distillation_logits_loss":0.0,
+			"distillation_feature_loss":0.0
+			"st_logits":None,
+			"te_logits":None
+		}
 
 		for distillation_type in self.config.get("distillation", ["logits", "feature"]):
 
 			if distillation_type == "logits":
+				student_tensor = features["student_logits_tensor"]
+				teacher_tensor = features["teacher_logits_tensor"]
 				distillation_loss = logits_distillation(student_tensor, 
 											teacher_tensor, 
 											self.config.get("kd_type", "kd"))
-				distillation_loss *= features["distillation_ratio"]
-				distillation_loss = tf.reduce_sum(distillation_loss) / (1e-10+tf.reduce_sum(features["distillation_ratio"]))
-				distillation_loss *= self._ratio_decay(kargs.get("logits_ratio", 0.5),
+				distillation_logits_loss = tf.reduce_sum(distillation_loss) / (1e-10+tf.reduce_sum(features["distillation_ratio"]))
+				distillation_logits_loss *= self._ratio_decay(kargs.get("logits_ratio", 0.5),
 														kargs.get("logits_ratio_decay", "constant"),
 														 kargs.get("logits_decay_rate", 0.999)
 														num_train_steps)
-				total_distillation_loss += distillation_loss
-
+				output_dict["distillation_loss"] += distillation_logits_loss
+				output_dict["distillation_logits_loss"] = distillation_logits_loss
 
 			if distillation_type == "feature":
+				student_tensor = features["student_feature_tensor"]
+				teacher_tensor = features["teacher_feature_tensor"]
 				student_label = features["student_label"]
 				teacher_label = features["teacher_label"]
 				with tf.variable_scope(self.config.scope+"/dann_distillation", reuse=model_reuse):
 					[student_loss, 
 					student_example_loss, 
-					student_logits] = feature_distillation(student_tensor, l, 
+					student_logits] = feature_distillation(student_tensor, 1.0, 
 													student_label, num_labels,
 													dropout_prob)
 
@@ -79,20 +85,21 @@ class KnowledgeDistillation(object):
 
 					[teacher_loss, 
 					teacher_example_loss, 
-					teacher_logits] = feature_distillation(teacher_tensor, l, 
+					teacher_logits] = feature_distillation(teacher_tensor, 1.0, 
 													teacher_label, num_labels,
 													dropout_prob)
 
-					distillation_loss = (student_loss + teacher_loss) * self._ratio_decay(
+					distillation_feature_loss = (student_loss + teacher_loss) * self._ratio_decay(
 														kargs.get("feature_ratio", 0.5),
 														kargs.get("feature_ratio_decay", "constant"),
 														 kargs.get("feature_decay_rate", 0.999)
 														num_train_steps)
-					total_distillation_loss += distillation_loss
+					output_dict["distillation_loss"] += distillation_feature_loss
+					output_dict["distillation_feature_loss"] = distillation_feature_loss
+					output_dict["st_logits"] = student_logits
+					output_dict["te_logits"] = teacher_logits
 
-		return {"distillation_loss":total_distillation_loss,
-				"st_logits":student_logits,
-				"te_logits":teacher_logits}
+		return output_dict
 
 
 

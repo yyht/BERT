@@ -5,6 +5,7 @@ try:
 	from distributed_pair_sentence_classification.interaction_model_fn import model_fn_builder as interaction_builder_fn
 	from distributed_pair_sentence_classification.interaction_distillation_model_fn import model_fn_builder as interaction_distillation_builder_fn
 	from .embed_model_fn import model_fn_builder as embed_model_fn_builder
+	from .model_feature_distillation_fn import model_fn_builder as feature_distillation_fn_builder
 except:
 	from model_fn import model_fn_builder
 	from model_distillation_fn import model_fn_builder as model_distillation_builder_fn
@@ -12,6 +13,7 @@ except:
 	from distributed_pair_sentence_classification.interaction_model_fn import model_fn_builder as interaction_builder_fn
 	from distributed_pair_sentence_classification.interaction_distillation_model_fn import model_fn_builder as interaction_distillation_builder_fn
 	from embed_model_fn import model_fn_builder as embed_model_fn_builder
+	from model_feature_distillation_fn import model_fn_builder as feature_distillation_fn_builder
 
 def model_fn_interface(FLAGS):
 	print("==apply {} {} model fn builder==".format(FLAGS.task_type, FLAGS.distillation))
@@ -20,6 +22,8 @@ def model_fn_interface(FLAGS):
 			return model_distillation_builder_fn
 		elif FLAGS.distillation == "normal":
 			return model_fn_builder
+		elif FLAGS.distillation == "feature_distillation":
+			return feature_distillation_fn_builder
 		else:
 			return model_fn_builder
 	elif FLAGS.task_type in ["pair_sentence_classification"]:

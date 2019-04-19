@@ -83,33 +83,42 @@ def model_fn_builder(
 											num_labels,
 											label_ids,
 											dropout_prob)
-
-		print(kargs.get("temperature", 0.5), kargs.get("distillation_ratio", 0.5), "==distillation hyparameter==")
+			label_loss = tf.reduce_sum(per_example_loss * features["label_ratio"]) / (1e-10+tf.reduce_sum(features["label_ratio"]))
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
 
 			distillation_api = KnowledgeDistillation(kargs.get("disitllation_config", {
-														"ratio_decay":"constant",
-														"init_ratio":0.5,
-														""
+														"logits_ratio_decay":"constant",
+														"logits_ratio":0.5,
+														"logits_decay_rate":0.999,
+														"distillation":['logits', 'feature'],
+														"feature_ratio":0.5,
+														"feature_ratio_decay":"constant",
+														"feature_decay_rate":0.999,
+														"kd_type":"kd"
 														}))
-
 			# get teacher logits
 			teacher_logit = tf.log(features["label_probs"]+1e-10)/kargs.get("temperature", 2.0) # log_softmax logits
 			student_logit = tf.nn.log_softmax(logits /kargs.get("temperature", 2.0)) # log_softmax logits
 
+			distillation_features = {
+				"student_logits_tensor":student_logit,
+				"teacher_logits_tensor":teacher_logit,
+				"student_feature_tensor":model.get_pooled_output(),
+				"teacher_feature_tensor":features["feature"],
+				"student_label":tf.ones_like(label_ids, dtype=tf.int32),
+				"teacher_label":tf.zeros_like(label_ids, dtype=tf.int32),
+				"logits_ratio":kargs.get("logits_ratio", 0.5),
+				"feature_ratio":kargs.get("logits_ratio", 0.5)
+			}
 
+			distillation_loss = distillation_api.distillation(distillation_features,
+										num_labels, dropout_prob,
+										model_reuse,
+										opt_config.num_train_steps,
+										**kargs)
 
-		distillation_loss = kd_distance(teacher_logit, student_logit, kargs.get("distillation_distance", "kd")) 
-		distillation_loss *= features["distillation_ratio"]
-		distillation_loss = tf.reduce_sum(distillation_loss) / (1e-10+tf.reduce_sum(features["distillation_ratio"]))
-
-		label_loss = tf.reduce_sum(per_example_loss * features["label_ratio"]) / (1e-10+tf.reduce_sum(features["label_ratio"]))
-	
-		print("==distillation loss ratio==", kargs.get("distillation_ratio", 0.9)*tf.pow(kargs.get("temperature", 2.0), 2))
-
-		# loss = label_loss + kargs.get("distillation_ratio", 0.9)*tf.pow(kargs.get("temperature", 2.0), 2)*distillation_loss
-		loss = (1-kargs.get("distillation_ratio", 0.9))*label_loss + kargs.get("distillation_ratio", 0.9) * distillation_loss
+			loss = label_loss + distillation_loss["distillation_loss"]
 
 		model_io_fn = model_io.ModelIO(model_io_config)
 
@@ -159,12 +168,15 @@ def model_fn_builder(
 										"logits":logits,
 										"train_op":train_op,
 										"cross_entropy":label_loss,
-										"kd_loss":distillation_loss,
+										"distillation_loss":distillation_loss["distillation_loss"],
 										"kd_num":tf.reduce_sum(features["distillation_ratio"]),
 										"ce_num":tf.reduce_sum(features["label_ratio"]),
 										"teacher_logit":teacher_logit,
 										"student_logit":student_logit,
-										"label_ratio":features["label_ratio"]
+										"label_ratio":features["label_ratio"],
+										"distilaltion_logits_loss":distillation_loss["distillation_logits_loss"],
+										"distilaltion_feature_loss":distillation_loss["distillation_feature_loss"],
+										"distillation_loss":distillation_loss["distillation_loss"]
 									},
 						"hooks":training_hooks
 					}
