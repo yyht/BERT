@@ -40,9 +40,9 @@ def feature_distillation(input_tensor, l,
 	output_bias = tf.get_variable(
 		"output_bias", [num_labels], initializer=tf.zeros_initializer())
 
-	output_layer = tf.nn.dropout(input_tensor, keep_prob=1 - dropout_prob)
+	# output_layer = tf.nn.dropout(output_layer, keep_prob=1 - dropout_prob)
 
-	logits = tf.matmul(output_layer, output_weights, transpose_b=True)
+	logits = tf.matmul(feat, output_weights, transpose_b=True)
 	logits = tf.nn.bias_add(logits, output_bias)
 		
 	domain_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
