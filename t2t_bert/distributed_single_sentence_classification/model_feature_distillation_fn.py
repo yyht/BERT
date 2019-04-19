@@ -105,7 +105,7 @@ def model_fn_builder(
 				"student_logits_tensor":student_logit,
 				"teacher_logits_tensor":teacher_logit,
 				"student_feature_tensor":model.get_pooled_output(),
-				"teacher_feature_tensor":features["feature"],
+				"teacher_feature_tensor":features["distillation_feature"],
 				"student_label":tf.ones_like(label_ids, dtype=tf.int32),
 				"teacher_label":tf.zeros_like(label_ids, dtype=tf.int32),
 				"logits_ratio":kargs.get("logits_ratio", 0.5),
