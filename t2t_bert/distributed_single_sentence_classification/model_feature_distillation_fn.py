@@ -14,7 +14,7 @@ from metric import tf_metrics
 from optimizer import distributed_optimizer as optimizer
 from model_io import model_io
 
-from system.distillation.disitllation import KnowledgeDistillation
+from distillation.distillation import KnowledgeDistillation
 
 def correlation(x, y):
 	x = x - tf.reduce_mean(x, axis=-1, keepdims=True)

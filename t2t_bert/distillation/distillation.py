@@ -1,6 +1,6 @@
 import tensorflow as tf
 import numpy as np
-from system.distillation.distillation_utils import logits_distillation, feature_distillation
+from distillation.distillation_utils import logits_distillation, feature_distillation
 
 class KnowledgeDistillation(object):
 	def __init__(self, config={}):
@@ -48,7 +48,7 @@ class KnowledgeDistillation(object):
 		output_dict = {
 			"distillation_loss":0.0,
 			"distillation_logits_loss":0.0,
-			"distillation_feature_loss":0.0
+			"distillation_feature_loss":0.0,
 			"st_logits":None,
 			"te_logits":None
 		}
@@ -64,7 +64,7 @@ class KnowledgeDistillation(object):
 				distillation_logits_loss = tf.reduce_sum(distillation_loss) / (1e-10+tf.reduce_sum(features["distillation_ratio"]))
 				distillation_logits_loss *= self._ratio_decay(kargs.get("logits_ratio", 0.5),
 														kargs.get("logits_ratio_decay", "constant"),
-														 kargs.get("logits_decay_rate", 0.999)
+														 kargs.get("logits_decay_rate", 0.999),
 														num_train_steps)
 				output_dict["distillation_loss"] += distillation_logits_loss
 				output_dict["distillation_logits_loss"] = distillation_logits_loss
@@ -92,7 +92,7 @@ class KnowledgeDistillation(object):
 					distillation_feature_loss = (student_loss + teacher_loss) * self._ratio_decay(
 														kargs.get("feature_ratio", 0.5),
 														kargs.get("feature_ratio_decay", "constant"),
-														 kargs.get("feature_decay_rate", 0.999)
+														 kargs.get("feature_decay_rate", 0.999),
 														num_train_steps)
 					output_dict["distillation_loss"] += distillation_feature_loss
 					output_dict["distillation_feature_loss"] = distillation_feature_loss
