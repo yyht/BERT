@@ -69,16 +69,17 @@ class KnowledgeDistillation(object):
 				output_dict["distillation_loss"] += distillation_logits_loss
 				output_dict["distillation_logits_loss"] = distillation_logits_loss
 
-			if distillation_type == "feature":
+			elif distillation_type == "feature":
 				student_tensor = features["student_feature_tensor"]
 				teacher_tensor = features["teacher_feature_tensor"]
 				student_label = features["student_label"]
 				teacher_label = features["teacher_label"]
+				print(teacher_tensor.get_shape(), "==teacher feature shape==")
 				with tf.variable_scope(self.config.get("scope", "bert")+"/dann_distillation", reuse=model_reuse):
-					# student_tensor = tf.layers.dense(student_tensor,
-					# 									student_tensor.get_shape()[-1],
-					# 									activation=tf.nn.tanh,
-					# 									name="shared_encoder")
+					student_tensor = tf.layers.dense(student_tensor,
+														student_tensor.get_shape()[-1],
+														activation=tf.nn.tanh,
+														name="shared_encoder")
 					[student_loss, 
 					student_example_loss, 
 					student_logits] = feature_distillation(student_tensor, 1.0, 
@@ -88,17 +89,17 @@ class KnowledgeDistillation(object):
 
 					tf.get_variable_scope().reuse_variables()
 
-					# teacher_tensor = tf.layers.dense(teacher_tensor,
-					# 									teacher_tensor.get_shape()[-1],
-					# 									activation=tf.nn.tanh,
-					# 									name="shared_encoder")
+					teacher_tensor = tf.layers.dense(teacher_tensor,
+														teacher_tensor.get_shape()[-1],
+														activation=tf.nn.tanh,
+														name="shared_encoder")
 
 					[teacher_loss, 
 					teacher_example_loss, 
 					teacher_logits] = feature_distillation(teacher_tensor, 1.0, 
 													teacher_label, num_labels,
 													dropout_prob,
-													if_gradient_flip=False)
+													if_gradient_flip=True)
 
 					distillation_feature_loss = (student_loss + teacher_loss) * self._ratio_decay(
 														kargs.get("feature_ratio", 0.5),

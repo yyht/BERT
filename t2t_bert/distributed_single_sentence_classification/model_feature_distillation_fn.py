@@ -165,10 +165,26 @@ def model_fn_builder(
 								loss=loss, train_op=train_op,
 								training_hooks=training_hooks)
 				if output_type == "sess":
+
+					pred_label = tf.argmax(distillation_loss["st_logits"], axis=-1, output_type=tf.int32)
+					correct = tf.equal(
+						tf.cast(tf.ones_like(label_ids, dtype=tf.int32), tf.int32),
+						tf.cast(pred_label, tf.int32)
+					)
+					st_accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
+
+					pred_label = tf.argmax(distillation_loss["te_logits"], axis=-1, output_type=tf.int32)
+					correct = tf.equal(
+						tf.cast(tf.zeros_like(label_ids, dtype=tf.int32), tf.int32),
+						tf.cast(pred_label, tf.int32)
+					)
+					te_accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
+
 					return {
 						"train":{
 										"loss":loss, 
 										"logits":logits,
+										"student_acc":
 										"train_op":train_op,
 										"cross_entropy":label_loss,
 										"distillation_loss":distillation_loss["distillation_loss"],
@@ -179,7 +195,9 @@ def model_fn_builder(
 										"label_ratio":features["label_ratio"],
 										"distilaltion_logits_loss":distillation_loss["distillation_logits_loss"],
 										"distilaltion_feature_loss":distillation_loss["distillation_feature_loss"],
-										"distillation_loss":distillation_loss["distillation_loss"]
+										"distillation_loss":distillation_loss["distillation_loss"],
+										"st_accuracy":st_accuracy,
+										"te_accuracy":te_accuracy
 									},
 						"hooks":training_hooks
 					}
