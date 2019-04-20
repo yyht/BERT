@@ -77,7 +77,7 @@ class KnowledgeDistillation(object):
 				with tf.variable_scope(self.config.get("scope", "bert")+"/dann_distillation", reuse=model_reuse):
 					student_tensor = tf.layers.dense(student_tensor,
 														student_tensor.get_shape()[-1],
-														activation=tf.nn.relu,
+														activation=tf.nn.tanh,
 														name="shared_encoder")
 					[student_loss, 
 					student_example_loss, 
@@ -89,7 +89,7 @@ class KnowledgeDistillation(object):
 
 					teacher_tensor = tf.layers.dense(teacher_tensor,
 														teacher_tensor.get_shape()[-1],
-														activation=tf.nn.relu,
+														activation=tf.nn.tanh,
 														name="shared_encoder")
 
 					[teacher_loss, 
