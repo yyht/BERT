@@ -29,8 +29,11 @@ def logits_distillation(student_tensor, teacher_tensor, kd_type):
 
 def feature_distillation(input_tensor, l, 
 					domain_label, num_labels,
-					dropout_prob):
-	feat = flip_gradient(input_tensor, l)
+					dropout_prob, if_gradient_flip):
+	if if_gradient_flip:
+		feat = flip_gradient(input_tensor, l)
+	else:
+		feat = input_tensor
 	hidden_size = input_tensor.shape[-1].value
 
 	output_weights = tf.get_variable(

@@ -83,7 +83,8 @@ class KnowledgeDistillation(object):
 					student_example_loss, 
 					student_logits] = feature_distillation(student_tensor, 1.0, 
 													student_label, num_labels,
-													dropout_prob)
+													dropout_prob,
+													if_gradient_flip=True)
 
 					tf.get_variable_scope().reuse_variables()
 
@@ -96,7 +97,8 @@ class KnowledgeDistillation(object):
 					teacher_example_loss, 
 					teacher_logits] = feature_distillation(teacher_tensor, 1.0, 
 													teacher_label, num_labels,
-													dropout_prob)
+													dropout_prob,
+													if_gradient_flip=False)
 
 					distillation_feature_loss = (student_loss + teacher_loss) * self._ratio_decay(
 														kargs.get("feature_ratio", 0.5),
