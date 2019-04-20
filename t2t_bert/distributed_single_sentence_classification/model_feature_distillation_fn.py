@@ -184,7 +184,6 @@ def model_fn_builder(
 						"train":{
 										"loss":loss, 
 										"logits":logits,
-										"student_acc":
 										"train_op":train_op,
 										"cross_entropy":label_loss,
 										"distillation_loss":distillation_loss["distillation_loss"],
