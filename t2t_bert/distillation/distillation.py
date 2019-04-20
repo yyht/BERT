@@ -75,10 +75,10 @@ class KnowledgeDistillation(object):
 				student_label = features["student_label"]
 				teacher_label = features["teacher_label"]
 				with tf.variable_scope(self.config.get("scope", "bert")+"/dann_distillation", reuse=model_reuse):
-					student_tensor = tf.layers.dense(student_tensor,
-														student_tensor.get_shape()[-1],
-														activation=tf.nn.tanh,
-														name="shared_encoder")
+					# student_tensor = tf.layers.dense(student_tensor,
+					# 									student_tensor.get_shape()[-1],
+					# 									activation=tf.nn.tanh,
+					# 									name="shared_encoder")
 					[student_loss, 
 					student_example_loss, 
 					student_logits] = feature_distillation(student_tensor, 1.0, 
@@ -87,10 +87,10 @@ class KnowledgeDistillation(object):
 
 					tf.get_variable_scope().reuse_variables()
 
-					teacher_tensor = tf.layers.dense(teacher_tensor,
-														teacher_tensor.get_shape()[-1],
-														activation=tf.nn.tanh,
-														name="shared_encoder")
+					# teacher_tensor = tf.layers.dense(teacher_tensor,
+					# 									teacher_tensor.get_shape()[-1],
+					# 									activation=tf.nn.tanh,
+					# 									name="shared_encoder")
 
 					[teacher_loss, 
 					teacher_example_loss, 
