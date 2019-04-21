@@ -119,7 +119,12 @@ def model_fn_builder(
 										2, dropout_prob,
 										model_reuse,
 										opt_config.num_train_steps,
-										**kargs)
+										feature_ratio=10,
+										logits_ratio_decay="constant",
+										feature_ratio_decay="constant",
+										feature_decay_rate=0.999,
+										logits_decay_rate=0.999,
+										logits_ratio=0.5)
 
 			loss = label_loss + distillation_loss["distillation_loss"]
 
