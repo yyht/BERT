@@ -804,7 +804,7 @@ def convert_distillation_classifier_examples_to_features(examples, label_dict,
 											max_seq_length, 
 											char_len=char_len)
 		else:
-			input_char_ids_a = None		
+			input_char_ids_a = None	
 
 		if len(example.label) == 1:
 			# print(example.label, len(label_dict), tokens_a)
