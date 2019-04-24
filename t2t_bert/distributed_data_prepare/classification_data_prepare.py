@@ -244,7 +244,7 @@ def main(_):
 																FLAGS.with_char,
 																FLAGS.char_len)
 	elif FLAGS.tokenizer_type == "full_bpe":
-		write_to_tfrecords.convert_bert_distillation_classifier_examples_to_features(total_train_examples,
+		write_to_tfrecords.convert_bert_distillation_classifier_examples_to_features(train_examples,
 																classifier_data_api.label2id,
 																FLAGS.max_length,
 																tokenizer_corpus,

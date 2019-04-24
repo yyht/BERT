@@ -1,6 +1,7 @@
 import tensorflow as tf
 import numpy as np
 from distillation.distillation_utils import logits_distillation, feature_distillation
+from distillation.mmd_utils import margin_disparity_discrepancy
 
 class KnowledgeDistillation(object):
 	def __init__(self, config={}):
@@ -50,7 +51,10 @@ class KnowledgeDistillation(object):
 			"distillation_logits_loss":0.0,
 			"distillation_feature_loss":0.0,
 			"st_logits":None,
-			"te_logits":None
+			"te_logits":None,
+			"mdd_loss":0.0,
+			"src_f1_logits":None,
+			"tgt_f1_logits":None
 		}
 
 		for distillation_type in self.config.get("distillation", ["logits", "feature"]):
@@ -110,8 +114,30 @@ class KnowledgeDistillation(object):
 					output_dict["distillation_feature_loss"] = distillation_feature_loss
 					output_dict["st_logits"] = student_logits
 					output_dict["te_logits"] = teacher_logits
+			elif distillation_type == "mdd":
+				src_f_logit = features["src_f_logit"]
+				src_tensor = features["src_tensor"]
+				tgt_f_logit = features['tgt_f_logit']
+				tgt_tensor = features['tgt_tensor']
+				[mdd_loss, 
+				src_f1_logits, 
+				tgt_f1_logits] = margin_disparity_discrepancy(src_f_logit,
+															src_tensor,
+															tgt_f_logit, tgt_tensor,
+															model_reuse,
+															**kargs)
+				output_dict["mdd_loss"] = mdd_loss
+				output_dict["distillation_loss"] += kargs.get("mdd_ratio", 0.1) * mdd_loss
+				output_dict["src_f1_logits"] = src_f1_logits
+				output_dict["tgt_f1_logits"] = tgt_f1_logits
 
 		return output_dict
+
+
+
+
+
+
 
 
 

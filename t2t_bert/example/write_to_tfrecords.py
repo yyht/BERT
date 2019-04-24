@@ -925,10 +925,13 @@ def convert_bert_distillation_classifier_examples_to_features(examples, label_di
 			for item in example.label:
 				label_id[label_dict[item]] = 1
 
-		try:
-			label_probs = example.label_probs
+		if len((label_dict)) <= 10:
+			try:
+				label_probs = example.label_probs
+			except:
+				label_probs = [1.0/len(label_dict)]*len(label_dict)
 		except:
-			label_probs = [1.0/len(label_dict)]*len(label_dict)
+			label_probs = None
 
 		try:
 			label_ratio = example.label_ratio
