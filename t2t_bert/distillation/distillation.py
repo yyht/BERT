@@ -47,14 +47,14 @@ class KnowledgeDistillation(object):
 					num_train_steps, **kargs):
 
 		output_dict = {
-			"distillation_loss":0.0,
-			"distillation_logits_loss":0.0,
-			"distillation_feature_loss":0.0,
-			"st_logits":None,
-			"te_logits":None,
-			"mdd_loss":0.0,
-			"src_f1_logits":None,
-			"tgt_f1_logits":None
+			"distillation_loss":tf.constant(0.0),
+			"distillation_logits_loss":tf.constant(0.0),
+			"distillation_feature_loss":tf.constant(0.0),
+			"st_logits":tf.constant(0.0),
+			"te_logits":tf.constant(0.0),
+			"mdd_loss":tf.constant(0.0),
+			"src_f1_logits":tf.constant(0.0),
+			"tgt_f1_logits":tf.constant(0.0)
 		}
 
 		for distillation_type in self.config.get("distillation", ["logits", "feature"]):

@@ -203,8 +203,8 @@ def model_fn_builder(
 						)
 						te_accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
 					except:
-						te_accuracy = 0
-						st_accuracy = 0
+						te_accuracy = tf.constant(0.0)
+						st_accuracy = tf.constant(0.0)
 
 					try:
 						pred_label = tf.argmax(distillation_loss["src_f1_logits"], axis=-1, output_type=tf.int32)
@@ -221,8 +221,8 @@ def model_fn_builder(
 						)
 						te_accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
 					except:
-						te_accuracy = 0
-						st_accuracy = 0
+						te_accuracy = tf.constant(0.0)
+						st_accuracy = tf.constant(0.0)
 
 					return {
 						"train":{
