@@ -206,23 +206,23 @@ def model_fn_builder(
 						te_accuracy = tf.constant(0.0)
 						st_accuracy = tf.constant(0.0)
 
-					try:
-						pred_label = tf.argmax(distillation_loss["src_f1_logits"], axis=-1, output_type=tf.int32)
-						correct = tf.equal(
-							label_ids,
-							tf.cast(pred_label, tf.int32)
-						)
-						st_accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
+					# try:
+					pred_label = tf.argmax(distillation_loss["src_f1_logits"], axis=-1, output_type=tf.int32)
+					correct = tf.equal(
+						label_ids,
+						tf.cast(pred_label, tf.int32)
+					)
+					st_accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
 
-						pred_label = tf.argmax(distillation_loss["tgt_f1_logits"], axis=-1, output_type=tf.int32)
-						correct = tf.equal(
-							label_ids,
-							tf.cast(pred_label, tf.int32)
-						)
-						te_accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
-					except:
-						te_accuracy = tf.constant(0.0)
-						st_accuracy = tf.constant(0.0)
+					pred_label = tf.argmax(distillation_loss["tgt_f1_logits"], axis=-1, output_type=tf.int32)
+					correct = tf.equal(
+						label_ids,
+						tf.cast(pred_label, tf.int32)
+					)
+					te_accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
+					# except:
+					# 	te_accuracy = tf.constant(0.0)
+					# 	st_accuracy = tf.constant(0.0)
 
 					return {
 						"train":{
