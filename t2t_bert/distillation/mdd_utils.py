@@ -7,6 +7,10 @@ EPS = 1e-20
 def adv_source_classifier(input_tensor, model_reuse, **kargs):
 	input_tensor = flip_gradient(input_tensor)
 	with tf.variable_scope(kargs.get("scope", "adv_classifier"), reuse=model_reuse):
+		input_tensor = tf.layers.dense(input_tensor, 
+										tf.shape(input_tensor)[0], 
+										tf.nn.tanh,
+										name="shared_encoder")
 		logits = tf.layers.dense(input_tensor, kargs.get("num_classes", 5))
 		logits = tf.nn.log_softmax(logits, axis=-1)
 	return logits
