@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 from distillation.distillation_utils import logits_distillation, feature_distillation
-from distillation.mmd_utils import margin_disparity_discrepancy
+from distillation.mdd_utils import margin_disparity_discrepancy
 
 class KnowledgeDistillation(object):
 	def __init__(self, config={}):
