@@ -34,6 +34,7 @@ def margin_disparity_discrepancy(src_f_logit, src_tensor,
 
 	src_idxs = tf.concat([batch_idxs, pred_label_src_f], 1)
 	logits_src_f = tf.gather_nd(src_f1_logit, src_idxs)
+	prob_src_f = tf.exp(logits_src_f)
 
 	batch_idxs = tf.range(0, tf.shape(tgt_f_logit)[0])
 	batch_idxs = tf.expand_dims(batch_idxs, 1)
@@ -42,9 +43,11 @@ def margin_disparity_discrepancy(src_f_logit, src_tensor,
 	pred_label_tgt_f = tf.expand_dims(pred_label_tgt_f, axis=1)
 
 	src_idxs = tf.concat([batch_idxs, pred_label_tgt_f], 1)
-	logits_tgt_f = tf.log(1 - tf.exp(tf.gather_nd(tgt_f1_logit, src_idxs))+EPS)
+	logits_tgt_f = tf.gather_nd(tgt_f1_logit, src_idxs)
+	prob_tgt_f = tf.exp(logits_tgt_f)
+	logits_tgt_f = tf.log(1 - prob_tgt_f + EPS)
 
-	return [-tf.reduce_mean(gamma*logits_src_f+logits_tgt_f), src_f1_logit, tgt_f1_logit]
+	return [-tf.reduce_mean(gamma*logits_src_f+logits_tgt_f), prob_src_f, prob_tgt_f]
 
 
 

@@ -53,8 +53,8 @@ class KnowledgeDistillation(object):
 			"st_logits":tf.constant(0.0),
 			"te_logits":tf.constant(0.0),
 			"mdd_loss":tf.constant(0.0),
-			"src_f1_logits":tf.constant(0.0),
-			"tgt_f1_logits":tf.constant(0.0)
+			"src_f1_prob":tf.constant(0.0),
+			"tgt_f1_prob":tf.constant(0.0)
 		}
 
 		for distillation_type in self.config.get("distillation", ["logits", "feature"]):
@@ -120,16 +120,16 @@ class KnowledgeDistillation(object):
 				tgt_f_logit = features['tgt_f_logit']
 				tgt_tensor = features['tgt_tensor']
 				[mdd_loss, 
-				src_f1_logits, 
-				tgt_f1_logits] = margin_disparity_discrepancy(src_f_logit,
+				src_f1_prob, 
+				tgt_f1_prob] = margin_disparity_discrepancy(src_f_logit,
 															src_tensor,
 															tgt_f_logit, tgt_tensor,
 															model_reuse,
 															**kargs)
 				output_dict["mdd_loss"] = mdd_loss
 				output_dict["distillation_loss"] += kargs.get("mdd_ratio", 0.1) * mdd_loss
-				output_dict["src_f1_logits"] = src_f1_logits
-				output_dict["tgt_f1_logits"] = tgt_f1_logits
+				output_dict["src_f1_prob"] = src_f1_logits
+				output_dict["tgt_f1_prob"] = tgt_f1_logits
 
 		return output_dict
 
