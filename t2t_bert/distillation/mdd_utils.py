@@ -2,6 +2,8 @@ import tensorflow as tf
 import numpy as np
 from distillation.flip_gradient import flip_gradient
 
+EPS = 1e-20
+
 def adv_source_classifier(input_tensor, model_reuse, **kargs):
 	input_tensor = flip_gradient(input_tensor)
 	with tf.variable_scope(kargs.get("scope", "adv_classifier"), reuse=model_reuse):
@@ -36,7 +38,7 @@ def margin_disparity_discrepancy(src_f_logit, src_tensor,
 	pred_label_tgt_f = tf.expand_dims(pred_label_tgt_f, axis=1)
 
 	src_idxs = tf.concat([batch_idxs, pred_label_tgt_f], 1)
-	logits_tgt_f = tf.log(1 - tf.exp(tf.gather_nd(tgt_f1_logit, src_idxs)))
+	logits_tgt_f = tf.log(1 - tf.exp(tf.gather_nd(tgt_f1_logit, src_idxs))+EPS)
 
 	return [-tf.reduce_mean(gamma*logits_src_f+logits_tgt_f), src_f1_logit, tgt_f1_logit]
 
