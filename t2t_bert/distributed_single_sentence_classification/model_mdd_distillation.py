@@ -220,6 +220,9 @@ def model_fn_builder(
 							tf.cast(pred_label, tf.int32)
 						)
 						te_accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
+					except:
+						te_accuracy = None
+						st_accuracy = None
 
 					return {
 						"train":{

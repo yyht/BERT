@@ -930,7 +930,7 @@ def convert_bert_distillation_classifier_examples_to_features(examples, label_di
 				label_probs = example.label_probs
 			except:
 				label_probs = [1.0/len(label_dict)]*len(label_dict)
-		except:
+		else:
 			label_probs = None
 
 		try:
