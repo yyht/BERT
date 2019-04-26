@@ -24,8 +24,6 @@ def classifier(config, pooled_output,
 	logits = tf.matmul(output_layer, output_weights, transpose_b=True)
 	logits = tf.nn.bias_add(logits, output_bias)
 
-	logits = tf.nn.log_softmax(logits)
-
 	if config.get("label_type", "single_label") == "single_label":
 		if config.get("loss", "entropy") == "entropy":
 			print("==standard cross entropy==")
