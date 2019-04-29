@@ -1085,12 +1085,11 @@ class SentenceProcessor(data_processor.DataProcessor):
 		self.id2label = label["id2label"]
 	
 	def _read_data(self, input_file):
-		import json
-		data = []
-		with tf.gfile.Open(input_file, "r") as frobj:
-			for line in frobj:
-				data.append(json.loads(line.strip()))
-		return data
+		with tf.gfile.Open(input_file, "r") as f:
+			lines = []
+			for line in f:
+				lines.append(line.strip())
+			return lines
 
 	def _create_examples(self, lines,
 								LABEL_SPLITTER="__label__"):

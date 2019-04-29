@@ -70,7 +70,8 @@ def main(_):
 	import json
 	multi_task_config = Bunch(json.load(open(os.path.join(FLAGS.buckets, FLAGS.multitask_dict))))
 
-	vocab_path = os.path.join(FLAGS.buckets, FLAGS.vocab_file)
+	vocab_path = FLAGS.vocab_file
+	# os.path.join(FLAGS.buckets, FLAGS.vocab_file)
 
 	train_file_dict = {}
 	test_file_dict = {}
@@ -127,6 +128,8 @@ def main(_):
 		dev_examples = classifier_data_api.get_train_examples(dev_file_dict[task],
 											is_shuffle=False)
 
+		print(classifier_data_api.label2id, task)
+
 		write_to_tfrecords_multitask.convert_multitask_classifier_examples_to_features(
 															train_examples,
 															classifier_data_api.label2id,
@@ -141,7 +144,7 @@ def main(_):
 															classifier_data_api.label2id,
 															FLAGS.max_length,
 															tokenizer,
-															train_result_dict[task],
+															test_result_dict[task],
 															task,
 															multi_task_config)
 
@@ -150,7 +153,7 @@ def main(_):
 															classifier_data_api.label2id,
 															FLAGS.max_length,
 															tokenizer,
-															train_result_dict[task],
+															dev_result_dict[task],
 															task,
 															multi_task_config)
 

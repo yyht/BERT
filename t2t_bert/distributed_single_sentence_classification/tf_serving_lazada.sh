@@ -2,15 +2,15 @@ python ./t2t_bert/distributed_bin/tf_serving_api.py \
 	--buckets "/data/xuht" \
 	--vocab "multi_cased_L-12_H-768_A-12/vocab.txt" \
 	--do_lower_case True \
-	--url "192.168.0.100" \
+	--url "10.183.20.12" \
 	--port "7901" \
-	--model_name "textcnn_lazada" \
+	--model_name "textlstm" \
 	--signature_name "serving_default" \
-	--versions "1555594622" \
+	--versions "1553614002" \
 	--task_type "single_sentence_classification" \
-	--tokenizer "bert" \
+	--tokenizer "jieba_char" \
 	--with_char "no_char" \
-	--output_path "lazada_test.json" \
-	--input_data "lazada_test.txt" \
-	--model_type "bert_like_single_sentence_classification" \
+	--output_path "porn/test/test.txt" \
+	--input_data "porn/test/result_test.json" \
+	--model_type "single_sentence_classification" \
 	--max_seq_length 128

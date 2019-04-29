@@ -88,6 +88,9 @@ class MultitaskFeatureWriter(FeatureWriter):
 					features["{}_label_ids".format(task)] = tf_data_utils.create_int_feature([0]*len(feature.label_ids))
 				elif task_type_dict[task]["task_type"] == "mrc":
 					features["{}_label_ids".format(task)] = tf_data_utils.create_int_feature([0]*len(feature.label_ids))
+		
+		if self.num_features == 10:
+			print(features.keys())
 		try:
 			features["guid"] = tf_data_utils.create_int_feature([feature.guid])
 			tf_example = tf.train.Example(features=tf.train.Features(feature=features))
