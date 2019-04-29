@@ -59,7 +59,7 @@ class ClassifierFeatureWriter(FeatureWriter):
 
 class MultitaskFeatureWriter(FeatureWriter):
 	def __init__(self, filename, is_training):
-		super(ClassifierFeatureWriter, self).__init__(filename, is_training)
+		super(MultitaskFeatureWriter, self).__init__(filename, is_training)
 
 	def process_feature(self, feature, task_type, task_type_dict):
 		"""Write a InputFeature to the TFRecordWriter as a tf.train.Example."""
