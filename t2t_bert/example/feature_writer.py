@@ -57,6 +57,45 @@ class ClassifierFeatureWriter(FeatureWriter):
 			tf_example = tf.train.Example(features=tf.train.Features(feature=features))
 			self._writer.write(tf_example.SerializeToString())
 
+class MultitaskFeatureWriter(FeatureWriter):
+	def __init__(self, filename, is_training):
+		super(ClassifierFeatureWriter, self).__init__(filename, is_training)
+
+	def process_feature(self, feature, task_type, task_type_dict):
+		"""Write a InputFeature to the TFRecordWriter as a tf.train.Example."""
+		self.num_features += 1
+
+		features = collections.OrderedDict()
+
+		features["input_ids"] = tf_data_utils.create_int_feature(feature.input_ids)
+		features["input_mask"] = tf_data_utils.create_int_feature(feature.input_mask)
+		features["segment_ids"] = tf_data_utils.create_int_feature(feature.segment_ids)
+
+		for task in task_type_dict:
+			if task == task_type:
+				features["{}_mask".format(task)] = tf_data_utils.create_int_feature([1])
+				if task_type_dict[task]["task_type"] == "cls_task":
+					features["{}_label_ids".format(task)] = tf_data_utils.create_int_feature([feature.label_ids])
+				elif task_type_dict[task]["task_type"] == "seq2tag":
+					features["{}_label_ids".format(task)] = tf_data_utils.create_int_feature(feature.label_ids)
+				elif task_type_dict[task]["task_type"] == "mrc":
+					features["{}_label_ids".format(task)] = tf_data_utils.create_int_feature(feature.label_ids)
+			else:
+				features["{}_mask".format(task)] = tf_data_utils.create_int_feature([0])
+				if task_type_dict[task]["task_type"] == "cls_task":
+					features["{}_label_ids".format(task)] = tf_data_utils.create_int_feature([0])
+				elif task_type_dict[task]["task_type"] == "seq2tag":
+					features["{}_label_ids".format(task)] = tf_data_utils.create_int_feature([0]*len(feature.label_ids))
+				elif task_type_dict[task]["task_type"] == "mrc":
+					features["{}_label_ids".format(task)] = tf_data_utils.create_int_feature([0]*len(feature.label_ids))
+		try:
+			features["guid"] = tf_data_utils.create_int_feature([feature.guid])
+			tf_example = tf.train.Example(features=tf.train.Features(feature=features))
+			self._writer.write(tf_example.SerializeToString())
+		except:
+			tf_example = tf.train.Example(features=tf.train.Features(feature=features))
+			self._writer.write(tf_example.SerializeToString())
+
 class ClassifierRuleFeatureWriter(FeatureWriter):
 	def __init__(self, filename, is_training):
 		super(ClassifierRuleFeatureWriter, self).__init__(filename, is_training)

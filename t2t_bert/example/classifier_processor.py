@@ -1018,6 +1018,130 @@ class FasttextStructureDistillationProcessor(data_processor.DataProcessor):
 			random.shuffle(examples)
 		return examples
 
+class SentencePairProcessor(data_processor.DataProcessor): 
+	def get_labels(self, label_file):
+		import json
+		with open(label_file, "r") as frobj:
+			label = json.load(frobj)
+		self.label2id = label["label2id"]
+		self.id2label = label["id2label"]
+	
+	def _read_data(self, input_file):
+		import json
+		data = []
+		with tf.gfile.Open(input_file, "r") as frobj:
+			for line in frobj:
+				data.append(json.loads(line.strip()))
+		return data
+
+	def _create_examples(self, data):
+		examples = []
+		for index in range(len(data)):
+			content = data[index]
+			try:
+				guid = int(content["ID"])
+			except:
+				guid = index
+			text_a = content["sentence1"]
+			text_b = content["sentence2"]
+			try:
+				label = content["gold_label"]
+			except:
+				label = "0"
+			if isinstance(text_a,str) and isinstance(text_b,str):
+				examples.append(data_feature_classifier.InputExample(
+						guid=guid,
+						text_a=clean(text_a),
+						text_b=clean(text_b),
+						label=[label]
+				))
+		return examples
+
+	def get_train_examples(self, train_file, is_shuffle=True):
+		data = self._read_data(train_file)
+		examples = self._create_examples(data)
+		if is_shuffle:
+			random.shuffle(examples)
+		return examples
+
+	def get_dev_examples(self, dev_file, is_shuffle=False):
+		data = self._read_data(dev_file)
+		examples = self._create_examples(data)
+		if is_shuffle:
+			random.shuffle(examples)
+		return examples
+
+	def get_test_examples(self, test_file):
+		data = self._read_data(test_file)
+		examples = self._create_examples(data)
+		return examples
+
+class SentenceProcessor(data_processor.DataProcessor): 
+	def get_labels(self, label_file):
+		import json
+		with open(label_file, "r") as frobj:
+			label = json.load(frobj)
+		self.label2id = label["label2id"]
+		self.id2label = label["id2label"]
+	
+	def _read_data(self, input_file):
+		import json
+		data = []
+		with tf.gfile.Open(input_file, "r") as frobj:
+			for line in frobj:
+				data.append(json.loads(line.strip()))
+		return data
+
+	def _create_examples(self, lines,
+								LABEL_SPLITTER="__label__"):
+		re_pattern = u"({}{})".format(LABEL_SPLITTER, "\\d+")
+		label_pattern = "(?<={})(\\d+)".format(LABEL_SPLITTER)
+		
+		examples = []
+		for (i, line) in enumerate(lines):
+			try:
+				guid = i
+				element_list = re.split(re_pattern, line)
+				text_a = clean(element_list[-1])
+
+				input_labels = []
+				for l in re.finditer(label_pattern, line):
+					input_labels.append(l.group())
+
+				input_labels = [label.strip() for label in input_labels if label.strip() in list(self.label2id.keys())]
+
+				text_a = tokenization.convert_to_unicode(text_a)				
+				examples.append(data_feature_classifier.InputExample(
+						guid=guid,
+						text_a=text_a,
+						text_b=None,
+						label=input_labels
+					))
+			except:
+				print(line, i)
+		return examples
+
+	def get_train_examples(self, train_file, is_shuffle=True):
+		data = self._read_data(train_file)
+		examples = self._create_examples(data)
+		if is_shuffle:
+			random.shuffle(examples)
+		return examples
+
+	def get_dev_examples(self, dev_file, is_shuffle=False):
+		data = self._read_data(dev_file)
+		examples = self._create_examples(data)
+		if is_shuffle:
+			random.shuffle(examples)
+		return examples
+
+	def get_test_examples(self, test_file):
+		data = self._read_data(test_file)
+		examples = self._create_examples(data)
+		return examples
+
+
+
 
  	
 
