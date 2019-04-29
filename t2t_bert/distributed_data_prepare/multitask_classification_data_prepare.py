@@ -100,6 +100,8 @@ def main(_):
 		label_id_dict[task] = os.path.join(FLAGS.buckets, 
 											multi_task_config[task]["label_id"])
 
+	print(train_file_dict)
+
 	if FLAGS.lower_case == "True":
 		lower_case = True
 	else:
