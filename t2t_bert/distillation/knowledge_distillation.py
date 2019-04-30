@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
-from distillation.distillation_utils import logits_distillation, feature_distillation
-from distillation.mdd_utils import margin_disparity_discrepancy
+from distillation import distillation_utils
+from distillation import mdd_utils
 
 class KnowledgeDistillation(object):
 	def __init__(self, config={}):
@@ -62,7 +62,7 @@ class KnowledgeDistillation(object):
 			if distillation_type == "logits":
 				student_tensor = features["student_logits_tensor"]
 				teacher_tensor = features["teacher_logits_tensor"]
-				distillation_loss = logits_distillation(student_tensor, 
+				distillation_loss = distillation_utils.logits_distillation(student_tensor, 
 											teacher_tensor, 
 											self.config.get("kd_type", "kd"))
 				distillation_logits_loss = tf.reduce_sum(distillation_loss) / (1e-10+tf.reduce_sum(features["distillation_ratio"]))
@@ -86,7 +86,7 @@ class KnowledgeDistillation(object):
 														name="shared_encoder")
 					[student_loss, 
 					student_example_loss, 
-					student_logits] = feature_distillation(student_tensor, 1.0, 
+					student_logits] = distillation_utils.feature_distillation(student_tensor, 1.0, 
 													student_label, num_labels,
 													dropout_prob,
 													if_gradient_flip=True)
@@ -100,7 +100,7 @@ class KnowledgeDistillation(object):
 
 					[teacher_loss, 
 					teacher_example_loss, 
-					teacher_logits] = feature_distillation(teacher_tensor, 1.0, 
+					teacher_logits] = distillation_utils.feature_distillation(teacher_tensor, 1.0, 
 													teacher_label, num_labels,
 													dropout_prob,
 													if_gradient_flip=True)
@@ -121,15 +121,15 @@ class KnowledgeDistillation(object):
 				tgt_tensor = features['tgt_tensor']
 				[mdd_loss, 
 				src_f1_prob, 
-				tgt_f1_prob] = margin_disparity_discrepancy(src_f_logit,
+				tgt_f1_prob] = mdd_utils.margin_disparity_discrepancy(src_f_logit,
 															src_tensor,
 															tgt_f_logit, tgt_tensor,
 															model_reuse,
 															**kargs)
 				output_dict["mdd_loss"] = mdd_loss
 				output_dict["distillation_loss"] += kargs.get("mdd_ratio", 0.1) * mdd_loss
-				output_dict["src_f1_prob"] = src_f1_logits
-				output_dict["tgt_f1_prob"] = tgt_f1_logits
+				output_dict["src_f1_prob"] = src_f1_prob
+				output_dict["tgt_f1_prob"] = tgt_f1_prob
 
 		return output_dict
 

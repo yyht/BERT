@@ -1,13 +1,16 @@
 # -*- coding: utf-8 -*-
 import tensorflow as tf
+from collections import OrderedDict
 
 from optimizer import distributed_optimizer as optimizer
 from data_generator import distributed_tf_data_utils as tf_data_utils
 
-try
+try:
 	from .model_data_interface import data_interface
+	from distributed_single_sentence_classification.model_interface import model_config_parser
 except:
 	from model_data_interface import data_interface
+	from distributed_single_sentence_classification.model_interface import model_config_parser
 
 try:
 	from .multitask_model_fn import multitask_model_fn
@@ -105,8 +108,6 @@ def train_eval_fn(FLAGS,
 			})
 
 		model_io_config = Bunch({"fix_lm":False})
-		
-		num_classes = FLAGS.num_classes
 
 		if FLAGS.opt_type == "hvd" and hvd:
 			checkpoint_dir = checkpoint_dir if task_index == 0 else None
@@ -117,76 +118,78 @@ def train_eval_fn(FLAGS,
 		model_config_dict = {}
 		num_labels_dict = {}
 		init_checkpoint_dict = {}
-		model_reuse_dict = {}
 		load_pretrained_dict = {}
 		exclude_scope_dict = {}
 		not_storage_params_dict = {}
 		target_dict = {}
 		task_type_dict = {}
 		model_type_lst = []
+		label_dict = {}
 
-		for task_type in FLAGS.task_type.split(","):
-			model_config_dict[task_type] = model_config_parser(multi_task_config[task_type])
+		for task_type in FLAGS.multi_task_type.split(","):
+			print("==task type==", task_type)
+			model_config_dict[task_type] = model_config_parser(Bunch(multi_task_config[task_type]))
 			num_labels_dict[task_type] = multi_task_config[task_type]["num_labels"]
 			init_checkpoint_dict[task_type] = multi_task_config[task_type]["init_checkpoint"]
-			model_reuse_dict[task_type] = multi_task_config[task_type]["model_reuse"]
 			load_pretrained_dict[task_type] = multi_task_config[task_type]["load_pretrained"]
 			exclude_scope_dict[task_type] = multi_task_config[task_type]["exclude_scope"]
 			not_storage_params_dict[task_type] = multi_task_config[task_type]["not_storage_params"]
 			target_dict[task_type] = multi_task_config[task_type]["target"]
 			task_type_dict[task_type] = multi_task_config[task_type]["task_type"]
+			label_dict[task_type] = json.load(open(os.path.join(FLAGS.buckets,
+												multi_task_config[task_type]["label_id"])))
 
 		model_train_fn = multitask_model_fn(model_config_dict, num_labels_dict,
-											task_type_dict
+											task_type_dict,
 											init_checkpoint_dict,
-											load_pretrained=load_pretrained_dict,
+											load_pretrained_dict=load_pretrained_dict,
 											opt_config=opt_config,
 											model_io_config=model_io_config,
-											exclude_scope=exclude_scope_dict,
-											not_storage_params=[],
-											target=target_dict,
+											exclude_scope_dict=exclude_scope_dict,
+											not_storage_params_dict=not_storage_params_dict,
+											target_dict=target_dict,
 											output_type="sess",
 											checkpoint_dir=checkpoint_dir,
 											num_storage_steps=num_storage_steps,
 											anneal_config=anneal_config,
 											task_layer_reuse=None,
-											model_type_lst=model_type_lst
+											model_type_lst=model_type_lst,
 											**kargs)
 
 		eval_model_fn = {}
 
-		for task_type in FLAGS.task_type.split(","):
-			model_config_dict[task_type] = model_config_parser(multi_task_config[task_type])
+		for task_type in FLAGS.multi_task_type.split(","):
+			eval_task_type_dict = {}
+			model_config_dict[task_type] = model_config_parser(Bunch(multi_task_config[task_type]))
 			num_labels_dict[task_type] = multi_task_config[task_type]["num_labels"]
-			init_checkpoint_dict[task_type] = multi_task_config[task_type]["init_checkpoint"]
-			model_reuse_dict[task_type] = multi_task_config[task_type]["model_reuse"]
+			init_checkpoint_dict[task_type] = os.path.join(FLAGS.buckets, multi_task_config[task_type]["init_checkpoint"])
 			load_pretrained_dict[task_type] = multi_task_config[task_type]["load_pretrained"]
 			exclude_scope_dict[task_type] = multi_task_config[task_type]["exclude_scope"]
 			not_storage_params_dict[task_type] = multi_task_config[task_type]["not_storage_params"]
 			target_dict[task_type] = multi_task_config[task_type]["target"]
-			task_type_dict[task_type] = multi_task_config[task_type]["task_type"]
+			eval_task_type_dict[task_type] = multi_task_config[task_type]["task_type"]
 
 			eval_model_fn[task_type] = multitask_model_fn(model_config_dict, num_labels_dict,
-											task_type_dict
+											eval_task_type_dict,
 											init_checkpoint_dict,
-											load_pretrained=load_pretrained_dict,
+											load_pretrained_dict=load_pretrained_dict,
 											opt_config=opt_config,
 											model_io_config=model_io_config,
-											exclude_scope=exclude_scope_dict,
-											not_storage_params=[],
-											target=target_dict,
+											exclude_scope_dict=exclude_scope_dict,
+											not_storage_params_dict=not_storage_params_dict,
+											target_dict=target_dict,
 											output_type="sess",
 											checkpoint_dir=checkpoint_dir,
 											num_storage_steps=num_storage_steps,
 											anneal_config=anneal_config,
 											task_layer_reuse=True,
-											model_type_lst=model_type_lst
+											model_type_lst=model_type_lst,
 											**kargs)
 
 		print("==succeeded in building model==")
 		
 		def eval_metric_fn(features, eval_op_dict, task_type):
-			logits = eval_op_dict["logits"]
+			logits = eval_op_dict["logits"][task_type]
 			print(logits.get_shape(), "===logits shape===")
 			pred_label = tf.argmax(logits, axis=-1, output_type=tf.int32)
 			prob = tf.nn.softmax(logits)
@@ -197,14 +200,14 @@ def train_eval_fn(FLAGS,
 			accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
 
 			return {"accuracy":accuracy, 
-					"loss":eval_op_dict["loss"], 
+					"loss":eval_op_dict["loss"][task_type], 
 					"pred_label":pred_label, 
 					"label_ids":features["{}_label_ids".format(task_type)]}
 
 		def train_metric_fn(features, train_op_dict):
 			return train_op_dict
 		
-		name_to_features = data_interface(FLAGS, )
+		name_to_features = data_interface(FLAGS, multi_task_config)
 
 		def _decode_record(record, name_to_features):
 			"""Decodes a record to a TensorFlow example.
@@ -229,13 +232,11 @@ def train_eval_fn(FLAGS,
 		params.epoch = epoch
 		params.batch_size = FLAGS.batch_size
 
-		print("==train_file==", train_file, params)
-
-
-
 		if kargs.get("parse_type", "parse_single") == "parse_single":
 
-			train_file_lst = [multi_task_config[task_type]["train_file"] for task_type in multi_task_config]
+			train_file_lst = [multi_task_config[task_type]["train_result_file"] for task_type in multi_task_config]
+
+			print(train_file_lst)
 
 			train_features = tf_data_utils.train_input_fn(train_file_lst,
 										_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,
@@ -246,26 +247,35 @@ def train_eval_fn(FLAGS,
 			for task_type in multi_task_config:
 				name_to_features = data_interface(FLAGS, {task_type:multi_task_config[task_type]})
 				eval_features_dict[task_type] = tf_data_utils.eval_input_fn(
-				 						multi_task_config[task_type]["dev_file"],
+				 						multi_task_config[task_type]["dev_result_file"],
 										_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,
 										worker_count=worker_count,
 										task_index=task_index)
 
 		elif kargs.get("parse_type", "parse_single") == "parse_batch":
 
-			train_file_lst = [multi_task_config[task_type]["train_file"] for task_type in multi_task_config]
+			train_file_lst = [multi_task_config[task_type]["train_result_file"] for task_type in multi_task_config]
+			train_file_path_lst = [os.path.join(FLAGS.buckets, train_file) for train_file in train_file_lst]
 
-			train_features = tf_data_utils.train_batch_input_fn(train_file_lst,
-										_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,
+			train_features = tf_data_utils.train_batch_input_fn(train_file_path_lst,
+										_decode_batch_record, 
+										name_to_features, 
+										params, 
+										if_shard=FLAGS.if_shard,
 										worker_count=worker_count,
 										task_index=task_index)
 
 			eval_features_dict = {}
 			for task_type in multi_task_config:
 				name_to_features = data_interface(FLAGS, {task_type:multi_task_config[task_type]})
+
+				dev_file_path = os.path.join(FLAGS.buckets, multi_task_config[task_type]["dev_result_file"])
 				eval_features_dict[task_type] = tf_data_utils.eval_batch_input_fn(
-				 						multi_task_config[task_type]["dev_file"],
-										_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,
+				 						dev_file_path,
+										_decode_batch_record, 
+										name_to_features, 
+										params, 
+										if_shard=FLAGS.if_shard,
 										worker_count=worker_count,
 										task_index=task_index)
 
@@ -275,44 +285,33 @@ def train_eval_fn(FLAGS,
 		eval_dict = {}
 		for task_type in eval_features_dict:
 			eval_features = eval_features_dict[task_type]
-			eval_op_dict = model_eval_fn[task_type](eval_features, [], tf.estimator.ModeKeys.EVAL)
-			eval_dict_tmp = eval_metric_fn(eval_features, eval_op_dict["eval"])
+			eval_op_dict = eval_model_fn[task_type](eval_features, [], tf.estimator.ModeKeys.EVAL)
+			eval_dict_tmp = eval_metric_fn(eval_features, eval_op_dict["eval"], task_type)
 			eval_dict[task_type] = eval_dict_tmp
 
 		print("==succeeded in building data and model==")
 
 		print(train_op_dict)
-		
-		def eval_fn(eval_dict, sess):
-			i = 0
-			total_accuracy = 0
-			eval_total_dict = {}
-			while True:
-				try:
-					eval_result = sess.run(eval_dict)
-					for key in eval_result:
-						if key not in eval_total_dict:
-							if key in ["pred_label", "label_ids"]:
-								eval_total_dict[key] = []
-								eval_total_dict[key].extend(eval_result[key])
-							if key in ["accuracy", "loss"]:
-								eval_total_dict[key] = 0.0
-								eval_total_dict[key] += eval_result[key]
-						else:
-							if key in ["pred_label", "label_ids"]:
-								eval_total_dict[key].extend(eval_result[key])
-							if key in ["accuracy", "loss"]:
-								eval_total_dict[key] += eval_result[key]
 
-					i += 1
-					if np.mod(i, num_eval_steps) == 0:
-						break
-				except tf.errors.OutOfRangeError:
-					print("End of dataset")
-					break
+		def task_eval(eval_dict, sess, eval_total_dict):
+			eval_result = sess.run(eval_dict)
+			for key in eval_result:
+				if key not in eval_total_dict:
+					if key in ["pred_label", "label_ids"]:
+						eval_total_dict[key] = []
+						eval_total_dict[key].extend(eval_result[key])
+					if key in ["accuracy", "loss"]:
+						eval_total_dict[key] = 0.0
+						eval_total_dict[key] += eval_result[key]
+				else:
+					if key in ["pred_label", "label_ids"]:
+						eval_total_dict[key].extend(eval_result[key])
+					if key in ["accuracy", "loss"]:
+						eval_total_dict[key] += eval_result[key]
 
-			label_id = eval_total_dict["label_ids"]
-			pred_label = eval_total_dict["pred_label"]
+		def task_metric(eval_dict, label_dict):
+			label_id = eval_dict["label_ids"]
+			pred_label = eval_dict["pred_label"]
 
 			label_dict_id = sorted(list(label_dict["id2label"].keys()))
 
@@ -327,6 +326,31 @@ def train_eval_fn(FLAGS,
 				print(result, task_index)
 				eval_total_dict["classification_report"] = result
 				print("==classification report==")
+
+		def eval_fn(eval_dict, sess):
+			i = 0
+			total_accuracy = 0
+			eval_total_dict = {}
+			for task_type in eval_dict:
+				eval_total_dict[task_type] = {}
+			while True:
+				try:
+					for task_type in eval_dict:
+						task_eval(
+									eval_dict[task_type],
+									sess,
+									eval_total_dict[task_type]
+						)
+
+					i += 1
+					if np.mod(i, num_eval_steps) == 0:
+						break
+				except tf.errors.OutOfRangeError:
+					print("End of dataset")
+					break
+
+			for task_type in eval_total_dict:
+				task_metric(eval_total_dict[task_type], label_dict[task_type])
 			return eval_total_dict
 
 		def train_fn(train_op_dict, sess):
@@ -342,24 +366,21 @@ def train_eval_fn(FLAGS,
 						if key == "train_op":
 							continue
 						else:
-							try:
-								if np.isnan(train_result[key]):
-									print(train_loss, "get nan loss")
-									break
-								else:
-									if key in loss_dict:
-										loss_dict[key] += train_result[key]
+							if key == "loss":
+								for task_type in train_result[key]:
+									loss_dict[task_type]["loss"] += train_result[key][task_type]
+							else:
+								try:
+									if np.isnan(train_result[key]):
+										print(train_loss, "get nan loss")
+										break
 									else:
-										loss_dict[key] = train_result[key]
-							except:
-								# if key == "student_logit":
-								# 	print(train_result[key])
-
-								continue
-					# print(pkl, "==pkl==")
-
-					# if pkl:
-					# 	pkl.dump(train_result, open("/data/xuht/distillation.pkl", "wb"))
+										if key in loss_dict:
+											loss_dict[key] += train_result[key]
+										else:
+											loss_dict[key] = train_result[key]
+								except:
+									continue
 					
 					i += 1
 					cnt += 1
@@ -388,13 +409,6 @@ def train_eval_fn(FLAGS,
 					break
 			return {"eval":monitoring_eval, 
 					"train":monitoring_train}
-
-		print("===========begin to train============")
-		# sess_config = tf.ConfigProto(allow_soft_placement=False,
-		# 							log_device_placement=False)
-		# # sess_config.gpu_options.visible_device_list = str(task_index)
-
-		# print(sess_config.gpu_options.visible_device_list, task_index, "==============")
 
 		print("start training")
 
@@ -438,13 +452,7 @@ def train_eval_fn(FLAGS,
 												   save_checkpoint_steps=num_storage_steps)
 						
 		print("==begin to train and eval==")
-		# step = sess.run(tf.train.get_global_step())
-		# print(step, task_index, "==task_index, global_step==")
 		monitoring_info = train_fn(train_dict, sess)
-
-		# for i in range(10):
-		# 	l = sess.run(train_features)
-		# print(l, task_index)
 
 		if task_index == 0:
 			start_time = time.time()
@@ -452,9 +460,4 @@ def train_eval_fn(FLAGS,
 			eval_finial_dict = eval_fn(eval_dict, sess)
 			end_time = time.time()
 			print("==total forward time==", end_time - start_time)
-
-			# with tf.gfile.Open(os.path.join(checkpoint_dir, "train_and_eval_info.json"), "w") as fwobj:
-			# 	import json
-			# 	fwobj.write(json.dumps({"final_eval":eval_finial_dict, 
-			# 							"train_and_eval":monitoring_info}))
 

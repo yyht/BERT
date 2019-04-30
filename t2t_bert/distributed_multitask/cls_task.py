@@ -1,7 +1,7 @@
 try:
-	from .model_interface import model_zoo
+	from distributed_single_sentence_classification.model_interface import model_zoo
 except:
-	from model_interface import model_zoo
+	from distributed_single_sentence_classification.model_interface import model_zoo
 
 import tensorflow as tf
 import numpy as np
@@ -12,7 +12,6 @@ import tensorflow as tf
 from metric import tf_metrics
 
 from optimizer import distributed_optimizer as optimizer
-from model_io import model_io
 
 def model_fn_builder(
 					model_config,
@@ -77,47 +76,18 @@ def model_fn_builder(
 			print("==total params==", params_size)
 		except:
 			print("==not count params==")
-		print(tvars)
+		# print(tvars)
 		if load_pretrained == "yes":
 			model_io_fn.load_pretrained(tvars, 
 										init_checkpoint,
 										exclude_scope=exclude_scope)
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
-
-			optimizer_fn = optimizer.Optimizer(opt_config)
-
-			model_io_fn.print_params(tvars, string=", trainable params")
-			update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-			print("==update_ops==", update_ops)
-			with tf.control_dependencies(update_ops):
-				train_op = optimizer_fn.get_train_op(loss, tvars, 
-								opt_config.init_lr, 
-								opt_config.num_train_steps,
-								**kargs)
-
-				model_io_fn.set_saver()
-
-				if kargs.get("task_index", 1) == 0 and kargs.get("run_config", None):
-					training_hooks = []
-				elif kargs.get("task_index", 1) == 0:
-					model_io_fn.get_hooks(kargs.get("checkpoint_dir", None), 
-														kargs.get("num_storage_steps", 1000))
-
-					training_hooks = model_io_fn.checkpoint_hook
-				else:
-					training_hooks = []
-
-				if len(optimizer_fn.distributed_hooks) >= 1:
-					training_hooks.extend(optimizer_fn.distributed_hooks)
-				print(training_hooks, "==training_hooks==", "==task_index==", kargs.get("task_index", 1))
-
-				return {
+			return {
 					"loss":loss, 
 					"logits":logits,
-					"train_op":train_op,
-					"training_hooks":training_hooks,
-					"task_num":tf.reduce_sum(task_mask)
+					"task_num":tf.reduce_sum(task_mask),
+					"tvars":tvars
 				}
 		elif mode == tf.estimator.ModeKeys.EVAL:
 			return {
@@ -126,3 +96,8 @@ def model_fn_builder(
 				"feature":model.get_pooled_output()
 			}
 	return model_fn
+
+
+		
+
+				

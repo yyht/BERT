@@ -29,6 +29,7 @@ print(sys.path)
 import tensorflow as tf
 
 from distributed_single_sentence_classification import hvd_train_eval
+from distributed_multitask import hvd_train_eval as multitask_hvd_train_eval
 import horovod.tensorflow as hvd
 
 import tensorflow as tf
@@ -220,6 +221,26 @@ flags.DEFINE_integer(
 	"if apply distillation"
 	)
 
+flags.DEFINE_string(
+	"mode", "single_task",
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
+	"mode", "single_task",
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
+	"multi_task_type", "wsdm",
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
+	"multi_task_config", "wsdm",
+	"if apply distillation"
+	)
+
 def main(_):
 
 	print(FLAGS)
@@ -245,9 +266,14 @@ def main(_):
 
 	# FLAGS.config_file = os.path.join(FLAGS.buckets, FLAGS.config_file)
 	FLAGS.label_id = os.path.join(FLAGS.buckets, FLAGS.label_id)
+
+	if FLAGS.mode == "single_task":
+		train_eval_api = hvd_train_eval
+	elif FLAGS.mode == "multi_task":
+		train_eval_api = multitask_hvd_train_eval
 	
 	if FLAGS.run_type == "sess":
-		hvd_train_eval.monitored_sess(
+		train_eval_api.monitored_sess(
 			FLAGS=FLAGS,
 			worker_count=worker_count, 
 			task_index=task_index, 
@@ -271,7 +297,7 @@ def main(_):
 			distillation_ratio=FLAGS.distillation_ratio)
 
 	elif FLAGS.run_type == "estimator":
-		hvd_train_eval.monitored_estimator(
+		train_eval_api.monitored_estimator(
 			FLAGS=FLAGS,
 			worker_count=worker_count, 
 			task_index=task_index, 

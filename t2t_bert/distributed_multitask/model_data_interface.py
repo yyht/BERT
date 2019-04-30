@@ -2,7 +2,7 @@ import tensorflow as tf
 
 def task_interface(name_to_features, task_type_dict):
 	for task_type in task_type_dict:
-		if task_type_dict[task_type] == "cls_task":
+		if task_type_dict[task_type]["task_type"] == "cls_task":
 			name_to_features["{}_label_ids".format(task_type)] = tf.FixedLenFeature([], tf.int64)
 			name_to_features["{}_mask".format(task_type)] = tf.FixedLenFeature([], tf.int64)
 	return name_to_features
@@ -18,8 +18,7 @@ def data_interface(FLAGS, task_type_dict):
 					tf.FixedLenFeature([FLAGS.max_length], tf.int64)
 	}
 	
-	task_interface(name_to_features, task_type, task_type_dict)
-
+	task_interface(name_to_features, task_type_dict)
 	return name_to_features
 
 def data_interface_server(FLAGS):

@@ -7,6 +7,9 @@ try:
 except:
 	from cls_task import model_fn_builder as cls_model_fn
 
+from model_io import model_io
+from optimizer import distributed_optimizer as optimizer
+
 def multitask_model_fn(model_config_dict,
 					num_labels_dict,
 					task_type_dict,
@@ -30,10 +33,13 @@ def multitask_model_fn(model_config_dict,
 		logits_dict = {}
 		losses_dict = {}
 		features_dict = {}
+		tvars = []
 
 		total_loss = tf.constant(0.0)
 
 		task_num = 0
+
+		print(task_type_dict.keys(), "==task type dict==")
 
 		for index, task_type in enumerate(task_type_dict.keys()):
 			if model_config_dict[task_type].model_type in model_type_lst:
@@ -42,7 +48,7 @@ def multitask_model_fn(model_config_dict,
 				reuse = None
 				model_type_lst.append(model_config_dict[task_type].model_type)
 			if task_type_dict[task_type] == "cls_task":
-				model_fn = cls_model_fn(model_config_dict[task_type],
+				task_model_fn = cls_model_fn(model_config_dict[task_type],
 												num_labels_dict[task_type],
 												init_checkpoint_dict[task_type],
 												reuse,
@@ -55,37 +61,67 @@ def multitask_model_fn(model_config_dict,
 												label_lst=None,
 												output_type=output_type,
 												task_layer_reuse=task_layer_reuse,
-												task_type=task_type
+												task_type=task_type,
 												**kargs)
-				result_dict = model_fn(features)
-				logits_dict[key] = result_dict["logits"]
-				losses_dict[key] = result_dict["loss"] # task loss
+				print("==SUCCEEDED IN LODING==", task_type)
+
+				result_dict = task_model_fn(features, labels, mode)
+				logits_dict[task_type] = result_dict["logits"]
+				losses_dict[task_type] = result_dict["loss"] # task loss
 				total_loss += result_dict["loss"]
-				task_num += result_dict["task_num"]
+				if mode == tf.estimator.ModeKeys.TRAIN:
+					tvars.extend(result_dict["tvars"])
+					task_num += result_dict["task_num"]
+				elif mode == tf.estimator.ModeKeys.EVAL:
+					features[task_type] = result_dict["feature"]
 			else:
 				continue
 
-			if mode == tf.estimator.ModeKeys.TRAIN:
-				train_ops.append(result_dict["train_op"])
-				train_hooks.extend(result_dict["training_hooks"])
-			elif mode == tf.estimator.ModeKeys.EVAL:
-				features[key] = result_dict["feature"]
-
 		if mode == tf.estimator.ModeKeys.TRAIN:
+			model_io_fn = model_io.ModelIO(model_io_config)
+
+			optimizer_fn = optimizer.Optimizer(opt_config)
+
+			model_io_fn.print_params(list(set(tvars)), string=", trainable params")
+			update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+			print("==update_ops==", update_ops)
+
+			with tf.control_dependencies(update_ops):
+				train_op = optimizer_fn.get_train_op(total_loss, list(set(tvars)), 
+								opt_config.init_lr, 
+								opt_config.num_train_steps,
+								**kargs)
+
+				model_io_fn.set_saver()
+
+				if kargs.get("task_index", 1) == 0 and kargs.get("run_config", None):
+					training_hooks = []
+				elif kargs.get("task_index", 1) == 0:
+					model_io_fn.get_hooks(kargs.get("checkpoint_dir", None), 
+														kargs.get("num_storage_steps", 1000))
+
+					training_hooks = model_io_fn.checkpoint_hook
+				else:
+					training_hooks = []
+
+				if len(optimizer_fn.distributed_hooks) >= 1:
+					training_hooks.extend(optimizer_fn.distributed_hooks)
+				print(training_hooks, "==training_hooks==", "==task_index==", kargs.get("task_index", 1))
+
 			if output_type == "sess":
 				return {
 					"train":{
 							"total_loss":total_loss/(1e-10+task_num), 
-							"loss":losses
-							"logits":logits,
-							"train_op":tf.group(train_ops)
+							"loss":losses_dict,
+							"logits":logits_dict,
+							"train_op":train_op
 					},
 					"hooks":train_hooks
 				}
 			elif output_type == "estimator":
 				estimator_spec = tf.estimator.EstimatorSpec(mode=mode, 
 								loss=total_loss/(1e-10+task_num),
-								train_op=tf.group(train_ops),
+								train_op=train_op,
 								training_hooks=training_hooks)
 				return estimator_spec
 
@@ -115,10 +151,10 @@ def multitask_model_fn(model_config_dict,
 			if output_type == "sess":
 				return {
 					"eval":{
-							"logits":logits,
-							"total_loss":total_loss/(1e-10+task_num)
+							"logits":logits_dict,
+							"total_loss":total_loss/(1e-10+task_num),
 							"feature":features,
-							"loss":losses
+							"loss":losses_dict
 						}
 				}
 			elif output_type == "estimator":

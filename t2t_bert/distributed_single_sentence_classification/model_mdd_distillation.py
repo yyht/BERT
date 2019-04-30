@@ -15,7 +15,7 @@ from metric import tf_metrics
 from optimizer import distributed_optimizer as optimizer
 from model_io import model_io
 
-from distillation.distillation import KnowledgeDistillation
+from distillation import knowledge_distillation as distill
 
 def correlation(x, y):
 	x = x - tf.reduce_mean(x, axis=-1, keepdims=True)
@@ -98,7 +98,7 @@ def model_fn_builder(
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
 
-			distillation_api = KnowledgeDistillation(kargs.get("disitllation_config", Bunch({
+			distillation_api = distill.KnowledgeDistillation(kargs.get("disitllation_config", Bunch({
 														"logits_ratio_decay":"constant",
 														"logits_ratio":0.5,
 														"logits_decay_rate":0.999,

@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 import sys,os
 
@@ -29,9 +28,8 @@ print(sys.path)
 
 import tensorflow as tf
 
-from distributed_single_sentence_classification import train_eval
-from distributed_multitask import train_eval as multitask_train_eval
-from tensorflow.contrib.distribute.python import cross_tower_ops as cross_tower_ops_lib
+from distributed_single_sentence_classification import hvd_train_eval
+from distributed_multitask import hvd_train_eval as multitask_hvd_train_eval
 
 import tensorflow as tf
 
@@ -40,7 +38,7 @@ flags = tf.flags
 FLAGS = flags.FLAGS
 
 # os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-tf.logging.set_verbosity(tf.logging.INFO)
+tf.logging.set_verbosity(tf.logging.ERROR)
 
 flags.DEFINE_string("buckets", "", "oss buckets")
 
@@ -116,28 +114,18 @@ flags.DEFINE_string(
 	"run_type", "0",
 	"Input TF example files (can be a glob or comma separated).")
 
-flags.DEFINE_integer(
-	"num_gpus", 2, 
-	"the required num_gpus"
+flags.DEFINE_string(
+	"distribution_strategy", "ParameterServerStrategy",
+	"distribution strategy"
 	)
 
 flags.DEFINE_string(
-	"distribution_strategy", "MirroredStrategy", 
-	"the required num_gpus"
-	)
-
-flags.DEFINE_string(
-	"cross_tower_ops_type", "paisoar",
-	"the CollectiveAllReduceStrategy cross_tower_ops_type"
+	"rule_model", "normal",
+	"distribution strategy"
 	)
 
 flags.DEFINE_string(
 	"parse_type", "parse_single", 
-	"the required num_gpus"
-	)
-
-flags.DEFINE_string(
-	"rule_model", "normal", 
 	"the required num_gpus"
 	)
 
@@ -149,6 +137,11 @@ flags.DEFINE_string(
 
 flags.DEFINE_string(
 	"train_op", "adam_weight_decay_exclude", 
+	"the required num_gpus"
+	)
+
+flags.DEFINE_integer(
+	"num_gpus", 4, 
 	"the required num_gpus"
 	)
 
@@ -254,66 +247,70 @@ def main(_):
 
 	print(init_checkpoint, train_file, dev_file, checkpoint_dir)
 
-	if FLAGS.distribution_strategy == "MirroredStrategy":
-		cross_tower_ops = cross_tower_ops_lib.AllReduceCrossTowerOps("nccl", 10, 0, 0)
-		distribution = tf.contrib.distribute.MirroredStrategy(num_gpus=FLAGS.num_gpus, 
-												cross_tower_ops=cross_tower_ops)
-		worker_count = FLAGS.num_gpus
-	else:
-		cross_tower_ops = cross_tower_ops_lib.AllReduceCrossTowerOps("nccl", 10, 0, 0)
-		distribution = tf.contrib.distribute.MirroredStrategy(num_gpus=FLAGS.num_gpus, 
-												cross_tower_ops=cross_tower_ops)
+	worker_count = 1
+	task_index = 0
 
-	sess_config = tf.ConfigProto(allow_soft_placement=True,
-									log_device_placement=True)
-
-	run_config = tf.estimator.RunConfig(
-					  keep_checkpoint_max=10,
-					  model_dir=checkpoint_dir,
-					  distribute=distribution, 
-					  session_config=sess_config,
-					  save_checkpoints_secs=None,
-					  save_checkpoints_steps=None,
-					  log_step_count_steps=100)
-
-	task_index = run_config.task_id
-	is_chief = run_config.is_chief
+	is_chief = task_index == 0
 
 	print("==worker_count==", worker_count, "==local_rank==", task_index, "==is is_chief==", is_chief)
 	cluster = ""
 	target = ""
 
-	print(FLAGS)
+	# FLAGS.config_file = os.path.join(FLAGS.buckets, FLAGS.config_file)
+	FLAGS.label_id = os.path.join(FLAGS.buckets, FLAGS.label_id)
 
 	if FLAGS.mode == "single_task":
-		train_eval_api = train_eval
+		train_eval_api = hvd_train_eval
 	elif FLAGS.mode == "multi_task":
-		train_eval_api = multitask_train_eval
+		train_eval_api = multitask_hvd_train_eval
 	
-	train_eval_api.monitored_estimator(
-		FLAGS=FLAGS,
-		worker_count=worker_count, 
-		task_index=task_index, 
-		cluster=cluster, 
-		is_chief=is_chief, 
-		target=target,
-		init_checkpoint=init_checkpoint,
-		train_file=train_file,
-		dev_file=dev_file,
-		checkpoint_dir=checkpoint_dir,
-		run_config=run_config,
-		distribution_strategy=FLAGS.distribution_strategy,
-		profiler=FLAGS.profiler,
-		parse_type=FLAGS.parse_type,
-		rule_model=FLAGS.rule_model,
-		train_op=FLAGS.train_op,
-		running_type=FLAGS.running_type,
-		decay=FLAGS.decay,
-		warmup=FLAGS.warmup,
-		input_target=FLAGS.input_target,
-		distillation=FLAGS.distillation,
-		temperature=FLAGS.temperature,
-		distillation_ratio=FLAGS.distillation_ratio)
+	if FLAGS.run_type == "sess":
+		train_eval_api.monitored_sess(
+			FLAGS=FLAGS,
+			worker_count=worker_count, 
+			task_index=task_index, 
+			cluster=cluster, 
+			is_chief=is_chief, 
+			target=target,
+			init_checkpoint=init_checkpoint,
+			train_file=train_file,
+			dev_file=dev_file,
+			checkpoint_dir=checkpoint_dir,
+			distribution_strategy=FLAGS.distribution_strategy,
+			rule_model=FLAGS.rule_model,
+			parse_type=FLAGS.parse_type,
+			train_op=FLAGS.train_op,
+			running_type=FLAGS.running_type,
+			input_target=FLAGS.input_target,
+			decay=FLAGS.decay,
+			warmup=FLAGS.warmup,
+			distillation=FLAGS.distillation,
+			temperature=FLAGS.temperature,
+			distillation_ratio=FLAGS.distillation_ratio)
+
+	elif FLAGS.run_type == "estimator":
+		train_eval_api.monitored_estimator(
+			FLAGS=FLAGS,
+			worker_count=worker_count, 
+			task_index=task_index, 
+			cluster=cluster, 
+			is_chief=is_chief, 
+			target=target,
+			init_checkpoint=init_checkpoint,
+			train_file=train_file,
+			dev_file=dev_file,
+			checkpoint_dir=checkpoint_dir,
+			distribution_strategy=FLAGS.distribution_strategy,
+			rule_model=FLAGS.rule_model,
+			parse_type=FLAGS.parse_type,
+			train_op=FLAGS.train_op,
+			running_type=FLAGS.running_type,
+			input_target=FLAGS.input_target,
+			decay=FLAGS.decay,
+			warmup=FLAGS.warmup,
+			distillation=FLAGS.distillation,
+			temperature=FLAGS.temperature,
+			distillation_ratio=FLAGS.distillation_ratio)
 
 if __name__ == "__main__":
 	tf.app.run()
