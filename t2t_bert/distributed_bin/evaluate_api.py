@@ -228,6 +228,11 @@ flags.DEFINE_string(
 	"if apply distillation"
 	)
 
+flags.DEFINE_string(
+	"task_invariant", "no",
+	"if apply distillation"
+	)
+
 def main(_):
 
 	print(FLAGS)

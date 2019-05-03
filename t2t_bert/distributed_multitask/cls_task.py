@@ -1,7 +1,9 @@
 try:
 	from distributed_single_sentence_classification.model_interface import model_zoo
+	from distillation import distillation_utils
 except:
 	from distributed_single_sentence_classification.model_interface import model_zoo
+	from distillation import distillation_utils
 
 import tensorflow as tf
 import numpy as np
@@ -64,6 +66,19 @@ def model_fn_builder(model,
 		masked_per_example_loss = task_mask * per_example_loss
 		loss = tf.reduce_sum(masked_per_example_loss) / (1e-10+tf.reduce_sum(task_mask))
 
+		if kargs.get("task_invariant", "no") == "yes":
+			print("==apply task adversarial training==")
+			with tf.variable_scope(scope+"/dann_task_invariant", reuse=model_reuse):
+				(task_loss, 
+				task_example_loss, 
+				task_logits)  = distillation_utils.feature_distillation(model.get_pooled_output(), 
+														1.0, 
+														features["task_id"], 
+														kargs.get("num_task", 7),
+														dropout_prob, 
+														True)
+				loss += kargs.get("task_adversarial", 1e-2) * task_loss
+
 		logits = tf.expand_dims(task_mask, axis=-1) * logits
 
 		model_io_fn = model_io.ModelIO(model_io_config)
@@ -90,11 +105,14 @@ def model_fn_builder(model,
 					"tvars":tvars
 				}
 		elif mode == tf.estimator.ModeKeys.EVAL:
-			return {
+			eval_dict = {
 				"loss":loss, 
 				"logits":logits,
 				"feature":model.get_pooled_output()
 			}
+			if kargs.get("adversarial", "no") == "adversarial":
+				 eval_dict["task_logits"] = task_logits
+			return eval_dict
 	return model_fn
 
 

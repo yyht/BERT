@@ -156,11 +156,12 @@ def train_eval_fn(FLAGS,
 											anneal_config=anneal_config,
 											task_layer_reuse=None,
 											model_type_lst=model_type_lst,
+											task_invariant=FLAGS.task_invariant,
 											**kargs)
 
 		print("==succeeded in building model==")
 		
-		name_to_features = data_interface(FLAGS, multi_task_config)
+		name_to_features = data_interface(FLAGS, multi_task_config, FLAGS.multi_task_type.split(","))
 
 		def _decode_record(record, name_to_features):
 			"""Decodes a record to a TensorFlow example.

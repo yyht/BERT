@@ -154,15 +154,16 @@ def main(_):
 	print(task_type_id.keys())
 	print("==total data==", len(total_examples))
 
-	random.shuffle(total_examples)
-	write_to_tfrecords_multitask.convert_multitask_classifier_merged_examples_to_features(
-			total_examples,
-			label2id_dict,
-			FLAGS.max_length,
-			tokenizer,
-			os.path.join(FLAGS.buckets, FLAGS.output_path),
-			task_type_id
-		)
+	for i in range(10):
+		random.shuffle(total_examples)
+		write_to_tfrecords_multitask.convert_multitask_classifier_merged_examples_to_features(
+				total_examples,
+				label2id_dict,
+				FLAGS.max_length,
+				tokenizer,
+				os.path.join(FLAGS.buckets, FLAGS.output_path, "train_tfrecords_{}".format(i)),
+				task_type_id
+			)
 
 if __name__ == "__main__":
 	tf.app.run()

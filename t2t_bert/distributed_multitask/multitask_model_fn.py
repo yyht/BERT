@@ -48,6 +48,7 @@ def multitask_model_fn(model_config_dict,
 		encoder = {}
 
 		print(task_type_dict.keys(), "==task type dict==")
+		num_task = len(task_type_dict)
 
 		for index, task_type in enumerate(task_type_dict.keys()):
 			if model_config_dict[task_type].model_type in model_type_lst:
@@ -81,6 +82,8 @@ def multitask_model_fn(model_config_dict,
 												output_type=output_type,
 												task_layer_reuse=task_layer_reuse,
 												task_type=task_type,
+												num_task=num_task,
+												task_adversarial=1e-2,
 												**kargs)
 				print("==SUCCEEDED IN LODING==", task_type)
 

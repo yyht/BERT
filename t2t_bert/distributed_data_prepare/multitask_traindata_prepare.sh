@@ -5,4 +5,4 @@ python ./t2t_bert/distributed_data_prepare/multitask_classification_train_merged
 	--lower_case True \
 	--max_length 128 \
 	--multi_task_type "wsdm,ccks,ant,xnli,lcqmc,nlpcc-dbqa,chnsenticorp" \
-	--output_path "multi_task/data/merged_train_tfrecords"
+	--output_path "multi_task/data/merged/"
