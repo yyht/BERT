@@ -59,6 +59,8 @@ def train_eval_fn(FLAGS,
 		import json
 
 		# config = model_config_parser(FLAGS)
+
+		print(FLAGS.train_size)
 		
 		if FLAGS.if_shard == "0":
 			train_size = FLAGS.train_size
@@ -90,7 +92,7 @@ def train_eval_fn(FLAGS,
 
 		print(num_train_steps, num_warmup_steps, "=============")
 		
-		opt_config = Bunch({"init_lr":kargs.get("init_lr", 2e-5)/worker_count, 
+		opt_config = Bunch({"init_lr":kargs.get("init_lr", 5e-5), 
 							"num_train_steps":num_train_steps,
 							"num_warmup_steps":num_warmup_steps,
 							"worker_count":worker_count,
@@ -185,23 +187,24 @@ def train_eval_fn(FLAGS,
 
 		if kargs.get("parse_type", "parse_single") == "parse_single":
 
-			train_file_lst = [multi_task_config[task_type]["train_result_file"] for task_type in multi_task_config]
+			train_file_lst = [multi_task_config[task_type]["train_result_file"] for task_type in FLAGS.multi_task_type.split(",")]
 
 			print(train_file_lst)
 
-			train_features = lambda: tf_data_utils.all_reduce_train_input_fn(train_file_lst,
+			train_features = lambda: tf_data_utils.all_reduce_multitask_train_input_fn(train_file_lst,
 										_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,
 										worker_count=worker_count,
 										task_index=task_index)
 
 		elif kargs.get("parse_type", "parse_single") == "parse_batch":
 
-			train_file_lst = [multi_task_config[task_type]["train_result_file"] for task_type in multi_task_config]
+			train_file_lst = [multi_task_config[task_type]["train_result_file"] for task_type in FLAGS.multi_task_type.split(",")]
 			train_file_path_lst = [os.path.join(FLAGS.buckets, train_file) for train_file in train_file_lst]
 
 			print(train_file_path_lst)
+			train_file_path_lst = list(set(train_file_path_lst))
 
-			train_features = lambda: tf_data_utils.all_reduce_train_batch_input_fn(train_file_path_lst,
+			train_features = lambda: tf_data_utils.all_reduce_multitask_train_batch_input_fn(train_file_path_lst,
 										_decode_batch_record, 
 										name_to_features, 
 										params, 

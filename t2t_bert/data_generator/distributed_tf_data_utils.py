@@ -145,6 +145,43 @@ def all_reduce_train_input_fn(input_file, _parse_fn, name_to_features,
 
 	return dataset
 
+def all_reduce_multitask_train_input_fn(input_file, _parse_fn, name_to_features,
+		params, **kargs):
+	if_shard = kargs.get("if_shard", "1")
+
+	worker_count = kargs.get("worker_count", 1)
+	task_index = kargs.get("task_index", 0)
+
+	dataset = tf.data.Dataset.from_tensor_slices(tf.constant(input_file))
+	# dataset = dataset.repeat(params.get("epoch", 100))
+	dataset = dataset.repeat()
+	dataset = dataset.shuffle(
+							buffer_size=params.get("buffer_size", 1024)+3*params.get("batch_size", 32),
+							seed=np.random.randint(0,1e10,1)[0],
+							reshuffle_each_iteration=True)
+
+	# `cycle_length` is the number of parallel files that get read.
+	# cycle_length = min(4, len(input_file))
+	cycle_length = len(input_file)
+
+	# `sloppy` mode means that the interleaving is not exact. This adds
+	# even more randomness to the training pipeline.
+	dataset = dataset.apply(
+				tf.contrib.data.parallel_interleave(
+				  tf.data.TFRecordDataset,
+				  sloppy=True,
+				  cycle_length=cycle_length))
+
+	print("==worker_count {}, task_index {}==".format(worker_count, task_index))
+	if if_shard == "1":
+		dataset = dataset.shard(worker_count, task_index)
+	
+	dataset = dataset.map(lambda x:_parse_fn(x, name_to_features),
+						num_parallel_calls=kargs.get("num_parallel_calls", 10))
+	dataset = dataset.batch(params.get("batch_size", 32))
+
+	return dataset
+
 def all_reduce_eval_input_fn(input_file, _parse_fn, name_to_features,
 		params, **kargs):
 	dataset = tf.data.TFRecordDataset(input_file, buffer_size=params.get("buffer_size", 100))
@@ -152,6 +189,41 @@ def all_reduce_eval_input_fn(input_file, _parse_fn, name_to_features,
 							num_parallel_calls=kargs.get("num_parallel_calls", 10))
 	dataset = dataset.batch(params.get("batch_size", 32))
 	dataset = dataset.repeat(1)
+	return dataset
+
+def all_reduce_multitask_train_batch_input_fn(input_file, _parse_fn, name_to_features,
+		params, **kargs):
+	if_shard = kargs.get("if_shard", "1")
+
+	worker_count = kargs.get("worker_count", 1)
+	task_index = kargs.get("task_index", 0)
+
+	dataset = tf.data.Dataset.from_tensor_slices(tf.constant(input_file))
+	dataset = dataset.repeat()
+	dataset = dataset.shuffle(
+							buffer_size=params.get("buffer_size", 1024)+3*params.get("batch_size", 32),
+							seed=np.random.randint(0,1e10,1)[0],
+							reshuffle_each_iteration=True)
+
+	# `cycle_length` is the number of parallel files that get read.
+	# cycle_length = min(4, len(input_file))
+	cycle_length = len(input_file)
+
+	# `sloppy` mode means that the interleaving is not exact. This adds
+	# even more randomness to the training pipeline.
+	dataset = dataset.apply(
+				tf.contrib.data.parallel_interleave(
+				  tf.data.TFRecordDataset,
+				  sloppy=True,
+				  cycle_length=cycle_length))
+
+	print("==worker_count {}, task_index {}==".format(worker_count, task_index))
+	if if_shard == "1":
+		dataset = dataset.shard(worker_count, task_index)
+	
+	dataset = dataset.batch(params.get("batch_size", 32))
+	dataset = dataset.map(lambda x:_parse_fn(x, name_to_features),
+						num_parallel_calls=kargs.get("num_parallel_calls", 10))
 	return dataset
 
 def all_reduce_train_batch_input_fn(input_file, _parse_fn, name_to_features,
@@ -162,7 +234,9 @@ def all_reduce_train_batch_input_fn(input_file, _parse_fn, name_to_features,
 	task_index = kargs.get("task_index", 0)
 
 	dataset = tf.data.TFRecordDataset(input_file, buffer_size=params.get("buffer_size", 100))
-	dataset = dataset.repeat(params.get("epoch", 100))
+	# dataset = dataset.repeat(params.get("epoch", 100))
+	dataset = dataset.repeat()
+
 	print("==worker_count {}, task_index {}==".format(worker_count, task_index))
 	if if_shard == "1":
 		dataset = dataset.shard(worker_count, task_index)

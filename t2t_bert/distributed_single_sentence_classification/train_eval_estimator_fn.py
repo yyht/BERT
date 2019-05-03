@@ -115,7 +115,7 @@ def train_eval_fn(FLAGS,
 
 		print(num_train_steps, num_warmup_steps, "=============")
 		
-		opt_config = Bunch({"init_lr":init_lr/worker_count, 
+		opt_config = Bunch({"init_lr":init_lr, 
 							"num_train_steps":num_train_steps,
 							"num_warmup_steps":num_warmup_steps,
 							"worker_count":worker_count,

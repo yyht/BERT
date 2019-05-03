@@ -10,6 +10,11 @@ except:
 from model_io import model_io
 from optimizer import distributed_optimizer as optimizer
 
+try:
+	from distributed_single_sentence_classification.model_interface import model_zoo
+except:
+	from distributed_single_sentence_classification.model_interface import model_zoo
+
 def multitask_model_fn(model_config_dict,
 					num_labels_dict,
 					task_type_dict,
@@ -34,10 +39,13 @@ def multitask_model_fn(model_config_dict,
 		losses_dict = {}
 		features_dict = {}
 		tvars = []
+		task_num_dict = {}
 
 		total_loss = tf.constant(0.0)
 
 		task_num = 0
+
+		encoder = {}
 
 		print(task_type_dict.keys(), "==task type dict==")
 
@@ -48,7 +56,18 @@ def multitask_model_fn(model_config_dict,
 				reuse = None
 				model_type_lst.append(model_config_dict[task_type].model_type)
 			if task_type_dict[task_type] == "cls_task":
-				task_model_fn = cls_model_fn(model_config_dict[task_type],
+
+				if model_config_dict[task_type].model_type not in encoder:
+					model_api = model_zoo(model_config_dict[task_type])
+
+					model = model_api(model_config_dict[task_type], features, labels,
+							mode, target_dict[task_type], reuse=reuse)
+					encoder[model_config_dict[task_type].model_type] = model
+
+				print(encoder, "==encode==")
+
+				task_model_fn = cls_model_fn(encoder[model_config_dict[task_type].model_type],
+												model_config_dict[task_type],
 												num_labels_dict[task_type],
 												init_checkpoint_dict[task_type],
 												reuse,
@@ -72,6 +91,7 @@ def multitask_model_fn(model_config_dict,
 				if mode == tf.estimator.ModeKeys.TRAIN:
 					tvars.extend(result_dict["tvars"])
 					task_num += result_dict["task_num"]
+					task_num_dict[task_type] = result_dict["task_num"]
 				elif mode == tf.estimator.ModeKeys.EVAL:
 					features[task_type] = result_dict["feature"]
 			else:
@@ -111,16 +131,28 @@ def multitask_model_fn(model_config_dict,
 			if output_type == "sess":
 				return {
 					"train":{
-							"total_loss":total_loss/(1e-10+task_num), 
+							"total_loss":total_loss, 
 							"loss":losses_dict,
 							"logits":logits_dict,
-							"train_op":train_op
+							"train_op":train_op,
+							"task_num_dict":task_num_dict
 					},
 					"hooks":train_hooks
 				}
 			elif output_type == "estimator":
+
+				# tensors_to_log = {}
+				# for task_type in task_type_dict.keys():
+				# 	if "{}_mask".format(task_type) not in tensors_to_log:
+				# 		tensors_to_log["{}_mask".format(task_type)] = tf.reduce_sum(features["{}_mask".format(task_type)])
+				# 	else:
+				# 		tensors_to_log["{}_mask".format(task_type)] += tf.reduce_sum(features["{}_mask".format(task_type)])
+				# logging_hook = tf.train.LoggingTensorHook(
+				# 	tensors=tensors_to_log, every_n_iter=100)
+				# training_hooks.append(logging_hook)
+
 				estimator_spec = tf.estimator.EstimatorSpec(mode=mode, 
-								loss=total_loss/(1e-10+task_num),
+								loss=total_loss,
 								train_op=train_op,
 								training_hooks=training_hooks)
 				return estimator_spec
@@ -152,7 +184,7 @@ def multitask_model_fn(model_config_dict,
 				return {
 					"eval":{
 							"logits":logits_dict,
-							"total_loss":total_loss/(1e-10+task_num),
+							"total_loss":total_loss,
 							"feature":features,
 							"loss":losses_dict
 						}

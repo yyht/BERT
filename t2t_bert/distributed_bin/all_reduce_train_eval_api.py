@@ -270,7 +270,8 @@ def main(_):
 	run_config = tf.estimator.RunConfig(
 					  keep_checkpoint_max=10,
 					  model_dir=checkpoint_dir,
-					  distribute=distribution, 
+					  train_distribute=distribution, # tf 1.8
+					  # distribute=distribution,     # tf 1.4
 					  session_config=sess_config,
 					  save_checkpoints_secs=None,
 					  save_checkpoints_steps=None,

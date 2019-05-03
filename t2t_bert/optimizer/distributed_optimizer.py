@@ -215,7 +215,7 @@ class Optimizer(object):
 			self.opt = self.optimizer_op(learning_rate*self.config.get("worker_count", 4), **kargs)
 		else:
 			print("==initialization of single node optimizer==")
-			self.opt = self.optimizer_op(learning_rate*self.config.get("worker_count", 1), **kargs)
+			self.opt = self.optimizer_op(learning_rate, **kargs)
 			self.distributed_hooks = []
 
 	def moving_average_opt(self, opt):

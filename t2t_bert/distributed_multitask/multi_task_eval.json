@@ -10,13 +10,13 @@
 		"dev_result_file":"multi_task/data/sentence_pair/wsdm/dev_tfrecords",
 		"data_type":"sentence_pair",
 		"model_type":"bert",
-		"config_file":"./data/chinese_L-12_H-768_A-12/bert_config.json",
+		"config_file":"./BERT/data/chinese_L-12_H-768_A-12/bert_config.json",
 		"target":"",
 		"not_storage_params":[],
 		"exclude_scope":"",
 		"load_pretrained":"yes",
 		"num_labels":3,
-		"init_checkpoint":"chinese_L-12_H-768_A-12/bert_model.ckpt"
+		"init_checkpoint":"multi_task/data/model/20190503_mtdnn_10/model.ckpt-18745"
 	},
 	"ccks":{
 		"task_type":"cls_task",
@@ -29,13 +29,13 @@
 		"dev_result_file":"multi_task/data/sentence_pair/ccks/dev_tfrecords",
 		"data_type":"sentence_pair",
 		"model_type":"bert",
-		"config_file":"./data/chinese_L-12_H-768_A-12/bert_config.json",
+		"config_file":"./BERT/data/chinese_L-12_H-768_A-12/bert_config.json",
 		"target":"",
 		"not_storage_params":[],
 		"exclude_scope":"",
 		"load_pretrained":"yes",
 		"num_labels":2,
-		"init_checkpoint":"chinese_L-12_H-768_A-12/bert_model.ckpt"
+		"init_checkpoint":"multi_task/data/model/20190503_mtdnn_10/model.ckpt-18745"
 	},
 	"ant":{
 		"task_type":"cls_task",
@@ -48,13 +48,13 @@
 		"dev_result_file":"multi_task/data/sentence_pair/ant/dev_tfrecords",
 		"data_type":"sentence_pair",
 		"model_type":"bert",
-		"config_file":"./data/chinese_L-12_H-768_A-12/bert_config.json",
+		"config_file":"./BERT/data/chinese_L-12_H-768_A-12/bert_config.json",
 		"target":"",
 		"not_storage_params":[],
 		"exclude_scope":"",
 		"load_pretrained":"yes",
 		"num_labels":2,
-		"init_checkpoint":"chinese_L-12_H-768_A-12/bert_model.ckpt"
+		"init_checkpoint":"multi_task/data/model/20190503_mtdnn_10/model.ckpt-18745"
 	},
 	"xnli":{
 		"task_type":"cls_task",
@@ -67,13 +67,13 @@
 		"dev_result_file":"multi_task/data/sentence_pair/xnli/dev_tfrecords",
 		"data_type":"sentence_pair",
 		"model_type":"bert",
-		"config_file":"./data/chinese_L-12_H-768_A-12/bert_config.json",
+		"config_file":"./BERT/data/chinese_L-12_H-768_A-12/bert_config.json",
 		"target":"",
 		"not_storage_params":[],
 		"exclude_scope":"",
 		"load_pretrained":"yes",
 		"num_labels":3,
-		"init_checkpoint":"chinese_L-12_H-768_A-12/bert_model.ckpt"
+		"init_checkpoint":"multi_task/data/model/20190503_mtdnn_10/model.ckpt-23430"
 	},
 	"lcqmc":{
 		"task_type":"cls_task",
@@ -86,13 +86,13 @@
 		"dev_result_file":"multi_task/data/sentence_pair/lcqmc/dev_tfrecords",
 		"data_type":"sentence_pair",
 		"model_type":"bert",
-		"config_file":"./data/chinese_L-12_H-768_A-12/bert_config.json",
+		"config_file":"./BERT/data/chinese_L-12_H-768_A-12/bert_config.json",
 		"target":"",
 		"not_storage_params":[],
 		"exclude_scope":"",
 		"load_pretrained":"yes",
 		"num_labels":2,
-		"init_checkpoint":"chinese_L-12_H-768_A-12/bert_model.ckpt"
+		"init_checkpoint":"multi_task/data/model/20190503_mtdnn_10/model.ckpt-11716"
 	},
 	"nlpcc-dbqa":{
 		"task_type":"cls_task",
@@ -105,13 +105,13 @@
 		"dev_result_file":"multi_task/data/qa/nlpcc-dbqa/dev_tfrecords",
 		"data_type":"sentence_pair",
 		"model_type":"bert",
-		"config_file":"./data/chinese_L-12_H-768_A-12/bert_config.json",
+		"config_file":"./BERT/data/chinese_L-12_H-768_A-12/bert_config.json",
 		"target":"",
 		"not_storage_params":[],
 		"exclude_scope":"",
 		"load_pretrained":"yes",
 		"num_labels":2,
-		"init_checkpoint":"chinese_L-12_H-768_A-12/bert_model.ckpt"
+		"init_checkpoint":"multi_task/data/model/20190503_mtdnn_10/model.ckpt-18745"
 	},
 	"jd_comment":{
 		"task_type":"cls_task",
@@ -124,13 +124,13 @@
 		"dev_result_file":"multi_task/data/single_sentence/jd_review/dev_tfrecords",
 		"data_type":"single_sentence",
 		"model_type":"bert",
-		"config_file":"./data/chinese_L-12_H-768_A-12/bert_config.json",
+		"config_file":"./BERT/data/chinese_L-12_H-768_A-12/bert_config.json",
 		"target":"",
 		"not_storage_params":[],
 		"exclude_scope":"",
 		"load_pretrained":"yes",
 		"num_labels":3,
-		"init_checkpoint":"chinese_L-12_H-768_A-12/bert_model.ckpt"
+		"init_checkpoint":"multi_task/data/model/20190503_mtdnn_10/model.ckpt-18745"
 	},
 	"chnsenticorp":{
 		"task_type":"cls_task",
@@ -143,12 +143,12 @@
 		"dev_result_file":"multi_task/data/single_sentence/chnsenticorp/dev_tfrecords",
 		"data_type":"single_sentence",
 		"model_type":"bert",
-		"config_file":"./data/chinese_L-12_H-768_A-12/bert_config.json",
+		"config_file":"./BERT/data/chinese_L-12_H-768_A-12/bert_config.json",
 		"target":"",
 		"not_storage_params":[],
 		"exclude_scope":"",
 		"load_pretrained":"yes",
 		"num_labels":2,
-		"init_checkpoint":"chinese_L-12_H-768_A-12/bert_model.ckpt"
+		"init_checkpoint":"multi_task/data/model/20190503_mtdnn_10/model.ckpt-21088"
 	}
 }

@@ -30,6 +30,7 @@ print(sys.path)
 import tensorflow as tf
 
 from distributed_single_sentence_classification import train_eval
+from distributed_multitask import train_eval as multitask_train_eval
 from data_generator import tf_data_utils
 # from tensorflow.contrib.distribute.python import cross_tower_ops as cross_tower_ops_lib
 
@@ -40,8 +41,8 @@ flags = tf.flags
 
 FLAGS = flags.FLAGS
 
-# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-tf.logging.set_verbosity(tf.logging.INFO)
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+# tf.logging.set_verbosity(tf.logging.INFO)
 
 flags.DEFINE_string("buckets", "", "oss buckets")
 
@@ -212,6 +213,21 @@ flags.DEFINE_integer(
 	"if apply distillation"
 	)
 
+flags.DEFINE_string(
+	"mode", "single_task",
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
+	"multi_task_type", "wsdm",
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
+	"multi_task_config", "wsdm",
+	"if apply distillation"
+	)
+
 def main(_):
 
 	print(FLAGS)
@@ -248,8 +264,13 @@ def main(_):
 	print("==worker_count==", worker_count, "==local_rank==", task_index, "==is is_chief==", is_chief)
 	target = ""
 
+	if FLAGS.mode == "single_task":
+		train_eval_api = train_eval
+	elif FLAGS.mode == "multi_task":
+		train_eval_api = multitask_train_eval
+
 	if FLAGS.run_type == "estimator":
-		train_eval.monitored_estimator(
+		train_eval_api.monitored_estimator(
 			FLAGS=FLAGS,
 			worker_count=worker_count,
 			task_index=task_index, 
@@ -268,7 +289,7 @@ def main(_):
 			running_type="eval",
 			input_target=FLAGS.input_target)
 	elif FLAGS.run_type == "sess":
-		result_dict = train_eval.monitored_sess(FLAGS=FLAGS,
+		result_dict = train_eval_api.monitored_sess(FLAGS=FLAGS,
 			worker_count=worker_count,
 			task_index=task_index, 
 			cluster=cluster, 
@@ -291,16 +312,19 @@ def main(_):
 		# with tf.gfile.GFile(result_log_file, 'w') as f:
 		# 	f.write(json.dumps(result_dict)+"\n")
 		writer = tf.python_io.TFRecordWriter(result_log_file)
-		for label_id, feature, prob in zip(result_dict["label_ids"], 
-											result_dict["feature"],
-											result_dict["prob"]):
-			features = {}
-			features["label_id"] = tf_data_utils.create_int_feature([label_id])
-			features["feature"] = tf_data_utils.create_float_feature(feature)
-			features["prob"] = tf_data_utils.create_float_feature(prob)
+		try:
+			for label_id, feature, prob in zip(result_dict["label_ids"], 
+												result_dict["feature"],
+												result_dict["prob"]):
+				features = {}
+				features["label_id"] = tf_data_utils.create_int_feature([label_id])
+				features["feature"] = tf_data_utils.create_float_feature(feature)
+				features["prob"] = tf_data_utils.create_float_feature(prob)
 
-			tf_example = tf.train.Example(features=tf.train.Features(feature=features))
-			writer.write(tf_example.SerializeToString())
+				tf_example = tf.train.Example(features=tf.train.Features(feature=features))
+				writer.write(tf_example.SerializeToString())
+		except:
+			print("===not legal output for writer===")
 
 if __name__ == "__main__":
 	tf.app.run()

@@ -13,7 +13,7 @@ from metric import tf_metrics
 
 from optimizer import distributed_optimizer as optimizer
 
-def model_fn_builder(
+def model_fn_builder(model,
 					model_config,
 					num_labels,
 					init_checkpoint,
@@ -31,10 +31,10 @@ def model_fn_builder(
 
 	def model_fn(features, labels, mode):
 
-		model_api = model_zoo(model_config)
+		# model_api = model_zoo(model_config)
 
-		model = model_api(model_config, features, labels,
-							mode, target, reuse=model_reuse)
+		# model = model_api(model_config, features, labels,
+		# 					mode, target, reuse=model_reuse)
 
 		task_type = kargs.get("task_type", "cls")
 

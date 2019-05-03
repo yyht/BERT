@@ -130,7 +130,7 @@ def train_eval_fn(FLAGS,
 			print("==task type==", task_type)
 			model_config_dict[task_type] = model_config_parser(Bunch(multi_task_config[task_type]))
 			num_labels_dict[task_type] = multi_task_config[task_type]["num_labels"]
-			init_checkpoint_dict[task_type] = multi_task_config[task_type]["init_checkpoint"]
+			init_checkpoint_dict[task_type] = os.path.join(FLAGS.buckets, multi_task_config[task_type]["init_checkpoint"])
 			load_pretrained_dict[task_type] = multi_task_config[task_type]["load_pretrained"]
 			exclude_scope_dict[task_type] = multi_task_config[task_type]["exclude_scope"]
 			not_storage_params_dict[task_type] = multi_task_config[task_type]["not_storage_params"]
@@ -234,7 +234,7 @@ def train_eval_fn(FLAGS,
 
 		if kargs.get("parse_type", "parse_single") == "parse_single":
 
-			train_file_lst = [multi_task_config[task_type]["train_result_file"] for task_type in multi_task_config]
+			train_file_lst = [multi_task_config[task_type]["train_result_file"] for task_type in FLAGS.multi_task_type.split(",")]
 
 			print(train_file_lst)
 
@@ -244,7 +244,7 @@ def train_eval_fn(FLAGS,
 										task_index=task_index)
 
 			eval_features_dict = {}
-			for task_type in multi_task_config:
+			for task_type in FLAGS.multi_task_type.split(","):
 				name_to_features = data_interface(FLAGS, {task_type:multi_task_config[task_type]})
 				eval_features_dict[task_type] = tf_data_utils.eval_input_fn(
 				 						multi_task_config[task_type]["dev_result_file"],
@@ -254,7 +254,7 @@ def train_eval_fn(FLAGS,
 
 		elif kargs.get("parse_type", "parse_single") == "parse_batch":
 
-			train_file_lst = [multi_task_config[task_type]["train_result_file"] for task_type in multi_task_config]
+			train_file_lst = [multi_task_config[task_type]["train_result_file"] for task_type in FLAGS.multi_task_type.split(",")]
 			train_file_path_lst = [os.path.join(FLAGS.buckets, train_file) for train_file in train_file_lst]
 
 			train_features = tf_data_utils.train_batch_input_fn(train_file_path_lst,
@@ -266,7 +266,7 @@ def train_eval_fn(FLAGS,
 										task_index=task_index)
 
 			eval_features_dict = {}
-			for task_type in multi_task_config:
+			for task_type in FLAGS.multi_task_type.split(","):
 				name_to_features = data_interface(FLAGS, {task_type:multi_task_config[task_type]})
 
 				dev_file_path = os.path.join(FLAGS.buckets, multi_task_config[task_type]["dev_result_file"])

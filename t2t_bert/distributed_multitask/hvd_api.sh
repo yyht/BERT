@@ -38,7 +38,7 @@ python ./t2t_bert/distributed_multitask/hvd_train_eval_api.py \
  --task_type "single_sentence_classification" \
  --classifier order_classifier \
  --mode "multi_task" \
- --multi_task_type "wsdm,ccks,ant,xnli,lcqmc,nlpcc-dbqa,jd_comment,chnsenticorp" \
+ --multi_task_type "wsdm,ccks,ant,xnli,lcqmc,nlpcc-dbqa,chnsenticorp" \
  --multi_task_config "./t2t_bert/distributed_multitask/multi_task.json"
 
 

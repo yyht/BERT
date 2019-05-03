@@ -71,7 +71,7 @@ class MultitaskFeatureWriter(FeatureWriter):
 		features["input_mask"] = tf_data_utils.create_int_feature(feature.input_mask)
 		features["segment_ids"] = tf_data_utils.create_int_feature(feature.segment_ids)
 
-		for task in task_type_dict:
+		for task_index, task in enumerate(task_type_dict):
 			if task == task_type:
 				features["{}_mask".format(task)] = tf_data_utils.create_int_feature([1])
 				if task_type_dict[task]["task_type"] == "cls_task":
@@ -80,6 +80,7 @@ class MultitaskFeatureWriter(FeatureWriter):
 					features["{}_label_ids".format(task)] = tf_data_utils.create_int_feature(feature.label_ids)
 				elif task_type_dict[task]["task_type"] == "mrc":
 					features["{}_label_ids".format(task)] = tf_data_utils.create_int_feature(feature.label_ids)
+				features["task_id"] = tf_data_utils.create_int_feature([task_index])
 			else:
 				features["{}_mask".format(task)] = tf_data_utils.create_int_feature([0])
 				if task_type_dict[task]["task_type"] == "cls_task":

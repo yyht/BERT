@@ -35,6 +35,8 @@ import json
 from example import feature_writer, write_to_tfrecords_multitask
 from example import classifier_processor
 from data_generator import vocab_filter
+from collections import OrderedDict
+import random
 
 flags = tf.flags
 
@@ -67,6 +69,11 @@ flags.DEFINE_integer(
 
 flags.DEFINE_string(
 	"multi_task_type", "",
+	"if apply rule detector"
+	)
+
+flags.DEFINE_string(
+	"output_path", "",
 	"if apply rule detector"
 	)
 
@@ -117,7 +124,17 @@ def main(_):
 			vocab_file=vocab_path, 
 			do_lower_case=lower_case)
 
-	for task in multi_task_config:
+	total_examples = []
+
+	task_type_id = OrderedDict()
+	label2id_dict = {}
+
+	index = 0
+	for task in (FLAGS.multi_task_type.split(",")):
+		if task not in multi_task_config:
+			continue
+		task_type_id[task] = multi_task_config[task]
+		index += 1
 		data_type = multi_task_config[task]["data_type"]
 		if data_type == "single_sentence":
 			classifier_data_api = classifier_processor.SentenceProcessor()
@@ -128,39 +145,24 @@ def main(_):
 
 		train_examples = classifier_data_api.get_train_examples(train_file_dict[task],
 											is_shuffle=True)
-		test_examples = classifier_data_api.get_train_examples(test_file_dict[task],
-											is_shuffle=False)
-		dev_examples = classifier_data_api.get_train_examples(dev_file_dict[task],
-											is_shuffle=False)
+		label2id_dict[task] = classifier_data_api.label2id
+		
+		for item in train_examples:
+			tmp = {"example":item,"task":task}
+			total_examples.append(tmp)
 
-		print(classifier_data_api.label2id, task)
+	print(task_type_id.keys())
+	print("==total data==", len(total_examples))
 
-		write_to_tfrecords_multitask.convert_multitask_classifier_examples_to_features(
-															train_examples,
-															classifier_data_api.label2id,
-															FLAGS.max_length,
-															tokenizer,
-															train_result_dict[task],
-															task,
-															multi_task_config)
-
-		write_to_tfrecords_multitask.convert_multitask_classifier_examples_to_features(
-															test_examples,
-															classifier_data_api.label2id,
-															FLAGS.max_length,
-															tokenizer,
-															test_result_dict[task],
-															task,
-															multi_task_config)
-
-		write_to_tfrecords_multitask.convert_multitask_classifier_examples_to_features(
-															dev_examples,
-															classifier_data_api.label2id,
-															FLAGS.max_length,
-															tokenizer,
-															dev_result_dict[task],
-															task,
-															multi_task_config)
+	random.shuffle(total_examples)
+	write_to_tfrecords_multitask.convert_multitask_classifier_merged_examples_to_features(
+			total_examples,
+			label2id_dict,
+			FLAGS.max_length,
+			tokenizer,
+			os.path.join(FLAGS.buckets, FLAGS.output_path),
+			task_type_id
+		)
 
 if __name__ == "__main__":
 	tf.app.run()
