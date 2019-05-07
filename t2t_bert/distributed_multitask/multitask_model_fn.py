@@ -46,6 +46,7 @@ def multitask_model_fn(model_config_dict,
 		task_num = 0
 
 		encoder = {}
+		hook_dict = {}
 
 		print(task_type_dict.keys(), "==task type dict==")
 		num_task = len(task_type_dict)
@@ -90,6 +91,10 @@ def multitask_model_fn(model_config_dict,
 				result_dict = task_model_fn(features, labels, mode)
 				logits_dict[task_type] = result_dict["logits"]
 				losses_dict[task_type] = result_dict["loss"] # task loss
+				# for key in ["masked_lm_loss", "task_loss"]:
+				# 	name = "{}_{}".format(task_type, key)
+				# 	if name in result_dict:
+				# 		hook_dict[name] = result_dict[name]
 				total_loss += result_dict["loss"]
 				if mode == tf.estimator.ModeKeys.TRAIN:
 					tvars.extend(result_dict["tvars"])
@@ -144,14 +149,9 @@ def multitask_model_fn(model_config_dict,
 				}
 			elif output_type == "estimator":
 
-				# tensors_to_log = {}
-				# for task_type in task_type_dict.keys():
-				# 	if "{}_mask".format(task_type) not in tensors_to_log:
-				# 		tensors_to_log["{}_mask".format(task_type)] = tf.reduce_sum(features["{}_mask".format(task_type)])
-				# 	else:
-				# 		tensors_to_log["{}_mask".format(task_type)] += tf.reduce_sum(features["{}_mask".format(task_type)])
+				# hook_dict['learning_rate'] = optimizer_fn.learning_rate
 				# logging_hook = tf.train.LoggingTensorHook(
-				# 	tensors=tensors_to_log, every_n_iter=100)
+				# 	hook_dict, every_n_iter=100)
 				# training_hooks.append(logging_hook)
 
 				estimator_spec = tf.estimator.EstimatorSpec(mode=mode, 

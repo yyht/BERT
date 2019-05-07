@@ -17,6 +17,8 @@ try:
 except:
 	from multitask_model_fn import multitask_model_fn
 
+from dataset_generator.input_fn import train_eval_input_fn 
+
 import numpy as np
 import tensorflow as tf
 from bunch import Bunch
@@ -91,8 +93,10 @@ def train_eval_fn(FLAGS,
 		print(" model type {}".format(FLAGS.model_type))
 
 		print(num_train_steps, num_warmup_steps, "=============")
+
+		print("==init lr==", FLAGS.init_lr)
 		
-		opt_config = Bunch({"init_lr":kargs.get("init_lr", 5e-5), 
+		opt_config = Bunch({"init_lr":FLAGS.init_lr, 
 							"num_train_steps":num_train_steps,
 							"num_warmup_steps":num_warmup_steps,
 							"worker_count":worker_count,
@@ -157,6 +161,7 @@ def train_eval_fn(FLAGS,
 											task_layer_reuse=None,
 											model_type_lst=model_type_lst,
 											task_invariant=FLAGS.task_invariant,
+											multi_task_config=multi_task_config,
 											**kargs)
 
 		print("==succeeded in building model==")
@@ -212,6 +217,8 @@ def train_eval_fn(FLAGS,
 										if_shard=FLAGS.if_shard,
 										worker_count=worker_count,
 										task_index=task_index)
+		elif kargs.get("parse_type", "parse_single") == "generator":
+			def train_features(): return train_eval_input_fn(FLAGS, multi_task_config, "train", 0)
 
 		print("==succeeded in building data and model==")
 		print("start training")
@@ -254,13 +261,14 @@ def train_eval_fn(FLAGS,
 						model_fn=model_fn,
 						config=run_config)
 
+		print("==finish build model estimator==")
+
 		train_being_time = time.time()
 		tf.logging.info("==training distribution_strategy=={}".format(kargs.get("distribution_strategy", "MirroredStrategy")))
 		if kargs.get("distribution_strategy", "MirroredStrategy") == "MirroredStrategy":
 			print("==apply single machine multi-card training==")
 			model_estimator.train(input_fn=train_features,
-							max_steps=num_train_steps,
-							hooks=train_hooks)
+							max_steps=num_train_steps)
 
 			train_end_time = time.time()
 			print("==training time==", train_end_time - train_being_time)

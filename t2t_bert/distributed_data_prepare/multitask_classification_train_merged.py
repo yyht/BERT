@@ -37,6 +37,8 @@ from example import classifier_processor
 from data_generator import vocab_filter
 from collections import OrderedDict
 import random
+import multiprocessing
+import copy
 
 flags = tf.flags
 
@@ -128,6 +130,8 @@ def main(_):
 
 	task_type_id = OrderedDict()
 	label2id_dict = {}
+
+	task_dataset = {}
 
 	index = 0
 	for task in (FLAGS.multi_task_type.split(",")):

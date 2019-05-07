@@ -34,7 +34,7 @@ def feature_distillation(input_tensor, l,
 		feat = flip_gradient(input_tensor, l)
 	else:
 		feat = input_tensor
-	hidden_size = input_tensor.shape[-1].value
+	hidden_size = feat.shape[-1].value
 
 	output_weights = tf.get_variable(
 		"output_weights", [num_labels, hidden_size],
@@ -43,12 +43,12 @@ def feature_distillation(input_tensor, l,
 	output_bias = tf.get_variable(
 		"output_bias", [num_labels], initializer=tf.zeros_initializer())
 
-	# output_layer = tf.nn.dropout(output_layer, keep_prob=1 - dropout_prob)
+	output_layer = tf.nn.dropout(feat, keep_prob=1 - dropout_prob)
 
-	logits = tf.matmul(feat, output_weights, transpose_b=True)
+	logits = tf.matmul(output_layer, output_weights, transpose_b=True)
 	logits = tf.nn.bias_add(logits, output_bias)
 
-	logits = tf.nn.log_softmax(logits)
+	# logits = tf.nn.log_softmax(logits)
 		
 	domain_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
 											logits=logits, 

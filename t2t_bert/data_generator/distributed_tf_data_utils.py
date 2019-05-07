@@ -162,7 +162,7 @@ def all_reduce_multitask_train_input_fn(input_file, _parse_fn, name_to_features,
 
 	# `cycle_length` is the number of parallel files that get read.
 	# cycle_length = min(4, len(input_file))
-	cycle_length = len(input_file)
+	cycle_length = 1
 
 	# `sloppy` mode means that the interleaving is not exact. This adds
 	# even more randomness to the training pipeline.
@@ -207,7 +207,8 @@ def all_reduce_multitask_train_batch_input_fn(input_file, _parse_fn, name_to_fea
 
 	# `cycle_length` is the number of parallel files that get read.
 	# cycle_length = min(4, len(input_file))
-	cycle_length = len(input_file)
+	# cycle_length = len(input_file)
+	cycle_length = 1
 
 	# `sloppy` mode means that the interleaving is not exact. This adds
 	# even more randomness to the training pipeline.

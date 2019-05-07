@@ -73,7 +73,7 @@ class MultitaskFeatureWriter(FeatureWriter):
 
 		for task_index, task in enumerate(task_type_dict):
 			if task == task_type:
-				features["{}_mask".format(task)] = tf_data_utils.create_int_feature([1])
+				features["{}_loss_multiplier".format(task)] = tf_data_utils.create_int_feature([1])
 				if task_type_dict[task]["task_type"] == "cls_task":
 					features["{}_label_ids".format(task)] = tf_data_utils.create_int_feature([feature.label_ids])
 				elif task_type_dict[task]["task_type"] == "seq2tag":
@@ -82,7 +82,7 @@ class MultitaskFeatureWriter(FeatureWriter):
 					features["{}_label_ids".format(task)] = tf_data_utils.create_int_feature(feature.label_ids)
 				features["task_id"] = tf_data_utils.create_int_feature([task_index])
 			else:
-				features["{}_mask".format(task)] = tf_data_utils.create_int_feature([0])
+				features["{}_loss_multiplier".format(task)] = tf_data_utils.create_int_feature([0])
 				if task_type_dict[task]["task_type"] == "cls_task":
 					features["{}_label_ids".format(task)] = tf_data_utils.create_int_feature([0])
 				elif task_type_dict[task]["task_type"] == "seq2tag":

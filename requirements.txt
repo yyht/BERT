@@ -2,3 +2,6 @@ bunch
 sentencepiece
 sklearn
 jieba
+hanziconv
+pyemd
+jieba

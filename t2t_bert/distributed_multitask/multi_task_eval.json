@@ -16,7 +16,7 @@
 		"exclude_scope":"",
 		"load_pretrained":"yes",
 		"num_labels":3,
-		"init_checkpoint":"multi_task/data/model/20190503_mtdnn_10/model.ckpt-18745"
+		"init_checkpoint":"multi_task/data/model/20190503_mtdnn_10_merged/model.ckpt-23430"
 	},
 	"ccks":{
 		"task_type":"cls_task",
@@ -35,7 +35,7 @@
 		"exclude_scope":"",
 		"load_pretrained":"yes",
 		"num_labels":2,
-		"init_checkpoint":"multi_task/data/model/20190503_mtdnn_10/model.ckpt-18745"
+		"init_checkpoint":"multi_task/data/model/20190503_mtdnn_10_merged/model.ckpt-23430"
 	},
 	"ant":{
 		"task_type":"cls_task",
@@ -54,7 +54,7 @@
 		"exclude_scope":"",
 		"load_pretrained":"yes",
 		"num_labels":2,
-		"init_checkpoint":"multi_task/data/model/20190503_mtdnn_10/model.ckpt-18745"
+		"init_checkpoint":"multi_task/data/model/20190503_mtdnn_10_merged/model.ckpt-23430"
 	},
 	"xnli":{
 		"task_type":"cls_task",
@@ -73,7 +73,7 @@
 		"exclude_scope":"",
 		"load_pretrained":"yes",
 		"num_labels":3,
-		"init_checkpoint":"multi_task/data/model/20190503_mtdnn_10/model.ckpt-23430"
+		"init_checkpoint":"multi_task/data/model/20190505_mtdnn_10_merged_0/model.ckpt-13672"
 	},
 	"lcqmc":{
 		"task_type":"cls_task",
@@ -92,7 +92,7 @@
 		"exclude_scope":"",
 		"load_pretrained":"yes",
 		"num_labels":2,
-		"init_checkpoint":"multi_task/data/model/20190503_mtdnn_10/model.ckpt-11716"
+		"init_checkpoint":"multi_task/data/model/20190504_mtdnn_6_merged_task_adv/model.ckpt-9766"
 	},
 	"nlpcc-dbqa":{
 		"task_type":"cls_task",
@@ -111,7 +111,7 @@
 		"exclude_scope":"",
 		"load_pretrained":"yes",
 		"num_labels":2,
-		"init_checkpoint":"multi_task/data/model/20190503_mtdnn_10/model.ckpt-18745"
+		"init_checkpoint":"multi_task/data/model/20190503_mtdnn_10_merged/model.ckpt-21088"
 	},
 	"jd_comment":{
 		"task_type":"cls_task",
@@ -130,7 +130,7 @@
 		"exclude_scope":"",
 		"load_pretrained":"yes",
 		"num_labels":3,
-		"init_checkpoint":"multi_task/data/model/20190503_mtdnn_10/model.ckpt-18745"
+		"init_checkpoint":"multi_task/data/model/20190503_mtdnn_10_merged/model.ckpt-23430"
 	},
 	"chnsenticorp":{
 		"task_type":"cls_task",
@@ -149,6 +149,6 @@
 		"exclude_scope":"",
 		"load_pretrained":"yes",
 		"num_labels":2,
-		"init_checkpoint":"multi_task/data/model/20190503_mtdnn_10/model.ckpt-21088"
+		"init_checkpoint":"multi_task/data/model/20190505_mtdnn_10_merged_0/model.ckpt-13672"
 	}
 }

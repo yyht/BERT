@@ -1021,7 +1021,7 @@ class FasttextStructureDistillationProcessor(data_processor.DataProcessor):
 class SentencePairProcessor(data_processor.DataProcessor): 
 	def get_labels(self, label_file):
 		import json
-		with open(label_file, "r") as frobj:
+		with tf.gfile.Open(label_file, "r") as frobj:
 			label = json.load(frobj)
 		self.label2id = label["label2id"]
 		self.id2label = label["id2label"]
@@ -1079,7 +1079,7 @@ class SentencePairProcessor(data_processor.DataProcessor):
 class SentenceProcessor(data_processor.DataProcessor): 
 	def get_labels(self, label_file):
 		import json
-		with open(label_file, "r") as frobj:
+		with tf.gfile.Open(label_file, "r") as frobj:
 			label = json.load(frobj)
 		self.label2id = label["label2id"]
 		self.id2label = label["id2label"]

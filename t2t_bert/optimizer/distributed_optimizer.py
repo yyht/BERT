@@ -189,6 +189,7 @@ class Optimizer(object):
 		if self.config.get("warmup", "no") == "warmup":
 			print("==apply warmup==")
 			learning_rate = self.warm_up(learning_rate, init_lr, **kargs)
+		self.learning_rate = learning_rate
 		
 		# add uber horvod distributed optimizer
 		if hvd and self.config["opt_type"] == "hvd":
