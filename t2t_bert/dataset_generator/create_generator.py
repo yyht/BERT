@@ -143,7 +143,6 @@ def create_generator(FLAGS, multi_task_config, mode, epoch):
 	previous_problem_chunk = []
 	while gen_dict:
 		# sample problem to train
-		print(data_iterator_dict, "==problem iterator==")
 		if len(problem_chunk) > 1:
 			data_num_list = [gen_dict[chunk[0]]["data_num"]
 							 for chunk in problem_chunk]

@@ -48,7 +48,7 @@ def multitask_model_fn(model_config_dict,
 		encoder = {}
 		hook_dict = {}
 
-		print(task_type_dict.keys(), "==task type dict==")
+		# print(task_type_dict.keys(), "==task type dict==")
 		num_task = len(task_type_dict)
 
 		for index, task_type in enumerate(task_type_dict.keys()):

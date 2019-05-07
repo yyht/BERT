@@ -30,6 +30,7 @@ import tensorflow as tf
 import json, os, sys
 from data_generator import tf_data_utils
 from bunch import Bunch
+from tqdm import tqdm
 
 flags = tf.flags
 
@@ -265,7 +266,8 @@ def write2tfrecords():
 	_writer = tf.python_io.TFRecordWriter(os.path.join(FLAGS.buckets, FLAGS.model_output))
 	problem_config = multi_task_config[FLAGS.multi_task_type.split(",")[0]]
 
-	for idx, item in enumerate(generator):
+	cnt = 0
+	for idx, item in enumerate(tqdm(generator)):
 		features = {}
 		features["input_ids"] = tf_data_utils.create_int_feature(item["input_ids"])
 		features["input_mask"] = tf_data_utils.create_int_feature(item["input_mask"])
@@ -295,6 +297,8 @@ def write2tfrecords():
 		except:
 			tf_example = tf.train.Example(features=tf.train.Features(feature=features))
 			_writer.write(tf_example.SerializeToString())
+		cnt += 1
+	print("==total sample==", cnt)
 
 write2tfrecords()
 
