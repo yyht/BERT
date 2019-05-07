@@ -184,6 +184,7 @@ def train_eval_fn(FLAGS,
 											anneal_config=anneal_config,
 											task_layer_reuse=True,
 											model_type_lst=model_type_lst,
+											multi_task_config=multi_task_config,
 											**kargs)
 
 		print("==succeeded in building model==")

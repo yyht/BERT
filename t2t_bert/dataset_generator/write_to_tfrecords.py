@@ -1,7 +1,6 @@
-import sys,os,json
-
 # -*- coding: utf-8 -*-
 import sys,os
+import sys,os,json
 
 father_path = os.path.join(os.getcwd())
 print(father_path, "==father path==")
@@ -296,7 +295,6 @@ def write2tfrecords():
 		except:
 			tf_example = tf.train.Example(features=tf.train.Features(feature=features))
 			_writer.write(tf_example.SerializeToString())
-		break
 
 write2tfrecords()
 
