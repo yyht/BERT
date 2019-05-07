@@ -1,6 +1,7 @@
+import sys,os,json
 
 # -*- coding: utf-8 -*-
-import sys,os,json
+import sys,os
 
 father_path = os.path.join(os.getcwd())
 print(father_path, "==father path==")
@@ -25,24 +26,18 @@ bert_path = find_bert(father_path)
 t2t_bert_path = os.path.join(bert_path, "t2t_bert")
 sys.path.extend([bert_path, t2t_bert_path])
 
-print(sys.path)
-
+from dataset_generator.create_generator import create_generator
 import tensorflow as tf
-
-from distributed_single_sentence_classification import train_eval
-from distributed_multitask import train_eval as multitask_train_eval
+import json, os, sys
 from data_generator import tf_data_utils
-# from tensorflow.contrib.distribute.python import cross_tower_ops as cross_tower_ops_lib
-
-import tensorflow as tf
-import json
+from bunch import Bunch
 
 flags = tf.flags
 
 FLAGS = flags.FLAGS
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-# tf.logging.set_verbosity(tf.logging.INFO)
+# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+tf.logging.set_verbosity(tf.logging.INFO)
 
 flags.DEFINE_string("buckets", "", "oss buckets")
 
@@ -129,6 +124,11 @@ flags.DEFINE_string(
 	)
 
 flags.DEFINE_string(
+	"cross_tower_ops_type", "paisoar",
+	"the CollectiveAllReduceStrategy cross_tower_ops_type"
+	)
+
+flags.DEFINE_string(
 	"parse_type", "parse_single", 
 	"the required num_gpus"
 	)
@@ -143,18 +143,14 @@ flags.DEFINE_string(
 	"the required num_gpus"
 	)
 
+
 flags.DEFINE_string(
-	"train_op", "adam", 
+	"train_op", "adam_weight_decay_exclude", 
 	"the required num_gpus"
 	)
 
 flags.DEFINE_string(
-	"running_type", "eval", 
-	"the required num_gpus"
-	)
-
-flags.DEFINE_string(
-	"input_target", "a", 
+	"running_type", "train", 
 	"the required num_gpus"
 	)
 
@@ -174,6 +170,11 @@ flags.DEFINE_string(
 	)
 
 flags.DEFINE_string(
+	"input_target", "", 
+	"the required num_gpus"
+	)
+
+flags.DEFINE_string(
 	"decay", "no",
 	"pretrained w2v"
 	)
@@ -185,6 +186,16 @@ flags.DEFINE_string(
 
 flags.DEFINE_string(
 	"distillation", "normal",
+	"if apply distillation"
+	)
+
+flags.DEFINE_float(
+	"temperature", 2.0,
+	"if apply distillation"
+	)
+
+flags.DEFINE_float(
+	"distillation_ratio", 1.0,
 	"if apply distillation"
 	)
 
@@ -248,103 +259,52 @@ flags.DEFINE_integer(
 	"if apply distillation"
 	)
 
-def main(_):
+def write2tfrecords():
+	multi_task_config = Bunch(json.load(tf.gfile.Open(FLAGS.multi_task_config)))
+	generator = create_generator(FLAGS, multi_task_config, "train", FLAGS.epoch)
 
-	print(FLAGS)
-	print(tf.__version__, "==tensorflow version==")
+	_writer = tf.python_io.TFRecordWriter(os.path.join(FLAGS.buckets, FLAGS.model_output))
+	problem_config = multi_task_config[FLAGS.multi_task_type.split(",")[0]]
 
-	init_checkpoint = os.path.join(FLAGS.buckets, FLAGS.init_checkpoint)
-	train_file = os.path.join(FLAGS.buckets, FLAGS.train_file)
-	dev_file = os.path.join(FLAGS.buckets, FLAGS.dev_file)
-	checkpoint_dir = os.path.join(FLAGS.buckets, FLAGS.model_output)
+	for idx, item in enumerate(generator):
+		features = {}
+		features["input_ids"] = tf_data_utils.create_int_feature(item["input_ids"])
+		features["input_mask"] = tf_data_utils.create_int_feature(item["input_mask"])
+		features["segment_ids"] = tf_data_utils.create_int_feature(item["segment_ids"])
 
-	print(init_checkpoint, train_file, dev_file, checkpoint_dir)
+		if problem_config["lm_augumentation"]:
+			features["masked_lm_positions"] = tf_data_utils.create_int_feature(item["masked_lm_positions"])
+			features["masked_lm_ids"] = tf_data_utils.create_int_feature(item["masked_lm_ids"])
+			features["masked_lm_weights"] = tf_data_utils.create_int_feature(item["masked_lm_weights"])
 
-	sess_config = tf.ConfigProto(allow_soft_placement=True,
-									log_device_placement=True)
+		for problem in FLAGS.multi_task_type.split(","):
+			problem_dict = multi_task_config[problem]
+			problem_type = multi_task_config[problem]["task_type"]
 
-	cluster = {'chief': ['localhost:2221'], 'worker': ['localhost:2222']}
-	try:
-		os.environ['TF_CONFIG'] = json.dumps({'cluster': cluster, 'task': {'type': 'evaluator', 'index': 0}})
-	except:
-		print("==not tf config env==")
+			features["{}_loss_multiplier".format(problem)] = tf_data_utils.create_int_feature([item["{}_loss_multiplier".format(problem)]])
+			if problem_type in ['cls_task']:
+				features["{}_label_ids".format(problem)] = tf_data_utils.create_int_feature([item["{}_label_ids".format(problem)]])
+			elif problem_type in ['seq2seq_tag_task', 'seq2seq_text_task']:
+				features["{}_label_ids".format(problem)] = tf_data_utils.create_int_feature(item["{}_label_ids".format(problem)])
+			
+			features["task_id"] = tf_data_utils.create_int_feature([item["task_id"]])
 
-	run_config = tf.estimator.RunConfig(
-					  keep_checkpoint_max=5,
-					  model_dir=checkpoint_dir, 
-					  session_config=sess_config,
-					  save_checkpoints_secs=None,
-					  save_checkpoints_steps=None,
-					  log_step_count_steps=100)
-
-	task_index = run_config.task_id
-	is_chief = run_config.is_chief
-	worker_count = 1
-
-	print("==worker_count==", worker_count, "==local_rank==", task_index, "==is is_chief==", is_chief)
-	target = ""
-
-	if FLAGS.mode == "single_task":
-		train_eval_api = train_eval
-	elif FLAGS.mode == "multi_task":
-		train_eval_api = multitask_train_eval
-
-	if FLAGS.run_type == "estimator":
-		train_eval_api.monitored_estimator(
-			FLAGS=FLAGS,
-			worker_count=worker_count,
-			task_index=task_index, 
-			cluster=cluster, 
-			is_chief=is_chief, 
-			target=target,
-			init_checkpoint=init_checkpoint,
-			train_file=train_file,
-			dev_file=dev_file,
-			checkpoint_dir=checkpoint_dir,
-			run_config=run_config,
-			profiler=FLAGS.profiler,
-			parse_type=FLAGS.parse_type,
-			rule_model=FLAGS.rule_model,
-			train_op=FLAGS.train_op,
-			running_type="eval",
-			input_target=FLAGS.input_target)
-	elif FLAGS.run_type == "sess":
-		result_dict = train_eval_api.monitored_sess(FLAGS=FLAGS,
-			worker_count=worker_count,
-			task_index=task_index, 
-			cluster=cluster, 
-			is_chief=is_chief, 
-			target=target,
-			init_checkpoint=init_checkpoint,
-			train_file=train_file,
-			dev_file=dev_file,
-			checkpoint_dir=checkpoint_dir,
-			run_config=run_config,
-			profiler=FLAGS.profiler,
-			parse_type=FLAGS.parse_type,
-			rule_model=FLAGS.rule_model,
-			train_op=FLAGS.train_op,
-			running_type="eval",
-			input_target=FLAGS.input_target)
-
-		result_log_file = os.path.join(checkpoint_dir, "result.info")
-		print(result_log_file, "==result log path==")
-		# with tf.gfile.GFile(result_log_file, 'w') as f:
-		# 	f.write(json.dumps(result_dict)+"\n")
-		writer = tf.python_io.TFRecordWriter(result_log_file)
 		try:
-			for label_id, feature, prob in zip(result_dict["label_ids"], 
-												result_dict["feature"],
-												result_dict["prob"]):
-				features = {}
-				features["label_id"] = tf_data_utils.create_int_feature([label_id])
-				features["feature"] = tf_data_utils.create_float_feature(feature)
-				features["prob"] = tf_data_utils.create_float_feature(prob)
-
-				tf_example = tf.train.Example(features=tf.train.Features(feature=features))
-				writer.write(tf_example.SerializeToString())
+			features["guid"] = tf_data_utils.create_int_feature([idx])
+			tf_example = tf.train.Example(features=tf.train.Features(feature=features))
+			_writer.write(tf_example.SerializeToString())
 		except:
-			print("===not legal output for writer===")
+			tf_example = tf.train.Example(features=tf.train.Features(feature=features))
+			_writer.write(tf_example.SerializeToString())
+		break
 
-if __name__ == "__main__":
-	tf.app.run()
+write2tfrecords()
+
+
+
+	
+
+
+
+
+

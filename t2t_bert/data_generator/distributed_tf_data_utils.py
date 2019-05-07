@@ -155,14 +155,14 @@ def all_reduce_multitask_train_input_fn(input_file, _parse_fn, name_to_features,
 	dataset = tf.data.Dataset.from_tensor_slices(tf.constant(input_file))
 	# dataset = dataset.repeat(params.get("epoch", 100))
 	dataset = dataset.repeat()
-	dataset = dataset.shuffle(
-							buffer_size=params.get("buffer_size", 1024)+3*params.get("batch_size", 32),
-							seed=np.random.randint(0,1e10,1)[0],
-							reshuffle_each_iteration=True)
+	# dataset = dataset.shuffle(
+	# 						buffer_size=params.get("buffer_size", 1024)+3*params.get("batch_size", 32),
+	# 						seed=np.random.randint(0,1e10,1)[0],
+	# 						reshuffle_each_iteration=True)
 
 	# `cycle_length` is the number of parallel files that get read.
 	# cycle_length = min(4, len(input_file))
-	cycle_length = 1
+	cycle_length = len(input_file)
 
 	# `sloppy` mode means that the interleaving is not exact. This adds
 	# even more randomness to the training pipeline.
