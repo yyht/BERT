@@ -117,7 +117,9 @@ def main(_):
 			vocab_file=vocab_path, 
 			do_lower_case=lower_case)
 
-	for task in multi_task_config:
+	for task in (FLAGS.multi_task_type.split(",")):
+		if task not in multi_task_config:
+			continue
 		data_type = multi_task_config[task]["data_type"]
 		if data_type == "single_sentence":
 			classifier_data_api = classifier_processor.SentenceProcessor()
