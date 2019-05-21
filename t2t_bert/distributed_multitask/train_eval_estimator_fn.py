@@ -106,14 +106,18 @@ def train_eval_fn(FLAGS,
 							"decay":kargs.get("decay", "no"),
 							"warmup":kargs.get("warmup", "no"),
 							"grad_clip":kargs.get("grad_clip", "global_norm"),
-							"clip_norm":kargs.get("clip_norm", 1.0)})
+							"clip_norm":kargs.get("clip_norm", 1.0),
+							"opt_ema":kargs.get("opt_ema", "no")})
 
 		anneal_config = Bunch({
 					"initial_value":1.0,
 					"num_train_steps":num_train_steps
 			})
 
-		model_io_config = Bunch({"fix_lm":False})
+		model_io_config = Bunch({
+								"fix_lm":False,
+								"ema_saver":kargs.get("opt_ema", "no")
+								})
 
 		if FLAGS.opt_type == "hvd" and hvd:
 			checkpoint_dir = checkpoint_dir if task_index == 0 else None
@@ -210,7 +214,7 @@ def train_eval_fn(FLAGS,
 			print(train_file_path_lst)
 			train_file_path_lst = list(set(train_file_path_lst))
 
-			train_features = lambda: tf_data_utils.all_reduce_multitask_train_batch_input_fn(train_file_path_lst,
+			train_features = lambda: tf_data_utils.all_reduce_train_batch_input_fn(train_file_path_lst,
 										_decode_batch_record, 
 										name_to_features, 
 										params, 

@@ -54,7 +54,7 @@ class Optimizer(object):
 			learning_rate = tf.train.polynomial_decay(
 													init_lr,
 													self.decay_global_step,
-													num_train_steps,
+													num_train_steps-self.config.num_warmup_steps,
 													end_learning_rate=end_learning_rate,
 													power=1.0,
 													cycle=False)
@@ -62,7 +62,7 @@ class Optimizer(object):
 			learning_rate = tf.train.cosin_decay(
 												learning_rate,
 												self.decay_global_step,
-												num_train_steps,
+												num_train_steps-self.config.num_warmup_steps,
 												alpha=0.0,
 												cycle=False)
 		elif lr_decay == "exponential_decay":
@@ -70,7 +70,7 @@ class Optimizer(object):
 			learning_rate = tf.train.exponential_decay(
 													learning_rate,
 													self.decay_global_step,
-													num_train_steps,
+													num_train_steps-self.config.num_warmup_steps,
 													decay_rate=decay_rate,
 													staircase=False)
 		elif lr_decay == "natural_exp_decay":
@@ -78,7 +78,7 @@ class Optimizer(object):
 			learning_rate = tf.train.natural_exp_decay(
 													learning_rate,
 													self.decay_global_step,
-													num_train_steps,
+													num_train_steps-self.config.num_warmup_steps,
 													decay_rate=decay_rate,
 													staircase=False)
 		else:
@@ -177,6 +177,9 @@ class Optimizer(object):
 										beta1=self.config.get("beta_1", 0.9),
 										beta2=self.config.get("beta_2", 0.999),
 										epsilon=self.config.get("epsilon", 1e-8))
+		if self.config.get("opt_ema", "no") == "yes":
+			print("==apply ema optimizer==")
+			opt = tf.contrib.opt.MovingAverageOptimizer(opt)
 		return opt
 
 	def get_opt(self, init_lr, 
@@ -218,10 +221,6 @@ class Optimizer(object):
 			print("==initialization of single node optimizer==")
 			self.opt = self.optimizer_op(learning_rate, **kargs)
 			self.distributed_hooks = []
-
-	def moving_average_opt(self, opt):
-		opt = tf.contrib.opt.MovingAverageOptimizer(opt)
-		return opt
 
 	def get_train_op(self, loss, tvars, init_lr, num_train_steps, **kargs):
 		

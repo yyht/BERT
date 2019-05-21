@@ -1,6 +1,7 @@
 import tensorflow as tf
 
 def task_interface(name_to_features, task_type_dict, task_type_lst):
+	print(type(task_type_dict), "==task type dict==")
 	for task_type in task_type_lst:
 		if task_type not in task_type_dict:
 			continue

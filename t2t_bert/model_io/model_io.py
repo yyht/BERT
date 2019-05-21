@@ -16,17 +16,24 @@ class ModelIO(object):
 		print(" initializing ModelIO ")
 		self.config = config
 
-	def moving_average_saver(self, opt, max_keep, **kargs):
-		saver = opt.swapping_saver(var_list=kargs.get("var_lst", None),
+	def moving_average_saver(self, opt, **kargs):
+		self.saver = opt.swapping_saver(var_list=kargs.get("var_lst", None),
 								max_to_keep=self.config.get("max_to_keep", 100))
 		
-	def set_saver(self, max_keep=10, **kargs):
+	def set_saver(self, opt=None, **kargs):
 		if len(kargs.get("var_lst", [])) >= 1:
 			self.saver = tf.train.Saver(var_list=kargs.get("var_lst", None),
 			max_to_keep=self.config.get("max_to_keep", 100))
 		else:
 			self.saver = tf.train.Saver(
 			max_to_keep=self.config.get("max_to_keep", 100))
+
+		if self.config.get("ema_saver", "no") == "yes":
+			try:
+				print("==apply ema saver==")
+				self.moving_average_saver(opt, **kargs)
+			except:
+				print("==no valid eam saver==")
 
 	def get_hooks(self, checkpoint_dir, num_storage_steps):
 		self.checkpoint_hook = [tf.train.CheckpointSaverHook(

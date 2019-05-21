@@ -17,6 +17,8 @@ try:
 except:
 	from multitask_model_fn import multitask_model_fn
 
+from dataset_generator.input_fn import train_eval_input_fn 
+
 import numpy as np
 import tensorflow as tf
 from bunch import Bunch
@@ -208,7 +210,7 @@ def train_eval_fn(FLAGS,
 		def train_metric_fn(features, train_op_dict):
 			return train_op_dict
 		
-		name_to_features = data_interface(FLAGS, multi_task_config)
+		name_to_features = data_interface(FLAGS, multi_task_config, FLAGS.multi_task_type.split(","))
 
 		def _decode_record(record, name_to_features):
 			"""Decodes a record to a TensorFlow example.
@@ -268,7 +270,7 @@ def train_eval_fn(FLAGS,
 
 			eval_features_dict = {}
 			for task_type in FLAGS.multi_task_type.split(","):
-				name_to_features = data_interface(FLAGS, {task_type:multi_task_config[task_type]})
+				name_to_features = data_interface(FLAGS, {task_type:multi_task_config[task_type]}, [task_type_dict])
 
 				dev_file_path = os.path.join(FLAGS.buckets, multi_task_config[task_type]["dev_result_file"])
 				eval_features_dict[task_type] = tf_data_utils.eval_batch_input_fn(

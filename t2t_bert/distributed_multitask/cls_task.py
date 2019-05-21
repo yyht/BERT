@@ -16,6 +16,16 @@ from task_module import pretrain
 
 from optimizer import distributed_optimizer as optimizer
 
+def build_accuracy(logits, labels, mask):
+	pred_label = tf.argmax(logits, axis=-1)
+	correct = tf.equal(
+		tf.cast(pred_label, tf.int32),
+		tf.cast(labels, tf.int32)
+	)
+	mask = tf.cast(mask, tf.float32)
+	accuracy = tf.reduce_sum(tf.cast(correct, tf.float32)*mask)/(1e-10+tf.reduce_sum(mask))
+	return accuracy
+
 def model_fn_builder(model,
 					model_config,
 					num_labels,
@@ -62,9 +72,9 @@ def model_fn_builder(model,
 		loss = tf.reduce_sum(masked_per_example_loss) / (1e-10+tf.reduce_sum(loss_mask))
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
-			print(kargs.get("multi_task_config", {}), "=============")
 			multi_task_config = kargs.get("multi_task_config", {})
-			if multi_task_config.get("lm_augumentation", False):
+			if multi_task_config[task_type].get("lm_augumentation", False):
+				print("==apply lm_augumentation==")
 				masked_lm_positions = features["masked_lm_positions"]
 				masked_lm_ids = features["masked_lm_ids"]
 				masked_lm_weights = features["masked_lm_weights"]
@@ -79,9 +89,14 @@ def model_fn_builder(model,
 												masked_lm_weights,
 												reuse=model_reuse)
 
-				masked_lm_example_loss *= loss_mask# multiply task_mask
-				masked_lm_loss = tf.reduce_sum(masked_lm_example_loss) / (1e-10+tf.reduce_sum(loss_mask))
-				loss += model_config.masked_lm_loss_ratio*masked_lm_loss
+				masked_lm_loss_mask = tf.expand_dims(loss_mask, -1) * tf.ones((1, multi_task_config[task_type]["max_predictions_per_seq"]))
+				masked_lm_loss_mask = tf.reshape(masked_lm_loss_mask, (-1, ))
+
+				masked_lm_example_loss *= masked_lm_loss_mask# multiply task_mask
+				masked_lm_loss = tf.reduce_sum(masked_lm_example_loss) / (1e-10+tf.reduce_sum(masked_lm_loss_mask))
+				loss += multi_task_config[task_type]["masked_lm_loss_ratio"]*masked_lm_loss
+
+				lm_acc = build_accuracy(masked_lm_log_probs, masked_lm_ids, masked_lm_loss_mask)
 
 		if kargs.get("task_invariant", "no") == "yes":
 			print("==apply task adversarial training==")
@@ -98,8 +113,6 @@ def model_fn_builder(model,
 				masked_task_loss = tf.reduce_sum(masked_task_example_loss) / (1e-10+tf.reduce_sum(loss_mask))
 				loss += kargs.get("task_adversarial", 1e-2) * masked_task_loss
 
-		logits = tf.expand_dims(loss_mask, axis=-1) * logits
-
 		model_io_fn = model_io.ModelIO(model_io_config)
 
 		tvars = model_io_fn.get_params(model_config.scope, 
@@ -107,7 +120,8 @@ def model_fn_builder(model,
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
 			multi_task_config = kargs.get("multi_task_config", {})
-			if multi_task_config.get("lm_augumentation", False):
+			if multi_task_config[task_type].get("lm_augumentation", False):
+				print("==apply lm_augumentation==")
 				masked_lm_pretrain_tvars = model_io_fn.get_params("cls/predictions", 
 												not_storage_params=not_storage_params)
 				tvars.extend(masked_lm_pretrain_tvars)
@@ -124,16 +138,23 @@ def model_fn_builder(model,
 										exclude_scope=exclude_scope)
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
+
+			acc = build_accuracy(logits, label_ids, loss_mask)
+
 			return_dict = {
 					"loss":loss, 
 					"logits":logits,
 					"task_num":tf.reduce_sum(loss_mask),
 					"tvars":tvars
 				}
-			# if kargs.get("task_invariant", "no") == "yes":
-			# 	return_dict["{}_task_loss".format(task_type)] = masked_task_loss
-			# if multi_task_config.get("lm_augumentation", False):
-			# 	return_dict["{}_masked_lm_loss".format(task_type)] = masked_lm_loss
+			return_dict["{}_acc".format(task_type)] = acc
+			if kargs.get("task_invariant", "no") == "yes":
+				return_dict["{}_task_loss".format(task_type)] = masked_task_loss
+				task_acc = build_accuracy(task_logits, features["task_id"], loss_mask)
+				return_dict["{}_task_acc".format(task_type)] = task_acc
+			if multi_task_config[task_type].get("lm_augumentation", False):
+				return_dict["{}_masked_lm_loss".format(task_type)] = masked_lm_loss
+				# return_dict["{}_masked_lm_acc".format(task_type)] = lm_acc
 			return return_dict
 		elif mode == tf.estimator.ModeKeys.EVAL:
 			eval_dict = {

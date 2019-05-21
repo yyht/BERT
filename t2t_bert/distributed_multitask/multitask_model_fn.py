@@ -48,7 +48,7 @@ def multitask_model_fn(model_config_dict,
 		encoder = {}
 		hook_dict = {}
 
-		# print(task_type_dict.keys(), "==task type dict==")
+		print(task_type_dict.keys(), "==task type dict==")
 		num_task = len(task_type_dict)
 
 		for index, task_type in enumerate(task_type_dict.keys()):
@@ -91,10 +91,11 @@ def multitask_model_fn(model_config_dict,
 				result_dict = task_model_fn(features, labels, mode)
 				logits_dict[task_type] = result_dict["logits"]
 				losses_dict[task_type] = result_dict["loss"] # task loss
-				# for key in ["masked_lm_loss", "task_loss"]:
-				# 	name = "{}_{}".format(task_type, key)
-				# 	if name in result_dict:
-				# 		hook_dict[name] = result_dict[name]
+				for key in ["masked_lm_loss", "task_loss", "acc", "task_acc", "masked_lm_acc"]:
+					name = "{}_{}".format(task_type, key)
+					if name in result_dict:
+						hook_dict[name] = result_dict[name]
+				hook_dict["{}_loss".format(task_type)] = result_dict["loss"]
 				total_loss += result_dict["loss"]
 				if mode == tf.estimator.ModeKeys.TRAIN:
 					tvars.extend(result_dict["tvars"])
@@ -120,15 +121,15 @@ def multitask_model_fn(model_config_dict,
 								opt_config.num_train_steps,
 								**kargs)
 
-				model_io_fn.set_saver()
+				model_io_fn.set_saver(optimizer_fn.opt)
 
 				if kargs.get("task_index", 1) == 0 and kargs.get("run_config", None):
-					training_hooks = []
-				elif kargs.get("task_index", 1) == 0:
 					model_io_fn.get_hooks(kargs.get("checkpoint_dir", None), 
 														kargs.get("num_storage_steps", 1000))
 
 					training_hooks = model_io_fn.checkpoint_hook
+				elif kargs.get("task_index", 1) == 1:
+					training_hooks = []
 				else:
 					training_hooks = []
 
@@ -149,15 +150,24 @@ def multitask_model_fn(model_config_dict,
 				}
 			elif output_type == "estimator":
 
-				# hook_dict['learning_rate'] = optimizer_fn.learning_rate
-				# logging_hook = tf.train.LoggingTensorHook(
-				# 	hook_dict, every_n_iter=100)
-				# training_hooks.append(logging_hook)
+				hook_dict['learning_rate'] = optimizer_fn.learning_rate
+				logging_hook = tf.train.LoggingTensorHook(
+					hook_dict, every_n_iter=100)
+				training_hooks.append(logging_hook)
+
+				print("==hook_dict==")
+
+				print(hook_dict)
+
+				for key in hook_dict:
+					tf.summary.scalar(key, hook_dict[key])
+				for key in task_num_dict:
+					tf.summary.scalar(key+"_task_num", task_num_dict[key])
 
 				estimator_spec = tf.estimator.EstimatorSpec(mode=mode, 
 								loss=total_loss,
-								train_op=train_op,
-								training_hooks=training_hooks)
+								train_op=train_op)
+								# training_hooks=training_hooks)
 				return estimator_spec
 
 		elif mode == tf.estimator.ModeKeys.EVAL: # eval execute for each class solo

@@ -235,6 +235,11 @@ flags.DEFINE_string(
 	"if apply distillation"
 	)
 
+flags.DEFINE_float(
+	"init_lr", 2e-5,
+	"if apply distillation"
+	)
+
 def main(_):
 
 	print(FLAGS)

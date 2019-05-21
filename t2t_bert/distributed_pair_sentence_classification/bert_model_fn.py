@@ -135,8 +135,7 @@ def model_fn_builder(
 		elif mode == tf.estimator.ModeKeys.PREDICT:
 			print(logits.get_shape(), "===logits shape===")
 			pred_label = tf.argmax(logits, axis=-1, output_type=tf.int32)
-			prob = tf.nn.softmax(logits)
-			max_prob = tf.reduce_max(prob, axis=-1)
+			
 			
 			estimator_spec = tf.estimator.EstimatorSpec(
 									mode=mode,

@@ -14,6 +14,11 @@ import tensorflow as tf
 def get_masked_lm_output(config, input_tensor, output_weights, positions,
 							label_ids, label_weights, reuse=None):
 	"""Get loss and log probs for the masked LM."""
+	input_tensor = tf.cast(input_tensor, tf.float32)
+	positions = tf.cast(positions, tf.int32)
+	label_ids = tf.cast(label_ids, tf.int32)
+	label_weights = tf.cast(label_weights, tf.float32)
+
 	input_tensor = bert_utils.gather_indexes(input_tensor, positions)
 	"""
 	flatten masked lm ids with positions
