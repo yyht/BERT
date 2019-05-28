@@ -41,7 +41,7 @@ def greedy_map_dpp(kernel_matrix):
 	"""
 	selected_items = []
 	item_size = kernel_matrix.shape[0]
-	U = list(range(0, N))
+	U = list(range(0, item_size))
 	num_left = item_size
 	
 	while len(U) > 0:
