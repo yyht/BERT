@@ -33,33 +33,33 @@ def fast_map_dpp(kernel_matrix, max_length, epsilon=1E-10):
 		selected_items.append(selected_item)
 	return selected_items
 
-def greedy_map_dpp(L):
+def greedy_map_dpp(kernel_matrix):
 	"""
 	greedy map
 	reference: http://jgillenw.com/dpp-map.html
 	paper: Near-Optimal MAP Inference for Determinantal Point Processes
 	"""
-	C = [];
-	N = L.shape[0]
+	selected_items = []
+	item_size = kernel_matrix.shape[0]
 	U = list(range(0, N))
-	num_left = N
+	num_left = item_size
 	
 	while len(U) > 0:
-		scores = np.diag(L)
+		scores = np.diag(kernel_matrix)
 		# Select the max-scoring addition to the chosen set.
 		max_loc = np.argmax(scores)
 		max_score = scores[max_loc]
 		
 		if max_score < 1:
 			break
-		C.append(U[max_loc])
+		selected_items.append(U[max_loc])
 		del U[max_loc]
 
 		# Compute the new kernel, conditioning on the current selection.
 		inc_ids = list(range(0, max_loc))+list(range(max_loc+1, num_left))
 
-		L = numpy.linalg.inv(L+np.diag([1]*(max_loc)+[0]+[1]*(num_left-max_loc-1)))
+		kernel_matrix = numpy.linalg.inv(kernel_matrix+np.diag([1]*(max_loc)+[0]+[1]*(num_left-max_loc-1)))
 		num_left -= 1
-		L = numpy.linalg.inv(L[np.ix_(inc_ids, inc_ids)]) - np.eye(num_left)
+		kernel_matrix = numpy.linalg.inv(kernel_matrix[np.ix_(inc_ids, inc_ids)]) - np.eye(num_left)
 		
-	return C
+	return selected_items
