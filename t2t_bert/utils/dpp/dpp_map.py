@@ -33,7 +33,7 @@ def fast_map_dpp(kernel_matrix, max_length, epsilon=1E-10):
 		selected_items.append(selected_item)
 	return selected_items
 
-def greedy_map_dpp(kernel_matrix):
+def greedy_map_dpp(kernel_matrix, max_length):
 	"""
 	greedy map
 	reference: http://jgillenw.com/dpp-map.html
@@ -50,7 +50,7 @@ def greedy_map_dpp(kernel_matrix):
 		max_loc = np.argmax(scores)
 		max_score = scores[max_loc]
 		
-		if max_score < 1:
+		if max_score < 1 or len(selected_items) == max_length:
 			break
 		selected_items.append(U[max_loc])
 		del U[max_loc]
