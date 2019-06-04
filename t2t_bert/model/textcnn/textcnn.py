@@ -21,12 +21,16 @@ class TextCNN(base_model.BaseModel):
 		word_emb_dropout = tf.nn.dropout(self.word_emb, 1-dropout_rate)
 		with tf.variable_scope(self.config.scope+"_input_highway", reuse=reuse):
 			input_dim = word_emb_dropout.get_shape()[-1]
-			# sent_repres = match_utils.multi_highway_layer(word_emb_dropout, input_dim, self.config.highway_layer_num)
-			sent_repres = highway(word_emb_dropout, 
+			if self.config.get("highway", "dense_highway") == "dense_highway":
+				sent_repres = match_utils.multi_highway_layer(word_emb_dropout, input_dim, self.config.highway_layer_num)
+			elif self.config.get("highway", "dense_highway") == "conv_highway":
+				sent_repres = highway(word_emb_dropout, 
 								size = self.config.num_filters, 
 								scope = "highway", 
 								dropout = dropout_rate, 
 								reuse = None)
+			else:
+				sent_repres = word_emb_dropout
 
 		input_mask = tf.cast(input_ids, tf.bool)
 		input_len = tf.reduce_sum(tf.cast(input_mask, tf.int32), -1)

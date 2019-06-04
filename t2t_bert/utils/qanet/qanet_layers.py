@@ -75,6 +75,7 @@ def highway(x, size = None, activation = tf.nn.relu,
             size = x.shape.as_list()[-1]
         else:
             x = conv(x, size, name = "input_projection", reuse = reuse)
+            print(x.get_shape(), "=====input projection=====")
         for i in range(num_layers):
             T = conv(x, size, bias = True, activation = tf.sigmoid,
                      name = "gate_%d"%i, reuse = reuse)
