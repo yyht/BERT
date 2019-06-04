@@ -176,7 +176,8 @@ def model_fn_builder(
 					"eval":{
 							"per_example_loss":per_example_loss,
 							"logits":logits,
-							"loss":tf.reduce_mean(per_example_loss)
+							"loss":tf.reduce_mean(per_example_loss),
+							"feature":model.get_pooled_output()
 						}
 				}
 			elif output_type == "estimator":
