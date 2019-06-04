@@ -184,7 +184,7 @@ def model_config_parser(FLAGS):
 		config.vocab_size = w2v_embed.shape[0]
 		config.max_length = FLAGS.max_length
 		config.emb_size = w2v_embed.shape[1]
-		config.scope = "textcnn"
+		config.scope = "dan"
 		config.char_dim = w2v_embed.shape[1]
 		config.char_vocab_size = w2v_embed.shape[0]
 		config.char_embedding = None
