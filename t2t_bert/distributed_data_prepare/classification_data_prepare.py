@@ -150,7 +150,8 @@ def main(_):
 	# 	for line in f:
 	# 		vocab_lst.append(line.strip())
 
-	vocab_path = os.path.join(FLAGS.buckets, FLAGS.vocab_file)
+	# vocab_path = os.path.join(FLAGS.buckets, FLAGS.vocab_file)
+	vocab_path = FLAGS.vocab_file
 	train_file = os.path.join(FLAGS.buckets, FLAGS.train_file)
 	test_file = os.path.join(FLAGS.buckets, FLAGS.test_file)
 	dev_file = os.path.join(FLAGS.buckets, FLAGS.dev_file)

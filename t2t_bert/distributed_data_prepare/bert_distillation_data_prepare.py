@@ -150,10 +150,15 @@ flags.DEFINE_string(
 	"if apply rule detector"
 	)
 
+flags.DEFINE_string(
+	"tokenizer_type", "",
+	"if apply rule detector"
+	)
+
 def main(_):
 
-	tokenizer = tokenization.Jieba_CHAR(
-		config=FLAGS.config)
+	# tokenizer = tokenization.Jieba_CHAR(
+	# 	config=FLAGS.config)
 
 	vocab_path = os.path.join(FLAGS.buckets, FLAGS.vocab_file)
 	train_file = os.path.join(FLAGS.buckets, FLAGS.train_file)
@@ -168,15 +173,24 @@ def main(_):
 	unsupervised_distillation_file = os.path.join(FLAGS.buckets, FLAGS.unsupervised_distillation_file)
 	supervised_distillation_file = os.path.join(FLAGS.buckets, FLAGS.supervised_distillation_file)
 
-	print(FLAGS.with_char)
-	with tf.gfile.Open(vocab_path, "r") as f:
-		lines = f.read().splitlines()
-		vocab_lst = []
-		for line in lines:
-			vocab_lst.append(line)
-		print(len(vocab_lst))
+	if FLAGS.tokenizer_type == "jieba":
+		tokenizer = tokenization.Jieba_CHAR(
+			config=FLAGS.config)
+	elif FLAGS.tokenizer_type == "full_bpe":
+		tokenizer = tokenization.FullTokenizer(
+				vocab_file=vocab_path, 
+				do_lower_case=FLAGS.lower_case)
 
-	tokenizer.load_vocab(vocab_lst)
+	if FLAGS.tokenizer_type == "jieba":
+		print(FLAGS.with_char)
+		with tf.gfile.Open(vocab_path, "r") as f:
+			lines = f.read().splitlines()
+			vocab_lst = []
+			for line in lines:
+				vocab_lst.append(line)
+			print(len(vocab_lst))
+
+		tokenizer.load_vocab(vocab_lst)
 
 	print("==not apply rule==")
 	if FLAGS.data_type == "lcqmc":
@@ -188,21 +202,25 @@ def main(_):
 										supervised_distillation_file,
 										is_shuffle=True)
 
-	vocab_filter.vocab_filter(train_examples, vocab_lst, 
-							tokenizer, FLAGS.predefined_vocab_size, 
-							corpus_vocab_path)
+	if FLAGS.tokenizer_type == "jieba":
 
-	tokenizer_corpus = tokenization.Jieba_CHAR(
-		config=FLAGS.config)
+		vocab_filter.vocab_filter(train_examples, vocab_lst, 
+								tokenizer, FLAGS.predefined_vocab_size, 
+								corpus_vocab_path)
 
-	with tf.gfile.Open(corpus_vocab_path, "r") as f:
-		lines = f.read().splitlines()
-		vocab_lst = []
-		for line in lines:
-			vocab_lst.append(line)
-		print(len(vocab_lst))
+		tokenizer_corpus = tokenization.Jieba_CHAR(
+			config=FLAGS.config)
 
-	tokenizer_corpus.load_vocab(vocab_lst)
+		with tf.gfile.Open(corpus_vocab_path, "r") as f:
+			lines = f.read().splitlines()
+			vocab_lst = []
+			for line in lines:
+				vocab_lst.append(line)
+			print(len(vocab_lst))
+
+		tokenizer_corpus.load_vocab(vocab_lst)
+	else:
+		tokenizer_corpus = tokenizer
 
 	dev_examples = classifier_data_api.get_unsupervised_distillation_examples(dev_file,
 																unsupervised_distillation_file,
