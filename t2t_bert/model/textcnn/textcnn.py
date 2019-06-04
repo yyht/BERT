@@ -41,7 +41,7 @@ class TextCNN(base_model.BaseModel):
 		with tf.variable_scope(self.config.scope+"_encoder", reuse=reuse):
 			self.output = textcnn_utils.text_cnn(sent_repres, self.config.get("filter_size", [1,3,5,7]), 
 					"textcnn", 
-					self.emb_size, 
+					tf.shape(sent_repres)[-1], 
 					self.config.num_filters, 
 					max_pool_size=self.config.max_pool_size)
 			print("output shape====", self.output.get_shape())
