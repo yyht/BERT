@@ -10,7 +10,7 @@ from utils.qanet.qanet_layers import highway
 
 class DAN(base_model.BaseModel):
 	def __init__(self, config):
-		super(TextCNN, self).__init__(config)
+		super(DAN, self).__init__(config)
 
 	def build_encoder(self, input_ids, input_char_ids, is_training, **kargs):
 		reuse = kargs["reuse"]
