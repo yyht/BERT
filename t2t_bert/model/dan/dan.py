@@ -39,7 +39,7 @@ class DAN(base_model.BaseModel):
 		sent_repres *= tf.cast(mask, tf.float32)
 
 		with tf.variable_scope(self.config.scope+"_encoder", reuse=reuse):
-			self.output = tf.reduce_sum(sent_repres, axis=1) / tf.reduce_sum(mask, axis=1)
+			self.output = tf.reduce_sum(sent_repres, axis=1) / tf.reduce_sum(tf.cast(mask, tf.float32), axis=1)
 			print("output shape====", self.output.get_shape())
 
 	def get_pooled_output(self):
