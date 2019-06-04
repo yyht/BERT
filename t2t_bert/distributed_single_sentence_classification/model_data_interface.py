@@ -46,7 +46,7 @@ def data_interface(FLAGS):
 							tf.FixedLenFeature([], tf.int64),
 			}
 
-	elif FLAGS.model_type in ["textcnn", "textlstm"]:
+	elif FLAGS.model_type in ["textcnn", "textlstm", "dan"]:
 		name_to_features = {
 			"input_ids_a":tf.FixedLenFeature([FLAGS.max_length], tf.int64),
 			"label_ids":tf.FixedLenFeature([], tf.int64)
@@ -58,7 +58,7 @@ def data_interface(FLAGS):
 		if FLAGS.task_type == "pair_sentence_classification":
 			name_to_features["input_ids_b"] = tf.FixedLenFeature([FLAGS.max_length], tf.int64)
 
-	elif FLAGS.model_type in ["textcnn_distillation", "textlstm_distillation"]:
+	elif FLAGS.model_type in ["textcnn_distillation", "textlstm_distillation", "dan_distillation"]:
 		name_to_features = {
 			"input_ids_a":tf.FixedLenFeature([FLAGS.max_length], tf.int64),
 			"label_ids":tf.FixedLenFeature([], tf.int64),
@@ -124,7 +124,7 @@ def data_interface_server(FLAGS):
 						tf.placeholder(tf.int32, [None], name='label_ids'),
 			}
 
-	elif FLAGS.model_type in ["textcnn", "textlstm"]:
+	elif FLAGS.model_type in ["textcnn", "textlstm", "dan"]:
 		receiver_tensors = {
 				"input_ids_a":
 						tf.placeholder(tf.int32, [None, FLAGS.max_length], name='input_ids_a'),
