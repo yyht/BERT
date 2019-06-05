@@ -5,6 +5,7 @@ from utils.dsmm.tf_common.nn_module import encode, attend, mlp_layer
 
 from model.match_pyramid import mp_cnn
 
+
 class MatchPyramid(dsmm.DSMM):
 	def __init__(self, config):
 		super(MatchPyramid, self).__init__(config)

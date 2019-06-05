@@ -92,6 +92,8 @@
     "cnn_gated_conv": true,
     "cnn_residual": true,
     "compress_emb":true,
+    "compress_highway_dim":128,
+    "highway":"conv_highway",
 
     "rnn_num_units": 100,
     "rnn_cell_type": "gru",

@@ -4,6 +4,7 @@ from utils.embed import integration_func
 
 from utils.textcnn import textcnn_utils
 from utils.bimpm import match_utils
+from utils.qanet.qanet_layers import highway
 
 import tensorflow as tf
 import numpy as np
@@ -19,7 +20,7 @@ class DSMM(object):
 		self.emb_size = int(self.config["emb_size"])
 		self.scope = self.config["scope"]
 		self.char_dim = self.config.get("char_emb_size", 300)
-		self.extra_symbol = self.config.get("extra_symbol", ["<pad>", "<unk>", "<s>", "</s>"])
+		self.extra_symbol = self.config.get("extra_symbol", None)
 
 	def build_char_embedding(self, input_char_ids, is_training, **kargs):
 
@@ -83,6 +84,18 @@ class DSMM(object):
 
 		with tf.variable_scope(self.config.scope+"_input_highway", reuse=reuse):
 			input_dim = word_emb_dropout.shape[-1].value
+
+			if self.config.get("highway", "dense_highway") == "dense_highway":
+				sent_repres = match_utils.multi_highway_layer(word_emb_dropout, input_dim, self.config.highway_layer_num)
+			elif self.config.get("highway", "dense_highway") == "conv_highway":
+				sent_repres = highway(word_emb_dropout, 
+								size = self.config.compress_highway_dim, 
+								scope = "highway", 
+								dropout = dropout_rate, 
+								reuse = None)
+			else:
+				sent_repres = word_emb_dropout
+
 			seq_input = match_utils.multi_highway_layer(word_emb_dropout, input_dim, self.config.highway_layer_num)
 			seq_input *= tf.cast(tf.expand_dims(input_mask, axis=-1), tf.float32)
 
