@@ -92,11 +92,11 @@ class DSMM(object):
 								size = self.config.compress_highway_dim, 
 								scope = "highway", 
 								dropout = dropout_rate, 
-								reuse = None)
+								reuse = reuse)
 			else:
 				sent_repres = word_emb_dropout
 
-			seq_input = match_utils.multi_highway_layer(word_emb_dropout, input_dim, self.config.highway_layer_num)
+			# seq_input = match_utils.multi_highway_layer(word_emb_dropout, input_dim, self.config.highway_layer_num)
 			seq_input *= tf.cast(tf.expand_dims(input_mask, axis=-1), tf.float32)
 
 		return seq_input
