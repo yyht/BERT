@@ -3,10 +3,12 @@ import numpy as np
 
 def huber_loss(labels, predictions, delta=1.0):
 	residual = tf.abs(predictions - labels)
-	condition = tf.less(residual, delta)
+	condition = tf.less(residual, delta) # < 1 is true
 	small_res = 0.5 * tf.square(residual)
 	large_res = delta * residual - 0.5 * tf.square(delta)
-	return tf.select(condition, small_res, large_res)
+	loss = tf.cast(condition, tf.float32) * small_res + (1-tf.cast(condition, tf.float32)) * large_res
+	return loss
+	# return tf.select(condition, small_res, large_res)
 
 def dist_mean(predictions):
 	condition = tf.greater(predictions, tf.zeros_like(predictions)) # >0 mask
