@@ -25,7 +25,7 @@ def rkd_angle_loss(student_tensor, teacher_tensor):
 	norm_teacher_tensor = tf.nn.l2_normalize(teacher_tensor_squeeze, axis=-1) # batch_size x batch_size
 	teacher_angle = tf.matmul(norm_teacher_tensor, tf.transpose(norm_teacher_tensor, perm=(1,2,0)))
 
-	labels = tf.onse_like(teacher_angle)
+	labels = tf.ones_like(teacher_angle)
 	predictions = student_angle - teacher_angle
 	loss = huber_loss(labels, predictions)
 
@@ -44,7 +44,7 @@ def rkd_distance_loss(student_tensor, teacher_tensor):
 	student_tensor_pd /= dist_mean(student_tensor_pd)
 	teacher_tensor_pd /= dist_mean(teacher_tensor_pd)
 
-	labels = tf.onse_like(student_tensor_pd)
+	labels = tf.ones_like(student_tensor_pd)
 	predictions = student_tensor_pd - teacher_tensor_pd
 	loss = huber_loss(labels, predictions)
 
