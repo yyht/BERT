@@ -1,4 +1,4 @@
-python ./t2t_bert/distributed_multitask/hvd_train_eval_api.py \
+python ./t2t_bert/distributed_bin/evaluate_api.py \
  --buckets "/data/xuht" \
  --config_file "./data/textcnn/textcnn.json" \
  --init_checkpoint "multi_task/model/" \
@@ -38,7 +38,7 @@ python ./t2t_bert/distributed_multitask/hvd_train_eval_api.py \
  --task_type "single_sentence_classification" \
  --classifier order_classifier \
  --mode "multi_task" \
- --multi_task_type "ccks" \
- --multi_task_config "./t2t_bert/distributed_multitask/multi_task_local.json"
+ --multi_task_type "lcqmc" \
+ --multi_task_config "./t2t_bert/distributed_multitask/multi_task_eval_local.json"
 
 

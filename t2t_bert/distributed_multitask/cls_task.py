@@ -92,11 +92,20 @@ def model_fn_builder(model,
 				masked_lm_loss_mask = tf.expand_dims(loss_mask, -1) * tf.ones((1, multi_task_config[task_type]["max_predictions_per_seq"]))
 				masked_lm_loss_mask = tf.reshape(masked_lm_loss_mask, (-1, ))
 
+				masked_lm_label_weights = tf.reshape(masked_lm_weights, [-1])
+				masked_lm_loss_mask *= tf.cast(masked_lm_label_weights, tf.float32)
+
 				masked_lm_example_loss *= masked_lm_loss_mask# multiply task_mask
 				masked_lm_loss = tf.reduce_sum(masked_lm_example_loss) / (1e-10+tf.reduce_sum(masked_lm_loss_mask))
 				loss += multi_task_config[task_type]["masked_lm_loss_ratio"]*masked_lm_loss
 
-				lm_acc = build_accuracy(masked_lm_log_probs, masked_lm_ids, masked_lm_loss_mask)
+				masked_lm_label_ids = tf.reshape(masked_lm_ids, [-1])
+				
+				print(masked_lm_log_probs.get_shape(), "===masked lm log probs===")
+				print(masked_lm_label_ids.get_shape(), "===masked lm ids===")
+				print(masked_lm_label_weights.get_shape(), "===masked lm mask===")
+
+				lm_acc = build_accuracy(masked_lm_log_probs, masked_lm_label_ids, masked_lm_loss_mask)
 
 		if kargs.get("task_invariant", "no") == "yes":
 			print("==apply task adversarial training==")
@@ -154,7 +163,7 @@ def model_fn_builder(model,
 				return_dict["{}_task_acc".format(task_type)] = task_acc
 			if multi_task_config[task_type].get("lm_augumentation", False):
 				return_dict["{}_masked_lm_loss".format(task_type)] = masked_lm_loss
-				# return_dict["{}_masked_lm_acc".format(task_type)] = lm_acc
+				return_dict["{}_masked_lm_acc".format(task_type)] = lm_acc
 			return return_dict
 		elif mode == tf.estimator.ModeKeys.EVAL:
 			eval_dict = {

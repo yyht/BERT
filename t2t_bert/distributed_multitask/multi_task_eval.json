@@ -24,7 +24,7 @@
 		"masked_lm_loss_ratio":0.1,
 		"dupe_factor":5,
 		"short_seq_prob":0.2,
-		"vocab_file":"./BERT/data/multi_cased_L-12_H-768_A-12/vocab.txt",
+		"vocab_file":"./BERT/data/chinese_L-12_H-768_A-12/vocab.txt",
 		"do_lower_case":true
 	},
 	"ccks":{
@@ -52,7 +52,7 @@
 		"masked_lm_loss_ratio":0.1,
 		"dupe_factor":5,
 		"short_seq_prob":0.2,
-		"vocab_file":"./BERT/data/multi_cased_L-12_H-768_A-12/vocab.txt",
+		"vocab_file":"./BERT/data/chinese_L-12_H-768_A-12/vocab.txt",
 		"do_lower_case":true
 	},
 	"ant":{
@@ -80,7 +80,7 @@
 		"masked_lm_loss_ratio":0.1,
 		"dupe_factor":5,
 		"short_seq_prob":0.2,
-		"vocab_file":"./BERT/data/multi_cased_L-12_H-768_A-12/vocab.txt",
+		"vocab_file":"./BERT/data/chinese_L-12_H-768_A-12/vocab.txt",
 		"do_lower_case":true
 	},
 	"xnli":{
@@ -100,7 +100,7 @@
 		"exclude_scope":"",
 		"load_pretrained":"yes",
 		"num_labels":3,
-		"init_checkpoint":"chinese_L-12_H-768_A-12/bert_model.ckpt",
+		"init_checkpoint":"multi_task/data/model/single/xnli_bert/model.ckpt-7812",
 		"max_length":384,
 		"lm_augumentation":false,
 		"masked_lm_prob":0.2,
@@ -108,7 +108,7 @@
 		"masked_lm_loss_ratio":0.1,
 		"dupe_factor":5,
 		"short_seq_prob":0.2,
-		"vocab_file":"./BERT/data/multi_cased_L-12_H-768_A-12/vocab.txt",
+		"vocab_file":"./BERT/data/chinese_L-12_H-768_A-12/vocab.txt",
 		"do_lower_case":true
 	},
 	"lcqmc":{
@@ -128,15 +128,15 @@
 		"exclude_scope":"",
 		"load_pretrained":"yes",
 		"num_labels":2,
-		"init_checkpoint":"chinese_L-12_H-768_A-12/bert_model.ckpt",
-		"max_length":384,
+		"init_checkpoint":"multi_task/data/model/single/lcqmc_bert_lm/model.ckpt-19530",
+		"max_length":256,
 		"lm_augumentation":false,
 		"masked_lm_prob":0.2,
 		"max_predictions_per_seq":3,
 		"masked_lm_loss_ratio":0.1,
 		"dupe_factor":5,
 		"short_seq_prob":0.2,
-		"vocab_file":"./BERT/data/multi_cased_L-12_H-768_A-12/vocab.txt",
+		"vocab_file":"./BERT/data/chinese_L-12_H-768_A-12/vocab.txt",
 		"do_lower_case":true
 	},
 	"nlpcc-dbqa":{
@@ -164,7 +164,7 @@
 		"masked_lm_loss_ratio":0.1,
 		"dupe_factor":5,
 		"short_seq_prob":0.2,
-		"vocab_file":"./BERT/data/multi_cased_L-12_H-768_A-12/vocab.txt",
+		"vocab_file":"./BERT/data/chinese_L-12_H-768_A-12/vocab.txt",
 		"do_lower_case":true
 	},
 	"jd_comment":{
@@ -192,7 +192,7 @@
 		"masked_lm_loss_ratio":0.1,
 		"dupe_factor":5,
 		"short_seq_prob":0.2,
-		"vocab_file":"./BERT/data/multi_cased_L-12_H-768_A-12/vocab.txt",
+		"vocab_file":"./BERT/data/chinese_L-12_H-768_A-12/vocab.txt",
 		"do_lower_case":true
 	},
 	"chnsenticorp":{
@@ -212,7 +212,7 @@
 		"exclude_scope":"",
 		"load_pretrained":"yes",
 		"num_labels":2,
-		"init_checkpoint":"chinese_L-12_H-768_A-12/bert_model.ckpt",
+		"init_checkpoint":"multi_task/data/model/20190511_mtdnn_lm_shuffle/model.ckpt-84376",
 		"max_length":384,
 		"lm_augumentation":false,
 		"masked_lm_prob":0.2,
@@ -220,7 +220,7 @@
 		"masked_lm_loss_ratio":0.1,
 		"dupe_factor":5,
 		"short_seq_prob":0.2,
-		"vocab_file":"./BERT/data/multi_cased_L-12_H-768_A-12/vocab.txt",
+		"vocab_file":"./BERT/data/chinese_L-12_H-768_A-12/vocab.txt",
 		"do_lower_case":true
 	}
 }

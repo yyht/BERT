@@ -83,6 +83,7 @@ def convert_classifier_examples_to_features(examples, label_dict,
 			label_id = [0] * len(label_dict)
 			for item in example.label:
 				label_id[label_dict[item]] = 1
+
 		if ex_index < 5:
 			print(tokens)
 			tf.logging.info("*** Example ***")

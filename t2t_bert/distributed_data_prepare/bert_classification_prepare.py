@@ -77,8 +77,8 @@ flags.DEFINE_string(
 	"label_id", None,
 	"Input TF example files (can be a glob or comma separated).")
 
-flags.DEFINE_bool(
-	"lower_case", None,
+flags.DEFINE_string(
+	"lower_case", "false",
 	"Input TF example files (can be a glob or comma separated).")
 
 flags.DEFINE_integer(
@@ -159,7 +159,7 @@ def main(_):
 
 	tokenizer = tokenization.FullTokenizer(
 		vocab_file=vocab_path, 
-		do_lower_case=FLAGS.lower_case)
+		do_lower_case=True if FLAGS.lower_case=="true" else False)
 
 	if FLAGS.data_type == "lcqmc":
 		classifier_data_api = classifier_processor.LCQMCProcessor()
