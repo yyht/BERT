@@ -1,4 +1,4 @@
-import tensorlfow as tf
+import tensorflow as tf
 import numpy as np
 
 def huber_loss(labels, predictions, delta=1.0):
