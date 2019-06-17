@@ -95,7 +95,6 @@ def model_fn_builder(
 											label_ids,
 											dropout_prob)
 
-
 		if mode == tf.estimator.ModeKeys.TRAIN:
 
 			distillation_api = distill.KnowledgeDistillation(kargs.get("disitllation_config", Bunch({

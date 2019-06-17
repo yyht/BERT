@@ -85,24 +85,14 @@ def model_fn_builder(
 											label_ids,
 											dropout_prob)
 			label_loss = tf.reduce_sum(per_example_loss * features["label_ratio"]) / (1e-10+tf.reduce_sum(features["label_ratio"]))
-			tf.get_variable_scope().reuse_variables()
-
-			(tgt_loss, 
-				tgt_per_example_loss, 
-				tgt_logits) = classifier.classifier(model_config,
-											features["distillation_feature"],
-											num_labels,
-											label_ids,
-											dropout_prob)
-
-
+			
 		if mode == tf.estimator.ModeKeys.TRAIN:
 
 			distillation_api = distill.KnowledgeDistillation(kargs.get("disitllation_config", Bunch({
 														"logits_ratio_decay":"constant",
 														"logits_ratio":0.5,
 														"logits_decay_rate":0.999,
-														"distillation":['relation_kd'],
+														"distillation":['relation_kd', 'logits'],
 														"feature_ratio":0.5,
 														"feature_ratio_decay":"constant",
 														"feature_decay_rate":0.999,
@@ -124,7 +114,7 @@ def model_fn_builder(
 				"feature_ratio":kargs.get("logits_ratio", 0.5),
 				"distillation_ratio":features["distillation_ratio"],
 				"src_f_logit":logits,
-				"tgt_f_logit":tgt_logits,
+				"tgt_f_logit":logits,
 				"src_tensor":model.get_pooled_output(),
 				"tgt_tensor":features["distillation_feature"]
 			}

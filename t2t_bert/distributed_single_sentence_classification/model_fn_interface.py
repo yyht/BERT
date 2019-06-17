@@ -8,6 +8,7 @@ try:
 	from .model_feature_distillation_fn import model_fn_builder as feature_distillation_fn_builder
 	from .model_mdd_distillation import model_fn_builder as mdd_distillation_fn_builder
 	from .model_relation_distillation import model_fn_builder as rkd_distillation_fn_builder
+	from distributed_pair_sentence_classification.interaction_rkd_distillation_model_fn import model_fn_builder as interaction_rkd_distillation
 except:
 	from model_fn import model_fn_builder
 	from model_distillation_fn import model_fn_builder as model_distillation_builder_fn
@@ -18,6 +19,7 @@ except:
 	from model_feature_distillation_fn import model_fn_builder as feature_distillation_fn_builder
 	from model_mdd_distillation import model_fn_builder as mdd_distillation_fn_builder
 	from model_relation_distillation import model_fn_builder as rkd_distillation_fn_builder
+	from distributed_pair_sentence_classification.interaction_rkd_distillation_model_fn import model_fn_builder as interaction_rkd_distillation
  
 def model_fn_interface(FLAGS):
 	print("==apply {} {} model fn builder==".format(FLAGS.task_type, FLAGS.distillation))
@@ -44,6 +46,8 @@ def model_fn_interface(FLAGS):
 			return interaction_builder_fn
 		elif FLAGS.distillation == "distillation":
 			return interaction_distillation_builder_fn
+		elif FLAGS.distillation == "rkd_distillation":
+			return interaction_rkd_distillation
 		else:
 			return interaction_builder_fn
 	elif FLAGS.task_type in ["embed_sentence_classification"]:
