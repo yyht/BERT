@@ -161,7 +161,7 @@ def main(_):
 		vocab_file=vocab_path, 
 		do_lower_case=True if FLAGS.lower_case=="true" else False)
 
-	if FLAGS.data_type == "lcqmc":
+	if FLAGS.data_type in ["lcqmc", "mrc_search"]:
 		classifier_data_api = classifier_processor.LCQMCProcessor()
 	elif FLAGS.data_type == "fasttext_product":
 		classifier_data_api = classifier_processor.FasttextProductClassifierProcessor()
@@ -198,6 +198,24 @@ def main(_):
 		
 	elif FLAGS.data_type in ["fasttext_product", "fasttext"]:
 
+		write_to_tfrecords.convert_classifier_examples_to_features(train_examples,
+																classifier_data_api.label2id,
+																FLAGS.max_length,
+																tokenizer,
+																train_result_file)
+
+		write_to_tfrecords.convert_classifier_examples_to_features(dev_examples,
+																classifier_data_api.label2id,
+																FLAGS.max_length,
+																tokenizer,
+																dev_result_file)
+		
+		write_to_tfrecords.convert_classifier_examples_to_features(test_examples,
+																classifier_data_api.label2id,
+																FLAGS.max_length,
+																tokenizer,
+																test_result_file)
+	elif FLAGS.data_type in ['mrc_search']:
 		write_to_tfrecords.convert_classifier_examples_to_features(train_examples,
 																classifier_data_api.label2id,
 																FLAGS.max_length,
