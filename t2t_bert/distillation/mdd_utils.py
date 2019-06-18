@@ -39,14 +39,14 @@ def margin_disparity_discrepancy(src_f_logit, src_tensor,
 												labels=pred_label_tgt_f))
 
 	batch_idxs = tf.range(0, tf.shape(src_f_logit)[0])
-    batch_idxs = tf.expand_dims(batch_idxs, 1)
-    src_idxs = tf.concat([batch_idxs, pred_label_src_f], 1)
-    logits_src_f = tf.gather_nd(src_f1_logit, src_idxs)
-    prob_src_f = tf.exp(tf.nn.log_softmax(logits_src_f))
+	batch_idxs = tf.expand_dims(batch_idxs, 1)
+	src_idxs = tf.concat([batch_idxs, pred_label_src_f], 1)
+	logits_src_f = tf.gather_nd(src_f1_logit, src_idxs)
+	prob_src_f = tf.exp(tf.nn.log_softmax(logits_src_f))
 
-    tgt_idxs = tf.concat([batch_idxs, pred_label_tgt_f], 1)
-    logits_tgt_f = tf.gather_nd(tgt_f1_logit, tgt_idxs)
-    prob_tgt_f = tf.exp(tf.nn.log_softmax(logits_tgt_f))
+	tgt_idxs = tf.concat([batch_idxs, pred_label_tgt_f], 1)
+	logits_tgt_f = tf.gather_nd(tgt_f1_logit, tgt_idxs)
+	prob_tgt_f = tf.exp(tf.nn.log_softmax(logits_tgt_f))
 
 	return [gamma*adv_tgt_Loss+adv_src_loss, prob_src_f, prob_tgt_f]
 
