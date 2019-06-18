@@ -28,13 +28,13 @@ def margin_disparity_discrepancy(src_f_logit, src_tensor,
 	
 	pred_label_src_f = tf.argmax(src_f_logit, axis=-1, output_type=tf.int32)
 	adv_src_loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(
-												logits=src_f1_logit, 
+												logits=tf.nn.log_softmax(src_f1_logit), 
 												labels=pred_label_src_f))
 
 	pred_label_tgt_f = tf.argmax(tgt_f_logit, axis=-1, output_type=tf.int32)
 	tgt_adv_logit = tf.log(1-tf.exp(tf.nn.log_softmax(tgt_f1_logit))+EPS)
 
-	adv_tgt_Loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(
+	adv_tgt_loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(
 												logits=tgt_adv_logit, 
 												labels=pred_label_tgt_f))
 
@@ -48,7 +48,7 @@ def margin_disparity_discrepancy(src_f_logit, src_tensor,
 	logits_tgt_f = tf.gather_nd(tgt_f1_logit, tgt_idxs)
 	prob_tgt_f = tf.exp(tf.nn.log_softmax(logits_tgt_f))
 
-	return [gamma*adv_tgt_Loss+adv_src_loss, prob_src_f, prob_tgt_f]
+	return [gamma*adv_src_loss+adv_tgt_loss, prob_src_f, prob_tgt_f]
 
 
 
