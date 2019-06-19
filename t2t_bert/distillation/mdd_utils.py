@@ -7,10 +7,10 @@ EPS = 1e-20
 def adv_source_classifier(input_tensor, model_reuse, **kargs):
 	
 	with tf.variable_scope(kargs.get("scope", "adv_classifier"), reuse=model_reuse):
-		input_tensor = tf.layers.dense(input_tensor, 
-										input_tensor.get_shape()[-1], 
-										tf.nn.tanh,
-										name="shared_encoder")
+		# input_tensor = tf.layers.dense(input_tensor, 
+		# 								input_tensor.get_shape()[-1], 
+		# 								tf.nn.tanh,
+		# 								name="shared_encoder")
 		input_tensor = flip_gradient(input_tensor) # take as bottle-neck features
 		logits = tf.layers.dense(input_tensor, kargs.get("num_classes", 5))
 	return logits
