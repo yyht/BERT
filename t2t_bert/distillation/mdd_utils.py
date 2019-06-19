@@ -48,7 +48,7 @@ def margin_disparity_discrepancy(src_f_logit, src_tensor,
 	logits_tgt_f = tf.gather_nd(tgt_f1_logit, tgt_idxs)
 	prob_tgt_f = tf.exp(tf.nn.log_softmax(logits_tgt_f))
 
-	return [gamma*adv_src_loss+adv_tgt_loss, prob_src_f, prob_tgt_f]
+	return [adv_src_loss+adv_tgt_loss, prob_src_f, prob_tgt_f]
 
 
 
