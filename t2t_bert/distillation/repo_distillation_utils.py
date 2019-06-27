@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import tensorflow as tf
 from distillation import svp as SVP
 
@@ -183,4 +184,4 @@ def RKD(source, target, l = [1e2,2e2]):
 		distance_loss = Huber_loss(Distance_wise_potential(source),Distance_wise_potential(target))
 		angle_loss    = Huber_loss(   Angle_wise_potential(source),   Angle_wise_potential(target))
 		
-		return distance_loss*l[0]+angle_loss*l[1
+		return distance_loss*l[0]+angle_loss*l[1]

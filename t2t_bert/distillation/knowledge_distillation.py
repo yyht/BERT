@@ -152,7 +152,7 @@ class KnowledgeDistillation(object):
 				#   # elif metric == "distance":
 				#   #   output_dict['rkd_loss'] += relation_kd_utils.rkd_distance_loss(src_tensor, tgt_tensor)*2e2
 
-				output_dict['rkd_loss'] += repo_distillation_utils.RKD(src_tensor, tgt_tensor, l = l):
+				output_dict['rkd_loss'] += repo_distillation_utils.RKD(src_tensor, tgt_tensor, l = l)
 
 				output_dict['distillation_loss'] += output_dict['rkd_loss'] * self._ratio_decay(
 														kargs.get("feature_ratio", 1.0),
