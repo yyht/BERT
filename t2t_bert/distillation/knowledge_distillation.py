@@ -3,6 +3,7 @@ import numpy as np
 from distillation import distillation_utils
 from distillation import mdd_utils
 from distillation import relation_kd_utils
+from distillation import repo_distillation_utils
 
 class KnowledgeDistillation(object):
 	def __init__(self, config={}):
@@ -138,14 +139,23 @@ class KnowledgeDistillation(object):
 				tgt_tensor = features['tgt_tensor']
 
 				relation_kd_metric = kargs.get("relation_kd_metric", ["angle", "distance"])
-				for metric in relation_kd_metric:
-					if metric == "angle":
-						output_dict['rkd_loss'] += relation_kd_utils.rkd_angle_loss(src_tensor, tgt_tensor)
-					elif metric == "distance":
-						output_dict['rkd_loss'] += relation_kd_utils.rkd_distance_loss(src_tensor, tgt_tensor)
+				l = [1e2,2e2]
+				for index, item in enumerate(['angle', 'distance']):
+					if item in relation_kd_metric:
+						l[index] *= 1
+					else:
+						l[index] *= 0
+				# for metric in relation_kd_metric:
+				#   if metric == "angle":
+				#       l[0] *= 1
+				#       # output_dict['rkd_loss'] += relation_kd_utils.rkd_angle_loss(src_tensor, tgt_tensor)*1e2
+				#   # elif metric == "distance":
+				#   #   output_dict['rkd_loss'] += relation_kd_utils.rkd_distance_loss(src_tensor, tgt_tensor)*2e2
+
+				output_dict['rkd_loss'] += repo_distillation_utils.RKD(src_tensor, tgt_tensor, l = l):
 
 				output_dict['distillation_loss'] += output_dict['rkd_loss'] * self._ratio_decay(
-														kargs.get("feature_ratio", 0.5),
+														kargs.get("feature_ratio", 1.0),
 														kargs.get("feature_ratio_decay", "constant"),
 														 kargs.get("feature_decay_rate", 0.999),
 														 num_train_steps)
