@@ -8,8 +8,10 @@ from jieba.posseg import POSTokenizer
 
 import sentencepiece as spm
 import tensorflow as tf
-
+from sentencepiece import SentencePieceTrainer
 import re
+
+SPIECE_UNDERLINE = '▁'
 
 class SPM(object):
 	def __init__(self, config):
@@ -22,13 +24,6 @@ class SPM(object):
 			with open(self.config.get("word_dict", None), "r") as frobj:
 				for line in frobj:
 					content = line.strip().split("\t")[0]
-					# if "▁" in content:
-					#   word = content.split("▁")[1]
-					#   if word in self.dict:
-					#     continue
-					#   else:
-					#     self.dict.append(word)
-					# else:
 					self.dict.append(content)
 				tf.logging.info("vocab path {} total vocab {}".format(
 					self.config["word_dict"],len(self.dict)))
@@ -63,21 +58,62 @@ class SPM(object):
 	def train_model(self, train_config=None):
 		config = train_config if train_config else self.config
 		param = ""
-		param += "--input={} ".format(self.config["corpus"])
-		param += "--model_prefix={} ".format(self.config["model_prefix"])
-		param += "--vocab_size={} ".format(self.config["vocab_size"])
-		param += "--model_type={} ".format(self.config.get("model_type", "unigram"))
-		param += "--character_coverage={}".format(self.config.get("character_coverage", "0.995"))
+		param += "--input={} ".format(config["corpus"])
+		param += "--model_prefix={} ".format(config["model_prefix"])
+		param += "--vocab_size={} ".format(config["vocab_size"])
+		param += "--model_type={} ".format(config.get("model_type", "unigram"))
+		param += "--character_coverage={}".format(config.get("character_coverage", "0.995"))
 		try:
-			self.sp.SentencePieceTrainer.Train(param)
-			self.sp.Load(self.config["model_prefix"])
+			SentencePieceTrainer.Train(param)
+			self.sp.Load(config["model_prefix"])
 		except:
 			raise ValueError(" training word piece model failed ")
 
 	def tokenize(self, text):
-		tokenized_text = self.sp.EncodeAsPieces(text)
-		# tf.logging.info(" text {} token {}".format(text, tokenized_text))
-		return [word for word in tokenized_text if word != "▁"]
+		tokenized_text = self.encode_pieces(text)
+		output = []
+		for word in tokenized_text:
+			tmp_word = word.replace(SPIECE_UNDERLINE, '')
+			if len(tmp_word) >= 1:
+				output.append(tmp_word)
+		return output
+
+	def encode_pieces(self, text, return_unicode=True, sample=False):
+		# return_unicode is used only for py2
+
+		# note(zhiliny): in some systems, sentencepiece only accepts str for py2
+		if six.PY2 and isinstance(text, unicode):
+			text = text.encode('utf-8')
+
+		if not sample:
+			pieces = self.sp.EncodeAsPieces(text)
+		else:
+			pieces = self.sp.SampleEncodeAsPieces(text, 64, 0.1)
+		new_pieces = []
+		for piece in pieces:
+			if len(piece) > 1 and piece[-1] == ',' and piece[-2].isdigit():
+				cur_pieces = self.sp.EncodeAsPieces(
+					piece[:-1].replace(SPIECE_UNDERLINE, ''))
+				if piece[0] != SPIECE_UNDERLINE and cur_pieces[0][0] == SPIECE_UNDERLINE:
+					if len(cur_pieces[0]) == 1:
+						cur_pieces = cur_pieces[1:]
+					else:
+						cur_pieces[0] = cur_pieces[0][1:]
+				cur_pieces.append(piece[-1])
+				new_pieces.extend(cur_pieces)
+			else:
+				new_pieces.append(piece)
+
+		# note(zhiliny): convert back to unicode for py2
+		if six.PY2 and return_unicode:
+			ret_pieces = []
+			for piece in new_pieces:
+				if isinstance(piece, str):
+					piece = piece.decode('utf-8')
+				ret_pieces.append(piece)
+				new_pieces = ret_pieces
+
+		return new_pieces
 
 	def convert_tokens_to_ids(self, text, unk="[UNK]"):
 		try:
@@ -265,7 +301,17 @@ def convert_by_vocab(vocab, items):
 	"""Converts a sequence of [tokens|ids] using the vocab."""
 	output = []
 	for item in items:
-		output.append(vocab[item])
+		if item.startswith("##") and item.split("##")[-1] in vocab:
+			if len(item.split("##")[-1]) == 1:
+				cp = ord(item.split("##")[-1])
+				if _is_chinese_char(cp):
+					output.append(vocab[item.split("##")[-1]])
+				else:
+					output.append(vocab[item])
+			else:
+				output.append(vocab[item])
+		else:
+			output.append(vocab[item])
 	return output
 
 
@@ -288,10 +334,11 @@ def whitespace_tokenize(text):
 
 class FullTokenizer(object):
 	"""Runs end-to-end tokenziation."""
-	def __init__(self, vocab_file, do_lower_case=True):
+	def __init__(self, vocab_file, do_lower_case=True, do_whole_word_mask=False):
 		self.vocab = load_vocab(vocab_file)
 		self.inv_vocab = {v: k for k, v in self.vocab.items()}
-		self.basic_tokenizer = BasicTokenizer(do_lower_case=do_lower_case)
+		self.basic_tokenizer = BasicTokenizer(do_lower_case=do_lower_case, 
+												do_whole_word_mask=do_whole_word_mask)
 		self.wordpiece_tokenizer = WordpieceTokenizer(vocab=self.vocab)
 
 	def tokenize(self, text):
@@ -314,12 +361,13 @@ class FullTokenizer(object):
 class BasicTokenizer(object):
 	"""Runs basic tokenization (punctuation splitting, lower casing, etc.)."""
 
-	def __init__(self, do_lower_case=True):
+	def __init__(self, do_lower_case=True, do_whole_word_mask=False):
 		"""Constructs a BasicTokenizer.
 		Args:
 		  do_lower_case: Whether to lower case the input.
 		"""
 		self.do_lower_case = do_lower_case
+		self.do_whole_word_mask = do_whole_word_mask
 
 	def tokenize(self, text):
 		"""Tokenizes a piece of text."""
@@ -332,7 +380,8 @@ class BasicTokenizer(object):
 		# and generally don't have any Chinese data in them (there are Chinese
 		# characters in the vocabulary because Wikipedia does have some Chinese
 		# words in the English Wikipedia.).
-		text = self._tokenize_chinese_chars(text)
+		if not self.do_whole_word_mask:
+			text = self._tokenize_chinese_chars(text)
 
 		orig_tokens = whitespace_tokenize(text)
 		split_tokens = []
@@ -481,6 +530,28 @@ class WordpieceTokenizer(object):
 			else:
 				output_tokens.extend(sub_tokens)
 		return output_tokens
+
+def _is_chinese_char(cp):
+	"""Checks whether CP is the codepoint of a CJK character."""
+	# This defines a "chinese character" as anything in the CJK Unicode block:
+	#   https://en.wikipedia.org/wiki/CJK_Unified_Ideographs_(Unicode_block)
+	#
+	# Note that the CJK Unicode block is NOT all Japanese and Korean characters,
+	# despite its name. The modern Korean Hangul alphabet is a different block,
+	# as is Japanese Hiragana and Katakana. Those alphabets are used to write
+	# space-separated words, so they are not treated specially and handled
+	# like the all of the other languages.
+	if ((cp >= 0x4E00 and cp <= 0x9FFF) or  #
+		(cp >= 0x3400 and cp <= 0x4DBF) or  #
+		(cp >= 0x20000 and cp <= 0x2A6DF) or  #
+		(cp >= 0x2A700 and cp <= 0x2B73F) or  #
+		(cp >= 0x2B740 and cp <= 0x2B81F) or  #
+		(cp >= 0x2B820 and cp <= 0x2CEAF) or
+		(cp >= 0xF900 and cp <= 0xFAFF) or  #
+		(cp >= 0x2F800 and cp <= 0x2FA1F)):  #
+		return True
+
+	return False
 
 def _is_whitespace(char):
 	"""Checks whether `chars` is a whitespace character."""

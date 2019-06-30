@@ -20,6 +20,8 @@ def rkd_angle_loss(student_tensor, teacher_tensor):
 	# batch_size x dims: student_tensor, teacher_tensor
 	# 1 x batch_size x dims
 	# batch_size x 1 x dims
+	student_tensor = tf.nn.l2_normalize(student_tensor, -1)
+	teacher_tensor = tf.nn.l2_normalize(teacher_tensor, -1)
 	student_tensor_squeeze = tf.expand_dims(student_tensor, axis=0) - tf.expand_dims(student_tensor, axis=1)
 	norm_student_tensor = tf.nn.l2_normalize(student_tensor_squeeze, axis=-1) # batch_size x batch_size
 	student_angle = tf.matmul(norm_student_tensor, tf.transpose(norm_student_tensor, perm=(1,2,0)))
@@ -38,6 +40,9 @@ def rkd_distance_loss(student_tensor, teacher_tensor):
 	# batch_size x dims: student_tensor, teacher_tensor
 	# 1 x batch_size x dims
 	# batch_size x 1 x dims
+	student_tensor = tf.nn.l2_normalize(student_tensor, -1)
+	teacher_tensor = tf.nn.l2_normalize(teacher_tensor, -1)
+	
 	student_tensor_squeeze = tf.expand_dims(student_tensor, axis=0) - tf.expand_dims(student_tensor, axis=1)
 	teacher_tensor_squeeze = tf.expand_dims(teacher_tensor, axis=0) - tf.expand_dims(teacher_tensor, axis=1)
 
