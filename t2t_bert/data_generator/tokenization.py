@@ -65,7 +65,7 @@ class SPM(object):
 		param += "--character_coverage={}".format(config.get("character_coverage", "0.995"))
 		try:
 			SentencePieceTrainer.Train(param)
-			self.sp.Load(config["model_prefix"])
+			self.sp.Load(config["model_prefix"]+".model")
 		except:
 			raise ValueError(" training word piece model failed ")
 
@@ -320,6 +320,12 @@ def convert_tokens_to_ids(vocab, tokens):
 
 
 def convert_ids_to_tokens(inv_vocab, ids):
+	def convert_by_vocab(vocab, items):
+		"""Converts a sequence of [tokens|ids] using the vocab."""
+		output = []
+		for item in items:
+		output.append(vocab[item])
+		return output
 	return convert_by_vocab(inv_vocab, ids)
 
 
@@ -350,10 +356,10 @@ class FullTokenizer(object):
 		return split_tokens
 
 	def convert_tokens_to_ids(self, tokens, max_length=None):
-		return convert_by_vocab(self.vocab, tokens)
+		return convert_tokens_to_ids(self.vocab, tokens)
 
 	def convert_ids_to_tokens(self, ids):
-		return convert_by_vocab(self.inv_vocab, ids)
+		return convert_ids_to_tokens(self.inv_vocab, ids)
 
 	def covert_tokens_to_char_ids(self, tokens, max_length=None, char_len=5):
 		pass

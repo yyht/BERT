@@ -29,11 +29,11 @@ class ModelIO(object):
 			max_to_keep=self.config.get("max_to_keep", 100))
 
 		if self.config.get("ema_saver", "no") == "yes":
-			try:
-				print("==apply ema saver==")
-				self.moving_average_saver(opt, **kargs)
-			except:
-				print("==no valid eam saver==")
+			# try:
+			print("==apply ema saver==")
+			self.moving_average_saver(opt, **kargs)
+			# except:
+				# print("==no valid eam saver==")
 
 	def get_hooks(self, checkpoint_dir, num_storage_steps):
 		self.checkpoint_hook = [tf.train.CheckpointSaverHook(

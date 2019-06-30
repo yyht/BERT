@@ -45,36 +45,30 @@ flags.DEFINE_string(
 	"Input TF example files (can be a glob or comma separated).")
 
 flags.DEFINE_string(
-	"output_folder", None,
-	"Input TF example files (can be a glob or comma separated).")
-
-flags.DEFINE_string(
-	"model_prefix", None,
-	"Input TF example files (can be a glob or comma separated).")
-
-flags.DEFINE_integer(
-	"vocab_size", 50000,
-	"Input TF example files (can be a glob or comma separated).")
-
-flags.DEFINE_string(
-	"model_type", 'bpe',
+	"output_file", None,
 	"Input TF example files (can be a glob or comma separated).")
 
 flags.DEFINE_float(
-	"character_coverage", 0.9995,
+	"word_piece_model", 0.9995,
 	"Input TF example files (can be a glob or comma separated).")
 
 def main(_):
 
-	train_config = {
-		"corpus":FLAGS.train_file,
-		"model_prefix":os.path.join(FLAGS.output_folder, FLAGS.model_prefix),
-		"vocab_size":FLAGS.vocab_size,
-		"model_type":FLAGS.model_type,
-		"character_coverage":FLAGS.character_coverage
+	input_config = {
+		"word_piece_model":FLAGS.word_piece_model
 	}
-	my_spm = tokenization.SPM({})
-	my_spm.train_model(train_config)
+	my_spm = tokenization.SPM(input_config)
+	my_spm.load_model()
+	fwobj = open(FLAGS.output_file, "w")
+	with open(FLAGS.train_file, "r") as frobj:
+		for line in frobj:
+			content = line.strip()
+			if len(content) >= 1:
+				token_lst = my_spm.tokenize(content)
+				fwobj.write(" ".join(token_lst)+"\n")
+			else:
+				fwobj.write("\n")
+	fwobj.cloes()
 
 if __name__ == "__main__":
 	tf.app.run()
