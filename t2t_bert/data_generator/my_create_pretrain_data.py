@@ -46,6 +46,10 @@ flags = tf.flags
 
 FLAGS = flags.FLAGS
 
+flags.DEFINE_string(
+		"buckets", None,
+		"Output TF example file (or comma-separated list of files).")
+
 flags.DEFINE_string("input_file", None,
 										"Input raw text file (or comma-separated list of files).")
 
@@ -446,10 +450,13 @@ def truncate_seq_pair(tokens_a, tokens_b, max_num_tokens, rng):
 def main(_):
 	tf.logging.set_verbosity(tf.logging.INFO)
 
+	print(FLAGS.do_whole_word_mask, FLAGS.do_lower_case)
+
 	if FLAGS.tokenizer_type == "spm":
+		word_piece_model = os.path.join(FLAGS.buckets, FLAGS.word_piece_model)
 		tokenizer = tokenization.SPM(config={
 			"word_dict":FLAGS.vocab_file,
-			"word_piece_model":FLAGS.word_piece_model
+			"word_piece_model":word_piece_model
 			})
 		tokenizer.load_dict()
 		tokenizer.load_model()

@@ -48,8 +48,8 @@ flags.DEFINE_string(
 	"output_file", None,
 	"Input TF example files (can be a glob or comma separated).")
 
-flags.DEFINE_float(
-	"word_piece_model", 0.9995,
+flags.DEFINE_string(
+	"word_piece_model", None,
 	"Input TF example files (can be a glob or comma separated).")
 
 def main(_):
@@ -68,7 +68,7 @@ def main(_):
 				fwobj.write(" ".join(token_lst)+"\n")
 			else:
 				fwobj.write("\n")
-	fwobj.cloes()
+	fwobj.close()
 
 if __name__ == "__main__":
 	tf.app.run()
