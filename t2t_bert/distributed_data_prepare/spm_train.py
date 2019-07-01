@@ -29,7 +29,7 @@ import numpy as np
 import tensorflow as tf
 from bunch import Bunch
 from data_generator import tokenization
-import json
+import json, jieba, re
 
 flags = tf.flags
 
@@ -74,8 +74,24 @@ flags.DEFINE_integer(
 
 def main(_):
 
+	jieba_tokenization_file = FLAGS.train_file+".tmp"
+	fwobj = open(jieba_tokenization_file, "w")
+	char_pattern = re.compile(u"[\u4e00-\u9fa5]+")
+	with open(FLAGS.train_file, "r") as frobj:
+		for line in frobj:
+			out = []
+			result = list(jieba.cut(line.strip()))
+			for word in result:
+				word = list(word)
+				char_cn = char_pattern.findall(word)
+				if len(char_cn) >= 1:
+					out.extend(word)
+				else:
+					out.append(word)
+			fwobj.write(" ".join(out)+"\n")
+
 	train_config = {
-		"corpus":FLAGS.train_file,
+		"corpus":jieba_tokenization_file,
 		"model_prefix":os.path.join(FLAGS.output_folder, FLAGS.model_prefix),
 		"vocab_size":FLAGS.vocab_size,
 		"model_type":FLAGS.model_type,
@@ -83,6 +99,7 @@ def main(_):
 		"mining_sentence_size":FLAGS.mining_sentence_size,
 		"input_sentence_size":FLAGS.input_sentence_size
 	}
+
 	my_spm = tokenization.SPM({})
 	my_spm.train_model(train_config)
 

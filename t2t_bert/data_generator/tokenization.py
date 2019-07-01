@@ -56,6 +56,10 @@ class SPM(object):
 			raise ValueError('Not found word piece model')
 
 	def train_model(self, train_config=None):
+		'''
+		https://github.com/google/sentencepiece/blob/master/python/sentencepiece_python_module_example.ipynb
+		see from this tutorial for sentence piece training
+		'''
 		config = train_config if train_config else self.config
 		param = ""
 		param += "--input={} ".format(config["corpus"])
