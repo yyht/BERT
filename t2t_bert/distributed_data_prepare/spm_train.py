@@ -64,6 +64,14 @@ flags.DEFINE_float(
 	"character_coverage", 0.9995,
 	"Input TF example files (can be a glob or comma separated).")
 
+flags.DEFINE_integer(
+	"mining_sentence_size", 5000000,
+	"Input TF example files (can be a glob or comma separated).")
+
+flags.DEFINE_integer(
+	"input_sentence_size", 5000000,
+	"Input TF example files (can be a glob or comma separated).")
+
 def main(_):
 
 	train_config = {
@@ -71,7 +79,9 @@ def main(_):
 		"model_prefix":os.path.join(FLAGS.output_folder, FLAGS.model_prefix),
 		"vocab_size":FLAGS.vocab_size,
 		"model_type":FLAGS.model_type,
-		"character_coverage":FLAGS.character_coverage
+		"character_coverage":FLAGS.character_coverage,
+		"mining_sentence_size":FLAGS.mining_sentence_size,
+		"input_sentence_size":FLAGS.input_sentence_size
 	}
 	my_spm = tokenization.SPM({})
 	my_spm.train_model(train_config)

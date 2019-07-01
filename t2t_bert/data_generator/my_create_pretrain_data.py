@@ -94,8 +94,11 @@ flags.DEFINE_bool(
 flags.DEFINE_string("tokenizer_type", "bpe",
 					"Input raw text file (or comma-separated list of files).")
 
-TrainingInstance = namedtuple('tokens', 'segment_ids', 'is_random_next',
-							'masked_lm_positions', 'masked_lm_labels')
+TrainingInstance = namedtuple("TrainingInstance",
+										  ['tokens', 'segment_ids',
+										   'masked_lm_positions',
+										   'masked_lm_labels',
+										   'is_random_next'])	
 
 def whole_word_mask(cand_indexes, token):
 	if FLAGS.do_whole_word_mask and len(cand_indexes) >= 1 and token.startswith("##"):

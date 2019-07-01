@@ -62,7 +62,9 @@ class SPM(object):
 		param += "--model_prefix={} ".format(config["model_prefix"])
 		param += "--vocab_size={} ".format(config["vocab_size"])
 		param += "--model_type={} ".format(config.get("model_type", "unigram"))
-		param += "--character_coverage={}".format(config.get("character_coverage", "0.995"))
+		param += "--character_coverage={}".format(config.get("character_coverage", 0.995))
+		param += "--mining_sentence_size={}".format(config.get("mining_sentence_size", 5000000))
+		param += "--input_sentence_size={}".format(config.get("input_sentence_size", 5000000))
 		try:
 			SentencePieceTrainer.Train(param)
 			self.sp.Load(config["model_prefix"]+".model")
