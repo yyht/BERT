@@ -82,10 +82,9 @@ def main(_):
 			out = []
 			result = list(jieba.cut(line.strip()))
 			for word in result:
-				word = list(word)
 				char_cn = char_pattern.findall(word)
 				if len(char_cn) >= 1:
-					out.extend(word)
+					out.append(word)
 				else:
 					out.append(word)
 			fwobj.write(" ".join(out)+"\n")

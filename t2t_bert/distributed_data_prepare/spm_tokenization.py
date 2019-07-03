@@ -52,13 +52,20 @@ flags.DEFINE_string(
 	"word_piece_model", None,
 	"Input TF example files (can be a glob or comma separated).")
 
+flags.DEFINE_string(
+	"tokenizer_type", None,
+	"Input TF example files (can be a glob or comma separated).")
+
 def main(_):
 
 	input_config = {
 		"word_piece_model":FLAGS.word_piece_model
 	}
-	my_spm = tokenization.SPM(input_config)
-	my_spm.load_model()
+	if FLAGS.tokenizer_type == 'spm':
+		tokenizer = tokenization.SPM(input_config)
+		tokenizer.load_model()
+	elif FLAGS.tokenizer_type == 'jieba':
+		tokenizer = jieba
 	fwobj = open(FLAGS.output_file, "w")
 	with open(FLAGS.train_file, "r") as frobj:
 		for line in frobj:

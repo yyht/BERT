@@ -371,6 +371,9 @@ class FullTokenizer(object):
 	def covert_tokens_to_char_ids(self, tokens, max_length=None, char_len=5):
 		pass
 
+	def padding(self, token_id_lst, max_length, zero_padding=0):
+		return token_id_lst + [zero_padding] * (max_length - len(token_id_lst))
+		
 class BasicTokenizer(object):
 	"""Runs basic tokenization (punctuation splitting, lower casing, etc.)."""
 
