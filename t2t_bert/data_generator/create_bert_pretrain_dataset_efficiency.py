@@ -9,6 +9,8 @@ from __future__ import print_function
 import sys,os,json
 import sys,os
 
+import time
+
 father_path = os.path.join(os.getcwd())
 print(father_path, "==father path==")
 
@@ -49,6 +51,8 @@ from itertools import accumulate
 import random
 import numpy as np
 import time
+
+from multiprocessing import Process, Manager
 
 rng = random.Random(2008)
 
@@ -104,6 +108,36 @@ flags.DEFINE_bool(
 flags.DEFINE_string("tokenizer_type", "bpe",
 					"Input raw text file (or comma-separated list of files).")
 
+flags.DEFINE_string("es_user_name", "mrc_search_4l",
+					"Input raw text file (or comma-separated list of files).")
+
+flags.DEFINE_string("password", "K9cb1bd713507",
+					"Input raw text file (or comma-separated list of files).")
+
+flags.DEFINE_string("doc_index", "mrc_pretrain",
+					"Input raw text file (or comma-separated list of files).")
+
+flags.DEFINE_string("doc_type", "_doc",
+					"Input raw text file (or comma-separated list of files).")
+
+try:
+	from data_generator import es_indexing
+	config = {
+		'username':FLAGS.es_user_name,
+		'password':FLAGS.password,
+		'es_url':'http://zsearch.alipay.com:9999'
+	}
+	es_api = es_indexing.ESSearch(config)
+	try:
+		es_api.delete(FLAGS.doc_index)
+		es_api.create(FLAGS.doc_index)
+		print("==delete old index and create new index==")
+	except:
+		es_api.create(FLAGS.doc_index)
+		print("==create new index==")
+except:
+	es_api = None
+
 TrainingInstance = namedtuple("TrainingInstance",
 										  ['tokens', 'segment_ids',
 										   'masked_lm_positions',
@@ -119,70 +153,60 @@ def whole_word_mask(cand_indexes, token, i):
 		cand_indexes.append([i])
 	return cand_indexes
 
-def write_instance_to_example_files(instances, tokenizer, max_seq_length,
-									max_predictions_per_seq, output_file):
-	"""Create TF example files from `TrainingInstance`s."""
-	writer = tf.python_io.TFRecordWriter(output_file)
+def write_single_sintance_to_example_files(writer, instance, tokenizer, max_seq_length,
+									max_predictions_per_seq, output_file, inst_index):
+	input_ids = tokenizer.convert_tokens_to_ids(instance.tokens)
+	input_mask = [1] * len(input_ids)
+	segment_ids = list(instance.segment_ids)
+	assert len(input_ids) <= max_seq_length
 
-	total_written = 0
-	for (inst_index, instance) in enumerate(instances):
-		input_ids = tokenizer.convert_tokens_to_ids(instance.tokens)
-		input_mask = [1] * len(input_ids)
-		segment_ids = list(instance.segment_ids)
-		assert len(input_ids) <= max_seq_length
+	input_ids = tokenizer.padding(input_ids, max_seq_length, 0)
+	input_mask = tokenizer.padding(input_mask, max_seq_length, 0)
+	segment_ids = tokenizer.padding(segment_ids, max_seq_length, 0)
 
-		input_ids = tokenizer.padding(input_ids, max_seq_length, 0)
-		input_mask = tokenizer.padding(input_mask, max_seq_length, 0)
-		segment_ids = tokenizer.padding(segment_ids, max_seq_length, 0)
+	assert len(input_ids) == max_seq_length
+	assert len(input_mask) == max_seq_length
+	assert len(segment_ids) == max_seq_length
 
-		assert len(input_ids) == max_seq_length
-		assert len(input_mask) == max_seq_length
-		assert len(segment_ids) == max_seq_length
+	masked_lm_positions = list(instance.masked_lm_positions)
+	masked_lm_ids = tokenizer.convert_tokens_to_ids(instance.masked_lm_labels)
+	masked_lm_weights = [1.0] * len(masked_lm_ids)
 
-		masked_lm_positions = list(instance.masked_lm_positions)
-		masked_lm_ids = tokenizer.convert_tokens_to_ids(instance.masked_lm_labels)
-		masked_lm_weights = [1.0] * len(masked_lm_ids)
-
-		masked_lm_positions = tokenizer.padding(masked_lm_positions, max_predictions_per_seq,
+	masked_lm_positions = tokenizer.padding(masked_lm_positions, max_predictions_per_seq,
 													0)
-		masked_lm_ids = tokenizer.padding(masked_lm_ids, max_predictions_per_seq,
-													0)
-		masked_lm_weights = tokenizer.padding(masked_lm_weights, max_predictions_per_seq,
-													0.0)
+	masked_lm_ids = tokenizer.padding(masked_lm_ids, max_predictions_per_seq,
+												0)
+	masked_lm_weights = tokenizer.padding(masked_lm_weights, max_predictions_per_seq,
+												0.0)
 
-		next_sentence_label = 1 if instance.is_random_next else 0
-		features = collections.OrderedDict()
-		features["input_ids"] = create_int_feature(input_ids)
-		features["input_mask"] = create_int_feature(input_mask)
-		features["segment_ids"] = create_int_feature(segment_ids)
-		features["masked_lm_positions"] = create_int_feature(masked_lm_positions)
-		features["masked_lm_ids"] = create_int_feature(masked_lm_ids)
-		features["masked_lm_weights"] = create_float_feature(masked_lm_weights)
-		features["next_sentence_labels"] = create_int_feature([next_sentence_label])
+	next_sentence_label = 1 if instance.is_random_next else 0
+	features = collections.OrderedDict()
+	features["input_ids"] = create_int_feature(input_ids)
+	features["input_mask"] = create_int_feature(input_mask)
+	features["segment_ids"] = create_int_feature(segment_ids)
+	features["masked_lm_positions"] = create_int_feature(masked_lm_positions)
+	features["masked_lm_ids"] = create_int_feature(masked_lm_ids)
+	features["masked_lm_weights"] = create_float_feature(masked_lm_weights)
+	features["next_sentence_labels"] = create_int_feature([next_sentence_label])
 
-		tf_example = tf.train.Example(features=tf.train.Features(feature=features))
+	tf_example = tf.train.Example(features=tf.train.Features(feature=features))
 
-		writer.write(tf_example.SerializeToString())
+	writer.write(tf_example.SerializeToString())
 
-		total_written += 1
+	if inst_index < 10:
+		tf.logging.info("*** Example ***")
+		tf.logging.info("tokens: %s" % " ".join(
+				[x for x in instance.tokens]))
 
-		if inst_index < 10:
-			tf.logging.info("*** Example ***")
-			tf.logging.info("tokens: %s" % " ".join(
-					[x for x in instance.tokens]))
-
-			for feature_name in features.keys():
-				feature = features[feature_name]
-				values = []
-				if feature.int64_list.value:
-					values = feature.int64_list.value
-				elif feature.float_list.value:
-					values = feature.float_list.value
-				tf.logging.info(
-						"%s: %s" % (feature_name, " ".join([str(x) for x in values])))
-
-	writer.close()
-	tf.logging.info("Wrote %d total instances", total_written)
+		for feature_name in features.keys():
+			feature = features[feature_name]
+			values = []
+			if feature.int64_list.value:
+				values = feature.int64_list.value
+			elif feature.float_list.value:
+				values = feature.float_list.value
+			tf.logging.info(
+					"%s: %s" % (feature_name, " ".join([str(x) for x in values])))
 
 def create_int_feature(values):
 	feature = tf.train.Feature(int64_list=tf.train.Int64List(value=list(values)))
@@ -213,15 +237,32 @@ def first(iterable, condition = lambda x: True):
 	"""
 	return next(x for x in iterable if condition(x))
 
+def get_document(all_documents, es_api, doc_index):
+	if es_api:
+		search_body = {
+			"query":{
+				"match":{"doc_id":doc_index}
+			}
+		}
+		result = es_api.search_doc(FLAGS.doc_index, search_body, threshold=0.1)
+		if result:
+			return json.loads(result[0]['source']['doc'])
+		else:
+			return []
+	else:
+		return all_documents[doc_index]
+
 def create_instances_from_document(
 		all_documents, document_index, vocab_words,
 		max_seq_length, short_seq_prob,
 		masked_lm_prob, max_predictions_per_seq,
-		rng): 
+		rng, num_of_documents): 
 	"""Creates `TrainingInstance`s for a single document."""
-	document = all_documents[document_index]
+	document = get_document(all_documents, es_api, document_index)
+	if not document:
+		return []
 
-	index_range = list(range(len(all_documents)))
+	index_range = list(range(num_of_documents))
 	index_range.remove(document_index)
 
 	random_document_lst = random.sample(index_range, len(index_range))
@@ -274,7 +315,8 @@ def create_instances_from_document(
 			target_b_length = target_seq_length - len(tokens_a)
 
 			random_document_index = random.sample(random_document_lst, 1)[0]
-			random_document = all_documents[random_document_index]
+			# random_document = all_documents[random_document_index]
+			random_document = get_document(all_documents, es_api, random_document_index)
 						
 			random_start = rng.randint(0, len(random_document) - 1)
 			for j in range(random_start, len(random_document)):
@@ -351,34 +393,61 @@ def read_file(input_files, tokenizer, max_seq_length):
 	tf.logging.info(" input file {} all_documents {}".format(input_file, len(all_documents)))
 	rng.shuffle(all_documents)
 
+	if es_api:
+		es_all_documents = []
+		total_num = 0
+		for index, item in enumerate(all_documents):
+			es_all_documents.append({
+					"ori_doc":json.dumps(item, ensure_ascii=False),
+					"doc":json.dumps(item, ensure_ascii=False),
+					"doc_id":index
+				})
+			total_num += 1
+			if np.mod(len(es_all_documents), 1000) == 0 or total_num == len(all_documents):
+				es_api.index_batch_doc(FLAGS.doc_index, FLAGS.doc_type, es_all_documents, 1000)
+				es_all_documents = []
 	return all_documents
 
 def create_instances_chunk_from_document(all_documents, document_index_chunk, 
 		max_seq_length, masked_lm_prob, max_predictions_per_seq, 
-		short_seq_prob, tokenizer, output_file, rng):
-	instances = []
+		short_seq_prob, tokenizer, output_file, rng, num_of_documents):
 	vocab_words = list(tokenizer.vocab.keys())
+	writer = tf.python_io.TFRecordWriter(output_file)
+
+	total_written = 0
+	inst_index = 0
+
 	for document_index in document_index_chunk:
-		instances.extend(
-					create_instances_from_document(
+		instances = create_instances_from_document(
 							all_documents, document_index, vocab_words,
 							max_seq_length, short_seq_prob,
 							masked_lm_prob, max_predictions_per_seq,
-							rng))
+							rng, num_of_documents)
+		for instance in instances:
+			write_single_sintance_to_example_files(writer, instance, 
+									tokenizer, max_seq_length,
+									max_predictions_per_seq, 
+									output_file, inst_index)
+			inst_index += 1
+			total_written += 1
 
-	rng.shuffle(instances)
-	write_instance_to_example_files(instances, tokenizer, max_seq_length,
-									max_predictions_per_seq, output_file)
+	writer.close()
+	tf.logging.info("Wrote %d total instances", total_written)
 
 def build_index_chunk(num_of_documents, process_num, dupe_factor):
-	chunk_size = int(num_of_documents/dupe_factor)
+	chunk_size = int(num_of_documents/process_num)
+	print(chunk_size, "==chunk_size==")
 
-	index_chunk = [[]]*dupe_factor
+	index_chunk = {}
 	for dupe_index in range(dupe_factor):
-		random_index = np.random.permutation(range(num_of_documents))
-		for i in range(0, num_of_documents, chunk_size):
-			index_chunk[dupe_index].extend(random_index[i:i+chunk_size])
-
+		random_index = np.random.permutation(range(num_of_documents)).tolist()
+		for i_index in range(process_num):
+			start = i_index * chunk_size
+			end = (i_index+1) * chunk_size
+			if i_index in index_chunk:
+				index_chunk[i_index].extend(random_index[start:end])
+			else:
+				index_chunk[i_index] = random_index[start:end]
 	return index_chunk
 
 def multi_process(input_files, tokenizer,
@@ -396,19 +465,30 @@ def multi_process(input_files, tokenizer,
 	all_documents = read_file(input_files, tokenizer, max_seq_length)
 	num_of_documents = len(all_documents)
 
+	print(num_of_documents, dupe_factor)
+
+	time.sleep(20)
+
 	chunks = build_index_chunk(num_of_documents, process_num, dupe_factor)
 	pool = multiprocessing.Pool(processes=process_num)
 
-	for chunk_id, each_chunk in enumerate(chunks):
+	all_documents_shared = []
+
+	for chunk_id, chunk_key in enumerate(chunks):
 		output_file_ = output_file + "/chunk_{}.tfrecords".format(chunk_id)
-		print("#mask_language_model_multi_processing.length of chunk:",len(each_chunk),";file_name:",output_file_,";chunk_id:",chunk_id)
-		create_instances_chunk_from_document
+		print("#mask_language_model_multi_processing.length of chunk:",len(chunks[chunk_key]),";file_name:",output_file_,";chunk_id:",chunk_id)
+		# create_instances_chunk_from_document(all_documents_shared, chunks[chunk_key], 
+		# 			max_seq_length, masked_lm_prob, 
+		# 			max_predictions_per_seq,
+		# 			short_seq_prob, tokenizer, 
+		# 			output_file_, rng, num_of_documents)
+		# break
 		pool.apply_async(create_instances_chunk_from_document,
-			args=(all_documents, each_chunk, 
+			args=(all_documents_shared, chunks[chunk_key], 
 					max_seq_length, masked_lm_prob, 
 					max_predictions_per_seq,
 					short_seq_prob, tokenizer, 
-					output_file_, rng)) # apply_async
+					output_file_, rng, num_of_documents)) # apply_async
 	pool.close()
 	pool.join()
 

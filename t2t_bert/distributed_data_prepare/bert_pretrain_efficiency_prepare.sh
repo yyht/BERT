@@ -9,4 +9,8 @@ python ./t2t_bert/data_generator/create_bert_pretrain_dataset_efficiency.py \
 	--max_predictions_per_seq 10 \
 	--dupe_factor 10 \
 	--tokenizer_type 'word_piece' \
-	--do_whole_word_mask true
+	--do_whole_word_mask true \
+	--es_user_name mrc_search_4l \
+	--password K9cb1bd713507 \
+	--doc_index mrc_pretrain \
+	--doc_type _doc
