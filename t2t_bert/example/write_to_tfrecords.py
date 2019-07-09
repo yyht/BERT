@@ -15,7 +15,7 @@ from example.feature_writer import PairClassifierFeatureWriter
 from example.feature_writer import PairPreTrainingFeature
 from example.feature_writer import DistillationEncoderFeatureWriter
 from example.feature_writer import ClassifierRuleFeatureWriter
-from example.feature_writer import LangAdaptationFeature
+from example.feature_writer import AdvAdaptationFeature
 
 
 def convert_classifier_examples_to_features(examples, label_dict, 
@@ -993,7 +993,7 @@ def convert_adv_adaptation_distillation_classifier_examples_to_features(
 											tokenizer, output_file, with_char,
 											char_len):
 
-	feature_writer = DistillationEncoderFeatureWriter(output_file, is_training=False)
+	feature_writer = AdvAdaptationFeature(output_file, is_training=False)
 
 	for (ex_index, example) in enumerate(examples):
 		tokens_a = tokenizer.tokenize(example.text_a)
@@ -1078,7 +1078,7 @@ def convert_adv_adaptation_distillation_classifier_examples_to_features(
 			tf.logging.info("distillation_ratio: {} (id = {})".format(distillation_ratio, label_id))
 			tf.logging.info("lang id: {} (id = {})".format(example.lang_label, label_id))
 
-		feature = data_lang_adaptation.InputFeatures(
+		feature = data_adv_adaptation.InputFeatures(
 					guid=example.guid,
 					input_ids_a=input_ids_a,
 					input_ids_b=input_ids_b,
