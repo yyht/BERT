@@ -37,7 +37,7 @@ def clean(text):
 	text = HanziConv.toSimplified(text)
 	text = full2half(text)
 	text = re.sub("\\#.*?#|\\|.*?\\||\\[.*?]", "", text)
-	text = re.sub("\s*", "", text)
+	# text = re.sub("\s*", "", text)
 	return text
 
 class ClassificationProcessor(data_processor.DataProcessor):
@@ -1190,7 +1190,7 @@ class AdvAdaptationDistillationSentenceProcessor(data_processor.DataProcessor):
 						label_ratio=1.0,
 						distillation_ratio=0.0,
 						feature=None,
-						adv_label=self.lang2id[lang_label]
+						adv_label=self.adv2id[lang_label]
 					))
 			except:
 				print(line, i)
@@ -1218,7 +1218,7 @@ class AdvAdaptationDistillationSentenceProcessor(data_processor.DataProcessor):
 						label_ratio=0.0,
 						distillation_ratio=1.0,
 						feature=distillation_dict_lst[cnt]["feature"],
-						adv_label=self.lang2id[lang_label]
+						adv_label=self.adv2id[lang_label]
 					))
 				cnt += 1
 			except:
@@ -1249,7 +1249,7 @@ class AdvAdaptationDistillationSentenceProcessor(data_processor.DataProcessor):
 						label_ratio=1.0,
 						distillation_ratio=1.0,
 						feature=distillation_dict_lst[cnt]["feature"],
-						adv_label=self.lang2id[lang_label]
+						adv_label=self.adv2id[lang_label]
 					))
 				cnt += 1
 			except:

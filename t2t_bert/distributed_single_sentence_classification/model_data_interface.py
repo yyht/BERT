@@ -107,7 +107,7 @@ def data_interface(FLAGS):
 		if FLAGS.distillation in ["feature_distillation", "mdd_distillation", "rkd_distillation"]:
 			name_to_features["distillation_feature"] = tf.FixedLenFeature([768], tf.float32)
 
-		if FLAGS.distillation in ['feature_distillation_adv_adaptation']:
+		if FLAGS.distillation in ['adv_adaptation_distillation']:
 			name_to_features['adv_ids'] = tf.FixedLenFeature([], tf.int64)
 
 	elif FLAGS.model_type in ["match_pyramid", "match_pyramid_distillation"]:

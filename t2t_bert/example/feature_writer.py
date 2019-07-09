@@ -290,7 +290,7 @@ class AdvAdaptationFeature(FeatureWriter):
 			s = 0
 
 		try:
-			features["lang_ids"] = tf_data_utils.create_float_feature(feature.lang_ids)
+			features["adv_ids"] = tf_data_utils.create_float_feature(feature.adv_ids)
 		except:
 			s = 0
 

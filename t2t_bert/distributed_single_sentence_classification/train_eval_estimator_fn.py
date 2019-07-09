@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import tensorflow as tf
 
 from optimizer import distributed_optimizer as optimizer
@@ -220,7 +221,8 @@ def train_eval_fn(FLAGS,
 				eval_features = lambda: tf_data_utils.all_reduce_eval_batch_input_fn(dev_file,
 											_decode_batch_record, name_to_features, params, if_shard=FLAGS.if_shard,
 											worker_count=worker_count,
-											task_index=task_index)	
+											task_index=task_index)
+
 		else:
 			train_features = lambda: tf_data_utils.train_input_fn(train_file,
 										_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,
@@ -269,21 +271,30 @@ def train_eval_fn(FLAGS,
 
 		model_estimator = tf.estimator.Estimator(
 						model_fn=model_fn,
+						model_dir=checkpoint_dir,
 						config=run_config)
 
 		train_being_time = time.time()
 		tf.logging.info("==training distribution_strategy=={}".format(kargs.get("distribution_strategy", "MirroredStrategy")))
 		if kargs.get("distribution_strategy", "MirroredStrategy") == "MirroredStrategy":
 			print("==apply single machine multi-card training==")
-			model_estimator.train(input_fn=train_features,
-							max_steps=num_train_steps,
-							hooks=train_hooks)
+
+			train_spec = tf.estimator.TrainSpec(input_fn=train_features, 
+											max_steps=num_train_steps)
+
+			eval_spec = tf.estimator.EvalSpec(input_fn=eval_features, 
+											steps=num_eval_steps)
+			
+			# model_estimator.train(input_fn=train_features,
+			# 				max_steps=num_train_steps,
+			# 				hooks=train_hooks)
+			tf.estimator.train(model_estimator, train_spec)
 
 			train_end_time = time.time()
 			print("==training time==", train_end_time - train_being_time)
 			tf.logging.info("==training time=={}".format(train_end_time - train_being_time))
-			eval_results = model_estimator.evaluate(input_fn=eval_features, steps=num_eval_steps)
-			print(eval_results)
+			# eval_results = model_estimator.evaluate(input_fn=eval_features, steps=num_eval_steps)
+			# print(eval_results)
 			
 		elif kargs.get("distribution_strategy", "MirroredStrategy") in ["ParameterServerStrategy", "CollectiveAllReduceStrategy"]: 
 			print("==apply multi-machine machine multi-card training==")
@@ -297,9 +308,11 @@ def train_eval_fn(FLAGS,
 			eval_spec = tf.estimator.EvalSpec(input_fn=eval_features, 
 											steps=num_eval_steps)
 
-			tf.estimator.train_and_evaluate(model_estimator, train_spec, eval_spec)
-			train_end_time = time.time()
-			print("==training time==", train_end_time - train_being_time)
+			tf.estimator.train(model_estimator, train_spec) # tf 1.12 doesn't need evaluate
+
+			# tf.estimator.train_and_evaluate(model_estimator, train_spec, eval_spec)
+			# train_end_time = time.time()
+			# print("==training time==", train_end_time - train_being_time)
 
 		
 		

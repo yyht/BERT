@@ -49,7 +49,6 @@ import numpy as np
 from heapq import nsmallest
 from itertools import accumulate
 import random
-import numpy as np
 import time
 
 from multiprocessing import Process, Manager
@@ -65,17 +64,17 @@ flags.DEFINE_string(
 		"Output TF example file (or comma-separated list of files).")
 
 flags.DEFINE_string("input_file", None,
-										"Input raw text file (or comma-separated list of files).")
+					"Input raw text file (or comma-separated list of files).")
 
 flags.DEFINE_string(
 		"output_file", None,
 		"Output TF example file (or comma-separated list of files).")
 
 flags.DEFINE_string("vocab_file", None,
-										"The vocabulary file that the BERT model was trained on.")
+					"The vocabulary file that the BERT model was trained on.")
 
 flags.DEFINE_string("word_piece_model", None,
-										"The vocabulary file that the BERT model was trained on.")
+					"The vocabulary file that the BERT model was trained on.")
 
 flags.DEFINE_bool(
 		"do_lower_case", True,
@@ -85,7 +84,7 @@ flags.DEFINE_bool(
 flags.DEFINE_integer("max_seq_length", 384, "Maximum sequence length.")
 
 flags.DEFINE_integer("max_predictions_per_seq", 20,
-										 "Maximum number of masked LM predictions per sequence.")
+					"Maximum number of masked LM predictions per sequence.")
 
 flags.DEFINE_integer("random_seed", 12345, "Random seed for data generation.")
 
@@ -158,15 +157,15 @@ def write_single_sintance_to_example_files(writer, instance, tokenizer, max_seq_
 	input_ids = tokenizer.convert_tokens_to_ids(instance.tokens)
 	input_mask = [1] * len(input_ids)
 	segment_ids = list(instance.segment_ids)
-	assert len(input_ids) <= max_seq_length
+	# assert len(input_ids) <= max_seq_length
 
 	input_ids = tokenizer.padding(input_ids, max_seq_length, 0)
 	input_mask = tokenizer.padding(input_mask, max_seq_length, 0)
 	segment_ids = tokenizer.padding(segment_ids, max_seq_length, 0)
 
-	assert len(input_ids) == max_seq_length
-	assert len(input_mask) == max_seq_length
-	assert len(segment_ids) == max_seq_length
+	# assert len(input_ids) == max_seq_length
+	# assert len(input_mask) == max_seq_length
+	# assert len(segment_ids) == max_seq_length
 
 	masked_lm_positions = list(instance.masked_lm_positions)
 	masked_lm_ids = tokenizer.convert_tokens_to_ids(instance.masked_lm_labels)
@@ -256,16 +255,16 @@ def create_instances_from_document(
 		all_documents, document_index, vocab_words,
 		max_seq_length, short_seq_prob,
 		masked_lm_prob, max_predictions_per_seq,
-		rng, num_of_documents): 
+		rng, num_of_documents):
 	"""Creates `TrainingInstance`s for a single document."""
 	document = get_document(all_documents, es_api, document_index)
 	if not document:
 		return []
 
-	index_range = list(range(num_of_documents))
-	index_range.remove(document_index)
+	# index_range = list(range(num_of_documents))
+	# index_range.remove(document_index)
 
-	random_document_lst = random.sample(index_range, len(index_range))
+	# random_document_lst = random.sample(index_range, len(index_range))
 	
 	# Account for [CLS], [SEP], [SEP]
 	max_num_tokens = max_seq_length - 3
@@ -282,10 +281,6 @@ def create_instances_from_document(
 		target_seq_length = rng.randint(2, max_num_tokens)
 		
 	left_index = list(range(len(document)))
-	instance = []
-	left_index_mapping = {}
-	for index, item in enumerate(left_index):
-		left_index_mapping[index] = item
 
 	instances = []
 	while len(left_index):
@@ -314,7 +309,11 @@ def create_instances_from_document(
 			is_random_next = True
 			target_b_length = target_seq_length - len(tokens_a)
 
-			random_document_index = random.sample(random_document_lst, 1)[0]
+			# random_document_index = random.sample(random_document_lst, 1)[0]
+			for _ in range(5):
+				random_document_index = rng.randint(0, num_of_documents - 1)
+				if random_document_index != document_index:
+					break
 			# random_document = all_documents[random_document_index]
 			random_document = get_document(all_documents, es_api, random_document_index)
 						
@@ -416,6 +415,8 @@ def create_instances_chunk_from_document(all_documents, document_index_chunk,
 
 	total_written = 0
 	inst_index = 0
+
+	print(len(document_index_chunk), "==document index_chunk==")
 
 	for document_index in document_index_chunk:
 		instances = create_instances_from_document(

@@ -271,7 +271,7 @@ def main(_):
 																test_result_file,
 																FLAGS.with_char,
 																FLAGS.char_len)
-	elif FLAGS.tokenizer_type == "full_bpe":
+	elif FLAGS.tokenizer_type == "full_bpe" and FLAGS.distillation_type != "prob_adv_adaptation":
 		write_to_tfrecords.convert_bert_distillation_classifier_examples_to_features(total_train_examples,
 																classifier_data_api.label2id,
 																FLAGS.max_length,

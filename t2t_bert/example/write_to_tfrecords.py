@@ -1065,6 +1065,7 @@ def convert_adv_adaptation_distillation_classifier_examples_to_features(
 			tf.logging.info("*** Example ***")
 			tf.logging.info("guid: %s" % (example.guid))
 			tf.logging.info("input_ids_a: %s" % " ".join([str(x) for x in input_ids_a]))
+			tf.logging.info("input_ids_a_ori: %s" % " ".join([str(x) for x in example.text_a]))
 			if input_char_ids_a:
 				tf.logging.info("input_char_ids_a: %s" % " ".join([str(x) for token in input_char_ids_a for x in token ]))
 			if input_ids_b:
@@ -1076,7 +1077,7 @@ def convert_adv_adaptation_distillation_classifier_examples_to_features(
 				tf.logging.info("label_ratio {}".format(label_ratio))
 			tf.logging.info("label: {} (id = {})".format(example.label, label_id))
 			tf.logging.info("distillation_ratio: {} (id = {})".format(distillation_ratio, label_id))
-			tf.logging.info("lang id: {} (id = {})".format(example.lang_label, label_id))
+			tf.logging.info("adv id: {} (id = {})".format(example.adv_label, label_id))
 
 		feature = data_adv_adaptation.InputFeatures(
 					guid=example.guid,
@@ -1089,6 +1090,6 @@ def convert_adv_adaptation_distillation_classifier_examples_to_features(
 					label_ratio=label_ratio,
 					distillation_ratio=distillation_ratio,
 					feature=feature,
-					adv_ids=example.adv_label)
+					adv_label=example.adv_label)
 		feature_writer.process_feature(feature)
 	feature_writer.close()
