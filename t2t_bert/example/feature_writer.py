@@ -246,3 +246,53 @@ class PairPreTrainingFeature(FeatureWriter):
 		except:
 			tf_example = tf.train.Example(features=tf.train.Features(feature=features))
 			self._writer.write(tf_example.SerializeToString())
+
+class AdvAdaptationFeature(FeatureWriter):
+	def __init__(self, filename, is_training):
+		super(AdvAdaptationFeature, self).__init__(filename, is_training)
+
+	def process_feature(self, feature):
+		self.num_features += 1
+		features = collections.OrderedDict()
+
+		features["input_ids_a"] = tf_data_utils.create_int_feature(feature.input_ids_a)
+		features["label_ids"] = tf_data_utils.create_int_feature([feature.label_ids])
+
+		try:
+			features["input_char_ids_a"] = tf_data_utils.create_int_feature(feature.input_char_ids_a)
+		except:
+			s = 0
+		try:
+			features["input_ids_b"] = tf_data_utils.create_int_feature(feature.input_ids_b)
+		except:
+			s = 0
+		try:
+			features["input_char_ids_b"] = tf_data_utils.create_int_feature(feature.input_char_ids_b)
+		except:
+			s = 0
+		try:
+			features["label_probs"] = tf_data_utils.create_float_feature(feature.label_probs)
+
+		except:
+			s = 0
+
+		try:
+			features["label_ratio"] = tf_data_utils.create_float_feature([feature.label_ratio])
+		except:
+			s = 0
+		try:
+			features["distillation_ratio"] = tf_data_utils.create_float_feature([feature.distillation_ratio])
+		except:
+			s = 0
+		try:
+			features["distillation_feature"] = tf_data_utils.create_float_feature(feature.feature)
+		except:
+			s = 0
+
+		try:
+			features["lang_ids"] = tf_data_utils.create_float_feature(feature.lang_ids)
+		except:
+			s = 0
+
+		tf_example = tf.train.Example(features=tf.train.Features(feature=features))
+		self._writer.write(tf_example.SerializeToString())

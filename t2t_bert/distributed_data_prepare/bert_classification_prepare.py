@@ -171,7 +171,7 @@ def main(_):
 	classifier_data_api.get_labels(FLAGS.label_id)
 
 	train_examples = classifier_data_api.get_train_examples(train_file,
-										is_shuffle=False)
+										is_shuffle=True)
 	dev_examples = classifier_data_api.get_train_examples(dev_file,
 														is_shuffle=False)
 	test_examples = classifier_data_api.get_train_examples(test_file,

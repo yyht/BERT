@@ -227,11 +227,6 @@ flags.DEFINE_string(
 	)
 
 flags.DEFINE_string(
-	"mode", "single_task",
-	"if apply distillation"
-	)
-
-flags.DEFINE_string(
 	"multi_task_type", "wsdm",
 	"if apply distillation"
 	)

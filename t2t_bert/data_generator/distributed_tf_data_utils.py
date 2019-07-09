@@ -207,8 +207,10 @@ def all_reduce_multitask_train_batch_input_fn(input_file, _parse_fn, name_to_fea
 
 	# `cycle_length` is the number of parallel files that get read.
 	# cycle_length = min(4, len(input_file))
-	# cycle_length = len(input_file)
-	cycle_length = 1
+	if isinstance(input_file, list):
+		cycle_length = len(input_file)
+	else:
+		cycle_length = 1
 
 	# `sloppy` mode means that the interleaving is not exact. This adds
 	# even more randomness to the training pipeline.
@@ -237,6 +239,20 @@ def all_reduce_train_batch_input_fn(input_file, _parse_fn, name_to_features,
 	dataset = tf.data.TFRecordDataset(input_file, buffer_size=params.get("buffer_size", 100))
 	# dataset = dataset.repeat(params.get("epoch", 100))
 	dataset = dataset.repeat()
+
+	if isinstance(input_file, list):
+		cycle_length = min(4, len(input_file))
+		print("==cycle_length==", cycle_length)
+		dataset = dataset.shuffle(buffer_size=len(input_file))
+	else:
+		cycle_length = 1
+
+	# # interleave dataset
+	# dataset = dataset.apply(
+	# 			tf.contrib.data.parallel_interleave(
+	# 			  tf.data.TFRecordDataset,
+	# 			  sloppy=True,
+	# 			  cycle_length=cycle_length))
 
 	print("==worker_count {}, task_index {}==".format(worker_count, task_index))
 	if if_shard == "1":

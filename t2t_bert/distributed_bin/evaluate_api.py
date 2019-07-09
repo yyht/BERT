@@ -41,8 +41,8 @@ flags = tf.flags
 
 FLAGS = flags.FLAGS
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-# tf.logging.set_verbosity(tf.logging.INFO)
+# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+tf.logging.set_verbosity(tf.logging.INFO)
 
 flags.DEFINE_string("buckets", "", "oss buckets")
 
@@ -248,6 +248,11 @@ flags.DEFINE_integer(
 	"if apply distillation"
 	)
 
+flags.DEFINE_string(
+	"feature_output", "feature.info",
+	"if apply distillation"
+	)
+
 def main(_):
 
 	print(FLAGS)
@@ -327,7 +332,7 @@ def main(_):
 			running_type="eval",
 			input_target=FLAGS.input_target)
 
-		result_log_file = os.path.join(checkpoint_dir, "result.info")
+		result_log_file = os.path.join(checkpoint_dir, FLAGS.feature_output)
 		print(result_log_file, "==result log path==")
 		# with tf.gfile.GFile(result_log_file, 'w') as f:
 		# 	f.write(json.dumps(result_dict)+"\n")
@@ -343,6 +348,7 @@ def main(_):
 
 				tf_example = tf.train.Example(features=tf.train.Features(feature=features))
 				writer.write(tf_example.SerializeToString())
+			writer.close()
 		except:
 			print("===not legal output for writer===")
 

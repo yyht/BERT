@@ -20,7 +20,8 @@ def model_zoo(model_config):
 	elif model_config.get("model_type", "bert") == "bert_rule":
 		print("==apply bert rule encoder==")
 		model_interface = bert_rule_encoder
-	elif model_config.get("model_type", "bert") in ["textcnn", "textcnn_distillation"]:
+	elif model_config.get("model_type", "bert") in ["textcnn", "textcnn_distillation", 
+													"textcnn_distillation_adv_adaptation"]:
 		print("==apply textcnn encoder==")
 		model_interface = textcnn_encoder
 	elif model_config.get("model_type", "bert_small") == "bert_small":
@@ -49,6 +50,8 @@ def model_config_parser(FLAGS):
 		config.init_lr = 2e-5
 		config.loss = "entropy"
 		config.rule_type_size = 2
+		config.lm_ratio = 1.0
+		config.nsp_ratio = 1.0
 		if FLAGS.task_type in ["pair_sentence_classification"]:
 			config.classifier = FLAGS.classifier
 
@@ -68,7 +71,8 @@ def model_config_parser(FLAGS):
 			config.classifier = FLAGS.classifier
 			config.output_layer = FLAGS.output_layer
 
-	elif FLAGS.model_type in ["textcnn", 'textcnn_distillation']:
+	elif FLAGS.model_type in ["textcnn", 'textcnn_distillation', 
+								'textcnn_distillation_adv_adaptation']:
 		from data_generator import load_w2v
 		w2v_path = os.path.join(FLAGS.buckets, FLAGS.w2v_path)
 		vocab_path = os.path.join(FLAGS.buckets, FLAGS.vocab_file)

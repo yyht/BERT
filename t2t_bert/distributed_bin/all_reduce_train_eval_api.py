@@ -262,14 +262,28 @@ flags.DEFINE_integer(
 	"if apply distillation"
 	)
 
+flags.DEFINE_integer(
+	"max_predictions_per_seq", 10,
+	"if apply distillation"
+	)
+
 def main(_):
 
 	print(FLAGS)
 	print(tf.__version__, "==tensorflow version==")
 
 	init_checkpoint = os.path.join(FLAGS.buckets, FLAGS.init_checkpoint)
-	train_file = os.path.join(FLAGS.buckets, FLAGS.train_file)
-	dev_file = os.path.join(FLAGS.buckets, FLAGS.dev_file)
+	train_file = []
+	for file in FLAGS.train_file.split(","):
+		train_file_path = os.path.join(FLAGS.buckets, file)
+		train_file.append(train_file_path)
+	# train_file = os.path.join(FLAGS.buckets, FLAGS.train_file)
+	# dev_file = os.path.join(FLAGS.buckets, FLAGS.dev_file)
+
+	dev_file = []
+	for file in FLAGS.dev_file.split(","):
+		dev_file_path = os.path.join(FLAGS.buckets, file)
+		dev_file.append(dev_file_path)
 	checkpoint_dir = os.path.join(FLAGS.buckets, FLAGS.model_output)
 
 	print(init_checkpoint, train_file, dev_file, checkpoint_dir)
@@ -283,13 +297,14 @@ def main(_):
 		cross_tower_ops = cross_tower_ops_lib.AllReduceCrossTowerOps("nccl", 10, 0, 0)
 		distribution = tf.contrib.distribute.MirroredStrategy(num_gpus=FLAGS.num_gpus, 
 												cross_tower_ops=cross_tower_ops)
+		worker_count = FLAGS.num_gpus
 
 	sess_config = tf.ConfigProto(allow_soft_placement=True,
 									log_device_placement=True)
 
 	run_config = tf.estimator.RunConfig(
 					  keep_checkpoint_max=10,
-					  model_dir=checkpoint_dir,
+					  # model_dir=checkpoint_dir,
 					  train_distribute=distribution, # tf 1.8
 					  # distribute=distribution,     # tf 1.4
 					  session_config=sess_config,

@@ -107,6 +107,7 @@ def model_fn_builder(
 				estimator_spec = tf.estimator.EstimatorSpec(mode=mode, 
 								loss=loss, train_op=train_op,
 								training_hooks=training_hooks)
+				print(tf.global_variables(), "==global_variables==")
 				if output_type == "sess":
 					return {
 						"train":{

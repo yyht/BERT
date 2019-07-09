@@ -11,6 +11,72 @@ import six
 import tensorflow as tf
 import numpy as np
 
+class RestoreParametersAverageValues(tf.train.SessionRunHook):
+	"""
+	Replace parameters with their moving averages.
+	This operation should be executed only once, and before any inference.
+	"""
+	def __init__(self, ema):
+		"""
+		:param ema:         tf.train.ExponentialMovingAverage
+		"""
+		super(RestoreParametersAverageValues, self).__init__()
+		self._ema = ema
+		self._restore_ops = None
+
+	def begin(self):
+		""" Create restoring operations before the graph been finalized. """
+		ema_variables = tf.moving_average_variables()
+		self._restore_ops = [tf.assign(x, self._ema.average(x)) for x in ema_variables]
+		print("==get restore ops==")
+
+	def after_create_session(self, session, coord):
+		""" Restore the parameters right after the session been created. """
+		print("==restore ema variables==")
+		session.run(self._restore_ops)
+
+def ema_saver():	
+	ema = tf.train.ExponentialMovingAverage(0.99)
+	saver = tf.train.Saver(ema.variables_to_restore())
+	return saver
+	
+def ema_getter(getter, name, *args, **kwargs):
+	'''
+	http://ruishu.io/2017/11/22/ema/
+	'''
+	var = getter(name, *args, **kwargs)
+	ema_var = ema.average(var)
+	return ema_var if ema_var else var
+
+def track_params_averages(params_moving_average_decay, scope, **kargs):
+	'''
+	https://github.com/tensorflow/tensorflow/issues/3460
+	'''
+	"""
+	Track the moving averages of parameters.
+	Must be invoked after `infer()` and before `train()`.
+
+	:return:
+			ema:                    `tf.train.ExponentialMovingAverage`
+			params_averages_op:     operator that tracking averages
+	add two stage ema
+	"""
+	global_step = tf.cast(tf.train.get_or_create_global_step(), tf.float32)
+	
+	if kargs.get("two_stage", False):
+		cond_fn = tf.less(global_step, tf.constant(kargs.get('first_stage_steps', -1), dtype=tf.float32))
+		decay_beta = tf.minimum(params_moving_average_decay, (global_step-kargs.get('first_stage_steps', -1))/(global_step-kargs.get('first_stage_steps', -1)+1))
+		decay_beta_final = tf.cond(cond_fn,
+									lambda:tf.constant(value=0.0, shape=[], dtype=tf.float32, name="first_stage_decay"),
+									lambda:decay_beta)
+	else:
+		decay_beta_final = tf.minimum(params_moving_average_decay, (global_step)/(global_step+1))
+
+	tf.summary.scalar('ema_decay_rate', decay_beta_final)
+
+	ema = tf.train.ExponentialMovingAverage(decay=decay_beta_final)
+	return ema
+
 def print_params(tvars, string):
 	for var in tvars:
 		tf.logging.info(" name = %s, shape = %s%s", 

@@ -123,7 +123,7 @@ def model_fn_builder(
 										2, dropout_prob,
 										model_reuse,
 										opt_config.num_train_steps,
-										feature_ratio=10,
+										feature_ratio=1.0,
 										logits_ratio_decay="constant",
 										feature_ratio_decay="constant",
 										feature_decay_rate=0.999,

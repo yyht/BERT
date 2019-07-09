@@ -57,7 +57,8 @@ class KnowledgeDistillation(object):
 			"mdd_loss":tf.constant(0.0),
 			"src_f1_prob":tf.constant(0.0),
 			"tgt_f1_prob":tf.constant(0.0),
-			"rkd_loss":tf.constant(0.0)
+			"rkd_loss":tf.constant(0.0),
+			"ml_loss":tf.constant(0.0)
 		}
 
 		for distillation_type in self.config.get("distillation", ["logits", "feature"]):
@@ -159,6 +160,20 @@ class KnowledgeDistillation(object):
 														kargs.get("feature_ratio_decay", "constant"),
 														 kargs.get("feature_decay_rate", 0.999),
 														 num_train_steps)
+
+			elif distillation_type == "dml":
+				student_tensor = features["student_logits_tensor"]
+				teacher_tensor = features["teacher_logits_tensor"]
+
+				output_dict["ml_loss"] = repo_distillation_utils.DML(student_tensor, 
+																	teacher_tensor)
+
+				output_dict['distillation_loss'] += output_dict['ml_loss'] * self._ratio_decay(
+														kargs.get("feature_ratio", 1.0),
+														kargs.get("feature_ratio_decay", "constant"),
+														 kargs.get("feature_decay_rate", 0.999),
+														 num_train_steps)
+
 		return output_dict
 
 

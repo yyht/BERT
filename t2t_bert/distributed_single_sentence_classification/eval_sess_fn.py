@@ -171,11 +171,17 @@ def eval_fn(FLAGS,
 				tf.cast(features["label_ids"], tf.int32)
 			)
 			accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
+			eval_op_dict['accuracy'] = accuracy
+			eval_op_dict['prob'] = prob
+			eval_op_dict['label_ids'] = features['label_ids']
+			eval_op_dict['pred_label'] = pred_label
 
-			return {"accuracy":accuracy, "loss":eval_op_dict["loss"], 
-					"pred_label":pred_label, "label_ids":features["label_ids"],
-					"prob":prob,
-					"feature":eval_op_dict["feature"]}
+			return eval_op_dict
+
+			# return {"accuracy":accuracy, "loss":eval_op_dict["loss"], 
+			# 		"pred_label":pred_label, "label_ids":features["label_ids"],
+			# 		"prob":prob,
+			# 		"feature":eval_op_dict["feature"]}
 		
 		# name_to_features = {
 		# 		"input_ids":

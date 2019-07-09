@@ -155,6 +155,11 @@ flags.DEFINE_string(
 	"if apply rule detector"
 	)
 
+flags.DEFINE_string(
+	"adv_id", "",
+	"if apply rule detector"
+	)
+
 def main(_):
 
 	# with tf.gfile.Open(FLAGS.vocab_file, "r") as f:
@@ -200,6 +205,9 @@ def main(_):
 		classifier_data_api = classifier_processor.FasttextDistillationProcessor()
 	elif FLAGS.distillation_type == "structure":
 		classifier_data_api = classifier_processor.FasttextStructureDistillationProcessor()
+	elif FLAGS.distillation_type == "prob_adv_adaptation":
+		classifier_data_api = classifier_processor.AdvAdaptationDistillationSentenceProcessor()
+		classifier_data_api.get_labels(FLAGS.adv_id)
 	classifier_data_api.get_labels(FLAGS.label_id)
 
 	train_examples = classifier_data_api.get_supervised_distillation_examples(train_file,
@@ -283,6 +291,32 @@ def main(_):
 		test_examples = classifier_data_api.get_train_examples(test_file,
 											is_shuffle=False)
 		write_to_tfrecords.convert_bert_distillation_classifier_examples_to_features(test_examples,
+																classifier_data_api.label2id,
+																FLAGS.max_length,
+																tokenizer_corpus,
+																test_result_file,
+																FLAGS.with_char,
+																FLAGS.char_len)
+	elif FLAGS.distillation_type == "prob_adv_adaptation":
+		write_to_tfrecords.convert_adv_adaptation_distillation_classifier_examples_to_features(total_train_examples,
+																classifier_data_api.label2id,
+																FLAGS.max_length,
+																tokenizer_corpus,
+																train_result_file,
+																FLAGS.with_char,
+																FLAGS.char_len)
+
+		write_to_tfrecords.convert_adv_adaptation_distillation_classifier_examples_to_features(dev_examples,
+																classifier_data_api.label2id,
+																FLAGS.max_length,
+																tokenizer_corpus,
+																dev_result_file,
+																FLAGS.with_char,
+																FLAGS.char_len)
+
+		test_examples = classifier_data_api.get_train_examples(test_file,
+											is_shuffle=False)
+		write_to_tfrecords.convert_adv_adaptation_distillation_classifier_examples_to_features(test_examples,
 																classifier_data_api.label2id,
 																FLAGS.max_length,
 																tokenizer_corpus,

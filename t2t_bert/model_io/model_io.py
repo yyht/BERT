@@ -16,6 +16,30 @@ class ModelIO(object):
 		print(" initializing ModelIO ")
 		self.config = config
 
+	def get_ema_hooks(self, train_op, var_list, params_moving_average_decay, scope, mode,
+				**kargs):
+		self.ema = model_io_utils.track_params_averages(
+								params_moving_average_decay, 
+								scope,
+								**kargs)
+		if mode == tf.estimator.ModeKeys.TRAIN:
+			with tf.control_dependencies([train_op]):
+				if not var_list:
+					tvars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope)
+				else:
+					tvars = var_list
+				params_averages_op = self.ema.apply(tvars)
+			return tf.group(train_op, params_averages_op), None
+			# tf.add_to_collection(tf.GraphKeys.UPDATE_OPS, tf.group(params_averages_op))
+		elif mode == tf.estimator.ModeKeys.EVAL or tf.estimator.ModeKeys.PREDICT:
+			hooks = model_io_utils.RestoreParametersAverageValues(self.ema)
+			return None, hooks
+		else:
+			return None, None
+
+	def get_ema_saver(self):
+		self.ema_saver = model_io_utils.ema_saver()
+
 	def moving_average_saver(self, opt, **kargs):
 		self.saver = opt.swapping_saver(var_list=kargs.get("var_lst", None),
 								max_to_keep=self.config.get("max_to_keep", 100))
