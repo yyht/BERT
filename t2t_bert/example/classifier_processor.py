@@ -1072,7 +1072,7 @@ class LCQMCStructureDistillationProcessor(data_processor.DataProcessor):
 			try:
 				guid = int(content["ID"])
 			except:
-				guid = index
+				guid = i
 			text_a = content["sentence1"]
 			text_b = content["sentence2"]
 			label = content["gold_label"]
@@ -1105,7 +1105,7 @@ class LCQMCStructureDistillationProcessor(data_processor.DataProcessor):
 			try:
 				guid = int(content["ID"])
 			except:
-				guid = index
+				guid = i
 			text_a = content["sentence1"]
 			text_b = content["sentence2"]
 			label = content["gold_label"]
