@@ -1044,7 +1044,10 @@ class LCQMCStructureDistillationProcessor(data_processor.DataProcessor):
 		examples = []
 		for index in range(len(data)):
 			content = data[index]
-			guid = int(content["ID"])
+			try:
+				guid = int(content["ID"])
+			except:
+				guid = index
 			text_a = content["sentence1"]
 			text_b = content["sentence2"]
 			label = content["gold_label"]
@@ -1066,7 +1069,10 @@ class LCQMCStructureDistillationProcessor(data_processor.DataProcessor):
 		cnt = 0
 		for (i, line) in enumerate(lines):
 			content = line
-			guid = int(content["ID"])
+			try:
+				guid = int(content["ID"])
+			except:
+				guid = index
 			text_a = content["sentence1"]
 			text_b = content["sentence2"]
 			label = content["gold_label"]
@@ -1096,7 +1102,10 @@ class LCQMCStructureDistillationProcessor(data_processor.DataProcessor):
 			
 		for (i, line) in enumerate(lines):
 			content = line
-			guid = int(content["ID"])
+			try:
+				guid = int(content["ID"])
+			except:
+				guid = index
 			text_a = content["sentence1"]
 			text_b = content["sentence2"]
 			label = content["gold_label"]
