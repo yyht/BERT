@@ -1034,11 +1034,12 @@ class LCQMCStructureDistillationProcessor(data_processor.DataProcessor):
 		return distilaltion_dict_lst
 
 	def _read_data(self, input_file):
-		with tf.gfile.Open(input_file, "r") as f:
-			lines = []
-			for line in f:
-				lines.append(line.strip())
-			return lines
+		import json
+		data = []
+		with tf.gfile.Open(input_file, "r") as frobj:
+			for line in frobj:
+				data.append(json.loads(line.strip()))
+		return data
 
 	def _create_examples(self, data, lang="zh"):
 		examples = []
