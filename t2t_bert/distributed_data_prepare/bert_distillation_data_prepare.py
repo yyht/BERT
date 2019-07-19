@@ -195,6 +195,8 @@ def main(_):
 	print("==not apply rule==")
 	if FLAGS.data_type == "lcqmc":
 		classifier_data_api = classifier_processor.LCQMCDistillationProcessor()
+	elif FLAGS.data_type == "strcuture_lcqmc":
+		classifier_data_api = classifier_processor.LCQMCStructureDistillationProcessor()
 
 	classifier_data_api.get_labels(FLAGS.label_id)
 
