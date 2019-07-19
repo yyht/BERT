@@ -1019,6 +1019,136 @@ class FasttextStructureDistillationProcessor(data_processor.DataProcessor):
 			random.shuffle(examples)
 		return examples
 
+class LCQMCStructureDistillationProcessor(data_processor.DataProcessor):
+	def get_labels(self, label_file):
+		import json
+		with open(label_file, "r") as frobj:
+			label = json.load(frobj)
+		self.label2id = label["label2id"]
+		self.id2label = label["id2label"]
+
+	def _read_distillation(self, input_file):
+		from example.read_distillation_tfrecord import read_distilaltion
+		distilaltion_dict_lst = read_distilaltion(input_file)
+		print("==total size of distillation==", len(distilaltion_dict_lst))
+		return distilaltion_dict_lst
+
+	def _read_data(self, input_file):
+		with tf.gfile.Open(input_file, "r") as f:
+			lines = []
+			for line in f:
+				lines.append(line.strip())
+			return lines
+
+	def _create_examples(self, data, lang="zh"):
+		examples = []
+		for index in range(len(data)):
+			content = data[index]
+			guid = int(content["ID"])
+			text_a = content["sentence1"]
+			text_b = content["sentence2"]
+			label = content["gold_label"]
+			if isinstance(text_a,str) and isinstance(text_b,str):
+				examples.append(data_distillation_feature_classifier.InputExample(
+						guid=guid,
+						text_a=clean(text_a),
+						text_b=clean(text_b),
+						label=[label],
+						label_probs=[1.0/len(self.label2id)]*len(self.label2id),
+						label_ratio=1.0,
+						distillation_ratio=0.0
+					))
+		return examples
+
+	def _create_supervised_distillation_examples(self, lines, distillation_dict_lst):
+
+		examples = []
+		cnt = 0
+		for (i, line) in enumerate(lines):
+			content = line
+			guid = int(content["ID"])
+			text_a = content["sentence1"]
+			text_b = content["sentence2"]
+			label = content["gold_label"]
+			if isinstance(text_a,str) and isinstance(text_b,str):
+
+				text_a = tokenization.convert_to_unicode(text_a)
+				text_b = tokenization.convert_to_unicode(text_b)
+				input_labels = [label]
+				
+				examples.append(data_distillation_feature_classifier.InputExample(
+						guid=guid,
+						text_a=text_a,
+						text_b=text_b,
+						label=input_labels,
+						label_probs=distillation_dict_lst[cnt]['prob'],
+						label_ratio=1.0,
+						distillation_ratio=1.0
+					))
+				cnt += 1
+		assert cnt == len(distillation_prob)
+		return examples
+
+	def _create_unsupervised_distillation_examples(self, lines, distillation_dict_lst):
+
+		examples = []
+		cnt = 0
+			
+		for (i, line) in enumerate(lines):
+			content = line
+			guid = int(content["ID"])
+			text_a = content["sentence1"]
+			text_b = content["sentence2"]
+			label = content["gold_label"]
+			if isinstance(text_a,str) and isinstance(text_b,str):
+
+				text_a = tokenization.convert_to_unicode(text_a)
+				text_b = tokenization.convert_to_unicode(text_b)
+				input_labels = [label]
+				
+				examples.append(data_distillation_feature_classifier.InputExample(
+						guid=guid,
+						text_a=text_a,
+						text_b=text_b,
+						label=input_labels,
+						label_probs=distillation_dict_lst[cnt]['prob'],
+						label_ratio=0.0,
+						distillation_ratio=1.0
+					))
+			cnt += 1
+		assert cnt == len(distillation_prob)
+		return examples
+
+	def get_train_examples(self, train_file, is_shuffle):
+		lines = self._read_data(train_file)
+		examples = self._create_examples(lines)
+		if is_shuffle:
+			random.shuffle(examples)
+		return examples
+
+	def get_dev_examples(self, dev_file, is_shuffle):
+		lines = self._read_data(dev_file)
+		examples = self._create_examples(lines)
+		if is_shuffle:
+			random.shuffle(examples)
+		return examples
+
+	def get_unsupervised_distillation_examples(self, dev_file, distillation_file, is_shuffle):
+		distillation = self._read_distillation(distillation_file)
+		lines = self._read_data(dev_file)
+		examples = self._create_unsupervised_distillation_examples(lines, distillation)
+		if is_shuffle:
+			random.shuffle(examples)
+		return examples
+
+	def get_supervised_distillation_examples(self, dev_file, distillation_file, is_shuffle):
+		distillation = self._read_distillation(distillation_file)
+		lines = self._read_data(dev_file)
+		examples = self._create_supervised_distillation_examples(lines, distillation)
+		if is_shuffle:
+			random.shuffle(examples)
+		return examples
+
 class SentencePairProcessor(data_processor.DataProcessor): 
 	def get_labels(self, label_file):
 		import json
