@@ -1093,7 +1093,7 @@ class LCQMCStructureDistillationProcessor(data_processor.DataProcessor):
 						distillation_ratio=1.0
 					))
 				cnt += 1
-		assert cnt == len(distillation_prob)
+		assert cnt == len(distillation_dict_lst)
 		return examples
 
 	def _create_unsupervised_distillation_examples(self, lines, distillation_dict_lst):
@@ -1126,7 +1126,7 @@ class LCQMCStructureDistillationProcessor(data_processor.DataProcessor):
 						distillation_ratio=1.0
 					))
 			cnt += 1
-		assert cnt == len(distillation_prob)
+		assert cnt == len(distillation_dict_lst)
 		return examples
 
 	def get_train_examples(self, train_file, is_shuffle):
