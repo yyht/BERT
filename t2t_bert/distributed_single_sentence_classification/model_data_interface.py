@@ -64,10 +64,16 @@ def data_interface(FLAGS):
 			}
 
 	elif FLAGS.model_type in ["textcnn", "textlstm", "dan"]:
-		name_to_features = {
-			"input_ids_a":tf.FixedLenFeature([FLAGS.max_length], tf.int64),
-			"label_ids":tf.FixedLenFeature([], tf.int64)
-		}
+		if FLAGS.task_type == "single_sentence_classification":
+			name_to_features = {
+				"input_ids_a":tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+				"label_ids":tf.FixedLenFeature([], tf.int64)
+			}
+		elif FLAGS.task_type == "single_sentence_multilabel_classification":
+			name_to_features = {
+				"input_ids_a":tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+				"label_ids":tf.FixedLenFeature([FLAGS.num_classes], tf.int64)
+			}
 		if FLAGS.with_char == "char":
 			name_to_features["input_char_ids_a"] = tf.FixedLenFeature([FLAGS.max_length], tf.int64)
 			if FLAGS.task_type == "pair_sentence_classification":
@@ -176,6 +182,18 @@ def data_interface_server(FLAGS):
 			receiver_tensors["input_ids_b"] = tf.placeholder(tf.int32, [None, FLAGS.max_length], name='input_ids_b')
 			if FLAGS.with_char == "char":
 				receiver_tensors["input_char_ids_b"] = tf.placeholder(tf.int32, [None, FLAGS.char_limit, FLAGS.max_length], name='input_char_ids_b')
+
+	elif FLAGS.model_type in ["textcnn_distillation_adv_adaptation"]:
+		receiver_tensors = {
+				"input_ids_a":
+						tf.placeholder(tf.int32, [None, FLAGS.max_length], name='input_ids_a'),
+				"label_ids":
+						tf.placeholder(tf.int32, [None], name='label_ids')
+			}
+		if FLAGS.with_char == "char":
+			name_to_features["input_char_ids_a"] = tf.FixedLenFeature([FLAGS.max_length], tf.int64)
+			if FLAGS.task_type == "pair_sentence_classification":
+				name_to_features["input_char_ids_b"] = tf.FixedLenFeature([FLAGS.max_length], tf.int64)
 
 	elif FLAGS.model_type in ["match_pyramid"]:
 		receiver_tensors = {

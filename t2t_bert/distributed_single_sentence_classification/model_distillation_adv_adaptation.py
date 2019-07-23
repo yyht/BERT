@@ -43,7 +43,8 @@ def kd_distance(x, y, dist_type):
 	elif dist_type == "mse":
 		return mse(x, y)
 
-def adversarial_loss(model_config, feature, adv_ids, dropout_prob):
+def adversarial_loss(model_config, feature, adv_ids, dropout_prob, model_reuse,
+					**kargs):
 	'''make the task classifier cannot reliably predict the task based on 
 	the shared feature
 	'''
@@ -112,7 +113,6 @@ def model_fn_builder(
 							mode, target, reuse=model_reuse)
 
 		label_ids = features["label_ids"]
-		adv_ids = features["adv_ids"]
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
 			dropout_prob = model_config.dropout_prob
@@ -135,32 +135,34 @@ def model_fn_builder(
 											num_labels,
 											label_ids,
 											dropout_prob)
+			if mode == tf.estimator.ModeKeys.TRAIN:
+				adv_ids = features["adv_ids"]
+				(adv_loss, 
+				adv_per_example_loss, 
+				adv_logits) = adversarial_loss(model_adv_config, 
+												model_adv_adaptation.get_pooled_output(), 
+												adv_ids, dropout_prob, model_reuse)
 
-			(adv_loss, 
-			adv_per_example_loss, 
-			adv_logits) = adversarial_loss(model_adv_config, 
-											model_adv_adaptation.get_pooled_output(), 
-											adv_ids, dropout_prob)
+				loss_diff = diff_loss(model.get_pooled_output(), 
+										model_adv_adaptation.get_pooled_output())
 
-			loss_diff = diff_loss(model.get_pooled_output(), 
-									model_adv_adaptation.get_pooled_output())
+				print(kargs.get("temperature", 0.5), kargs.get("distillation_ratio", 0.5), "==distillation hyparameter==")
 
-		print(kargs.get("temperature", 0.5), kargs.get("distillation_ratio", 0.5), "==distillation hyparameter==")
+				# get teacher logits
+				teacher_logit = tf.log(features["label_probs"]+1e-10)/kargs.get("temperature", 2.0) # log_softmax logits
+				student_logit = tf.nn.log_softmax(logits /kargs.get("temperature", 2.0)) # log_softmax logits
 
-		# get teacher logits
-		teacher_logit = tf.log(features["label_probs"]+1e-10)/kargs.get("temperature", 2.0) # log_softmax logits
-		student_logit = tf.nn.log_softmax(logits /kargs.get("temperature", 2.0)) # log_softmax logits
+				distillation_loss = kd_distance(teacher_logit, student_logit, kargs.get("distillation_distance", "kd")) 
+				distillation_loss *= features["distillation_ratio"]
+				distillation_loss = tf.reduce_sum(distillation_loss) / (1e-10+tf.reduce_sum(features["distillation_ratio"]))
 
-		distillation_loss = kd_distance(teacher_logit, student_logit, kargs.get("distillation_distance", "kd")) 
-		distillation_loss *= features["distillation_ratio"]
-		distillation_loss = tf.reduce_sum(distillation_loss) / (1e-10+tf.reduce_sum(features["distillation_ratio"]))
+				label_loss = tf.reduce_sum(per_example_loss * features["label_ratio"]) / (1e-10+tf.reduce_sum(features["label_ratio"]))
+				print("==distillation loss ratio==", kargs.get("distillation_ratio", 0.9)*tf.pow(kargs.get("temperature", 2.0), 2))
 
-		label_loss = tf.reduce_sum(per_example_loss * features["label_ratio"]) / (1e-10+tf.reduce_sum(features["label_ratio"]))
-			print("==distillation loss ratio==", kargs.get("distillation_ratio", 0.9)*tf.pow(kargs.get("temperature", 2.0), 2))
-
-		# loss = label_loss + kargs.get("distillation_ratio", 0.9)*tf.pow(kargs.get("temperature", 2.0), 2)*distillation_loss
-		loss = (1-kargs.get("distillation_ratio", 0.9))*label_loss + kargs.get("distillation_ratio", 0.9) * distillation_loss
-		loss += kargs.get("adv_ratio", 0.1) * adv_loss + loss_diff
+				# loss = label_loss + kargs.get("distillation_ratio", 0.9)*tf.pow(kargs.get("temperature", 2.0), 2)*distillation_loss
+				loss = (1-kargs.get("distillation_ratio", 0.9))*label_loss + kargs.get("distillation_ratio", 0.9) * distillation_loss
+				if mode == tf.estimator.ModeKeys.TRAIN:
+					loss += kargs.get("adv_ratio", 0.01) * adv_loss + loss_diff
 
 		model_io_fn = model_io.ModelIO(model_io_config)
 
@@ -210,7 +212,7 @@ def model_fn_builder(
 						tf.cast(adv_pred_label, tf.int32),
 						tf.cast(adv_ids, tf.int32)
 					)
-					adv_accuracy = tf.reduce_mean(tf.cast(adv_correct, tf.float32))					
+					adv_accuracy = tf.reduce_mean(tf.cast(adv_correct, tf.float32))                 
 					return {
 						"train":{
 										"loss":loss, 

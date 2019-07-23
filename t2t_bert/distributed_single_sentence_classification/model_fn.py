@@ -142,17 +142,18 @@ def model_fn_builder(
 													)
 										}
 							)
-			else:
+			elif kargs.get('label_type', 'multi_class') == 'multi_label':
+				prob = tf.nn.sigmoid(logits)
 				estimator_spec = tf.estimator.EstimatorSpec(
 										mode=mode,
 										predictions={
-													'pred_label':pred_label,
-													"max_prob":max_prob
+													'pred_label':prob,
+													"max_prob":prob
 										},
 										export_outputs={
 											"output":tf.estimator.export.PredictOutput(
 														{
-															'pred_label':pred_label,
+															'pred_label':prob,
 															"max_prob":prob
 														}
 													)
