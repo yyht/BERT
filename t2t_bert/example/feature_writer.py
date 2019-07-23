@@ -180,14 +180,17 @@ class DistillationEncoderFeatureWriter(FeatureWriter):
 	def __init__(self, filename, is_training):
 		super(DistillationEncoderFeatureWriter, self).__init__(filename, is_training)
 
-	def process_feature(self, feature):
+	def process_feature(self, feature, **kargs):
 		self.num_features += 1
 		features = collections.OrderedDict()
 
 		# print(feature.label_probs)
 
 		features["input_ids_a"] = tf_data_utils.create_int_feature(feature.input_ids_a)
-		features["label_ids"] = tf_data_utils.create_int_feature([feature.label_ids])
+		if kargs.get("label_type", "multi_class") == "multi_class":
+			features["label_ids"] = tf_data_utils.create_int_feature([feature.label_ids])
+		else:
+			features["label_ids"] = tf_data_utils.create_int_feature(feature.label_ids)
 
 		try:
 			features["input_char_ids_a"] = tf_data_utils.create_int_feature(feature.input_char_ids_a)
@@ -290,7 +293,7 @@ class AdvAdaptationFeature(FeatureWriter):
 			s = 0
 
 		try:
-			features["adv_ids"] = tf_data_utils.create_float_feature(feature.adv_ids)
+			features["adv_ids"] = tf_data_utils.create_int_feature([feature.adv_ids])
 		except:
 			s = 0
 

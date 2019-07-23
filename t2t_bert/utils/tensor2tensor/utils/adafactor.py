@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2018 The Tensor2Tensor Authors.
+# Copyright 2019 The Tensor2Tensor Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Optimization."""
 from __future__ import absolute_import
 from __future__ import division
@@ -190,6 +191,11 @@ class AdafactorOptimizer(tf.train.Optimizer):
   def _apply_sparse(self, grad, var):
     return self._apply_dense(tf.convert_to_tensor(grad), var)
 
+  def _resource_apply_sparse(self, grad, handle, indices):
+    return self._resource_apply_dense(
+        tf.convert_to_tensor(tf.IndexedSlices(grad, indices, tf.shape(handle))),
+        handle)
+
   def _parameter_scale(self, var):
     """Estimate the scale of the parameters from the current values.
 
@@ -320,7 +326,7 @@ def adafactor_optimizer_from_hparams(hparams, lr):
   Raises:
     ValueError: on illegal values
   """
-  if hparams.optimizer_adafactor_decay_type == "Adam":
+  if hparams.optimizer_adafactor_decay_type == "adam":
     decay_rate = adafactor_decay_rate_adam(
         hparams.optimizer_adafactor_beta2)
   elif hparams.optimizer_adafactor_decay_type == "pow":

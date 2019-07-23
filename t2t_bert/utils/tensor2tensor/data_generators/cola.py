@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2018 The Tensor2Tensor Authors.
+# Copyright 2019 The Tensor2Tensor Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Data generators for the Corpus of Liguistic Acceptability."""
 
 from __future__ import absolute_import
@@ -20,7 +21,6 @@ from __future__ import print_function
 
 import os
 import zipfile
-import six
 from tensor2tensor.data_generators import generator_utils
 from tensor2tensor.data_generators import problem
 from tensor2tensor.data_generators import text_encoder
@@ -60,10 +60,6 @@ class Cola(text_problems.Text2ClassProblem):
     return 2**13  # 8k vocab suffices for this small dataset.
 
   @property
-  def vocab_filename(self):
-    return "vocab.cola.%d" % self.approx_vocab_size
-
-  @property
   def num_classes(self):
     return 2
 
@@ -86,10 +82,7 @@ class Cola(text_problems.Text2ClassProblem):
 
   def example_generator(self, filename):
     for line in tf.gfile.Open(filename, "rb"):
-      if six.PY2:
-        line = unicode(line.strip(), "utf-8")
-      else:
-        line = line.strip().decode("utf-8")
+      line = text_encoder.to_unicode_utf8(line.strip())
       _, label, _, sent = line.split("\t")
       yield {
           "inputs": sent,

@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2018 The Tensor2Tensor Authors.
+# Copyright 2019 The Tensor2Tensor Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """AE Transformer."""
 
 from __future__ import absolute_import
@@ -20,12 +21,15 @@ from __future__ import print_function
 
 import functools
 import math
+import os
 from six.moves import range  # pylint: disable=redefined-builtin
 
 from tensor2tensor.layers import common_attention
 from tensor2tensor.layers import common_image_attention as cia
 from tensor2tensor.layers import common_layers
 from tensor2tensor.layers import discretization
+from tensor2tensor.layers import latent_layers
+from tensor2tensor.layers import modalities
 from tensor2tensor.models import transformer
 from tensor2tensor.utils import beam_search
 from tensor2tensor.utils import expert_utils
@@ -99,7 +103,7 @@ def top_k_softmax(x, k):
 def top_k_experts(x, k, hparams):
   x_shape = common_layers.shape_list(x)
   x_flat = tf.reshape(x, [-1, common_layers.shape_list(x)[-1]])
-  is_training = hparams.mode == tf.contrib.learn.ModeKeys.TRAIN
+  is_training = hparams.mode == tf.estimator.ModeKeys.TRAIN
   gates, load = expert_utils.noisy_top_k_gating(
       x_flat, 2 ** hparams.z_size, is_training, k)
   gates_shape = [x_shape[0], x_shape[1], x_shape[2], 2 ** hparams.z_size]
@@ -190,10 +194,10 @@ def decode_transformer(encoder_output,
             [common_layers.shape_list(targets)[0], 1, 1, hparams.hidden_size])
       decoder_output = cia.transformer_decoder_layers(
           decoder_input,
-          None,
-          bias,
-          hparams.num_decoder_layers or hparams.num_hidden_layers,
-          hparams,
+          encoder_output=None,
+          num_layers=hparams.num_decoder_layers or hparams.num_hidden_layers,
+          hparams=hparams,
+          self_attention_bias=bias,
           attention_type=hparams.dec_attention_type,
           name="decoder")
     decoder_output_shape = common_layers.shape_list(decoder_output)
@@ -286,7 +290,7 @@ def ae_latent_sample_beam(latents_dense_in, inputs, ed, embed, hparams):
 
   initial_ids = tf.zeros([tf.shape(latents_dense_in)[0]], dtype=tf.int32)
   length = tf.shape(latents_dense_in)[1]
-  ids, _ = beam_search.beam_search(
+  ids, _, _ = beam_search.beam_search(
       symbols_to_logits_fn, initial_ids, beam_size, length,
       vocab_size, alpha=0.0, eos_id=-1, stop_early=False)
 
@@ -346,20 +350,46 @@ def ae_transformer_internal(inputs,
     ed, inputs_ex, ed_ex = None, None, None
 
   # Autoencoding.
-  losses = {"extra": tf.constant(0.0), "latent_pred": tf.constant(0.0)}
+  losses = {"extra": tf.constant(0.0), "latent_pred": tf.constant(0.0),
+            "neg_q_entropy": tf.constant(0.0)}
   if hparams.do_ae:
     # flatten here
-    original_targets_shape = tf.shape(targets)
+    original_targets = targets
+    original_targets_shape = tf.shape(original_targets)
     if hparams.task == "image":
       cia.maybe_reshape_4d_to_3d(targets)
     if hparams.task == "translate":
-      max_targets_len_from_inputs = tf.concat([inputs, inputs], axis=1)
+      if inputs is not None:
+        max_targets_len_from_inputs = tf.concat([inputs, inputs], axis=1)
+      else:
+        max_targets_len_from_inputs = targets
     else:
       assert hparams.task == "image"
       max_targets_len_from_inputs = targets
+    if hparams.word_shuffle:
+      tf.logging.info("Using word shuffle with rate = {}".format(
+          hparams.word_shuffle))
+      targets_idx = tf.range(start=0,
+                             limit=common_layers.shape_list(targets)[1],
+                             delta=1)
+      targets_idx = tf.to_float(targets_idx)
+      noise = tf.random_uniform(shape=common_layers.shape_list(targets_idx),
+                                minval=0,
+                                maxval=1 + hparams.word_shuffle)
+      targets_idx += noise
+      permutation = tf.contrib.framework.argsort(targets_idx)
+      targets_permuted = tf.gather(targets, indices=permutation, axis=1)
+      targets = targets_permuted
     targets, _ = common_layers.pad_to_same_length(
         targets, max_targets_len_from_inputs,
         final_length_divisible_by=2**hparams.num_compress_steps)
+    # Add positional information
+    targets_shape = common_layers.shape_list(targets)
+    targets = tf.reshape(targets, [targets_shape[0], targets_shape[1],
+                                   targets_shape[3]])
+    targets = common_attention.add_positional_embedding(
+        targets, hparams.max_length, name="targets_position")
+    targets = tf.reshape(targets, shape=targets_shape)
     if hparams.word_dropout:
       mask = tf.random_uniform(shape=common_layers.shape_list(targets),
                                minval=0.0, maxval=1.0)
@@ -367,14 +397,15 @@ def ae_transformer_internal(inputs,
                                tf.zeros_like(targets))
     else:
       targets_noisy = targets
+
     targets_c = compress(targets_noisy, inputs, False, hparams, "compress")
     if hparams.mode != tf.estimator.ModeKeys.PREDICT:
       # Compress and bottleneck.
-      latents_dense, latents_discrete, extra_loss, embed = hparams.bottleneck(
-          x=targets_c,
-          filter_size=hparams.compress_filter_size,
-          name="vc",
-          mode=hparams.mode)
+      latents_dense, latents_discrete, extra_loss, embed, neg_q_entropy = (
+          hparams.bottleneck(inputs=targets_c,
+                             filter_size=hparams.compress_filter_size,
+                             mode=hparams.mode,
+                             name="vc"))
       if _DO_SUMMARIES:
         tf.summary.histogram("b0", tf.reshape(latents_discrete[:, 0, :], [-1]))
       pc = common_layers.inverse_exp_decay(hparams.startup_steps)
@@ -391,20 +422,31 @@ def ae_transformer_internal(inputs,
             task="translate")
         _, latent_pred_loss = ae_latent_softmax(
             latents_pred, tf.stop_gradient(latents_discrete), hparams)
+
+        # Scale by latent dimension for summary so we can compare across
+        # batches.
+        if _DO_SUMMARIES:
+          tf.summary.scalar("latent_pred_loss_mean",
+                            tf.reduce_mean(latent_pred_loss))
+        if hparams.sum_over_latents:
+          latent_pred_loss = tf.reduce_sum(latent_pred_loss, [1, 2])
+
         losses["latent_pred"] = tf.reduce_mean(
-            latent_pred_loss * tf.to_float(cond))
+            latent_pred_loss * tf.to_float(cond)) * hparams.prior_scale
+        losses["neg_q_entropy"] = neg_q_entropy * hparams.entropy_scale
       else:
         inputs_c = decode_transformer(inputs, ed, targets_c, hparams, "dec_c")
-        losses["latent_pred"] = tf.reduce_mean((inputs_c - targets_c)**2) * 20
+        losses["latent_pred"] = tf.reduce_mean(
+            tf.squared_difference(inputs_c, targets_c)) * 20
         def bn_inputs():
           with tf.variable_scope(tf.get_variable_scope(), reuse=True):
-            bn, _, _, _ = hparams.bottleneck(
-                x=inputs_c,
+            bn, _, _, _, _ = hparams.bottleneck(
+                inputs=inputs_c,
                 filter_size=hparams.compress_filter_size,
-                name="vc",
-                mode=hparams.mode)
+                mode=hparams.mode,
+                name="vc")
           return bn
-        inputs_c = bn_inputs
+        inputs_c = bn_inputs()
         ptc = 1.0 - common_layers.inverse_lin_decay(200000) * 0.5
         ptc = ptc if hparams.mode == tf.estimator.ModeKeys.TRAIN else 1.0
         latents_dense = tf.where(tf.less(tf.random_uniform([batch_size]), ptc),
@@ -412,15 +454,17 @@ def ae_transformer_internal(inputs,
     else:
       if hparams.bottleneck_kind in ["dense", "vae"]:
         inputs_c = decode_transformer(inputs, ed, targets_c, hparams, "dec_c")
-        latents_dense, _, _, _ = hparams.bottleneck(
-            x=inputs_c,
+        latents_dense, _, _, _, _ = hparams.bottleneck(
+            inputs=inputs_c,
             filter_size=hparams.compress_filter_size,
-            name="vc",
-            mode=hparams.mode)
+            mode=hparams.mode,
+            name="vc")
       else:
         latent_len = common_layers.shape_list(targets_c)[1]
-        _, _, _, embed = hparams.bottleneck(
-            x=targets_c, filter_size=hparams.compress_filter_size, name="vc")
+        _, _, _, embed, _ = hparams.bottleneck(
+            inputs=targets_c,
+            filter_size=hparams.compress_filter_size,
+            name="vc")
         latents_dense = tf.zeros_like(targets_c[:, :latent_len, :, :])
         if cache is None:
           cache = ae_latent_sample(
@@ -428,16 +472,17 @@ def ae_transformer_internal(inputs,
         latents_dense = embed(cache)
     # Postprocess.
     d = latents_dense
-    pos = tf.get_variable("pos", [1, 1000, 1, hparams.hidden_size])
-    pos = pos[:, :common_layers.shape_list(latents_dense)[1] + 1, :, :]
-    latents_dense = tf.pad(latents_dense,
-                           [[0, 0], [1, 0], [0, 0], [0, 0]]) + pos
+    d_shape = common_layers.shape_list(d)
+    d = tf.reshape(d, [d_shape[0], d_shape[1], d_shape[3]])
+    d = common_attention.add_positional_embedding(
+        d, hparams.max_length, name="latents_position")
+    d = tf.reshape(d, shape=d_shape)
 
     # decompressing the dense latents
     for i in range(hparams.num_compress_steps):
       j = hparams.num_compress_steps - i - 1
       d = residual_conv(d, 1, (3, 1), hparams, "decompress_rc_%d" % j)
-      if hparams.do_attend_decompress:
+      if inputs is not None and hparams.do_attend_decompress:
         d = attend(d, inputs, hparams, "decompress_attend_%d" % j)
       d = decompress_step(d, hparams, i > 0, False, "decompress_%d" % j)
 
@@ -480,7 +525,15 @@ def ae_transformer_internal(inputs,
     latent_time = tf.less(nonlatent_steps,
                           tf.to_int32(tf.train.get_global_step()))
     losses["latent_pred"] *= tf.to_float(latent_time)
-  return res, losses, cache
+
+  # res was generated from padded targets, which means it has some extra
+  # elements. These can cause shape problems when computing loss with respect to
+  # the original (unpadded) targets. So we remove their extra elements here.
+  res = res[:, :original_targets_shape[1], :, :]
+
+  data_dim = common_layers.shape_list(res)[1]
+  latent_dim = common_layers.shape_list(targets_c)[1]
+  return res, losses, cache, data_dim, latent_dim
 
 
 @registry.register_model
@@ -497,25 +550,28 @@ class TransformerAE(t2t_model.T2TModel):
         hidden_size=self._hparams.hidden_size,
         z_size=self._hparams.z_size,
         filter_size=self._hparams.filter_size,
-        startup_steps=self.hparams.startup_steps,
         bottleneck_kind=self._hparams.bottleneck_kind,
         num_blocks=self._hparams.num_blocks,
         num_residuals=self.hparams.num_residuals,
         reshape_method=self._hparams.reshape_method,
         beta=self._hparams.beta,
-        noise_dev=self._hparams.noise_dev,
+        ema=self._hparams.ema,
+        epsilon=self._hparams.epsilon,
         decay=self._hparams.decay,
-        discrete_mix=self._hparams.d_mix,
         random_top_k=self._hparams.random_top_k,
         soft_em=self.hparams.soft_em,
         num_samples=self.hparams.num_samples,
-        epsilon=self._hparams.epsilon,
         softmax_k=self._hparams.softmax_k,
-        kl_warmup_steps=self._hparams.kl_warmup_steps,
-        ema=self._hparams.ema,
+        temperature_warmup_steps=self._hparams.temperature_warmup_steps,
+        do_hard_gumbel_softmax=self._hparams.do_hard_gumbel_softmax,
+        num_flows=self._hparams.num_flows,
+        approximate_gs_entropy=self._hparams.approximate_gs_entropy,
+        discrete_mix=self._hparams.d_mix,
+        noise_dev=self._hparams.noise_dev,
+        startup_steps=self.hparams.startup_steps,
         summary=_DO_SUMMARIES)
     # Set the discretization bottleneck specific things here
-    if self._hparams.bottleneck_kind == "dvq":
+    if self._hparams.bottleneck_kind in ["dvq", "gumbel-softmax-dvq"]:
       z_size_per_residual = self._hparams.z_size / self._hparams.num_residuals
       block_dim = int(self._hparams.hidden_size // self._hparams.num_blocks)
       block_v_size = 2**(z_size_per_residual / self._hparams.num_blocks)
@@ -532,7 +588,7 @@ class TransformerAE(t2t_model.T2TModel):
                 self._hparams.num_residuals, self._hparams.num_blocks,
                 self._hparams.hidden_size, block_dim
             ],
-            initializer=tf.contrib.layers.xavier_initializer(),
+            initializer=tf.initializers.glorot_uniform(),
             trainable=self._hparams.trainable_projections)
 
         self._hparams.bottleneck = functools.partial(
@@ -567,7 +623,10 @@ class TransformerAE(t2t_model.T2TModel):
           for i in range(self._hparams.num_residuals):
             ema_means_i = tf.get_variable(
                 "ema_means_{}".format(i),
-                initializer=means.initialized_value()[i],
+                [self._hparams.num_blocks, block_v_size, block_dim],
+                initializer=(lambda shape, dtype=None, partition_info=None,  # pylint: disable=g-long-lambda
+                                    verify_shape=None:
+                             means.initialized_value()[i]),
                 trainable=False)
             ema_means.append(ema_means_i)
 
@@ -578,17 +637,13 @@ class TransformerAE(t2t_model.T2TModel):
           ema_count=ema_count,
           ema_means=ema_means)
 
-  @property
-  def has_input(self):
-    return self._problem_hparams.input_modality
-
   def body(self, features):
     inputs = features["inputs"] if "inputs" in features else None
     if self._hparams.drop_inputs:
       inputs = None
     reuse = "cache_raw" in features
     with tf.variable_scope(tf.get_variable_scope(), reuse=reuse):
-      res, loss, _ = ae_transformer_internal(
+      res, loss, _, self._data_dim, self._latent_dim = ae_transformer_internal(
           inputs,
           features["targets"],
           features["target_space_id"],
@@ -608,7 +663,7 @@ class TransformerAE(t2t_model.T2TModel):
       inputs = None
     targets = tf.zeros([beam_batch_size, 1, 1, self._hparams.hidden_size])
     with tf.variable_scope("body"):
-      _, _, cache = ae_transformer_internal(
+      _, _, cache, _, _ = ae_transformer_internal(
           inputs, targets, features["target_space_id"], self._hparams)
     features["cache_raw"] = cache
 
@@ -630,15 +685,24 @@ class TransformerAE(t2t_model.T2TModel):
     if "partial_targets" in features:
       initial_output = tf.convert_to_tensor(features["partial_targets"])
     else:
-      batch_size = common_layers.shape_list(features["inputs"])[0]
-      length = common_layers.shape_list(features["inputs"])[1]
+      # inputs might not be present in features (e.g.: language modeling),
+      # in which case we fallback to 'infer_targets' for calculating initial
+      # input shape, type, etc.
+      inputs_or_targets = features.get("inputs", features.get("infer_targets"))
+      batch_size = common_layers.shape_list(inputs_or_targets)[0]
+      length = common_layers.shape_list(inputs_or_targets)[1]
+      hidden_dim = common_layers.shape_list(inputs_or_targets)[-1]
       target_length = tf.to_int32(2.0 * tf.to_float(length))
-      initial_output = tf.zeros((batch_size, target_length, 1, 1),
-                                dtype=tf.int64)
+      initial_output = tf.zeros((batch_size, target_length, 1, hidden_dim),
+                                dtype=inputs_or_targets.dtype)
 
     features["targets"] = initial_output
     logits, _ = self(features)  # pylint: disable=not-callable
-    samples = tf.argmax(logits, axis=-1)
+    # this should only happen if we're doing target_modality not real
+    if inputs_or_targets.dtype == tf.float32:
+      samples = logits
+    else:
+      samples = tf.argmax(logits, axis=-1)
 
     # More steps.
     self.predict_mask = 0.0  # Use the provided targets this time.
@@ -647,12 +711,49 @@ class TransformerAE(t2t_model.T2TModel):
       with tf.variable_scope(tf.get_variable_scope(), reuse=True):
         features["targets"] = samples
         logits, _ = self(features)  # pylint: disable=not-callable
-        samples = tf.argmax(logits, axis=-1)
+        if inputs_or_targets.dtype == tf.float32:
+          # When target_modality is real, the last axis does not represent
+          # classes, so it should not be argmax'ed
+          samples = logits
+        else:
+          samples = tf.argmax(logits, axis=-1)
 
     self.predict_mask = 1.0
     if inputs_old is not None:  # Restore to not confuse Estimator.
       features["inputs"] = inputs_old
     return samples
+
+  def estimator_spec_eval(self, features, logits, labels, loss, losses_dict):
+    """Constructs `tf.estimator.EstimatorSpec` for EVAL (evaluation) mode."""
+    estimator_spec = super(TransformerAE, self).estimator_spec_eval(
+        features, logits, labels, loss, losses_dict)
+    if common_layers.is_xla_compiled():
+      # For TPUs (and XLA more broadly?), do not add summary hooks that depend
+      # on losses; they are not supported.
+      return estimator_spec
+
+    summary_op = tf.get_collection(tf.GraphKeys.SUMMARIES, scope="losses")
+    summary_op.extend(tf.get_collection(tf.GraphKeys.SUMMARIES, scope="loss"))
+    summary_op.append(tf.summary.scalar("loss", loss))
+    summary_saver_hook = tf.train.SummarySaverHook(
+        save_steps=100,
+        summary_op=summary_op,
+        output_dir=os.path.join(self.hparams.model_dir, "eval"))
+
+    hooks = list(estimator_spec.evaluation_hooks)
+    hooks.append(summary_saver_hook)
+    return estimator_spec._replace(evaluation_hooks=hooks)
+
+  def _summarize_losses(self, losses_dict):
+    """Adds `tf.summary`s to all terms in the losses dictionary."""
+    super(TransformerAE, self)._summarize_losses(losses_dict)
+    nats_per_dim, bits_per_dim = latent_layers.compute_nats_and_bits_per_dim(
+        data_dim=self._data_dim,
+        latent_dim=self._latent_dim,
+        average_reconstruction=losses_dict["training"],
+        average_prior=losses_dict["latent_pred"])
+    tf.summary.scalar("loss/nats_per_dim", nats_per_dim)
+    tf.summary.scalar("loss/bits_per_dim", bits_per_dim)
 
 
 @registry.register_hparams
@@ -667,7 +768,7 @@ def transformer_ae_small():
   hparams.filter_size = 2048
   hparams.add_hparam("compress_filter_size", 2048 * 2)
   hparams.label_smoothing = 0.0
-  hparams.optimizer = "Adam"  # Can be unstable, maybe try Adam.
+  hparams.optimizer = "adam"  # Can be unstable, maybe try Adam.
   hparams.optimizer_adam_epsilon = 1e-9
   hparams.optimizer_adam_beta1 = 0.9
   hparams.optimizer_adam_beta2 = 0.997  # Needs tuning, try 0.98 to 0.999.
@@ -675,7 +776,7 @@ def transformer_ae_small():
   hparams.add_hparam("noise_dev", 0.5)
   hparams.add_hparam("d_mix", 0.5)
   hparams.add_hparam("logit_normalization", True)
-  hparams.add_hparam("word_dropout", 0.1)
+  hparams.add_hparam("word_dropout", 0.)
   # Bottleneck kinds supported: dense, vae, semhash, gumbel-softmax, dvq.
   hparams.add_hparam("bottleneck_kind", "semhash")
   hparams.add_hparam("num_blocks", 1)
@@ -683,6 +784,7 @@ def transformer_ae_small():
   # Add an hparam for number of reiduals
   hparams.add_hparam("num_residuals", 1)
   # Reshape method for DVQ: slice, project
+  hparams.add_hparam("word_shuffle", 0.5)
   hparams.add_hparam("causal", True)
   hparams.add_hparam("reshape_method", "slice")
   hparams.add_hparam("trainable_projections", False)
@@ -714,7 +816,13 @@ def transformer_ae_small():
   hparams.add_hparam("soft_em", False)
   hparams.add_hparam("num_samples", 10)
   hparams.add_hparam("inv_temp", 1.0)
-  hparams.kl_warmup_steps = 150000
+  hparams.add_hparam("entropy_scale", 0.0)
+  hparams.add_hparam("prior_scale", 1.0)
+  hparams.add_hparam("do_hard_gumbel_softmax", False)
+  hparams.add_hparam("num_flows", 0)
+  hparams.add_hparam("approximate_gs_entropy", False)
+  hparams.add_hparam("temperature_warmup_steps", 150000)
+  hparams.add_hparam("sum_over_latents", False)
   hparams.force_full_predict = True
 
   # task params
@@ -759,6 +867,9 @@ def imagetransformer_ae_cifar():
   hparams.pos = "timing"  # timing, none
   hparams.nbr_decoder_problems = 1
   hparams.num_output_layers = 3
+  # TODO(trandustin): semhash doesn't work if filter_size != hidden_size. For
+  # now, set default to dvq.
+  hparams.bottleneck_kind = "dvq"
   hparams.add_hparam("block_size", 1)
 
   # dilated attention based flags
@@ -775,9 +886,9 @@ def imagetransformer_ae_cifar():
   hparams.add_hparam("block_width", 128)
   hparams.num_encoder_layers = 4
   hparams.num_decoder_layers = 12
-  hparams.sep_rgb_embed = False
   hparams.add_hparam("dec_attention_type", cia.AttentionType.LOCAL_1D)
   hparams.add_hparam("block_raster_scan", False)
+  hparams.add_hparam("shared_rel", False)
 
   # multipos attention params
   hparams.add_hparam("q_filter_width", 1)
@@ -785,10 +896,23 @@ def imagetransformer_ae_cifar():
 
   hparams.add_hparam("unconditional", False)  # unconditional generation
 
-  hparams.target_modality = "image:channel_embeddings_bottom"
+  hparams.bottom["targets"] = modalities.image_channel_embeddings_bottom
+  hparams.top["targets"] = modalities.image_channel_embeddings_top
   hparams.drop_inputs = True
   hparams.do_attend_compress = False
   hparams.do_attend_decompress = False
+  return hparams
+
+
+def imagetransformer_ae_imagenet():
+  """For 64x64 ImageNet. ~56M trainable variables."""
+  hparams = imagetransformer_ae_cifar()
+  hparams.max_length = int(64 * 64 * 3)
+  hparams.img_len = 64
+  hparams.num_heads = 4  # Heads are expensive on TPUs.
+  # Reduce architecture from 32x32 CIFAR-10 in order to fit in memory.
+  hparams.num_decoder_layers = 8
+  hparams.num_compress_steps = 2
   return hparams
 
 
@@ -819,7 +943,7 @@ def transformer_ae_a3():
 def transformer_ae_a6():
   """Best hparams for transformer with semhash."""
   hparams = transformer_ae_a3()
-  hparams.optimizer = "Adam"
+  hparams.optimizer = "adam"
   hparams.noise_dev = 0.5
   return hparams
 
@@ -839,4 +963,80 @@ def transformer_ae_base_tpu():
   hparams = transformer_ae_base()
   transformer.update_hparams_for_tpu(hparams)
   hparams.batch_size = 512
+  return hparams
+
+
+@registry.register_hparams
+def transformer_ae_base_noatt():
+  """Set of hyperparameters."""
+  hparams = transformer_ae_base()
+  hparams.reshape_method = "slice"
+  hparams.bottleneck_kind = "dvq"
+  hparams.hidden_size = 512
+  hparams.num_blocks = 1
+  hparams.num_decode_blocks = 1
+  hparams.z_size = 12
+  hparams.do_attend_decompress = False
+  return hparams
+
+
+@registry.register_hparams
+def transformer_ae_small_noatt():
+  """Set of hyperparameters."""
+  hparams = transformer_ae_small()
+  hparams.reshape_method = "slice"
+  hparams.bottleneck_kind = "dvq"
+  hparams.hidden_size = 512
+  hparams.num_blocks = 1
+  hparams.num_decode_blocks = 1
+  hparams.z_size = 12
+  hparams.do_attend_decompress = False
+  return hparams
+
+
+@registry.register_hparams
+def transformer_ae_base_ablation_1():
+  hparams = transformer_ae_base_noatt()
+  hparams.soft_em = True
+  return hparams
+
+
+@registry.register_hparams
+def transformer_ae_base_ablation_2():
+  hparams = transformer_ae_base_ablation_1()
+  hparams.entropy_scale = 0.1
+  return hparams
+
+
+@registry.register_hparams
+def transformer_ae_base_ablation_3():
+  hparams = transformer_ae_base_ablation_2()
+  hparams.prior_scale = 0.1
+  hparams.entropy_scale = 0.1
+  return hparams
+
+
+@registry.register_hparams
+def transformer_ae_base_ablation_4():
+  hparams = transformer_ae_base_ablation_3()
+  hparams.entropy_scale = 0.0
+  hparams.prior_scale = 1.0
+  hparams.bottleneck_kind = "gumbel-softmax-dvq"
+  hparams.do_hard_gumbel_softmax = True
+  hparams.approximate_gs_entropy = True
+  return hparams
+
+
+@registry.register_hparams
+def transformer_ae_base_ablation_5():
+  hparams = transformer_ae_base_ablation_4()
+  hparams.do_hard_gumbel_softmax = False
+  return hparams
+
+
+@registry.register_hparams
+def transformer_ae_base_iaf():
+  hparams = transformer_ae_base_ablation_5()
+  hparams.num_flows = 1
+  hparams.num_samples = 1
   return hparams

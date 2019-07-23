@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2018 The Tensor2Tensor Authors.
+# Copyright 2019 The Tensor2Tensor Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Multi-step optimizers simulating large batches.
 
 Optimizer variants which make it possible to use very large batch sizes with
@@ -51,7 +52,7 @@ class MultistepAdamOptimizer(tf.train.AdamOptimizer):
 
   def _get_iter_variable(self):
     graph = (
-        None if tf.contrib.eager.in_eager_mode() else tf.get_default_graph())
+        None if tf.executing_eagerly() else tf.get_default_graph())
     return self._get_non_slot_variable("iter", graph=graph)
 
   def _prepare(self):

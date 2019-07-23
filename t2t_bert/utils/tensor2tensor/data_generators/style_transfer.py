@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2018 The Tensor2Tensor Authors.
+# Copyright 2019 The Tensor2Tensor Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Base classes for text-based language style transfer problems.
 
 * StyleTransferProblem: abstract class for style transfer problems.
@@ -57,7 +58,7 @@ _DEV_SHARDS = 1
 _SUBWORD_VOCAB_SIZE = 8000
 
 
-class StyleTransferProblem(text_problems.Text2TextProblem):
+class StyleTransferProblemShakespeare(text_problems.Text2TextProblem):
   """Base class for transferring styles problems"""
 
   @property
@@ -69,7 +70,10 @@ class StyleTransferProblem(text_problems.Text2TextProblem):
     raise NotImplementedError()
 
   def dataset_url(self, dataset_split):
-    raise NotImplementedError()
+    train = dataset_split == problem.DatasetSplit.TRAIN
+    if train:
+      return _SHAKESPEARE_MODERN_TRAIN_DATASET
+    return _SHAKESPEARE_MODERN_DEV_DATASET
 
   def vocab_data_files(self):
     """Files to be passed to get_or_generate_vocab."""
@@ -97,8 +101,6 @@ class StyleTransferProblem(text_problems.Text2TextProblem):
   def generate_samples(self, data_dir, tmp_dir, dataset_split):
     dataset = self.dataset_url(dataset_split)
 
-    tag = "train" if dataset_split == problem.DatasetSplit.TRAIN else "dev"
-
     url = dataset[0][0]
     compressed_filename = os.path.basename(url)
     compressed_filepath = os.path.join(tmp_dir, compressed_filename)
@@ -113,14 +115,19 @@ class StyleTransferProblem(text_problems.Text2TextProblem):
           data_dir, tmp_dir, self.vocab_filename, self.approx_vocab_size,
           self.vocab_data_files())
 
-    source_file = os.path.join(tmp_dir, tag + ".modern")
-    target_file = os.path.join(tmp_dir, tag + ".original")
+    source_file, target_file = self.source_target_paths(dataset_split, tmp_dir)
     return text_problems.text2text_txt_iterator(source_file,
                                                 target_file)
 
+  def source_target_paths(self, dataset_split, tmp_dir):
+    tag = "train" if dataset_split == problem.DatasetSplit.TRAIN else "dev"
+    source_path = os.path.join(tmp_dir, tag + self.source)
+    target_path = os.path.join(tmp_dir, tag + self.target)
+    return source_path, target_path
+
 
 @registry.register_problem
-class StyleTransferShakespeareToModern(StyleTransferProblem):
+class StyleTransferShakespeareToModern(StyleTransferProblemShakespeare):
   """Transferring style from Shakespeare original English to modern one"""
 
   @property
@@ -131,15 +138,9 @@ class StyleTransferShakespeareToModern(StyleTransferProblem):
   def source(self):
     return ".original"
 
-  def dataset_url(self, dataset_split):
-    train = dataset_split == problem.DatasetSplit.TRAIN
-    if train:
-      return _SHAKESPEARE_MODERN_TRAIN_DATASET
-    return _SHAKESPEARE_MODERN_DEV_DATASET
-
 
 @registry.register_problem
-class StyleTransferModernToShakespeare(StyleTransferProblem):
+class StyleTransferModernToShakespeare(StyleTransferProblemShakespeare):
   """Transferring style from modern English to Shakespeare original English"""
 
   @property
@@ -150,8 +151,20 @@ class StyleTransferModernToShakespeare(StyleTransferProblem):
   def source(self):
     return ".modern"
 
-  def dataset_url(self, dataset_split):
-    train = dataset_split == problem.DatasetSplit.TRAIN
-    if train:
-      return _SHAKESPEARE_MODERN_TRAIN_DATASET
-    return _SHAKESPEARE_MODERN_DEV_DATASET
+
+@registry.register_problem
+class StyleTransferShakespeareToModernCharacters(
+    StyleTransferShakespeareToModern):
+
+  @property
+  def vocab_type(self):
+    return text_problems.VocabType.CHARACTER
+
+
+@registry.register_problem
+class StyleTransferModernToShakespeareCharacters(
+    StyleTransferModernToShakespeare):
+
+  @property
+  def vocab_type(self):
+    return text_problems.VocabType.CHARACTER

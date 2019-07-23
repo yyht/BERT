@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2018 The Tensor2Tensor Authors.
+# Copyright 2019 The Tensor2Tensor Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Self-attention based language model.
+
+DEPRECATED. Use Transformer which supports running the decoder only.
 
 Like transformer.py, but no encoder
 
@@ -34,6 +37,10 @@ from tensor2tensor.utils import t2t_model
 import tensorflow as tf
 
 
+@tf.contrib.framework.deprecated(
+    "2018-09-15",
+    "Use Transformer, which supports decoder-only mode when "
+    "Transformer.has_input=False.")
 @registry.register_model
 class AttentionLM(t2t_model.T2TModel):
   """Attention net.  See file docstring."""

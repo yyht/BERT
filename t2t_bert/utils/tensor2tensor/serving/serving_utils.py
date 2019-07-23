@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2018 The Tensor2Tensor Authors.
+# Copyright 2019 The Tensor2Tensor Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Utilities for serving tensor2tensor."""
 
 from __future__ import absolute_import
@@ -19,31 +20,70 @@ from __future__ import division
 from __future__ import print_function
 
 import base64
+import functools
 from googleapiclient import discovery
-from grpc.beta import implementations
+import grpc
 
 from tensor2tensor import problems as problems_lib  # pylint: disable=unused-import
 from tensor2tensor.data_generators import text_encoder
-from tensor2tensor.utils import cloud_tpu as cloud
+from tensor2tensor.utils import cloud_mlengine as cloud
 import tensorflow as tf
 from tensorflow_serving.apis import predict_pb2
-from tensorflow_serving.apis import prediction_service_pb2
+from tensorflow_serving.apis import prediction_service_pb2_grpc
 
 
 
-def _make_example(input_ids, feature_name="inputs"):
+def _make_example(input_ids, problem, input_feature_name="inputs"):
+  """Make a tf.train.Example for the problem.
+
+  features[input_feature_name] = input_ids
+
+  Also fills in any other required features with dummy values.
+
+  Args:
+    input_ids: list<int>.
+    problem: Problem.
+    input_feature_name: name of feature for input_ids.
+
+  Returns:
+    tf.train.Example
+  """
   features = {
-      feature_name:
+      input_feature_name:
           tf.train.Feature(int64_list=tf.train.Int64List(value=input_ids))
   }
+
+  # Fill in dummy values for any other required features that presumably
+  # will not actually be used for prediction.
+  data_fields, _ = problem.example_reading_spec()
+  for fname, ftype in data_fields.items():
+    if fname == input_feature_name:
+      continue
+    if not isinstance(ftype, tf.FixedLenFeature):
+      # Only FixedLenFeatures are required
+      continue
+    if ftype.default_value is not None:
+      # If there's a default value, no need to fill it in
+      continue
+    num_elements = functools.reduce(lambda acc, el: acc * el, ftype.shape, 1)
+    if ftype.dtype in [tf.int32, tf.int64]:
+      value = tf.train.Feature(
+          int64_list=tf.train.Int64List(value=[0] * num_elements))
+    if ftype.dtype in [tf.float32, tf.float64]:
+      value = tf.train.Feature(
+          float_list=tf.train.FloatList(value=[0.] * num_elements))
+    if ftype.dtype == tf.bytes:
+      value = tf.train.Feature(
+          bytes_list=tf.train.BytesList(value=[""] * num_elements))
+    tf.logging.info("Adding dummy value for feature %s as it is required by "
+                    "the Problem.", fname)
+    features[fname] = value
   return tf.train.Example(features=tf.train.Features(feature=features))
 
 
 def _create_stub(server):
-  host, port = server.split(":")
-  channel = implementations.insecure_channel(host, int(port))
-  # TODO(bgb): Migrate to GA API.
-  return prediction_service_pb2.beta_create_PredictionService_stub(channel)
+  channel = grpc.insecure_channel(server)
+  return prediction_service_pb2_grpc.PredictionServiceStub(channel)
 
 
 def _encode(inputs, encoder, add_eos=True):
@@ -54,7 +94,10 @@ def _encode(inputs, encoder, add_eos=True):
 
 
 def _decode(output_ids, output_decoder):
-  return output_decoder.decode(output_ids, strip_extraneous=True)
+  if len(output_ids.shape) > 1:
+    return [output_decoder.decode(o, strip_extraneous=True) for o in output_ids]
+  else:
+    return output_decoder.decode(output_ids, strip_extraneous=True)
 
 
 
@@ -68,16 +111,16 @@ def make_grpc_request_fn(servable_name, server, timeout_secs):
     request = predict_pb2.PredictRequest()
     request.model_spec.name = servable_name
     request.inputs["input"].CopyFrom(
-        tf.contrib.util.make_tensor_proto(
+        tf.make_tensor_proto(
             [ex.SerializeToString() for ex in examples], shape=[len(examples)]))
     response = stub.Predict(request, timeout_secs)
     outputs = tf.make_ndarray(response.outputs["outputs"])
     scores = tf.make_ndarray(response.outputs["scores"])
     assert len(outputs) == len(scores)
-    return [{
-        "outputs": outputs[i],
-        "scores": scores[i]
-    } for i in range(len(outputs))]
+    return [{  # pylint: disable=g-complex-comprehension
+        "outputs": output,
+        "scores": score
+    } for output, score in zip(outputs, scores)]
 
   return _make_grpc_request
 
@@ -91,7 +134,7 @@ def make_cloud_mlengine_request_fn(credentials, model_name, version):
     parent = "projects/%s/models/%s/versions/%s" % (cloud.default_project(),
                                                     model_name, version)
     input_data = {
-        "instances": [{
+        "instances": [{  # pylint: disable=g-complex-comprehension
             "input": {
                 "b64": base64.b64encode(ex.SerializeToString())
             }
@@ -112,7 +155,8 @@ def predict(inputs_list, problem, request_fn):
       _encode(inputs, input_encoder, add_eos=problem.has_inputs)
       for inputs in inputs_list
   ]
-  examples = [_make_example(input_ids, fname) for input_ids in input_ids_list]
+  examples = [_make_example(input_ids, problem, fname)
+              for input_ids in input_ids_list]
   predictions = request_fn(examples)
   output_decoder = problem.feature_info["targets"].encoder
   outputs = [

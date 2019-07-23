@@ -70,7 +70,7 @@ class ESSearch(object):
 						"_source":row
 					}) 
 			bulk(self.es, actions)
-		print("==succeeded in indexing es for===", doc_index, doc_type)
+		# print("==succeeded in indexing es for===", doc_index, doc_type)
 
 	def index_one_batch_doc(self, doc_index, doc_type, data_chunk, batch_size):
 		actions = []

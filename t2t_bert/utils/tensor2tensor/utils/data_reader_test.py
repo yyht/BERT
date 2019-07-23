@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2018 The Tensor2Tensor Authors.
+# Copyright 2019 The Tensor2Tensor Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Data reader test."""
 
 from __future__ import absolute_import
@@ -25,6 +26,7 @@ from six.moves import range  # pylint: disable=redefined-builtin
 
 from tensor2tensor.data_generators import generator_utils
 from tensor2tensor.data_generators import problem as problem_mod
+from tensor2tensor.layers import modalities
 from tensor2tensor.utils import data_reader
 from tensor2tensor.utils import registry
 
@@ -48,7 +50,11 @@ class TestProblem(problem_mod.Problem):
         self.generator(data_dir, tmp_dir, False), dev_paths)
 
   def hparams(self, defaults, model_hparams):
-    pass
+    hp = defaults
+    hp.modality = {"inputs": modalities.ModalityType.SYMBOL,
+                   "targets": modalities.ModalityType.SYMBOL}
+    hp.vocab_size = {"inputs": 30,
+                     "targets": 30}
 
   def example_reading_spec(self):
     data_fields = {
@@ -133,7 +139,7 @@ class DataReaderTest(tf.test.TestCase):
     self.assertAllEqual(list(range(1, max_len + 1)), sorted(ex_lens))
 
   def testBatchingSchemeMaxLength(self):
-    scheme = data_reader._batching_scheme(
+    scheme = data_reader.batching_scheme(
         batch_size=20,
         max_length=None,
         min_length_bucket=8,
@@ -141,7 +147,7 @@ class DataReaderTest(tf.test.TestCase):
         drop_long_sequences=False)
     self.assertGreater(scheme["max_length"], 10000)
 
-    scheme = data_reader._batching_scheme(
+    scheme = data_reader.batching_scheme(
         batch_size=20,
         max_length=None,
         min_length_bucket=8,
@@ -149,7 +155,7 @@ class DataReaderTest(tf.test.TestCase):
         drop_long_sequences=True)
     self.assertEqual(scheme["max_length"], 20)
 
-    scheme = data_reader._batching_scheme(
+    scheme = data_reader.batching_scheme(
         batch_size=20,
         max_length=15,
         min_length_bucket=8,
@@ -157,7 +163,7 @@ class DataReaderTest(tf.test.TestCase):
         drop_long_sequences=True)
     self.assertEqual(scheme["max_length"], 15)
 
-    scheme = data_reader._batching_scheme(
+    scheme = data_reader.batching_scheme(
         batch_size=20,
         max_length=15,
         min_length_bucket=8,
@@ -166,7 +172,7 @@ class DataReaderTest(tf.test.TestCase):
     self.assertGreater(scheme["max_length"], 10000)
 
   def testBatchingSchemeBuckets(self):
-    scheme = data_reader._batching_scheme(
+    scheme = data_reader.batching_scheme(
         batch_size=128,
         max_length=0,
         min_length_bucket=8,
@@ -184,7 +190,7 @@ class DataReaderTest(tf.test.TestCase):
     ]
     self.assertEqual(expected_batch_sizes, batch_sizes)
 
-    scheme = data_reader._batching_scheme(
+    scheme = data_reader.batching_scheme(
         batch_size=128,
         max_length=0,
         min_length_bucket=8,
@@ -194,7 +200,7 @@ class DataReaderTest(tf.test.TestCase):
     self.assertAllEqual([bs * 2 for bs in expected_batch_sizes], batch_sizes)
     self.assertEqual(expected_boundaries, boundaries)
 
-    scheme = data_reader._batching_scheme(
+    scheme = data_reader.batching_scheme(
         batch_size=128,
         max_length=0,
         min_length_bucket=8,
@@ -204,47 +210,6 @@ class DataReaderTest(tf.test.TestCase):
     self.assertAllEqual([b * 2 for b in expected_boundaries], boundaries)
     self.assertEqual([max(1, bs // 2)
                       for bs in expected_batch_sizes], batch_sizes)
-
-  def testBucketBySeqLength(self):
-
-    def example_len(ex):
-      return tf.shape(ex["inputs"])[0]
-
-    boundaries = [10, 20, 30]
-    batch_sizes = [10, 8, 4, 2]
-
-    dataset = self.problem.dataset(
-        tf.estimator.ModeKeys.TRAIN,
-        data_dir=self.data_dir,
-        shuffle_files=False)
-    dataset = data_reader.bucket_by_sequence_length(
-        dataset, example_len, boundaries, batch_sizes)
-    batch = dataset.make_one_shot_iterator().get_next()
-
-    input_vals = []
-    obs_batch_sizes = []
-    with tf.train.MonitoredSession() as sess:
-      # Until OutOfRangeError
-      while True:
-        batch_val = sess.run(batch)
-        batch_inputs = batch_val["inputs"]
-        batch_size, max_len = batch_inputs.shape
-        obs_batch_sizes.append(batch_size)
-        for inputs in batch_inputs:
-          input_val = inputs[0]
-          input_vals.append(input_val)
-          # The inputs were constructed such that they were repeated value+1
-          # times (i.e. if the inputs value is 7, the example has 7 repeated 8
-          # times).
-          repeat = input_val + 1
-          # Check padding
-          self.assertAllEqual([input_val] * repeat + [0] * (max_len - repeat),
-                              inputs)
-
-    # Check that all inputs came through
-    self.assertEqual(list(range(30)), sorted(input_vals))
-    # Check that we saw variable batch size
-    self.assertTrue(len(set(obs_batch_sizes)) > 1)
 
 
 if __name__ == "__main__":

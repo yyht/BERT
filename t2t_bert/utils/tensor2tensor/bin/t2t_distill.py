@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2018 The Tensor2Tensor Authors.
+# Copyright 2019 The Tensor2Tensor Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,10 +12,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 r"""Perform distillation for a teacher to student.
 
 This script is intended to be used with --model=distillation. See the model for
 example hyperparameters and usage.
+
+If only output_dir is specified, then teacher_dir is `output_dir/teacher`, and
+the student_dir is `output_dir/student`. Logs are written inside `output_dir`.
+If teacher_dir is also specified explicitly, the student_dir is still
+`output_dir/student` and the logs are written into `output_dir`. If student_dir
+is further specified, the logs are written into student_dir unless output_dir is
+explicitly specified, which only contains the logs in this case.
 """
 from __future__ import absolute_import
 from __future__ import division
@@ -34,6 +42,18 @@ import tensorflow as tf
 
 flags = tf.flags
 FLAGS = flags.FLAGS
+
+flags.DEFINE_bool(
+    "skip_teacher_training", False,
+    "By default, we train teacher model. If set to True, skip the training.")
+flags.DEFINE_string(
+    "teacher_dir", None,
+    "Directory to teacher network. If not specified, `output_dir/teacher` is "
+    "used instead.")
+flags.DEFINE_string(
+    "student_dir", None,
+    "Directory to student network. If not specified, `output_dir/student` is "
+    "used instead.")
 
 
 def main(argv):
@@ -55,13 +75,19 @@ def main(argv):
   if argv:
     t2t_trainer.set_hparams_from_args(argv[1:])
 
-  with t2t_trainer.maybe_cloud_tpu():
-    root_output_dir = FLAGS.output_dir
+  root_output_dir = FLAGS.output_dir
 
-    # Train Teacher ============
+  if FLAGS.teacher_dir:
+    teacher_dir = FLAGS.teacher_dir
+  else:
+    teacher_dir = os.path.join(root_output_dir, "teacher")
+
+  # Train Teacher ============
+  if FLAGS.skip_teacher_training:
+    tf.logging.info("training teacher skipped")
+  else:
     hparams = t2t_trainer.create_hparams()
     hparams.distill_phase = "train"
-    teacher_dir = os.path.join(root_output_dir, "teacher")
     FLAGS.output_dir = teacher_dir
 
     exp_fn = t2t_trainer.create_experiment_fn()
@@ -70,22 +96,27 @@ def main(argv):
     if t2t_trainer.is_chief():
       t2t_trainer.save_metadata(hparams)
     t2t_trainer.execute_schedule(exp)
-    # ==========================
-    # Train Student ============
-    hparams = t2t_trainer.create_hparams()
-    hparams.add_hparam("teacher_dir", teacher_dir)
-    hparams.distill_phase = "distill"
+
+  # ==========================
+  # Train Student ============
+  hparams = t2t_trainer.create_hparams()
+  hparams.add_hparam("teacher_dir", teacher_dir)
+  hparams.distill_phase = "distill"
+  if FLAGS.student_dir:
+    student_dir = FLAGS.student_dir
+  else:
     student_dir = os.path.join(root_output_dir, "student")
-    FLAGS.output_dir = student_dir
+  FLAGS.output_dir = student_dir
+  hparams.add_hparam("student_dir", student_dir)
 
-    exp_fn = t2t_trainer.create_experiment_fn()
-    run_config = t2t_trainer.create_run_config(hparams)
-    exp = exp_fn(run_config, hparams)
+  exp_fn = t2t_trainer.create_experiment_fn()
+  run_config = t2t_trainer.create_run_config(hparams)
+  exp = exp_fn(run_config, hparams)
 
-    if t2t_trainer.is_chief():
-      t2t_trainer.save_metadata(hparams)
-    t2t_trainer.execute_schedule(exp)
-    # ==========================
+  if t2t_trainer.is_chief():
+    t2t_trainer.save_metadata(hparams)
+  t2t_trainer.execute_schedule(exp)
+  # ==========================
 
 
 def create_teacher_experiment(run_config, hparams, argv):
@@ -108,11 +139,10 @@ def create_teacher_experiment(run_config, hparams, argv):
   if argv:
     t2t_trainer.set_hparams_from_args(argv[1:])
 
-  with t2t_trainer.maybe_cloud_tpu():
-    hparams.distill_phase = "train"
-    exp_fn = t2t_trainer.create_experiment_fn()
-    exp = exp_fn(run_config, hparams)
-    return exp
+  hparams.distill_phase = "train"
+  exp_fn = t2t_trainer.create_experiment_fn()
+  exp = exp_fn(run_config, hparams)
+  return exp
 
 
 def create_student_experiment(run_config, hparams, argv):
@@ -135,12 +165,12 @@ def create_student_experiment(run_config, hparams, argv):
   if argv:
     t2t_trainer.set_hparams_from_args(argv[1:])
 
-  with t2t_trainer.maybe_cloud_tpu():
-    hparams.add_hparam("teacher_dir", FLAGS.teacher_dir)
-    hparams.distill_phase = "distill"
-    exp_fn = t2t_trainer.create_experiment_fn()
-    exp = exp_fn(run_config, hparams)
-    return exp
+  hparams.add_hparam("teacher_dir", FLAGS.teacher_dir)
+  hparams.add_hparam("student_dir", FLAGS.student_dir)
+  hparams.distill_phase = "distill"
+  exp_fn = t2t_trainer.create_experiment_fn()
+  exp = exp_fn(run_config, hparams)
+  return exp
 
 
 def create_experiment_fn(argv, train_teacher):
@@ -155,4 +185,5 @@ def create_experiment_fn(argv, train_teacher):
 
 
 if __name__ == "__main__":
+  tf.logging.set_verbosity(tf.logging.INFO)
   tf.app.run()

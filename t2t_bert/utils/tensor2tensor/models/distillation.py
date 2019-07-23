@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2018 The Tensor2Tensor Authors.
+# Copyright 2019 The Tensor2Tensor Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Traditional Student-Teacher Distillation."""
 
 from __future__ import absolute_import
@@ -28,7 +29,7 @@ import tensorflow as tf
 class Distillation(t2t_model.T2TModel):
   """Distillation from a teacher to student network.
 
-  First, a teacher is train on a task; Second, a student is trained to perform
+  First, a teacher is trained on a task; Second, a student is trained to perform
   the task while matching the teacher's softened outputs. For more details, see
   the paper below.
 
@@ -46,7 +47,8 @@ class Distillation(t2t_model.T2TModel):
                mode=tf.estimator.ModeKeys.TRAIN,
                problem_hparams=None,
                data_parallelism=None,
-               decode_hparams=None):
+               decode_hparams=None,
+               **kwargs):
     assert hparams.distill_phase in ["train", "distill"]
 
     if hparams.distill_phase == "train" and hparams.teacher_learning_rate:
@@ -62,8 +64,9 @@ class Distillation(t2t_model.T2TModel):
     self.student_model = registry.model(
         hparams.student_model)(self.student_hparams, mode, problem_hparams,
                                data_parallelism, decode_hparams)
-    super(Distillation, self).__init__(hparams, mode, problem_hparams,
-                                       data_parallelism, decode_hparams)
+    super(Distillation,
+          self).__init__(hparams, mode, problem_hparams, data_parallelism,
+                         decode_hparams, **kwargs)
 
   def body(self, features):
     hp = self.hparams
@@ -104,7 +107,10 @@ class Distillation(t2t_model.T2TModel):
             labels=one_hot_targets, logits=student_logits)
         teacher_targets = tf.nn.softmax(teacher_logits / hp.distill_temperature)
         student_distill_xent = tf.nn.softmax_cross_entropy_with_logits_v2(
-            labels=tf.stop_gradient(teacher_targets), logits=student_logits)
+            labels=tf.stop_gradient(teacher_targets),
+            logits=student_logits / hp.distill_temperature)
+        # scale soft target obj. to match hard target obj. scale
+        student_distill_xent *= hp.distill_temperature**2
 
         outputs = student_logits
 

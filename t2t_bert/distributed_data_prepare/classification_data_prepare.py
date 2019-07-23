@@ -140,6 +140,11 @@ flags.DEFINE_string(
 	"if apply rule detector"
 	)
 
+flags.DEFINE_string(
+	"label_type", "multi_class",
+	"if apply rule detector"
+	)
+
 def main(_):
 
 	# tokenizer = tokenization.Jieba_CHAR(
@@ -251,7 +256,8 @@ def main(_):
 																tokenizer_corpus,
 																train_result_file,
 																FLAGS.with_char,
-																FLAGS.char_len)
+																FLAGS.char_len,
+																label_type=FLAGS.label_type)
 
 		write_to_tfrecords.convert_bert_distillation_classifier_examples_to_features(dev_examples,
 																classifier_data_api.label2id,
@@ -259,7 +265,8 @@ def main(_):
 																tokenizer_corpus,
 																dev_result_file,
 																FLAGS.with_char,
-																FLAGS.char_len)
+																FLAGS.char_len,
+																label_type=FLAGS.label_type)
 
 		test_examples = classifier_data_api.get_train_examples(test_file,
 											is_shuffle=False)
@@ -269,7 +276,8 @@ def main(_):
 																tokenizer_corpus,
 																test_result_file,
 																FLAGS.with_char,
-																FLAGS.char_len) 
+																FLAGS.char_len,
+																label_type=FLAGS.label_type) 
 
 	# elif FLAGS.if_rule == "rule":
 	# 	print("==apply rule==")

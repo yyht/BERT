@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2018 The Tensor2Tensor Authors.
+# Copyright 2019 The Tensor2Tensor Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 # coding=utf-8
 """ROUGE metric implementation.
 
@@ -61,7 +62,7 @@ def _lcs(x, y):
     Table of dictionary of coord and len lcs
   """
   n, m = len(x), len(y)
-  table = dict()
+  table = {}
   for i in range(n + 1):
     for j in range(m + 1):
       if i == 0 or j == 0:

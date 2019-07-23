@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2018 The Tensor2Tensor Authors.
+# Copyright 2019 The Tensor2Tensor Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """MNIST."""
 
 from __future__ import absolute_import
@@ -229,6 +230,10 @@ class ImageFashionMnist(image_utils.Image2ClassProblem):
     return True
 
   @property
+  def num_channels(self):
+    return 1
+
+  @property
   def num_classes(self):
     return 10
 
@@ -239,6 +244,12 @@ class ImageFashionMnist(image_utils.Image2ClassProblem):
   @property
   def train_shards(self):
     return 10
+
+  def preprocess_example(self, example, mode, unused_hparams):
+    image = example["inputs"]
+    image.set_shape([_MNIST_IMAGE_SIZE, _MNIST_IMAGE_SIZE, 1])
+    example["inputs"] = image
+    return example
 
   def generator(self, data_dir, tmp_dir, is_training):
     if is_training:

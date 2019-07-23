@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2018 The Tensor2Tensor Authors.
+# Copyright 2019 The Tensor2Tensor Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Google robot pushing dataset.
 
 Unsupervised Learning for Physical Interaction through Video Prediction
@@ -31,6 +32,7 @@ import numpy as np
 from tensor2tensor.data_generators import generator_utils
 from tensor2tensor.data_generators import problem
 from tensor2tensor.data_generators import video_utils
+from tensor2tensor.layers import modalities
 from tensor2tensor.utils import registry
 
 import tensorflow as tf
@@ -131,10 +133,7 @@ class VideoGoogleRobotPushing(video_utils.VideoProblem):
 
   def hparams(self, defaults, unused_model_hparams):
     p = defaults
-    p.input_modality = {
-        # Pixels are in 0..255 range.
-        "inputs": ("video", 256),
-    }
-    p.target_modality = {
-        "targets": ("video", 256),
-    }
+    p.modality = {"inputs": modalities.ModalityType.VIDEO,
+                  "targets": modalities.ModalityType.VIDEO}
+    p.vocab_size = {"inputs": 256,
+                    "targets": 256}

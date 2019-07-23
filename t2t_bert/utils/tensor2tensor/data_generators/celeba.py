@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2018 The Tensor2Tensor Authors.
+# Copyright 2019 The Tensor2Tensor Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """CelebA."""
 
 from __future__ import absolute_import
@@ -22,6 +23,7 @@ import os
 import zipfile
 from tensor2tensor.data_generators import generator_utils
 from tensor2tensor.data_generators import image_utils
+from tensor2tensor.layers import modalities
 from tensor2tensor.utils import registry
 
 import tensorflow as tf
@@ -54,8 +56,10 @@ class ImageCeleba(image_utils.ImageProblem):
 
   def hparams(self, defaults, unused_model_hparams):
     p = defaults
-    p.input_modality = {"inputs": ("image:identity", 256)}
-    p.target_modality = ("image:identity", 256)
+    p.modality = {"inputs": modalities.ModalityType.IDENTITY,
+                  "targets": modalities.ModalityType.IDENTITY}
+    p.vocab_size = {"inputs": 256,
+                    "targets": 256}
     p.batch_size_multiplier = 256
     p.input_space_id = 1
     p.target_space_id = 1
@@ -114,7 +118,7 @@ class ImageCeleba(image_utils.ImageProblem):
     img_landmarks, _ = process_landmarks(landmarks_raw)
     img_attrs, _ = process_attrs(attr_raw)
 
-    image_files = tf.gfile.Glob(unzipped_folder + "/*.jpg")
+    image_files = list(sorted(tf.gfile.Glob(unzipped_folder + "/*.jpg")))
     for filename in image_files[start_from:start_from + how_many]:
       img_name = os.path.basename(filename)
       landmarks = img_landmarks[img_name]
@@ -137,12 +141,25 @@ class ImageCeleba(image_utils.ImageProblem):
   def dev_shards(self):
     return 10
 
+  @property
+  def test_shards(self):
+    return 10
+
   def generate_data(self, data_dir, tmp_dir, task_id=-1):
-    generator_utils.generate_dataset_and_shuffle(
-        self.generator(tmp_dir, 162770),  # train
-        self.training_filepaths(data_dir, self.train_shards, shuffled=False),
-        self.generator(tmp_dir, 19867, 162770),  # dev
-        self.dev_filepaths(data_dir, self.dev_shards, shuffled=False))
+    train_gen = self.generator(tmp_dir, 162770)
+    train_paths = self.training_filepaths(
+        data_dir, self.train_shards, shuffled=False)
+    generator_utils.generate_files(train_gen, train_paths)
+
+    dev_gen = self.generator(tmp_dir, 19867, 162770)
+    dev_paths = self.dev_filepaths(data_dir, self.dev_shards, shuffled=False)
+    generator_utils.generate_files(dev_gen, dev_paths)
+
+    test_gen = self.generator(tmp_dir, 19962, 162770+19867)
+    test_paths = self.test_filepaths(data_dir, self.test_shards, shuffled=False)
+    generator_utils.generate_files(test_gen, test_paths)
+
+    generator_utils.shuffle_dataset(train_paths + dev_paths + test_paths)
 
 
 @registry.register_problem
@@ -223,3 +240,37 @@ class Img2imgCeleba64(Img2imgCeleba):
     example["inputs"] = image_8
     example["targets"] = image_64
     return example
+
+
+@registry.register_problem
+class ImageCeleba32(Img2imgCeleba):
+  """CelebA resized to spatial dims [32, 32]."""
+
+  def preprocess_example(self, example, unused_mode, unused_hparams):
+    image = example["inputs"]
+    # Remove boundaries in CelebA images. Remove 40 pixels each side
+    # vertically and 20 pixels each side horizontally.
+    image = tf.image.crop_to_bounding_box(image, 40, 20, 218 - 80, 178 - 40)
+    image = image_utils.resize_by_area(image, 32)
+
+    example["inputs"] = image
+    example["targets"] = image
+    return example
+
+
+@registry.register_problem
+class ImageCeleba64(Img2imgCeleba):
+  """CelebA resized to spatial dims [64, 64]."""
+
+  def preprocess_example(self, example, unused_mode, unused_hparams):
+    image = example["inputs"]
+    # Remove boundaries in CelebA images. Remove 40 pixels each side
+    # vertically and 20 pixels each side horizontally.
+    image = tf.image.crop_to_bounding_box(image, 40, 20, 218 - 80, 178 - 40)
+    image = image_utils.resize_by_area(image, 64)
+
+    example["inputs"] = image
+    example["targets"] = image
+    return example
+
+

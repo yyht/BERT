@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2018 The Tensor2Tensor Authors.
+# Copyright 2019 The Tensor2Tensor Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """BLEU metric util used during eval for MT."""
 from __future__ import absolute_import
 from __future__ import division
@@ -114,8 +115,16 @@ def compute_bleu(reference_corpus,
     geo_mean = math.exp(p_log_sum/max_order)
 
   if use_bp:
-    ratio = translation_length / reference_length
-    bp = math.exp(1 - 1. / ratio) if ratio < 1.0 else 1.0
+    if not reference_length:
+      bp = 1.0
+    else:
+      ratio = translation_length / reference_length
+      if ratio <= 0.0:
+        bp = 0.0
+      elif ratio >= 1.0:
+        bp = 1.0
+      else:
+        bp = math.exp(1 - 1. / ratio)
   bleu = geo_mean * bp
   return np.float32(bleu)
 
@@ -193,10 +202,11 @@ def bleu_tokenize(string):
 def bleu_wrapper(ref_filename, hyp_filename, case_sensitive=False):
   """Compute BLEU for two files (reference and hypothesis translation)."""
   ref_lines = text_encoder.native_to_unicode(
-      tf.gfile.Open(ref_filename, "r").read()).splitlines()
+      tf.gfile.Open(ref_filename, "r").read()).split("\n")
   hyp_lines = text_encoder.native_to_unicode(
-      tf.gfile.Open(hyp_filename, "r").read()).splitlines()
-  assert len(ref_lines) == len(hyp_lines)
+      tf.gfile.Open(hyp_filename, "r").read()).split("\n")
+  assert len(ref_lines) == len(hyp_lines), ("{} != {}".format(
+      len(ref_lines), len(hyp_lines)))
   if not case_sensitive:
     ref_lines = [x.lower() for x in ref_lines]
     hyp_lines = [x.lower() for x in hyp_lines]

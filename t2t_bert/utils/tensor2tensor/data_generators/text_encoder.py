@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2018 The Tensor2Tensor Authors.
+# Copyright 2019 The Tensor2Tensor Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Encoders for text data.
 
 * TextEncoder: base class
@@ -28,6 +29,7 @@ from itertools import chain
 import math
 import re
 import tempfile
+import time
 import numpy as np
 import six
 from six.moves import range  # pylint: disable=redefined-builtin
@@ -58,7 +60,14 @@ _ESCAPE_CHARS = set(u"\\_u;0123456789")
 
 # Unicode utility functions that work with Python 2 and 3
 def native_to_unicode(s):
-  return s if is_unicode(s) else to_unicode(s)
+  if is_unicode(s):
+    return s
+  try:
+    return to_unicode(s)
+  except UnicodeDecodeError:
+    res = to_unicode(s, ignore_errors=True)
+    tf.logging.info("Ignoring Unicode error, outputting: %s" % res)
+    return res
 
 
 def unicode_to_native(s):
@@ -69,13 +78,7 @@ def unicode_to_native(s):
 
 
 def is_unicode(s):
-  if six.PY2:
-    if isinstance(s, unicode):
-      return True
-  else:
-    if isinstance(s, str):
-      return True
-  return False
+  return isinstance(s, six.text_type)
 
 
 def to_unicode(s, ignore_errors=False):
@@ -87,6 +90,18 @@ def to_unicode(s, ignore_errors=False):
 
 def to_unicode_ignore_errors(s):
   return to_unicode(s, ignore_errors=True)
+
+
+def to_unicode_utf8(s):
+  return unicode(s, "utf-8") if six.PY2 else s.decode("utf-8")
+
+
+def strip_ids(ids, ids_to_strip):
+  """Strip ids_to_strip from the end ids."""
+  ids = list(ids)
+  while ids and ids[-1] in ids_to_strip:
+    ids.pop()
+  return ids
 
 
 class TextEncoder(object):
@@ -209,13 +224,11 @@ class ClassLabelEncoder(TextEncoder):
   def __init__(self, class_labels=None, class_labels_fname=None):
     super(ClassLabelEncoder, self).__init__(num_reserved_ids=0)
 
-    assert class_labels or class_labels_fname
-    assert not (class_labels and class_labels_fname)
-
     if class_labels_fname:
       with tf.gfile.Open(class_labels_fname) as f:
         class_labels = [label.strip() for label in f.readlines()]
 
+    assert class_labels
     self._class_labels = class_labels
 
   def encode(self, s):
@@ -240,24 +253,11 @@ class ClassLabelEncoder(TextEncoder):
     return len(self._class_labels)
 
 
-class OneHotClassLabelEncoder(TextEncoder):
+class OneHotClassLabelEncoder(ClassLabelEncoder):
   """One-hot encoder for class labels."""
 
-  def __init__(self, class_labels=None, class_labels_fname=None):
-    super(OneHotClassLabelEncoder, self).__init__()
-    assert class_labels or class_labels_fname
-    assert not (class_labels and class_labels_fname)
-
-    if class_labels_fname:
-      with tf.gfile.Open(class_labels_fname) as f:
-        class_labels = [label.strip() for label in f.readlines()]
-
-    self._class_labels = class_labels
-
   def encode(self, label_str, on_value=1, off_value=0):  # pylint: disable=arguments-differ
-    e = np.zeros(self.vocab_size, dtype=np.int32)
-    if off_value != 0:
-      e.fill(off_value)
+    e = np.full(self.vocab_size, off_value, dtype=np.int32)
     e[self._class_labels.index(label_str)] = on_value
     return e.tolist()
 
@@ -644,14 +644,14 @@ class SubwordTextEncoder(TextEncoder):
   @classmethod
   def build_from_generator(cls,
                            generator,
-                           target_vocab_size,
+                           target_size,
                            max_subtoken_length=None,
                            reserved_tokens=None):
     """Builds a SubwordTextEncoder from the generated text.
 
     Args:
       generator: yields text.
-      target_vocab_size: int, approximate vocabulary size to create.
+      target_size: int, approximate vocabulary size to create.
       max_subtoken_length: Maximum length of a subtoken. If this is not set,
         then the runtime and memory use of creating the vocab is quadratic in
         the length of the longest token. If this is set, then it is instead
@@ -661,14 +661,14 @@ class SubwordTextEncoder(TextEncoder):
         argument is `None`, it will use `RESERVED_TOKENS`.
 
     Returns:
-      SubwordTextEncoder with `vocab_size` approximately `target_vocab_size`.
+      SubwordTextEncoder with `vocab_size` approximately `target_size`.
     """
     token_counts = collections.defaultdict(int)
     for item in generator:
       for tok in tokenizer.encode(native_to_unicode(item)):
         token_counts[tok] += 1
     encoder = cls.build_to_target_size(
-        target_vocab_size, token_counts, 1, 1e3,
+        target_size, token_counts, 1, 1e3,
         max_subtoken_length=max_subtoken_length,
         reserved_tokens=reserved_tokens)
     return encoder
@@ -805,6 +805,7 @@ class SubwordTextEncoder(TextEncoder):
       # subtoken boundaries.
       subtoken_counts = collections.defaultdict(int)
       for token, count in six.iteritems(token_counts):
+        iter_start_time = time.time()
         escaped_token = _escape_token(token, self._alphabet)
         subtokens = self._escaped_token_to_subtoken_strings(escaped_token)
         start = 0
@@ -817,6 +818,11 @@ class SubwordTextEncoder(TextEncoder):
             new_subtoken = escaped_token[start:end]
             subtoken_counts[new_subtoken] += count
           start += len(subtoken)
+        iter_time_secs = time.time() - iter_start_time
+        if iter_time_secs > 0.1:
+          tf.logging.info(u"Processing token [{0}] took {1} seconds, consider "
+                          "setting Text2TextProblem.max_subtoken_length to a "
+                          "smaller value.".format(token, iter_time_secs))
 
       # Array of sets of candidate subtoken strings, by length.
       len_to_subtoken_strings = []
@@ -850,7 +856,11 @@ class SubwordTextEncoder(TextEncoder):
       # Reinitialize to the candidate vocabulary.
       new_subtoken_strings = [subtoken for _, subtoken in new_subtoken_strings]
       if reserved_tokens:
-        new_subtoken_strings = reserved_tokens + new_subtoken_strings
+        escaped_reserved_tokens = [
+            _escape_token(native_to_unicode(t), self._alphabet)
+            for t in reserved_tokens
+        ]
+        new_subtoken_strings = escaped_reserved_tokens + new_subtoken_strings
 
       self._init_subtokens_from_list(new_subtoken_strings)
       tf.logging.info("vocab_size = %d" % self.vocab_size)
@@ -914,7 +924,7 @@ class SubwordTextEncoder(TextEncoder):
     """
     subtoken_strings = []
     for line in f:
-      s = line.strip()
+      s = line.rstrip()
       # Some vocab files wrap words in single quotes, but others don't
       if ((s.startswith("'") and s.endswith("'")) or
           (s.startswith("\"") and s.endswith("\""))):
@@ -1052,11 +1062,3 @@ class RealEncoder(object):
     """
     del strip_extraneous
     return " ".join([str(i) for i in ids])
-
-
-def strip_ids(ids, ids_to_strip):
-  """Strip ids_to_strip from the end ids."""
-  ids = list(ids)
-  while ids[-1] in ids_to_strip:
-    ids.pop()
-  return ids

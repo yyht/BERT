@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2018 The Tensor2Tensor Authors.
+# Copyright 2019 The Tensor2Tensor Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Tiny run of trainer_model_based. Smoke test."""
 from __future__ import absolute_import
 from __future__ import division
@@ -26,11 +27,18 @@ FLAGS = tf.flags.FLAGS
 
 class ModelRLExperimentTest(tf.test.TestCase):
 
-  def test_basic(self):
+  def _test_hparams_skip_evaluation(self, hparams_set):
     FLAGS.output_dir = tf.test.get_temp_dir()
-    FLAGS.loop_hparams_set = "rl_modelrl_tiny"
+    FLAGS.loop_hparams_set = hparams_set
     FLAGS.schedule = "train"  # skip evaluation for world model training
     trainer_model_based.main(None)
+
+  def test_basic(self):
+    self._test_hparams_skip_evaluation("rlmb_tiny")
+
+  # TODO(kozak): enable when it works.
+  # def test_dqn_basic(self):
+  #   self._test_hparams_skip_evaluation("rlmb_dqn_tiny")
 
 
 if __name__ == "__main__":

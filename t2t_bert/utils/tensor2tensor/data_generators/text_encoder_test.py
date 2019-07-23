@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2018 The Tensor2Tensor Authors.
+# Copyright 2019 The Tensor2Tensor Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Tests for tensor2tensor.data_generators.text_encoder."""
 
 from __future__ import absolute_import
@@ -222,10 +223,8 @@ class SubwordTextEncoderTest(tf.test.TestCase):
         10, token_counts, 2, 10, reserved_tokens=reserved_tokens)
 
     # Make sure that reserved tokens appear in the right places.
-    start_id = encoder._subtoken_string_to_id[start_symbol]
-    end_id = encoder._subtoken_string_to_id[end_symbol]
-    self.assertEqual(start_id, 2)
-    self.assertEqual(end_id, 3)
+    self.assertEqual(encoder.decode([2]), start_symbol)
+    self.assertEqual(encoder.decode([3]), end_symbol)
 
     # Make sure that we haven't messed up the ability to reconstruct.
     reconstructed_corpus = encoder.decode(encoder.encode(corpus))
@@ -354,10 +353,8 @@ class SubwordTextEncoderTest(tf.test.TestCase):
         gen(), 10, reserved_tokens=reserved_tokens)
 
     # Make sure that reserved tokens appear in the right places.
-    start_id = encoder._subtoken_string_to_id[start_symbol]
-    end_id = encoder._subtoken_string_to_id[end_symbol]
-    self.assertEqual(start_id, 2)
-    self.assertEqual(end_id, 3)
+    self.assertEqual(encoder.decode([2]), start_symbol)
+    self.assertEqual(encoder.decode([3]), end_symbol)
 
     self.assertEqual("hi%s" % start_symbol,
                      encoder.decode(encoder.encode("hi") + [2]))
@@ -365,6 +362,23 @@ class SubwordTextEncoderTest(tf.test.TestCase):
     # Make sure that we haven't messed up the ability to reconstruct.
     reconstructed_corpus = encoder.decode(encoder.encode(corpus))
     self.assertEqual(corpus, reconstructed_corpus)
+
+
+class OneHotClassLabelEncoderTest(tf.test.TestCase):
+
+  def test_one_hot_encode(self):
+    encoder = text_encoder.OneHotClassLabelEncoder(
+        class_labels=["zero", "one", "two"])
+    self.assertEqual(encoder.encode("zero"), [1, 0, 0])
+    self.assertEqual(encoder.encode("one"), [0, 1, 0])
+    self.assertEqual(encoder.encode("two"), [0, 0, 1])
+
+  def test_one_hot_decode(self):
+    encoder = text_encoder.OneHotClassLabelEncoder(
+        class_labels=["zero", "one", "two"])
+    self.assertEqual(encoder.decode([1, 0, 0]), "zero")
+    self.assertEqual(encoder.decode([0, 1, 0]), "one")
+    self.assertEqual(encoder.decode([0, 0, 1]), "two")
 
 
 if __name__ == "__main__":

@@ -188,7 +188,7 @@ class Optimizer(object):
 		learning_rate = init_lr
 		if self.config.get("decay", "no") == "decay":
 			print("==apply lr decay==")
-			learning_rate = self.lr_decay_fn(init_lr, num_train_steps, **kargs)
+			learning_rate = self.lr_decay_fn(learning_rate, num_train_steps, **kargs)
 		if self.config.get("warmup", "no") == "warmup":
 			print("==apply warmup==")
 			learning_rate = self.warm_up(learning_rate, init_lr, **kargs)
@@ -197,29 +197,29 @@ class Optimizer(object):
 		# add uber horvod distributed optimizer
 		if hvd and self.config["opt_type"] == "hvd":
 			print("==optimizer hvd size=={}".format(self.config.get("worker_count", hvd.size())))
-			opt = self.optimizer_op(learning_rate*self.config.get("worker_count", hvd.size()), **kargs)
+			opt = self.optimizer_op(self.learning_rate*self.config.get("worker_count", hvd.size()), **kargs)
 			self.opt = hvd.DistributedOptimizer(opt)
 			self.distributed_hooks = [hvd.BroadcastGlobalVariablesHook(0)]
 		# add pai soar distributed optimizer
 		elif pai and self.config["opt_type"] == "pai_soar":
 			print("==optimizer pai_soar size=={}".format(self.config.get("worker_count", 4)))
-			opt = self.optimizer_op(learning_rate*self.config.get("worker_count", 4), **kargs)
+			opt = self.optimizer_op(self.learning_rate*self.config.get("worker_count", 4), **kargs)
 			self.opt = pai.ReplicatedVarsOptimizer(opt, clip_norm=self.config.get("clip_norm", 1.0))
 			self.distributed_hooks = []
 		# add tensorflow ps sync distributed optimizer
 		elif self.config["opt_type"] == "ps_sync":
 			print("==optimizer ps_sync size=={}".format(self.config.get("worker_count", 4)))
-			opt = self.optimizer_op(learning_rate*self.config.get("worker_count", 4), **kargs)
+			opt = self.optimizer_op(self.learning_rate*self.config.get("worker_count", 4), **kargs)
 			self.opt = tf.train.SyncReplicasOptimizer(opt, 
 											replicas_to_aggregate=self.config.get("worker_count", 4), 
 											total_num_replicas=self.config.get("worker_count", 4))
 			self.distributed_hooks = [self.opt.make_session_run_hook(self.config["is_chief"], num_tokens=0)]
 		elif self.config["opt_type"] == "ps":
 			print("==optimizer ps_async size=={}".format(self.config.get("worker_count", 4)))
-			self.opt = self.optimizer_op(learning_rate*self.config.get("worker_count", 4), **kargs)
+			self.opt = self.optimizer_op(self.learning_rate*self.config.get("worker_count", 4), **kargs)
 		else:
 			print("==initialization of single node optimizer==")
-			self.opt = self.optimizer_op(learning_rate, **kargs)
+			self.opt = self.optimizer_op(self.learning_rate, **kargs)
 			self.distributed_hooks = []
 
 	def get_train_op(self, loss, tvars, init_lr, num_train_steps, **kargs):

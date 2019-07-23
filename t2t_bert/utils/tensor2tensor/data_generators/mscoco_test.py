@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2018 The Tensor2Tensor Authors.
+# Copyright 2019 The Tensor2Tensor Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Tests for MS COCO."""
 
 from __future__ import absolute_import
@@ -20,6 +21,7 @@ from __future__ import print_function
 
 from absl.testing import parameterized
 from tensor2tensor.data_generators import mscoco
+from tensor2tensor.utils import hparam
 
 import tensorflow as tf
 
@@ -33,7 +35,7 @@ class MscocoTest(parameterized.TestCase, tf.test.TestCase):
   def testMsCocoMultiResolutionPreprocessExample(self, resize_method):
     example = {"inputs": tf.random_uniform([400, 400, 3], minval=-1.)}
     mode = tf.estimator.ModeKeys.TRAIN
-    hparams = tf.contrib.training.HParams(resolutions=[8, 16, 32])
+    hparams = hparam.HParams(resolutions=[8, 16, 32])
     if resize_method is not None:
       hparams.resize_method = resize_method
 

@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2018 The Tensor2Tensor Authors.
+# Copyright 2019 The Tensor2Tensor Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 r"""View the problem.
 
 This binary saves the videos in the problem(dataset) into gifs.
@@ -81,7 +82,7 @@ def main(_):
       for video in video_batch:
         print("Saving {}/{}".format(count, FLAGS.num_samples))
         name = "%s_%05d" % (base_template, count)
-        decoding.save_video(video, name + "_{}.png")
+        decoding.save_video(video, name + "_{:05d}.png")
         create_gif(name)
         count += 1
 

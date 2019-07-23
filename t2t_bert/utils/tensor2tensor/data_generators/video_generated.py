@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2018 The Tensor2Tensor Authors.
+# Copyright 2019 The Tensor2Tensor Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Data generators for video problems with artificially generated frames."""
 
 from __future__ import absolute_import
@@ -23,12 +24,14 @@ import math
 import numpy as np
 
 from tensor2tensor.data_generators import video_utils
-from tensor2tensor.utils import metrics
+from tensor2tensor.layers import modalities
 from tensor2tensor.utils import registry
 
 import tensorflow as tf
 
 try:
+  import matplotlib  # pylint: disable=g-import-not-at-top
+  matplotlib.use("agg")
   import matplotlib.pyplot as plt  # pylint: disable=g-import-not-at-top
 except ImportError:
   pass
@@ -64,10 +67,16 @@ class VideoStochasticShapes10k(video_utils.VideoProblem):
   def random_skip(self):
     return False
 
+  @property
+  def only_keep_videos_from_0th_frame(self):
+    return True
+
+  @property
+  def use_not_breaking_batching(self):
+    return True
+
   def eval_metrics(self):
-    eval_metrics = [metrics.Metrics.ACC, metrics.Metrics.ACC_PER_SEQ,
-                    metrics.Metrics.IMAGE_RMSE]
-    return eval_metrics
+    return []
 
   @property
   def extra_reading_spec(self):
@@ -83,12 +92,13 @@ class VideoStochasticShapes10k(video_utils.VideoProblem):
 
   def hparams(self, defaults, unused_model_hparams):
     p = defaults
-    p.input_modality = {
-        "inputs": ("video", 256),
-        "input_frame_number": ("symbol:identity", 1)
+    p.modality = {
+        "inputs": modalities.ModalityType.VIDEO,
+        "targets": modalities.ModalityType.VIDEO,
     }
-    p.target_modality = {
-        "targets": ("video", 256),
+    p.vocab_size = {
+        "inputs": 256,
+        "targets": 256,
     }
 
   @staticmethod

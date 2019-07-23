@@ -126,7 +126,7 @@ def multitask_model_fn(model_config_dict,
 
 				model_io_fn.set_saver(optimizer_fn.opt)
 
-				if kargs.get("task_index", 1) == 0 and kargs.get("run_config", None):
+				if kargs.get("task_index", 1) == 1 and kargs.get("run_config", None):
 					model_io_fn.get_hooks(kargs.get("checkpoint_dir", None), 
 														kargs.get("num_storage_steps", 1000))
 
@@ -175,8 +175,8 @@ def multitask_model_fn(model_config_dict,
 
 				estimator_spec = tf.estimator.EstimatorSpec(mode=mode, 
 								loss=total_loss,
-								train_op=train_op)
-								# training_hooks=training_hooks)
+								train_op=train_op,
+								training_hooks=training_hooks)
 				return estimator_spec
 
 		elif mode == tf.estimator.ModeKeys.EVAL: # eval execute for each class solo

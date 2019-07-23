@@ -47,11 +47,15 @@ def model_config_parser(FLAGS):
 		config.dropout_prob = 0.1
 		config.label_type = "single_label"
 		config.model_type = FLAGS.model_type
-		config.init_lr = 2e-5
+		if FLAGS.task_type in ['bert_pretrain']:
+			config.init_lr = 3e-5
+			print('==apply bert pretrain==', config.init_lr)
+		else:
+			config.init_lr = 3e-5
 		config.loss = "entropy"
 		config.rule_type_size = 2
 		config.lm_ratio = 1.0
-		config.nsp_ratio = 1.0
+		config.nsp_ratio = 0.1
 		if FLAGS.task_type in ["pair_sentence_classification"]:
 			config.classifier = FLAGS.classifier
 

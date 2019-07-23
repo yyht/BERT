@@ -1,7 +1,12 @@
 import numpy as np
 import math
-import numpy as np
 import numpy
+
+'''
+if a kernel is not PSD, we can just project into PSD:
+	1. do eigendecomposition
+	2. set all negative eigen values to 0
+'''
 
 def fast_map_dpp(kernel_matrix, max_length, epsilon=1E-10):
 	"""

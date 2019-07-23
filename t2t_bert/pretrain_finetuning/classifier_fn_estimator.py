@@ -156,6 +156,7 @@ def classifier_model_fn_builder(
 
 				for key in train_metric_dict:
 					tf.summary.scalar(key, train_metric_dict[key])
+				tf.summary.scalar('learning_rate', optimizer_fn.learning_rate)
 
 				if kargs.get("task_index", 1) == 0 and kargs.get("run_config", None):
 					training_hooks = []

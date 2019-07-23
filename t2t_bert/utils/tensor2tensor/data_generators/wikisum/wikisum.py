@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2018 The Tensor2Tensor Authors.
+# Copyright 2019 The Tensor2Tensor Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Wikipedia Summarization Problems."""
 
 from __future__ import absolute_import
@@ -32,6 +33,7 @@ from tensor2tensor.data_generators import problem
 from tensor2tensor.data_generators import text_encoder
 from tensor2tensor.data_generators import tokenizer
 from tensor2tensor.data_generators.wikisum import utils as cc_utils
+from tensor2tensor.layers import modalities
 from tensor2tensor.utils import metrics
 from tensor2tensor.utils import registry
 import tensorflow as tf
@@ -83,12 +85,14 @@ class WikisumBase(problem.Problem):
     p = defaults
     p.stop_at_eos = True
 
-    source_vocab_size = self._encoders["inputs"].vocab_size
-    target_vocab_size = self._encoders["targets"].vocab_size
-    p.input_modality = {
-        "inputs": (registry.Modalities.SYMBOL, source_vocab_size)
+    p.vocab_size = {
+        "inputs": self._encoders["inputs"].vocab_size,
+        "targets": self._encoders["targets"].vocab_size,
     }
-    p.target_modality = (registry.Modalities.SYMBOL, target_vocab_size)
+    p.modality = {
+        "inputs": modalities.ModalityType.SYMBOL,
+        "targets": modalities.ModalityType.SYMBOL,
+    }
 
   def eval_metrics(self):
     return super(WikisumBase, self).eval_metrics() + [
@@ -341,23 +345,25 @@ def _tokens_to_score(tokens):
   return {t for t in tokens if re.search("[a-z0-9]", t)}
 
 
-def _rank_reference_paragraphs(wiki_title, references_content):
+def rank_reference_paragraphs(wiki_title, references_content, normalize=True):
   """Rank and return reference paragraphs by tf-idf score on title tokens."""
-  title_tokens = _tokens_to_score(set(
-      tokenizer.encode(text_encoder.native_to_unicode(wiki_title))))
+  normalized_title = _normalize_text(wiki_title)
+  title_tokens = _tokens_to_score(
+      set(tokenizer.encode(text_encoder.native_to_unicode(normalized_title))))
   ref_paragraph_info = []
   doc_counts = collections.defaultdict(int)
   for ref in references_content:
     for paragraph in ref.split("\n"):
-      paragraph = _normalize_text(paragraph)
-      if cc_utils.filter_paragraph(paragraph):
+      normalized_paragraph = _normalize_text(paragraph)
+      if cc_utils.filter_paragraph(normalized_paragraph):
         # Skip paragraph
         continue
-      counts = _token_counts(paragraph, title_tokens)
+      counts = _token_counts(normalized_paragraph, title_tokens)
       for token in title_tokens:
         if counts[token]:
           doc_counts[token] += 1
-      info = {"content": paragraph, "counts": counts}
+      content = normalized_paragraph if normalize else paragraph
+      info = {"content": content, "counts": counts}
       ref_paragraph_info.append(info)
 
   for info in ref_paragraph_info:
@@ -428,8 +434,8 @@ def produce_examples(shard_ids, wikis_dir, refs_dir, urls_dir, vocab_path,
 
         # Rank reference paragraphs with TFIDF
         wiki_title = _normalize_text(wiki.title)
-        ranked_paragraphs = _rank_reference_paragraphs(wiki_title,
-                                                       wiki_ref_content)
+        ranked_paragraphs = rank_reference_paragraphs(wiki_title,
+                                                      wiki_ref_content)
 
         # Construct inputs from Wiki title and references
         inputs = []

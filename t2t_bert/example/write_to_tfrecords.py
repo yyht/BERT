@@ -6,7 +6,7 @@ from data_generator import data_distillation_feature_classifier
 from data_generator import data_feature_mrc
 from data_generator import extra_mask_feature_classifier
 from data_generator import pair_data_feature_classifier
-from data_generator import data_lang_adaptation
+from data_generator import data_adv_adaptation
 
 from data_generator import tokenization
 import collections
@@ -875,7 +875,7 @@ def convert_distillation_classifier_examples_to_features(examples, label_dict,
 def convert_bert_distillation_classifier_examples_to_features(examples, label_dict, 
 											max_seq_length,
 											tokenizer, output_file, with_char,
-											char_len):
+											char_len, **kargs):
 
 	feature_writer = DistillationEncoderFeatureWriter(output_file, is_training=False)
 
@@ -920,7 +920,8 @@ def convert_bert_distillation_classifier_examples_to_features(examples, label_di
 		else:
 			input_char_ids_a = None		
 
-		if len(example.label) == 1:
+		# if len(example.label) == 1:
+		if kargs.get("label_type", "multi_class") == "multi_class":
 			# print(example.label, len(label_dict), tokens_a)
 			label_id = label_dict[example.label[0]]
 		else:
@@ -979,7 +980,7 @@ def convert_bert_distillation_classifier_examples_to_features(examples, label_di
 					label_ratio=label_ratio,
 					distillation_ratio=distillation_ratio,
 					feature=feature)
-		feature_writer.process_feature(feature)
+		feature_writer.process_feature(feature, label_type=kargs.get("label_type", 'multi_class'))
 		# if ex_index < 5:
 		# 	print(feature.label_probs, ex_index, "==id==")
 		# if ex_index == 100:
@@ -1014,6 +1015,8 @@ def convert_adv_adaptation_distillation_classifier_examples_to_features(
 			if len(tokens_b) > max_seq_length:
 				tokens_b = tokens_b[0:(max_seq_length)]
 			input_ids_b = tokenizer.convert_tokens_to_ids(tokens_b, max_seq_length)
+			if len(input_ids_b) < max_seq_length:
+				input_ids_b += [0]*(max_seq_length-len(input_ids_b))
 			if with_char == "char":
 				input_char_ids_b = tokenizer.covert_tokens_to_char_ids(tokens_b, 
 											max_seq_length, 
@@ -1025,6 +1028,8 @@ def convert_adv_adaptation_distillation_classifier_examples_to_features(
 			input_char_ids_b = None
 
 		input_ids_a = tokenizer.convert_tokens_to_ids(tokens_a, max_seq_length)
+		if len(input_ids_a) < max_seq_length:
+			input_ids_a += [0]*(max_seq_length-len(input_ids_a))
 		if with_char == "char":
 			input_char_ids_a = tokenizer.covert_tokens_to_char_ids(tokens_a, 
 											max_seq_length, 

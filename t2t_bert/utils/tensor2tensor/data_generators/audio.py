@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2018 The Tensor2Tensor Authors.
+# Copyright 2019 The Tensor2Tensor Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """TIMIT data generator."""
 from __future__ import absolute_import
 from __future__ import division
@@ -59,7 +60,7 @@ def _collect_data(directory, input_ext, target_ext):
   #   if the datafile was "/path/to/datafile.wav" then the key would be
   #   "/path/to/datafile"
   # value: a pair of strings (input_filepath, target_filepath)
-  data_files = dict()
+  data_files = {}
   for root, _, filenames in os.walk(directory):
     input_files = [filename for filename in filenames if input_ext in filename]
     for input_filename in input_files:

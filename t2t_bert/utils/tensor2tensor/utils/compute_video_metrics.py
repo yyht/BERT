@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2018 The Tensor2Tensor Authors.
+# Copyright 2019 The Tensor2Tensor Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,11 +12,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Computes and saves the metrics for video prediction and generation."""
 
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
+
+import os
 
 from tensor2tensor.bin import t2t_decoder
 from tensor2tensor.utils import video_metrics
@@ -32,8 +35,15 @@ def main(_):
   frame_shape = [problem.frame_height,
                  problem.frame_width,
                  problem.num_channels]
+  decode_hp = t2t_decoder.create_decode_hparams()
+
+  output_dirs = [
+      os.path.join(FLAGS.output_dir, "decode_%05d" % decode_id)
+      for decode_id in range(decode_hp.num_decodes)
+  ]
+
   video_metrics.compute_and_save_video_metrics(
-      FLAGS.output_dir,
+      output_dirs,
       FLAGS.problem,
       hparams.video_num_target_frames,
       frame_shape)

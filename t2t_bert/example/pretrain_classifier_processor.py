@@ -33,7 +33,7 @@ def clean(text):
 	text = HanziConv.toSimplified(text)
 	text = full2half(text)
 	text = re.sub("\\#.*?#|\\|.*?\\||\\[.*?]", "", text)
-	text = re.sub("\s*", "", text)
+	# text = re.sub("\s*", "", text)
 	return text
 
 class PiarPretrainProcessor(data_processor.DataProcessor):

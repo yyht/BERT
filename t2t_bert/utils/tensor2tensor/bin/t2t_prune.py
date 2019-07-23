@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2018 The Tensor2Tensor Authors.
+# Copyright 2019 The Tensor2Tensor Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 r"""Prune T2TModels using some heuristic.
 
 This supports a very common form of pruning known as magnitude-based pruning.
@@ -53,7 +54,7 @@ def create_pruning_params():
 
 
 def create_pruning_strategy(name):
-  return registry.pruning_strategies(name)
+  return registry.pruning_strategy(name)
 
 
 def main(argv):
@@ -86,7 +87,7 @@ def main(argv):
   sess = tf.Session()
 
   model_fn = t2t_model.T2TModel.make_estimator_model_fn(
-      FLAGS.model, hparams)
+      FLAGS.model, hparams, use_tpu=FLAGS.use_tpu)
   spec = model_fn(
       features,
       labels,
@@ -113,4 +114,5 @@ def main(argv):
 
 
 if __name__ == "__main__":
+  tf.logging.set_verbosity(tf.logging.INFO)
   tf.app.run()

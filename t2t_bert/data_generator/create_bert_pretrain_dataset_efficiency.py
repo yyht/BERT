@@ -49,7 +49,7 @@ import numpy as np
 from heapq import nsmallest
 from itertools import accumulate
 import random
-import time
+import time, re
 
 from multiprocessing import Process, Manager
 
@@ -130,9 +130,11 @@ try:
 	try:
 		es_api.delete(FLAGS.doc_index)
 		es_api.create(FLAGS.doc_index)
+		time.sleep(60)
 		print("==delete old index and create new index==")
 	except:
 		es_api.create(FLAGS.doc_index)
+		time.sleep(60)
 		print("==create new index==")
 except:
 	es_api = None
@@ -144,6 +146,9 @@ TrainingInstance = namedtuple("TrainingInstance",
 										   'is_random_next'])
 
 MaskedLmInstance = collections.namedtuple("masked_lm", ["index", "label"])
+
+CH_PUNCTUATION = u"[＂＃＄％＆＇，：；＠［＼］＾＿｀｛｜｝～｟｠｢｣､　、〃〈〉《》「」『』【】〔〕〖〗〘〙〚〛〜〝〞〟〰〾〿–—‘’‛“”„‟…‧﹏﹑﹔·！？｡。]"
+EN_PUNCTUATION = u"['!#$%&\'()*+,-/:;<=>?@[\\]^_`{|}~'.]"
 
 def whole_word_mask(cand_indexes, token, i):
 	if FLAGS.do_whole_word_mask and len(cand_indexes) >= 1 and token.startswith("##"):
@@ -316,6 +321,8 @@ def create_instances_from_document(
 					break
 			# random_document = all_documents[random_document_index]
 			random_document = get_document(all_documents, es_api, random_document_index)
+			
+			# print(random_document_index, len(random_document))
 						
 			random_start = rng.randint(0, len(random_document) - 1)
 			for j in range(random_start, len(random_document)):
@@ -358,9 +365,16 @@ def create_instances_from_document(
 		instances.append(instance)
 	return instances
 
+def valid_line(tokens):
+	unk_cnt = sum([1 for item in tokens if item == "[UNK]"])
+	if unk_cnt / (len(tokens)+1e-5) >= 0.05 or len(tokens) < 16:
+		return False
+	else:
+		return True
+
 def read_file(input_files, tokenizer, max_seq_length):
 	"""Create `TrainingInstance`s from raw text."""
-	all_documents = [[]]
+	# all_documents = [[]]
 
 	# Input file format:
 	# (1) One sentence per line. These should ideally be actual sentences, not
@@ -368,6 +382,8 @@ def read_file(input_files, tokenizer, max_seq_length):
 	# sentence boundaries for the "next sentence prediction" task).
 	# (2) Blank lines between documents. Document boundaries are needed so
 	# that the "next sentence prediction" task doesn't span between documents.
+	es_all_documents = [[]]
+	valid_doc_cnt = 0
 	for input_file in input_files:
 		with tf.gfile.GFile(input_file, "r") as reader:
 			while True:
@@ -379,37 +395,71 @@ def read_file(input_files, tokenizer, max_seq_length):
 
 				# Empty lines are used as document delimiters
 				if not line:
-					all_documents.append([])
+					# all_documents.append([])
+					es_all_documents.append([])
+					continue
 				# tf.logging.info(" line {}".format(line))
 
 				tokens = tokenizer.tokenize(line)
+				valid_flag = valid_line(tokens)
 
-				if tokens:
-					all_documents[-1].append(tokens)
+				if tokens and valid_flag:
+					# all_documents[-1].append(tokens)
+					es_all_documents[-1].append(tokens)
+				if np.mod(len(es_all_documents), 1000) == 0:
+					es_index_documents = []
+					for item in es_all_documents:
+						if not item:
+							continue
+						es_index_documents.append({
+								"doc":json.dumps(item, ensure_ascii=False),
+								"doc_id":valid_doc_cnt
+							})
+						valid_doc_cnt += 1
+					es_api.index_batch_doc(FLAGS.doc_index, FLAGS.doc_type, es_index_documents, 1000)
+					es_all_documents = [[]]
+					doc_index_lst = []
+					
+	if len(es_all_documents) >= 1:
+		es_index_documents = []
+		for item in es_all_documents:
+			if not item:
+				continue
+			es_index_documents.append({
+					"doc":json.dumps(item, ensure_ascii=False),
+					"doc_id":valid_doc_cnt
+				})
+			valid_doc_cnt += 1
+		es_api.index_batch_doc(FLAGS.doc_index, FLAGS.doc_type, es_index_documents, 1000)
+		es_all_documents = [[]]
+	
+	document_cnt = valid_doc_cnt
+
+	return document_cnt
 
 	# Remove empty documents
-	all_documents = [x for x in all_documents if x]
-	tf.logging.info(" input file {} all_documents {}".format(input_file, len(all_documents)))
-	rng.shuffle(all_documents)
+	# all_documents = [x for x in all_documents if x]
+	# tf.logging.info(" input file {} all_documents {}".format(input_file, len(all_documents)))
+	# rng.shuffle(all_documents)
 
-	if es_api:
-		es_all_documents = []
-		total_num = 0
-		for index, item in enumerate(all_documents):
-			es_all_documents.append({
-					"ori_doc":json.dumps(item, ensure_ascii=False),
-					"doc":json.dumps(item, ensure_ascii=False),
-					"doc_id":index
-				})
-			total_num += 1
-			if np.mod(len(es_all_documents), 1000) == 0 or total_num == len(all_documents):
-				es_api.index_batch_doc(FLAGS.doc_index, FLAGS.doc_type, es_all_documents, 1000)
-				es_all_documents = []
-	return all_documents
+	# if es_api:
+	# 	es_all_documents = []
+	# 	total_num = 0
+	# 	for index, item in enumerate(all_documents):
+	# 		es_all_documents.append({
+	# 				"ori_doc":json.dumps(item, ensure_ascii=False),
+	# 				"doc":json.dumps(item, ensure_ascii=False),
+	# 				"doc_id":index
+	# 			})
+	# 		total_num += 1
+	# 		if np.mod(len(es_all_documents), 1000) == 0 or total_num == len(all_documents):
+	# 			es_api.index_batch_doc(FLAGS.doc_index, FLAGS.doc_type, es_all_documents, 1000)
+	# 			es_all_documents = []
+	# return all_documents
 
 def create_instances_chunk_from_document(all_documents, document_index_chunk, 
 		max_seq_length, masked_lm_prob, max_predictions_per_seq, 
-		short_seq_prob, tokenizer, output_file, rng, num_of_documents):
+		short_seq_prob, tokenizer, output_file, rng, num_of_documents, chunk_id):
 	vocab_words = list(tokenizer.vocab.keys())
 	writer = tf.python_io.TFRecordWriter(output_file)
 
@@ -433,7 +483,7 @@ def create_instances_chunk_from_document(all_documents, document_index_chunk,
 			total_written += 1
 
 	writer.close()
-	tf.logging.info("Wrote %d total instances", total_written)
+	tf.logging.info("Wrote %d total instances %d", total_written, chunk_id)
 
 def build_index_chunk(num_of_documents, process_num, dupe_factor):
 	chunk_size = int(num_of_documents/process_num)
@@ -463,12 +513,11 @@ def multi_process(input_files, tokenizer,
 
 	chunk_num = process_num - 1
 
-	all_documents = read_file(input_files, tokenizer, max_seq_length)
-	num_of_documents = len(all_documents)
+	num_of_documents = read_file(input_files, tokenizer, max_seq_length)
+	# num_of_documents = len(all_documents)
+	time.sleep(60)
 
 	print(num_of_documents, dupe_factor)
-
-	time.sleep(20)
 
 	chunks = build_index_chunk(num_of_documents, process_num, dupe_factor)
 	pool = multiprocessing.Pool(processes=process_num)
@@ -477,19 +526,19 @@ def multi_process(input_files, tokenizer,
 
 	for chunk_id, chunk_key in enumerate(chunks):
 		output_file_ = output_file + "/chunk_{}.tfrecords".format(chunk_id)
-		print("#mask_language_model_multi_processing.length of chunk:",len(chunks[chunk_key]),";file_name:",output_file_,";chunk_id:",chunk_id)
+		print("#mask_language_model_multi_processing.length of chunk: {} ;file_name:{};chunk_id:{}".format(len(chunks[chunk_key]),output_file_,chunk_id))
 		# create_instances_chunk_from_document(all_documents_shared, chunks[chunk_key], 
 		# 			max_seq_length, masked_lm_prob, 
 		# 			max_predictions_per_seq,
 		# 			short_seq_prob, tokenizer, 
-		# 			output_file_, rng, num_of_documents)
+		# 			output_file_, rng, num_of_documents, chunk_id)
 		# break
 		pool.apply_async(create_instances_chunk_from_document,
 			args=(all_documents_shared, chunks[chunk_key], 
 					max_seq_length, masked_lm_prob, 
 					max_predictions_per_seq,
 					short_seq_prob, tokenizer, 
-					output_file_, rng, num_of_documents)) # apply_async
+					output_file_, rng, num_of_documents, chunk_id)) # apply_async
 	pool.close()
 	pool.join()
 
@@ -542,10 +591,15 @@ def create_masked_lm_predictions(tokens, masked_lm_prob,
 				# 10% of the time, replace with random word
 				else:
 					masked_token = vocab_words[rng.randint(0, len(vocab_words) - 1)]
+			cn_pattern = re.search(CH_PUNCTUATION, tokens[index])
+			en_pattern = re.search(EN_PUNCTUATION, tokens[index])
 
-		output_tokens[index] = masked_token
+			if cn_pattern or en_pattern:
+				continue
 
-		masked_lms.append(MaskedLmInstance(index=index, label=tokens[index]))
+			output_tokens[index] = masked_token
+
+			masked_lms.append(MaskedLmInstance(index=index, label=tokens[index]))
 	assert len(masked_lms) <= num_to_predict
 	masked_lms = sorted(masked_lms, key=lambda x: x.index)
 
