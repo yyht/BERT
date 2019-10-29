@@ -35,7 +35,7 @@ flags = tf.flags
 FLAGS = flags.FLAGS
 
 # os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-tf.logging.set_verbosity(tf.logging.ERROR)
+# tf.logging.set_verbosity(tf.logging.ERROR)
 
 flags.DEFINE_string("buckets", "", "oss buckets")
 
@@ -246,6 +246,7 @@ flags.DEFINE_string(
             "ln_type", 'postln',
                 "if apply distillation"
                     )
+
 
 flags.DEFINE_bool("do_train", True, "Whether to run training.")
 

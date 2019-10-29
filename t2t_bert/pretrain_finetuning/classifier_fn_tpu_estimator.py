@@ -84,9 +84,8 @@ def classifier_model_fn_builder(
 	model_config.tsa = 'exp_schedule'
 	model_config.num_train_steps = opt_config.num_train_steps
 	# opt_config.init_lr /= 2
-	opt_config.grad_clip = None
 
-	def model_fn(features, labels, mode):
+	def model_fn(features, labels, mode, params):
 
 		model_api = model_zoo(model_config)
 
@@ -103,12 +102,12 @@ def classifier_model_fn_builder(
 		else:
 			scope = model_config.scope
 
-		# (nsp_loss, 
-		# nsp_per_example_loss, 
-		# nsp_log_prob) = pretrain.get_next_sentence_output(model_config,
-		# 								model.get_pooled_output(),
-		# 								features['next_sentence_labels'],
-		# 								reuse=tf.AUTO_REUSE)
+                (nsp_loss, 
+		 nsp_per_example_loss, 
+		 nsp_log_prob) = pretrain.get_next_sentence_output(model_config,
+		 								model.get_pooled_output(),
+		 								features['next_sentence_labels'],
+		 								reuse=tf.AUTO_REUSE)
 
 		masked_lm_positions = features["masked_lm_positions"]
 		masked_lm_ids = features["masked_lm_ids"]
@@ -158,9 +157,9 @@ def classifier_model_fn_builder(
 			scaffold_fn = None
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
-
+                        
 			optimizer_fn = optimizer.Optimizer(opt_config)
-
+                        
 			tvars = pretrained_tvars
 			model_io_fn.print_params(tvars, string=", trainable params")
 			
@@ -183,13 +182,13 @@ def classifier_model_fn_builder(
 						masked_lm_mask=masked_lm_mask
 					)
 
-				for key in train_metric_dict:
-					tf.summary.scalar(key, train_metric_dict[key])
-				tf.summary.scalar('learning_rate', optimizer_fn.single_node_learning)
+			#	for key in train_metric_dict:
+			#		tf.summary.scalar(key, train_metric_dict[key])
+			#	tf.summary.scalar('learning_rate', optimizer_fn.learning_rate)
 
 				estimator_spec = tf.contrib.tpu.TPUEstimatorSpec(
 								mode=mode,
-								loss=total_loss,
+								loss=loss,
 								train_op=train_op,
 								scaffold_fn=scaffold_fn)
 
