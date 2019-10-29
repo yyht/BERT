@@ -43,7 +43,7 @@ def train_eval_fn(FLAGS,
 		warmup_ratio = config.get('warmup', 0.1)
 
 		num_train_steps = int(
-			train_size / FLAGS.batch_size * epoch)
+			train_size / FLAGS.batch_size * FLAGS.epoch)
 		
 		num_warmup_steps = int(num_train_steps * warmup_ratio)
 		
@@ -92,8 +92,7 @@ def train_eval_fn(FLAGS,
 										FLAGS.max_length,
 										FLAGS.max_predictions_per_seq,
 										FLAGS.do_train,
-										num_cpu_threads=4,
-										batch_size=FLAGS.batch_size)
+										num_cpu_threads=4)
 
 		estimator = tf.contrib.tpu.TPUEstimator(
 				  use_tpu=True,

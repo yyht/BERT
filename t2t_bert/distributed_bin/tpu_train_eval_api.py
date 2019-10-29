@@ -27,7 +27,7 @@ sys.path.extend([bert_path, t2t_bert_path])
 print(sys.path)
 
 import tensorflow as tf
-from pretrain_fineutning import train_eval_tpu_estimator
+from pretrain_finetuning import train_eval_tpu_estimator
 
 
 flags = tf.flags
@@ -242,6 +242,11 @@ flags.DEFINE_integer(
 	"if apply distillation"
 	)
 
+flags.DEFINE_string(
+            "ln_type", 'postln',
+                "if apply distillation"
+                    )
+
 flags.DEFINE_bool("do_train", True, "Whether to run training.")
 
 flags.DEFINE_bool("do_eval", False, "Whether to run eval on the dev set.")
@@ -327,3 +332,10 @@ def main(_):
 		decay=FLAGS.decay,
 		warmup=FLAGS.warmup,
 		input_target=FLAGS.input_target)
+
+
+
+
+
+if __name__ == "__main__":
+        tf.app.run()

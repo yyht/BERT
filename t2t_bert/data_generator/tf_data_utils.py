@@ -129,14 +129,13 @@ def input_fn_builder(input_files,
 					 max_seq_length,
 					 max_predictions_per_seq,
 					 is_training,
-					 num_cpu_threads=4,
-					 batch_size=512
+					 num_cpu_threads=4
 					 ):
 	"""Creates an `input_fn` closure to be passed to TPUEstimator."""
 
 	def input_fn(params):
 		"""The actual input function."""
-
+                batch_size = params["batch_size"]
 		name_to_features = {
 				"input_ids":
 						tf.FixedLenFeature([max_seq_length], tf.int64),
