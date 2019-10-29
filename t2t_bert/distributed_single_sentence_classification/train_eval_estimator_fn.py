@@ -88,7 +88,9 @@ def train_eval_fn(FLAGS,
 			train_size = FLAGS.train_size
 			epoch = int(FLAGS.epoch / worker_count)
 		elif FLAGS.if_shard == "1":
-			train_size = int(FLAGS.train_size/worker_count)
+			print("==number of gpus==", kargs.get('num_gpus', 1))
+			train_size = int(FLAGS.train_size/worker_count/kargs.get('num_gpus', 1))
+			# train_size = int(FLAGS.train_size)
 			epoch = FLAGS.epoch
 		else:
 			train_size = int(FLAGS.train_size/worker_count)
@@ -98,11 +100,21 @@ def train_eval_fn(FLAGS,
 
 		label_dict = json.load(tf.gfile.Open(FLAGS.label_id))
 
+		warmup_ratio = config.get('warmup', 0.1)
+
 		num_train_steps = int(
 			train_size / FLAGS.batch_size * epoch)
-		num_warmup_steps = int(num_train_steps * 0.1)
+		if config.get('ln_type', 'postln') == 'postln':
+			num_warmup_steps = int(num_train_steps * warmup_ratio)
+		elif config.get('ln_type', 'preln') == 'postln':
+			num_warmup_steps = 0
+		else:
+			num_warmup_steps = int(num_train_steps * warmup_ratio)
+		print('==num warmup steps==', num_warmup_steps)
 
-		num_storage_steps = int(train_size / FLAGS.batch_size)
+		num_storage_steps = min([int(train_size / FLAGS.batch_size), 10000 ])
+		if num_storage_steps <= 100:
+			num_storage_steps = 500
 
 		num_eval_steps = int(FLAGS.eval_size / FLAGS.batch_size)
 
@@ -114,17 +126,32 @@ def train_eval_fn(FLAGS,
 
 		print(" model type {}".format(FLAGS.model_type))
 
-		print(num_train_steps, num_warmup_steps, "=============")
+		print(num_train_steps, num_warmup_steps, "=============", kargs.get('num_gpus', 1), '==number of gpus==')
+
+		if worker_count*kargs.get("num_gpus", 1) >= 2:
+			clip_norm_scale = 1.0
+			lr_scale = 0.8
+		else:
+			clip_norm_scale = 1.0
+			lr_scale = 1.0
+		lr = init_lr*worker_count*kargs.get("num_gpus", 1)*lr_scale
+		if lr >= 1e-3:
+			lr = 1e-3
 		
-		opt_config = Bunch({"init_lr":init_lr, 
+		opt_config = Bunch({"init_lr":lr, 
 							"num_train_steps":num_train_steps,
 							"num_warmup_steps":num_warmup_steps,
 							"worker_count":worker_count,
+							"gpu_count":worker_count*kargs.get("num_gpus", 1),
 							"opt_type":FLAGS.opt_type,
 							"is_chief":is_chief,
 							"train_op":kargs.get("train_op", "adam"),
 							"decay":kargs.get("decay", "no"),
-							"warmup":kargs.get("warmup", "no")})
+							"warmup":kargs.get("warmup", "no"),
+							"clip_norm":config.get("clip_norm", 1.0),
+							"grad_clip":config.get("grad_clip", "global_norm"),
+							"epoch":FLAGS.epoch,
+							"strategy":FLAGS.distribution_strategy})
 
 		anneal_config = Bunch({
 					"initial_value":1.0,
@@ -285,16 +312,16 @@ def train_eval_fn(FLAGS,
 			eval_spec = tf.estimator.EvalSpec(input_fn=eval_features, 
 											steps=num_eval_steps)
 			
-			# model_estimator.train(input_fn=train_features,
-			# 				max_steps=num_train_steps,
-			# 				hooks=train_hooks)
-			tf.estimator.train(model_estimator, train_spec)
+			model_estimator.train(input_fn=train_features,
+							max_steps=num_train_steps,
+							hooks=train_hooks)
+			# tf.estimator.train(model_estimator, train_spec)
 
 			train_end_time = time.time()
 			print("==training time==", train_end_time - train_being_time)
 			tf.logging.info("==training time=={}".format(train_end_time - train_being_time))
-			# eval_results = model_estimator.evaluate(input_fn=eval_features, steps=num_eval_steps)
-			# print(eval_results)
+			eval_results = model_estimator.evaluate(input_fn=eval_features, steps=num_eval_steps)
+			print(eval_results)
 			
 		elif kargs.get("distribution_strategy", "MirroredStrategy") in ["ParameterServerStrategy", "CollectiveAllReduceStrategy"]: 
 			print("==apply multi-machine machine multi-card training==")
@@ -308,9 +335,9 @@ def train_eval_fn(FLAGS,
 			eval_spec = tf.estimator.EvalSpec(input_fn=eval_features, 
 											steps=num_eval_steps)
 
-			tf.estimator.train(model_estimator, train_spec) # tf 1.12 doesn't need evaluate
+			# tf.estimator.train(model_estimator, train_spec) # tf 1.12 doesn't need evaluate
 
-			# tf.estimator.train_and_evaluate(model_estimator, train_spec, eval_spec)
+			tf.estimator.train_and_evaluate(model_estimator, train_spec, eval_spec)
 			# train_end_time = time.time()
 			# print("==training time==", train_end_time - train_being_time)
 

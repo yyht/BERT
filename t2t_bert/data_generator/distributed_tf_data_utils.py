@@ -242,21 +242,20 @@ def all_reduce_train_batch_input_fn(input_file, _parse_fn, name_to_features,
 
 	if isinstance(input_file, list):
 		cycle_length = min(4, len(input_file))
-		print("==cycle_length==", cycle_length)
-		dataset = dataset.shuffle(buffer_size=len(input_file))
+		print("==cycle_length==", cycle_length, len(input_file))
+		# dataset = dataset.shuffle(buffer_size=len(input_file))
+		# dataset = dataset.apply(
+		# 		tf.contrib.data.parallel_interleave(
+		# 		  tf.data.TFRecordDataset,
+		# 		  sloppy=True,
+		# 		  cycle_length=cycle_length))
 	else:
 		cycle_length = 1
-
-	# # interleave dataset
-	# dataset = dataset.apply(
-	# 			tf.contrib.data.parallel_interleave(
-	# 			  tf.data.TFRecordDataset,
-	# 			  sloppy=True,
-	# 			  cycle_length=cycle_length))
 
 	print("==worker_count {}, task_index {}==".format(worker_count, task_index))
 	if if_shard == "1":
 		dataset = dataset.shard(worker_count, task_index)
+		print('==apply dataset shard==', worker_count, task_index)
 	dataset = dataset.shuffle(
 							buffer_size=params.get("buffer_size", 1024)+3*params.get("batch_size", 32),
 							seed=np.random.randint(0,1e10,1)[0],
@@ -313,34 +312,13 @@ def _truncate_seq_pair_v1(tokens_a, tokens_b, max_length, rng):
 		else:
 			trunc_tokens.pop()
 
-def input_fn_builder(input_files,
-										 max_seq_length,
-										 max_predictions_per_seq,
-										 is_training,
-										 num_cpu_threads=4):
+def input_fn_builder(input_files, _parse_fn, name_to_features,
+					 is_training,
+					 num_cpu_threads=4):
 	"""Creates an `input_fn` closure to be passed to TPUEstimator."""
 
-	def input_fn(params):
+	def input_fn():
 		"""The actual input function."""
-		batch_size = params["batch_size"]
-
-		name_to_features = {
-				"input_ids":
-						tf.FixedLenFeature([max_seq_length], tf.int64),
-				"input_mask":
-						tf.FixedLenFeature([max_seq_length], tf.int64),
-				"segment_ids":
-						tf.FixedLenFeature([max_seq_length], tf.int64),
-				"masked_lm_positions":
-						tf.FixedLenFeature([max_predictions_per_seq], tf.int64),
-				"masked_lm_ids":
-						tf.FixedLenFeature([max_predictions_per_seq], tf.int64),
-				"masked_lm_weights":
-						tf.FixedLenFeature([max_predictions_per_seq], tf.float32),
-				"next_sentence_labels":
-						tf.FixedLenFeature([1], tf.int64),
-		}
-
 		# For training, we want a lot of parallel reading and shuffling.
 		# For eval, we want no shuffling and parallel reading doesn't matter.
 		if is_training:
@@ -363,7 +341,7 @@ def input_fn_builder(input_files,
 			d = tf.data.TFRecordDataset(input_files)
 			# Since we evaluate for a fixed number of steps we don't want to encounter
 			# out-of-range exceptions.
-			d = d.repeat()
+			d = d.repeat(1)
 
 		# We must `drop_remainder` on training because the TPU requires fixed
 		# size dimensions. For eval, we assume we are evaluating on the CPU or GPU
@@ -371,7 +349,7 @@ def input_fn_builder(input_files,
 		# every sample.
 		d = d.apply(
 				tf.contrib.data.map_and_batch(
-						lambda record: _decode_record(record, name_to_features),
+						lambda record: _parse_fn(record, name_to_features),
 						batch_size=batch_size,
 						num_parallel_batches=num_cpu_threads,
 						drop_remainder=True))

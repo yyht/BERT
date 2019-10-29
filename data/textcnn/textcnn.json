@@ -20,6 +20,8 @@
     "context_layer_num": 1,
     "context_lstm_dim": 100,
 
+    "label_type":"multi_label",
+
     "slstm_layer_num": 5,
 
     "rnn":"lstm",

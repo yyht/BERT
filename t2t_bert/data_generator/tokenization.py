@@ -4,7 +4,7 @@ from __future__ import division
 from __future__ import print_function
 
 from jieba import Tokenizer
-from jieba.posseg import POSTokenizer
+# from jieba.posseg import POSTokenizer
 
 import sentencepiece as spm
 import tensorflow as tf
@@ -312,13 +312,13 @@ def convert_by_vocab(vocab, items):
 			if len(item.split("##")[-1]) == 1:
 				cp = ord(item.split("##")[-1])
 				if _is_chinese_char(cp):
-					output.append(vocab[item.split("##")[-1]])
+					output.append(vocab.get(item.split("##")[-1], vocab["[UNK]"]))
 				else:
-					output.append(vocab[item])
+					output.append(vocab.get(item, vocab["[UNK]"]))
 			else:
-				output.append(vocab[item])
+				output.append(vocab.get(item, vocab["[UNK]"]))
 		else:
-			output.append(vocab[item])
+			output.append(vocab.get(item, vocab["[UNK]"]))
 	return output
 
 

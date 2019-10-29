@@ -12,67 +12,67 @@ graph = tf.Graph()
 with graph.as_default():
     name_to_features = {
                     "input_ids":
-                            tf.FixedLenFeature([128], tf.int64),
+                            tf.FixedLenFeature([384], tf.int64),
                     "input_mask":
-                            tf.FixedLenFeature([128], tf.int64),
+                            tf.FixedLenFeature([384], tf.int64),
                     "segment_ids":
-                            tf.FixedLenFeature([128], tf.int64),
-                    "label_ids":
-                            tf.FixedLenFeature([], tf.int64),
+                            tf.FixedLenFeature([384], tf.int64),
+                    # "label_ids":
+                    #         tf.FixedLenFeature([], tf.int64),
             }
 
     params = Bunch({})
     params.epoch = epoch
     params.batch_size = 32
-    jd_test = "/data/xuht/jd_comment/train.tfrecords"
+    jd_test = "/data/xuht/mrc_search/pretrain/mrc_pretrain.tfrecords_jieba_debug"
     print(params["batch_size"], "===batch size===")
     # input_fn = tf_data_utils.train_input_fn(jd_test, tf_data_utils._decode_record, name_to_features, params)
 
     def _decode_record(record, name_to_features):
-    """Decodes a record to a TensorFlow example.
+        """Decodes a record to a TensorFlow example.
 
-    name_to_features = {
-                "input_ids":
-                        tf.FixedLenFeature([max_seq_length], tf.int64),
-                "input_mask":
-                        tf.FixedLenFeature([max_seq_length], tf.int64),
-                "segment_ids":
-                        tf.FixedLenFeature([max_seq_length], tf.int64),
-                "masked_lm_positions":
-                        tf.FixedLenFeature([max_predictions_per_seq], tf.int64),
-                "masked_lm_ids":
-                        tf.FixedLenFeature([max_predictions_per_seq], tf.int64),
-                "masked_lm_weights":
-                        tf.FixedLenFeature([max_predictions_per_seq], tf.float32),
-                "next_sentence_labels":
-                        tf.FixedLenFeature([1], tf.int64),
-        }
+        name_to_features = {
+                    "input_ids":
+                            tf.FixedLenFeature([max_seq_length], tf.int64),
+                    "input_mask":
+                            tf.FixedLenFeature([max_seq_length], tf.int64),
+                    "segment_ids":
+                            tf.FixedLenFeature([max_seq_length], tf.int64),
+                    "masked_lm_positions":
+                            tf.FixedLenFeature([max_predictions_per_seq], tf.int64),
+                    "masked_lm_ids":
+                            tf.FixedLenFeature([max_predictions_per_seq], tf.int64),
+                    "masked_lm_weights":
+                            tf.FixedLenFeature([max_predictions_per_seq], tf.float32),
+                    "next_sentence_labels":
+                            tf.FixedLenFeature([1], tf.int64),
+            }
 
-    """
+        """
         example = tf.parse_example(record, name_to_features)
         return example
 
     def _decode_record(record, name_to_features):
-    """Decodes a record to a TensorFlow example.
+        """Decodes a record to a TensorFlow example.
 
-    name_to_features = {
-                "input_ids":
-                        tf.FixedLenFeature([max_seq_length], tf.int64),
-                "input_mask":
-                        tf.FixedLenFeature([max_seq_length], tf.int64),
-                "segment_ids":
-                        tf.FixedLenFeature([max_seq_length], tf.int64),
-                "masked_lm_positions":
-                        tf.FixedLenFeature([max_predictions_per_seq], tf.int64),
-                "masked_lm_ids":
-                        tf.FixedLenFeature([max_predictions_per_seq], tf.int64),
-                "masked_lm_weights":
-                        tf.FixedLenFeature([max_predictions_per_seq], tf.float32),
-                "next_sentence_labels":
-                        tf.FixedLenFeature([1], tf.int64),
-        }
+        name_to_features = {
+                    "input_ids":
+                            tf.FixedLenFeature([max_seq_length], tf.int64),
+                    "input_mask":
+                            tf.FixedLenFeature([max_seq_length], tf.int64),
+                    "segment_ids":
+                            tf.FixedLenFeature([max_seq_length], tf.int64),
+                    "masked_lm_positions":
+                            tf.FixedLenFeature([max_predictions_per_seq], tf.int64),
+                    "masked_lm_ids":
+                            tf.FixedLenFeature([max_predictions_per_seq], tf.int64),
+                    "masked_lm_weights":
+                            tf.FixedLenFeature([max_predictions_per_seq], tf.float32),
+                    "next_sentence_labels":
+                            tf.FixedLenFeature([1], tf.int64),
+            }
 
-    """
+        """
         example = tf.parse_example(record, name_to_features)
         return example
 

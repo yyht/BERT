@@ -11,12 +11,12 @@ fi
 zip -r ${model_zip} ${model_folder} -x "*.DS_Store,*.git*" 
 
 pai_command="
-pai -name tensorflow140_hvd_test 
+pai -name tensorflow180_hvd_test 
 	-project algo_public_dev 
 	-Dscript='file://${model_zip}'
 	-DentryFile='./BERT/t2t_bert/distributed_bin/all_reduce_train_eval_api.py' 
 	-DgpuRequired=400
-	-DhyperParameters='file:///Users/xuhaotian/Desktop/my_work/BERT/t2t_bert/distributed_pair_sentence_classification/bert_qqp'
+	-DhyperParameters='file:///Users/xuhaotian/Desktop/my_work/BERT/t2t_bert/distributed_pair_sentence_classification/bert_lcqmc_eval'
 	-Dbuckets='oss://alg-misc/BERT/?role_arn=acs:ram::1265628042679515:role/yuefeng2&host=cn-hangzhou.oss-internal.aliyun-inc.com';
 "
 echo "${pai_command}"

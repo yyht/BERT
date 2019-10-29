@@ -121,7 +121,7 @@ def model_fn_builder(
 					return estimator_spec
 
 		elif mode == tf.estimator.ModeKeys.PREDICT:
-			if kargs.get('label_type', 'multi_class') == 'multi_class':
+			if model_config.get('label_type', 'single_label') == 'single_label':
 				print(logits.get_shape(), "===logits shape===")
 				pred_label = tf.argmax(logits, axis=-1, output_type=tf.int32)
 				prob = tf.nn.softmax(logits)
@@ -142,7 +142,7 @@ def model_fn_builder(
 													)
 										}
 							)
-			elif kargs.get('label_type', 'multi_class') == 'multi_label':
+			elif model_config.get('label_type', 'single_label') == 'multi_label':
 				prob = tf.nn.sigmoid(logits)
 				estimator_spec = tf.estimator.EstimatorSpec(
 										mode=mode,

@@ -17,7 +17,7 @@ try:
 except:
 	from multitask_model_fn import multitask_model_fn
 
-from dataset_generator.input_fn import train_eval_input_fn 
+# from dataset_generator.input_fn import train_eval_input_fn 
 
 import numpy as np
 import tensorflow as tf

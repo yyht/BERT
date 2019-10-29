@@ -158,7 +158,7 @@ def AB_distillation(student, teacher, margin=1., weight = 3e-3):
 	return tf.add_n([criterion_alternative_L2(std, tch, margin, i)/2**(-i)
 					for i, std, tch in zip(range(len(student)), student, teacher)])*weight
 	
-def RKD(source, target, l = [1e2,2e2]):
+def RKD(source, target, l = [1e2,2e2], with_l2=False):
 	'''
 	Wonpyo Park, Dongju Kim, Yan Lu, Minsu Cho.  
 	relational knowledge distillation.
@@ -184,8 +184,10 @@ def RKD(source, target, l = [1e2,2e2]):
 				e_norm = tf.nn.l2_normalize(e,2)
 			return tf.matmul(e_norm, e_norm,transpose_b=True)
 
-		source = tf.nn.l2_normalize(source,1)
-		target = tf.nn.l2_normalize(target,1)
+		if with_l2:
+			source = tf.nn.l2_normalize(source,1)
+			target = tf.nn.l2_normalize(target,1)
+
 		distance_loss = Huber_loss(Distance_wise_potential(source),Distance_wise_potential(target))
 		angle_loss    = Huber_loss(   Angle_wise_potential(source),   Angle_wise_potential(target))
 		
@@ -308,3 +310,25 @@ def MHGD_embedding(student_feature, teacher_feature):
 		   
 				GNN_losses = kld_loss(G_S, G_T)
 		return GNN_losses
+
+def SSD(source, target):
+	with tf.variable_scope('Self_Similarity_Distillation'):
+		batch_size = source.shape[0]
+		source = tf.reshape(source, [batch_size, -1])
+		source_norm = tf.nn.l2_normalize(source, -1)
+		target = tf.reshape(target, [batch_size, -1])
+		target_norm = tf.nn.l2_normalize(target, -1)
+
+		source_similarity = tf.matmul(source_norm, source_norm, transpose_b=True)
+		target_similarity = tf.matmul(target_norm, target_norm, transpose_b=True)
+
+		ssd_loss = tf.reduce_mean(tf.power(source_similarity-target_similarity,
+				2))
+		return ssd_loss
+
+
+
+
+
+
+

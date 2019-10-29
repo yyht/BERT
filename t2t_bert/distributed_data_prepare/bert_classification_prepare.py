@@ -173,9 +173,9 @@ def main(_):
 	train_examples = classifier_data_api.get_train_examples(train_file,
 										is_shuffle=True)
 	dev_examples = classifier_data_api.get_train_examples(dev_file,
-														is_shuffle=False)
+														is_shuffle=True)
 	test_examples = classifier_data_api.get_train_examples(test_file,
-										is_shuffle=False)
+										is_shuffle=True)
 
 	if FLAGS.data_type == "lcqmc":	
 		write_to_tfrecords.convert_pair_order_classifier_examples_to_features(train_examples,

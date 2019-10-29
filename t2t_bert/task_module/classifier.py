@@ -1,6 +1,7 @@
 import tensorflow as tf
 from utils.bert import bert_utils
 from loss import loss_utils
+from utils.bert import albert_modules
 
 def classifier(config, pooled_output, 
 						num_labels, labels,
@@ -18,6 +19,13 @@ def classifier(config, pooled_output,
 
 	output_bias = tf.get_variable(
 			"output_bias", [num_labels], initializer=tf.zeros_initializer())
+
+	if config.get('ln_type', 'postln') == 'preln':
+		output_layer = albert_modules.layer_norm(output_layer)
+	elif config.get('ln_type', 'postln') == 'postln':
+		output_layer = output_layer
+	else:
+		output_layer = output_layer
 
 	output_layer = tf.nn.dropout(output_layer, keep_prob=1 - dropout_prob)
 
@@ -54,10 +62,11 @@ def classifier(config, pooled_output,
 
 		return (loss, per_example_loss, logits)
 	elif config.get("label_type", "single_label") == "multi_label":
-		logits = tf.log_sigmoid(logits)
+		# logits = tf.log_sigmoid(logits)
 		per_example_loss = tf.nn.sigmoid_cross_entropy_with_logits(
 												logits=logits, 
-												labels=tf.stop_gradient(labels))
+												labels=tf.stop_gradient(tf.cast(labels,
+																	tf.float32)))
 		per_example_loss = tf.reduce_sum(per_example_loss, axis=-1)
 		loss = tf.reduce_mean(per_example_loss)
 		return (loss, per_example_loss, logits)

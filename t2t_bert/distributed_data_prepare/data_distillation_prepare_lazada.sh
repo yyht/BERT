@@ -1,0 +1,25 @@
+python ./t2t_bert/distributed_data_prepare/classification_distillation_data_prepare.py \
+	--buckets /data/xuht \
+	--train_file lazada/new_data/20190521/train.txt \
+	--dev_file lazada/new_data/20190521/dev.txt \
+	--test_file lazada/new_data/20190521/test.txt \
+	--train_result_file lazada/new_data/20190521/data/distillation/st/train_tfrecords \
+	--dev_result_file lazada/new_data/20190521/data/distillation/st/dev_tfrecords\
+	--test_result_file lazada/new_data/20190521/data/distillation/st/test_tfrecords\
+	--supervised_distillation_file lazada/new_data/20190521/data/distillation/ta/train_distillation_result.info \
+	--unsupervised_distillation_file lazada/new_data/20190521/data/distillation/ta/dev_distillation_result.info \
+	--vocab_file multi_cased_L-12_H-768_A-12/vocab.txt \
+	--label_id /data/xuht/lazada/new_data/20190521/label_dict.json \
+	--lower_case False \
+	--max_length 128 \
+	--if_rule "no_rule" \
+	--rule_word_dict /data/xuht/porn/rule/rule/phrases.json \
+	--rule_word_path /data/xuht/porn/rule/rule/mined_porn_domain_adaptation_v2.txt \
+	--rule_label_dict /data/xuht/porn/rule/rule/rule_label_dict.json \
+	--with_char "no" \
+	--char_len 5 \
+	--predefined_vocab_size 50000 \
+	--corpus_vocab_path porn/clean_data/textcnn/char_id.txt \
+	--if_add_unlabeled_distillation "no" \
+	--distillation_type "structure" \
+	--tokenizer_type "full_bpe"

@@ -1,5 +1,7 @@
 from distributed_encoder.bert_encoder import bert_encoder
 from distributed_encoder.bert_encoder import bert_rule_encoder
+from distributed_encoder.gpt_encoder import gpt_encoder
+from distributed_encoder.bert_encoder import albert_encoder
 
 from distributed_encoder.classifynet_encoder import textcnn_encoder
 from distributed_encoder.classifynet_encoder import textlstm_encoder
@@ -33,29 +35,44 @@ def model_zoo(model_config):
 		model_interface = match_pyramid_encoder
 	elif model_config.get("model_type", "match_pyramid") in ["dan", "dan_distillation"]:
 		model_interface = dan_encoder
+	elif model_config.get('model_type', 'gpt') in ['gpt']:
+		model_interface = gpt_encoder
+	elif model_config.get("model_type", "albert") == "albert": 
+		model_interface = albert_encoder
 	return model_interface
 
 def model_config_parser(FLAGS):
 
 	print(FLAGS.model_type)
 
-	if FLAGS.model_type in ["bert", "bert_rule"]:
+	if FLAGS.model_type in ["bert", "bert_rule", "albert"]:
 		config = json.load(open(FLAGS.config_file, "r"))
+		print(config, '==model config==')
 		config = Bunch(config)
 		config.use_one_hot_embeddings = True
 		config.scope = "bert"
 		config.dropout_prob = 0.1
 		config.label_type = "single_label"
 		config.model_type = FLAGS.model_type
+		config.ln_type = FLAGS.ln_type
 		if FLAGS.task_type in ['bert_pretrain']:
-			config.init_lr = 3e-5
+			if FLAGS.load_pretrained == "yes":
+				config.init_lr = 2e-5
+			else:
+				config.init_lr = 1e-4
+				config.warmup = 0.1
 			print('==apply bert pretrain==', config.init_lr)
 		else:
-			config.init_lr = 3e-5
+			if FLAGS.model_type in ['albert']:
+				config.init_lr = 1e-4
+			else:
+				config.init_lr = 2e-5
 		config.loss = "entropy"
 		config.rule_type_size = 2
 		config.lm_ratio = 1.0
-		config.nsp_ratio = 0.1
+		config.max_length = FLAGS.max_length
+		config.nsp_ratio = 0.0
+		config.max_predictions_per_seq = FLAGS.max_predictions_per_seq
 		if FLAGS.task_type in ["pair_sentence_classification"]:
 			config.classifier = FLAGS.classifier
 
@@ -67,7 +84,7 @@ def model_config_parser(FLAGS):
 		config.dropout_prob = 0.1
 		config.label_type = "single_label"
 		config.model_type = FLAGS.model_type
-		config.init_lr = 2e-5
+		config.init_lr = 3e-5
 		config.num_hidden_layers = FLAGS.num_hidden_layers
 		config.loss = "entropy"
 		config.rule_type_size = 2
@@ -206,5 +223,11 @@ def model_config_parser(FLAGS):
 		if FLAGS.task_type in ["pair_sentence_classification"]:
 			config.classifier = FLAGS.classifier
 			config.output_layer = FLAGS.output_layer
+
+	elif FLAGS.model_type in ['gpt']:
+		config = json.load(open(FLAGS.config_file, "r"))
+		config = Bunch(config)
+		config.dropout_prob = 0.1
+		config.init_lr = 1e-4
 
 	return config

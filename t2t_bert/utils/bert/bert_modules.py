@@ -617,7 +617,7 @@ def attention_layer(from_tensor,
 				context_layer,
 				[batch_size, from_seq_length, num_attention_heads * size_per_head])
 
-	return context_layer
+	return context_layer, attention_scores
 
  
 def transformer_model(input_tensor,
@@ -692,6 +692,7 @@ def transformer_model(input_tensor,
 	prev_output = bert_utils.reshape_to_matrix(input_tensor)
 
 	all_layer_outputs = []
+	all_attention_scores = []
 
 	for layer_idx in range(num_hidden_layers):
 		with tf.variable_scope("layer_%d" % layer_idx):
@@ -700,7 +701,8 @@ def transformer_model(input_tensor,
 			with tf.variable_scope("attention"):
 				attention_heads = []
 				with tf.variable_scope("self"):
-					attention_head = attention_layer(
+					[attention_head, 
+					attention_scores] = attention_layer(
 							from_tensor=layer_input,
 							to_tensor=layer_input,
 							attention_mask=attention_mask,
@@ -713,6 +715,7 @@ def transformer_model(input_tensor,
 							from_seq_length=seq_length,
 							to_seq_length=seq_length)
 					attention_heads.append(attention_head)
+					all_attention_scores.append(attention_scores)
 
 				attention_output = None
 				if len(attention_heads) == 1:
@@ -756,10 +759,10 @@ def transformer_model(input_tensor,
 		for layer_output in all_layer_outputs:
 			final_output = bert_utils.reshape_from_matrix(layer_output, input_shape)
 			final_outputs.append(final_output)
-		return final_outputs
+		return final_outputs, all_attention_scores
 	else:
 		final_output = bert_utils.reshape_from_matrix(prev_output, input_shape)
-		return final_output
+		return final_output, all_attention_scores
 
 def distributed_transformer_model(input_tensor,
 						attention_mask=None,

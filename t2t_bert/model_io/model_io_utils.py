@@ -90,7 +90,13 @@ def count_variables(scope, **kargs):
 	
 def get_params(scope, **kargs):
 	not_storage_params = kargs.get("not_storage_params", [])
-	tvars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope)
+	collections = kargs.get("collections", [])
+	if len(collections) >= 1:
+		tvars = []
+		for collection in collections:
+			tvars += tf.get_collection(collection)
+	else:
+		tvars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope)
 	if len(not_storage_params) >= 1:
 		storage_tvars = []
 		for var in tvars:
@@ -168,3 +174,9 @@ def apply_ema(tvars, loss, decay=0.999, **kargs):
 		for g,v in zip(global_vars, shadow_vars):
 			assign_vars.append(tf.assign(g,v))
 	return assign_vars
+
+
+
+
+
+	

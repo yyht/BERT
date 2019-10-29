@@ -48,14 +48,15 @@ def model_fn_builder(
 		else:
 			scope = model_config.scope
 
-		# with tf.variable_scope(scope, reuse=model_reuse):
-		# 	(loss, 
-		# 		per_example_loss, 
-		# 		logits) = classifier.classifier(model_config,
-		# 									model.get_pooled_output(),
-		# 									num_labels,
-		# 									label_ids,
-		# 									dropout_prob)
+		if mode == tf.estimator.ModeKeys.TRAIN:
+			with tf.variable_scope(scope, reuse=model_reuse):
+				(loss, 
+					per_example_loss, 
+					logits) = classifier.classifier(model_config,
+												model.get_pooled_output(),
+												num_labels,
+												label_ids,
+												dropout_prob)
 
 		model_io_fn = model_io.ModelIO(model_io_config)
 

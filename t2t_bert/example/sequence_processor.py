@@ -45,7 +45,7 @@ class ProductTitleLanguageModelProcessor(object):
 		self._writer = tf.python_io.TFRecordWriter(output_file)
 		with tf.gfile.Open(input_file, "r") as f:
 			for i, line in enumerate(f):
-				if not line.strip():
+				if not line.strip() or i == 0:
 					continue
 				content = clean(line.strip())
 				word_seq = []
@@ -60,11 +60,17 @@ class ProductTitleLanguageModelProcessor(object):
 					else:
 						word_seq.append(word)
 
+				if len(word_seq) > max_length:
+					word_seq = word_seq[0:max_length]
+
 				word_seq = [bos] + word_seq + [eos]
 				word_id_seq = tokenizer.convert_tokens_to_ids(word_seq, max_length+2)
 				seq_mask = [1] * len(word_id_seq)
 				word_id_seq = tokenizer.padding(word_id_seq, max_length+2, 0)
 				seq_mask = tokenizer.padding(seq_mask, max_length+2, 0)
+
+				assert len(word_id_seq) == max_length + 2
+				assert len(seq_mask) == max_length + 2
 
 				features = collections.OrderedDict()
 				features["input_ids"] = tf_data_utils.create_int_feature(word_id_seq)
@@ -74,7 +80,8 @@ class ProductTitleLanguageModelProcessor(object):
 					tf.logging.info("*** Example ***")
 					tf.logging.info("input_ids: %s" % " ".join([str(x) for x in word_id_seq]))
 					tf.logging.info("input_ids_ori: %s" % " ".join(word_seq))
-			
+					tf.logging.info("input_ids_length: %s" % (len(input_ids)))
+
 				tf_example = tf.train.Example(features=tf.train.Features(feature=features))
 				self._writer.write(tf_example.SerializeToString())
 

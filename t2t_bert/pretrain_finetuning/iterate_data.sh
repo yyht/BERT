@@ -1,5 +1,6 @@
-python iterate_data.py \
-	--train_result_file "/data/xuht/jd_comment/train"  \
-	--batch_size 32 \
+python ./t2t_bert/pretrain_finetuning/iterate_data.py \
+    --buckets '/data/xuht' \
+	--train_file "chunk_0.tfrecords"  \
+	--batch_size 1 \
 	--max_predictions_per_seq 5 \
-	--max_length 128
+	--max_length 384

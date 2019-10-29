@@ -127,6 +127,8 @@ class Optimizer(object):
 		learning_rate = self.warm_up(learning_rate, init_lr, **kargs)
 		grads = self.grad_clip_fn(loss, tvars, **kargs)
 		opt = self.optimizer_op(learning_rate, **kargs)
+		if kargs.get("use_tpu", 0) == 1:
+			opt = tf.contrib.tpu.CrossShardOptimizer(opt)
 		train_op = opt.apply_gradients(
 					zip(grads, tvars), global_step=self.global_step)
 		new_global_step = self.global_step + 1

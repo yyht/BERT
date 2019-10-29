@@ -1,6 +1,6 @@
 python ./t2t_bert/data_generator/create_span_bert_pretrain_dataset_efficiency.py \
 	--buckets /data/xuht \
-	--input_file /data/xuht/mrc_search/pretrain/train_spm_debug.txt \
+	--input_file /notebooks/source/albert_zh-master/data/news_zh_1.txt \
 	--output_file /data/xuht/mrc_search/pretrain/pretrain_debug \
 	--vocab_file ./data/chinese_L-12_H-768_A-12/vocab.txt \
 	--word_piece_model mrc_search/sentence_piece/mrc_search_bpe.model \
@@ -12,5 +12,5 @@ python ./t2t_bert/data_generator/create_span_bert_pretrain_dataset_efficiency.py
 	--do_whole_word_mask true \
 	--es_user_name mrc_search_4l \
 	--password K9cb1bd713507 \
-	--doc_index green_pretrain \
+	--doc_index green_pretrain_debug \
 	--doc_type _doc

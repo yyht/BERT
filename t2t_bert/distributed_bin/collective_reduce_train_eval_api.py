@@ -31,10 +31,13 @@ import tensorflow as tf
 
 from distributed_single_sentence_classification import train_eval
 from distributed_multitask import train_eval as multitask_train_eval
+from distributed_distillation import train_eval as distillation_train_eval
 from tensorflow.contrib.distribute.python import cross_tower_ops as cross_tower_ops_lib
 
 import tensorflow as tf
 import json
+
+os.environ['NCCL_LL_THRESHOLD'] = '0' # to avoid collective reduce hangs on
 
 flags = tf.flags
 
@@ -44,6 +47,9 @@ FLAGS = flags.FLAGS
 tf.logging.set_verbosity(tf.logging.INFO)
 
 flags.DEFINE_string("buckets", "", "oss buckets")
+flags.DEFINE_string("autoStrategy", 'true', "job name: worker or ps")
+flags.DEFINE_string("enableJITDeviceTuning", 'false', "job name: worker or ps")
+flags.DEFINE_string("autoGPUSelect", 'false', "job name: worker or ps")
 flags.DEFINE_integer("task_index", 0, "Worker task index")
 flags.DEFINE_string("ps_hosts", "", "ps hosts")
 flags.DEFINE_string("worker_hosts", "", "worker hosts")
@@ -272,6 +278,16 @@ flags.DEFINE_integer(
 	"if apply distillation"
 	)
 
+flags.DEFINE_string(
+	"ln_type", 'postln',
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
+	"distillation_config", 'postln',
+	"if apply distillation"
+	)
+
 def make_distributed_info_without_evaluator():
 	worker_hosts = FLAGS.worker_hosts.split(",")
 	if len(worker_hosts) > 1:
@@ -289,7 +305,7 @@ def make_distributed_info_without_evaluator():
 	return cluster, task_type, task_index
 
 def dump_into_tf_config(cluster, task_type, task_index):
-  os.environ['TF_CONFIG'] = json.dumps(
+	os.environ['TF_CONFIG'] = json.dumps(
 	  {'cluster': cluster,
 	   'task': {'type': task_type, 'index': task_index}})
 
@@ -313,7 +329,7 @@ def main(_):
 		dev_file.append(dev_file_path)
 	checkpoint_dir = os.path.join(FLAGS.buckets, FLAGS.model_output)
 
-	print(init_checkpoint, train_file, dev_file, checkpoint_dir)
+	print(init_checkpoint, train_file, dev_file, checkpoint_dir, FLAGS.distribution_strategy)
 
 	if FLAGS.distribution_strategy == "MirroredStrategy":
 		cross_tower_ops = cross_tower_ops_lib.AllReduceCrossTowerOps("nccl", 10, 0, 0)
@@ -321,16 +337,31 @@ def main(_):
 												cross_tower_ops=cross_tower_ops)
 		worker_count = FLAGS.num_gpus
 	elif FLAGS.distribution_strategy == "CollectiveAllReduceStrategy":
-		print("==apply collective all reduce strategy==")
-		distribution = tf.contrib.distribute.CollectiveAllReduceStrategy(
-    							num_gpus_per_worker=1,
-    							cross_tower_ops_type='horovod')
+		print("==disbale evaluator==")
 
 		cluster, task_type, task_index = make_distributed_info_without_evaluator()
 		print("==cluster==", cluster, "==task_type==", task_type, "==task_index==", task_index)
 		dump_into_tf_config(cluster, task_type, task_index)
 
-		worker_count = len(cluster['chief']) + len(cluster['worker'])
+		print(os.environ['TF_CONFIG'], "===tf config===")
+
+		print("==apply collective all reduce strategy==", FLAGS.autoStrategy)
+		if FLAGS.autoStrategy == 'true':
+			distribution = None
+		else:
+			distribution = tf.contrib.distribute.CollectiveAllReduceStrategy(
+    							num_gpus_per_worker=FLAGS.num_gpus,
+    							cross_tower_ops_type='horovod',
+    							all_dense=True)
+
+		worker_count = (len(cluster.get('worker', [])) + len(cluster['chief']))
+		if task_type == 'chief':
+			is_chief = 1
+			task_index = 0
+		else:
+			is_chief = 0
+			task_index = FLAGS.task_index
+		print(worker_count, task_type, task_index, FLAGS.task_index)
 	else:
 		cross_tower_ops = cross_tower_ops_lib.AllReduceCrossTowerOps("nccl", 10, 0, 0)
 		distribution = tf.contrib.distribute.MirroredStrategy(num_gpus=FLAGS.num_gpus, 
@@ -351,10 +382,11 @@ def main(_):
 					  log_step_count_steps=100)
 					  # disable_evaluation=True)  # 1.12
 
-	task_index = run_config.task_id
-	is_chief = run_config.is_chief
+	# task_index = run_config.task_id
+	# is_chief = run_config.is_chief
 
-	print("==worker_count==", worker_count, "==local_rank==", task_index, "==is is_chief==", is_chief)
+	print("==worker_count==", worker_count, "==local_rank==", task_index, "==is is_chief==", is_chief,
+		"==numbers of gpus==", FLAGS.num_gpus)
 	cluster = ""
 	target = ""
 
@@ -364,10 +396,12 @@ def main(_):
 		train_eval_api = train_eval
 	elif FLAGS.mode == "multi_task":
 		train_eval_api = multitask_train_eval
+	elif FLAGS.mode == 'distillation':
+		train_eval_api = distillation_train_eval
 	
 	train_eval_api.monitored_estimator(
 		FLAGS=FLAGS,
-		worker_count=worker_count, 
+		worker_count=worker_count,
 		task_index=task_index, 
 		cluster=cluster, 
 		is_chief=is_chief,
@@ -388,7 +422,8 @@ def main(_):
 		input_target=FLAGS.input_target,
 		distillation=FLAGS.distillation,
 		temperature=FLAGS.temperature,
-		distillation_ratio=FLAGS.distillation_ratio)
+		distillation_ratio=FLAGS.distillation_ratio,
+		num_gpus=FLAGS.num_gpus)
 
 if __name__ == "__main__":
 	tf.app.run()

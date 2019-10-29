@@ -130,11 +130,11 @@ try:
 	try:
 		es_api.delete(FLAGS.doc_index)
 		es_api.create(FLAGS.doc_index)
-		time.sleep(60)
+		time.sleep(10)
 		print("==delete old index and create new index==")
 	except:
 		es_api.create(FLAGS.doc_index)
-		time.sleep(60)
+		time.sleep(10)
 		print("==create new index==")
 except:
 	es_api = None
@@ -282,36 +282,50 @@ def create_instances_from_document(
 	# The `target_seq_length` is just a rough target however, whereas
 	# `max_seq_length` is a hard limit.
 	target_seq_length = max_num_tokens
+	tokens_a_lst = []
+
+	instances = []
+
 	tokens_a = []
 	for j in range(0, len(document)):
-		tokens_a.extend(document[j])
- 
-	if len(tokens_a) >= max_num_tokens:
-		tokens_a = tokens_a[:max_num_tokens]
+		if len(tokens_a) + len(document[j]) <= target_seq_length:
+			tokens_a.extend(document[j])
+		elif len(tokens_a) + len(document[j]) > target_seq_length:
+			if len(tokens_a) >= 1:
+				tokens_a_lst.append(tokens_a)
+			tokens_a = []
+			if len(document[j]) > target_seq_length:
+				tokens_a.extend(document[j][0:target_seq_length-1])
+			else:
+				tokens_a.extend(document[j])
 
-	is_random_next = False
+	if len(tokens_a) >= 1:
+		tokens_a_lst.append(tokens_a)
 
-	tokens = []
-	segment_ids = []
-	tokens.append("[CLS]")
-	segment_ids.append(0)
-	for token in tokens_a:
-		tokens.append(token)
+	for tokens_a in tokens_a_lst:
+		is_random_next = False
+
+		tokens = []
+		segment_ids = []
+		tokens.append("[CLS]")
+		segment_ids.append(0)
+		for token in tokens_a:
+			tokens.append(token)
+			segment_ids.append(0)
+
+		tokens.append("[SEP]")
 		segment_ids.append(0)
 
-	tokens.append("[SEP]")
-	segment_ids.append(0)
-
-	(tokens, masked_lm_positions,
-	 masked_lm_labels) = create_masked_lm_predictions(
-			 tokens, masked_lm_prob, max_predictions_per_seq, vocab_words, rng)
-	instance = TrainingInstance(
-			tokens=tokens,
-			segment_ids=segment_ids,
-			is_random_next=is_random_next,
-			masked_lm_positions=masked_lm_positions,
-			masked_lm_labels=masked_lm_labels)
-	instances.append(instance)
+		(tokens, masked_lm_positions,
+		 masked_lm_labels) = create_masked_lm_predictions(
+				 tokens, masked_lm_prob, max_predictions_per_seq, vocab_words, rng)
+		instance = TrainingInstance(
+				tokens=tokens,
+				segment_ids=segment_ids,
+				is_random_next=is_random_next,
+				masked_lm_positions=masked_lm_positions,
+				masked_lm_labels=masked_lm_labels)
+		instances.append(instance)
 	return instances
 
 def valid_line(tokens):
@@ -444,7 +458,7 @@ def multi_process(input_files, tokenizer,
 
 	num_of_documents = read_file(input_files, tokenizer, max_seq_length)
 	# num_of_documents = len(all_documents)
-	time.sleep(60)
+	time.sleep(10)
 
 	print(num_of_documents, dupe_factor)
 
@@ -475,32 +489,60 @@ def perform_span_level_mask(index_set, vocab_words,
 							masked_lms, covered_indexes, 
 							output_tokens, tokens, rng):
 	mask_flag, ori_flag, random_sample_flag = False, False, False
-	if rng.random() < 0.8:
-		mask_flag = True
-	else:
-		if rng.random() < 0.5:
-			ori_flag = True
-		else:
-			random_sample_flag = True
 
 	for index in index_set:
 		covered_indexes.add(index)
-		if mask_flag:
+
+		masked_token = None
+		# 80% of the time, replace with [MASK]
+		if rng.random() < 0.8:
 			masked_token = "[MASK]"
 		else:
-			if ori_flag:
+			# 10% of the time, keep original
+			if rng.random() < 0.5:
 				masked_token = tokens[index]
+			# 10% of the time, replace with random word
 			else:
 				for i in range(10):
 					masked_token = vocab_words[rng.randint(0, len(vocab_words) - 1)]
 					cn_pattern = re.search(CH_PUNCTUATION, masked_token)
 					en_pattern = re.search(EN_PUNCTUATION, masked_token)
+
 					if cn_pattern or en_pattern:
 						continue
 					else:
 						break
+
 		output_tokens[index] = masked_token
+
 		masked_lms.append(MaskedLmInstance(index=index, label=tokens[index]))
+
+	# if rng.random() < 0.8:
+	# 	mask_flag = True
+	# else:
+	# 	if rng.random() < 0.5:
+	# 		ori_flag = True
+	# 	else:
+	# 		random_sample_flag = True
+
+	# for index in index_set:
+	# 	covered_indexes.add(index)
+	# 	if mask_flag:
+	# 		masked_token = "[MASK]"
+	# 	else:
+	# 		if ori_flag:
+	# 			masked_token = tokens[index]
+	# 		else:
+	# 			for i in range(10):
+	# 				masked_token = vocab_words[rng.randint(0, len(vocab_words) - 1)]
+	# 				cn_pattern = re.search(CH_PUNCTUATION, masked_token)
+	# 				en_pattern = re.search(EN_PUNCTUATION, masked_token)
+	# 				if cn_pattern or en_pattern:
+	# 					continue
+	# 				else:
+	# 					break
+	# 	output_tokens[index] = masked_token
+	# 	masked_lms.append(MaskedLmInstance(index=index, label=tokens[index]))
 
 	return masked_lms, output_tokens, covered_indexes
 
@@ -625,7 +667,7 @@ def main(_):
 			max_predictions_per_seq=FLAGS.max_predictions_per_seq, 
 			short_seq_prob=FLAGS.short_seq_prob,
 			output_file=output_file,
-			process_num=20,
+			process_num=1,
 			dupe_factor=FLAGS.dupe_factor,
 			random_seed=2018
 		)

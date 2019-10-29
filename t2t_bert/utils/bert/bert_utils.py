@@ -111,6 +111,38 @@ def gather_indexes(sequence_tensor, positions):
 			tf.range(0, batch_size, dtype=tf.int32) * seq_length, [-1, 1])
 	flat_positions = tf.reshape(positions + flat_offsets, [-1])
 	flat_sequence_tensor = tf.reshape(sequence_tensor,
-																		[batch_size * seq_length, width])
+									[batch_size * seq_length, width])
 	output_tensor = tf.gather(flat_sequence_tensor, flat_positions)
 	return output_tensor
+
+# add sequence mask for:
+# 1. random shuffle lm modeling---xlnet with random shuffled input
+# 2. left2right and right2left language modeling
+# 3. conditional generation
+def generate_seq2seq_mask(attention_mask, mask_sequence, seq_type, **kargs):
+	if seq_type == 'seq2seq':
+		if mask_sequence is not None:
+			seq_shape = get_shape_list(mask_sequence, expected_rank=2)
+			seq_len = seq_shape[1]
+			ones = tf.ones((1, seq_len, seq_len))
+			a_mask = tf.matrix_band_part(ones, -1, 0)
+			s_ex12 = tf.expand_dims(tf.expand_dims(mask_sequence, 1), 2)
+			s_ex13 = tf.expand_dims(tf.expand_dims(mask_sequence, 1), 3)
+			a_mask = (1 - s_ex13) * (1 - s_ex12) + s_ex13 * a_mask
+			# generate mask of batch x seq_len x seq_len
+			a_mask = tf.reshape(a_mask, (-1, seq_len, seq_len))
+			out_mask = attention_mask * a_mask
+		else:
+			# ones = tf.ones_like(attention_mask[:1])
+			# mask = (tf.matrix_band_part(ones, -1, 0))
+			# out_mask = attention_mask * mask
+			seq_shape = get_shape_list(attention_mask, expected_rank=(2,3))
+			seq_len = seq_shape[1]
+			ones = tf.ones((1, seq_len, seq_len))
+			mask = tf.matrix_band_part(ones, -1, 0)
+			out_mask = attention_mask * mask
+	else:
+		out_mask = attention_mask
+
+	return out_mask
+

@@ -1,7 +1,7 @@
 import tensorflow as tf
 
 def data_interface(FLAGS):
-	if FLAGS.model_type in ["bert","bert_small"]:
+	if FLAGS.model_type in ["bert","bert_small", "albert"]:
 		if FLAGS.task_type == "single_sentence_classification":
 			name_to_features = {
 					"input_ids":
@@ -46,6 +46,36 @@ def data_interface(FLAGS):
 					tf.FixedLenFeature([FLAGS.max_predictions_per_seq], tf.float32),
 				"next_sentence_labels":
 					tf.FixedLenFeature([], tf.int64),
+				}
+		elif FLAGS.task_type in ['bert_chid']:
+			 name_to_features = {
+				"input_ids":
+					tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+				"segment_ids":
+					tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+				"label_positions":
+					tf.FixedLenFeature([FLAGS.max_predictions_per_seq], tf.int64),
+				"label_ids":
+					tf.FixedLenFeature([FLAGS.max_predictions_per_seq], tf.int64),
+				"label_weights":
+					tf.FixedLenFeature([FLAGS.max_predictions_per_seq], tf.int64),
+				}
+		elif FLAGS.task_type in ['bert_chid_crf']:
+			 name_to_features = {
+				"input_ids_a":
+					tf.FixedLenFeature([FLAGS.max_length*FLAGS.max_predictions_per_seq], tf.int64),
+				"segment_ids_a":
+					tf.FixedLenFeature([FLAGS.max_length*FLAGS.max_predictions_per_seq], tf.int64),
+				"input_ids_b":
+					tf.FixedLenFeature([(FLAGS.num_classes)*FLAGS.max_predictions_per_seq], tf.int64),
+				"segment_ids_b":
+					tf.FixedLenFeature([(FLAGS.num_classes)*FLAGS.max_predictions_per_seq], tf.int64),
+				"label_positions":
+					tf.FixedLenFeature([FLAGS.max_predictions_per_seq], tf.int64),
+				"label_ids":
+					tf.FixedLenFeature([FLAGS.max_predictions_per_seq], tf.int64),
+				"label_weights":
+					tf.FixedLenFeature([FLAGS.max_predictions_per_seq], tf.int64),
 				}
 
 	if FLAGS.model_type in ["bert_rule"]:
@@ -130,11 +160,15 @@ def data_interface(FLAGS):
 		if FLAGS.with_char == "char":
 			name_to_features["input_char_ids_a"] = tf.FixedLenFeature([FLAGS.max_length], tf.int64)
 			name_to_features["input_char_ids_b"] = tf.FixedLenFeature([FLAGS.max_length], tf.int64)
+	elif FLAGS.model_type in ["gpt"]:
+		name_to_features = {
+			"input_ids":tf.FixedLenFeature([FLAGS.max_length], tf.int64)
+		}
 
 	return name_to_features
 
 def data_interface_server(FLAGS):
-	if FLAGS.model_type in ["bert", "bert_rule", "bert_small"]:
+	if FLAGS.model_type in ["bert", "bert_rule", "bert_small", "albert"]:
 		if FLAGS.task_type == "single_sentence_classification":
 
 			receiver_tensors = {
@@ -166,13 +200,57 @@ def data_interface_server(FLAGS):
 				"label_ids":
 						tf.placeholder(tf.int32, [None], name='label_ids'),
 			}
+		elif FLAGS.task_type in ['bert_chid']:
+
+			receiver_tensors = {
+				"input_ids":
+						tf.placeholder(tf.int32, [None, FLAGS.max_length], name='input_ids'),
+				"segment_ids":
+						tf.placeholder(tf.int32, [None, FLAGS.max_length], name='segment_ids'),
+				"label_positions":
+						tf.placeholder(tf.int32, [None, FLAGS.max_predictions_per_seq], name='label_positions'),
+				"label_ids":
+						tf.placeholder(tf.int32, [None, FLAGS.max_predictions_per_seq], name='label_ids'),
+				"label_weights":
+						tf.placeholder(tf.int32, [None, FLAGS.max_predictions_per_seq], name='label_weights'),
+
+			}
+		elif FLAGS.task_type in ['bert_chid_crf']:
+			 name_to_features = {
+				"input_ids_a":
+					tf.placeholder(tf.int32, [None, FLAGS.max_length*FLAGS.max_predictions_per_seq], name='input_ids_a'),
+				"segment_ids_a":
+					tf.placeholder(tf.int32, [None, FLAGS.max_length*FLAGS.max_predictions_per_seq], name='segment_ids_a'),
+				"input_ids_b":
+					tf.placeholder(tf.int32, [None, (FLAGS.num_classes)*FLAGS.max_predictions_per_seq], name='input_ids_b'),
+				"segment_ids_b":
+					tf.placeholder(tf.int32, [None, (FLAGS.num_classes)*FLAGS.max_predictions_per_seq], name='segment_ids_b'),
+				"label_positions":
+					tf.placeholder(tf.int32, [None, FLAGS.max_predictions_per_seq], name='label_positions'),
+				"label_ids":
+					tf.placeholder(tf.int32, [None, FLAGS.max_predictions_per_seq], name='label_ids'),
+				"label_weights":
+					tf.placeholder(tf.int32, [None, FLAGS.max_predictions_per_seq], name='label_weights'),
+				}
 
 	elif FLAGS.model_type in ["textcnn", "textlstm", "dan"]:
-		receiver_tensors = {
-				"input_ids_a":
-						tf.placeholder(tf.int32, [None, FLAGS.max_length], name='input_ids_a'),
-				"label_ids":
-						tf.placeholder(tf.int32, [None], name='label_ids')
+
+		if FLAGS.task_type == "single_sentence_classification":
+			receiver_tensors = {
+				"input_ids_a":tf.placeholder(tf.int32, [None, FLAGS.max_length], name='input_ids_a'),
+				"label_ids":tf.placeholder(tf.int32, [None], name='label_ids')
+			}
+
+		elif FLAGS.task_type == "single_sentence_multilabel_classification":
+			receiver_tensors = {
+				"input_ids_a":tf.placeholder(tf.int32, [None, FLAGS.max_length], name='input_ids_a'),
+				"label_ids":tf.placeholder(tf.int32, [None, FLAGS.num_classes], name='label_ids')
+			}
+
+		elif FLAGS.task_type == "embed_sentence_classification":
+			receiver_tensors = {
+				"input_ids_a":tf.placeholder(tf.int32, [None, FLAGS.max_length], name='input_ids_a'),
+				"label_ids":tf.placeholder(tf.int32, [None], name='label_ids')
 			}
 
 		if FLAGS.with_char == "char":
@@ -205,5 +283,11 @@ def data_interface_server(FLAGS):
 		if FLAGS.with_char == "char":
 			receiver_tensors["input_char_ids_a"] = tf.placeholder(tf.int32, [None, FLAGS.char_limit, FLAGS.max_length], name='input_char_ids_a')
 			receiver_tensors["input_char_ids_b"] = tf.placeholder(tf.int32, [None, FLAGS.char_limit, FLAGS.max_length], name='input_char_ids_b')
+
+	elif FLAGS.model_type in ["gpt"]:
+		receiver_tensors = {
+				"input_ids":
+						tf.placeholder(tf.int32, [None, None], name='input_ids')
+			}
 
 	return receiver_tensors

@@ -179,7 +179,7 @@ def main(_):
 	elif FLAGS.tokenizer_type == "full_bpe":
 		tokenizer = tokenization.FullTokenizer(
 				vocab_file=vocab_path, 
-				do_lower_case=FLAGS.lower_case)
+				do_lower_case=True if FLAGS.lower_case=="true" else False)
 
 	if FLAGS.tokenizer_type == "jieba":
 		print(FLAGS.with_char)

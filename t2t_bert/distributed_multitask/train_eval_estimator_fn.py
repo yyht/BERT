@@ -17,7 +17,7 @@ try:
 except:
 	from multitask_model_fn import multitask_model_fn
 
-from dataset_generator.input_fn import train_eval_input_fn 
+# from dataset_generator.input_fn import train_eval_input_fn 
 
 import numpy as np
 import tensorflow as tf
@@ -221,8 +221,8 @@ def train_eval_fn(FLAGS,
 										if_shard=FLAGS.if_shard,
 										worker_count=worker_count,
 										task_index=task_index)
-		elif kargs.get("parse_type", "parse_single") == "generator":
-			def train_features(): return train_eval_input_fn(FLAGS, multi_task_config, "train", 0)
+		# elif kargs.get("parse_type", "parse_single") == "generator":
+		# 	def train_features(): return train_eval_input_fn(FLAGS, multi_task_config, "train", 0)
 
 		print("==succeeded in building data and model==")
 		print("start training")

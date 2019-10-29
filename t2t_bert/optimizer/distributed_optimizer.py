@@ -6,6 +6,7 @@ from optimizer import optimizer_utils
 from optimizer import adam_weight_decay_utils
 from optimizer import adam_weight_decay_exclude_utils
 from optimizer import pai_soar_optimizer_utils
+from optimizer import radam_utils
 
 import collections
 import copy
@@ -14,6 +15,7 @@ import math
 import re
 import six
 import tensorflow as tf
+import numpy as np
 
 # pai_soar optimizer
 try:
@@ -102,30 +104,50 @@ class Optimizer(object):
 		return learning_rate
 
 	def grad_clip_fn(self, opt, loss, tvars, **kargs):
+		gpu_count = self.config.get('gpu_count', 1)
 
 		if self.config.get("opt_type", "pai_soar") == "pai_soar":
 			loss_fn = opt.compute_loss(loss, loss_scale=self.config.get("loss_scale", 1))
 			grads_and_vars = opt.compute_gradients(loss_fn, colocate_gradients_with_ops=True)
 		else:	
 			grads_and_vars = opt.compute_gradients(loss, tvars)
-			grads = [grad for grad, _ in grads_and_vars]
+			grads = [grad/gpu_count for grad, _ in grads_and_vars] # allreduce from sum to mean
 			grad_clip = self.config.get("grad_clip", "global_norm")
+			use_norm = tf.global_norm(grads)
+			tf.summary.scalar('total_grad_norm', use_norm)
+			for grad, var in grads_and_vars:
+				var_grad_norm = tf.global_norm([grad])
+				tf.summary.scalar(var.name, var_grad_norm)
+				tf.summary.histogram(var.name, var)
+				tf.summary.histogram("grad/"+var.name, grad)
+
 			tf.logging.info(" gradient clip method {}".format(grad_clip))
+			
 			if grad_clip == "global_norm":
 				clip_norm = self.config.get("clip_norm", 1.0)
-				[grads, _] = tf.clip_by_global_norm(grads, 
-									clip_norm=clip_norm)
-				print("==global norm==", clip_norm)
+				if self.config.get("strategy", "") in ['MirroredStrategy', 'CollectiveAllReduceStrategy']:
+					use_norm = tf.global_norm(grads)
+
+					[scale_grads, _] = tf.clip_by_global_norm(grads, 
+										clip_norm=clip_norm,
+										use_norm=use_norm*tf.sqrt(gpu_count*1.0))
+
+					tf.summary.scalar('grad_scale', use_norm*tf.sqrt(gpu_count*1.0))
+				else:
+					[scale_grads, _] = tf.clip_by_global_norm(grads, 
+										clip_norm=clip_norm)
 			elif grad_clip == "norm":
 				clip_norm = self.config.get("clip_norm", 1.0)
-				grads = [tf.clip_by_norm(grad, clip_norm) for grad in grads]
+				scale_grads = [tf.clip_by_norm(grad, clip_norm) for grad in grads]
 			elif grad_clip == "value":
 				clip_min_value = self.config.get("clip_min_value", -1.0)
 				clip_max_value = self.config.get("clip_max_value", 1.0)
-				grads = [tf.clip_by_value(grad, clip_norm) for grad in grads]
+				scale_grads = [tf.clip_by_value(grad, clip_norm) for grad in grads]
 			else:
-				grads = grads
-			grads_and_vars = zip(grads, tvars)
+				scale_grads = grads
+			
+			grads_and_vars = zip(scale_grads, tvars)
+
 		return grads_and_vars
 
 	def optimizer_op(self, learning_rate,
@@ -133,7 +155,7 @@ class Optimizer(object):
 		opt_type = self.config.get("train_op", "adam_decay")
 		tf.logging.info(" optimization method {}".format(opt_type))
 		if opt_type not in ["adam_decay", "adam", "adam_weight_decay", 
-					"adam_weight_decay_exclude", "pai_soar_adam_decay"]:
+					"adam_weight_decay_exclude", "pai_soar_adam_decay", "lamb"]:
 			raise NotImplementedError()
 		if opt_type == "adam_decay":
 			print("==apply bert adam weight decay==")
@@ -142,7 +164,7 @@ class Optimizer(object):
 						weight_decay_rate=self.config.get("opt_decay_rate", 0.01),
 						beta_1=self.config.get("beta_1", 0.9),
 						beta_2=self.config.get("beta_2", 0.999),
-						epsilon=self.config.get("epsilon", 1e-6),
+						epsilon=self.config.get("epsilon", 1e-8),
 						exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"])
 		elif opt_type == "adam_weight_decay":
 			print("==apply original adam weight decay==")
@@ -151,7 +173,7 @@ class Optimizer(object):
 						learning_rate=learning_rate,
 						beta1=self.config.get("beta_1", 0.9),
 						beta2=self.config.get("beta_2", 0.999),
-						epsilon=self.config.get("epsilon", 1e-6))
+						epsilon=self.config.get("epsilon", 1e-8))
 		elif opt_type == "adam_weight_decay_exclude":
 			print("==apply adam weight decay==")
 			opt = adam_weight_decay_exclude_utils.AdamWOptimizer(
@@ -169,14 +191,32 @@ class Optimizer(object):
 						weight_decay_rate=self.config.get("opt_decay_rate", 0.01),
 						beta_1=self.config.get("beta_1", 0.9),
 						beta_2=self.config.get("beta_2", 0.999),
-						epsilon=self.config.get("epsilon", 1e-6),
+						epsilon=self.config.get("epsilon", 1e-8),
 						exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"])
 		elif opt_type == "adam":
 			print("==apply adam==")
 			opt = tf.train.AdamOptimizer(learning_rate,
 										beta1=self.config.get("beta_1", 0.9),
 										beta2=self.config.get("beta_2", 0.999),
-										epsilon=self.config.get("epsilon", 1e-8))
+										epsilon=self.config.get("epsilon", 1e-6))
+		elif opt_type == 'lamb':
+			print("==apply lamb==")
+			opt = optimizer_utils.LAMBOptimizer(
+								learning_rate,
+								 weight_decay_rate=self.config.get("opt_decay_rate", 0.01),
+								 beta_1=self.config.get("beta_1", 0.9),
+								 beta_2=self.config.get("beta_2", 0.999),
+								 epsilon=self.config.get("epsilon", 1e-6),
+								 exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"]
+								)
+		elif opt_type == 'radam':
+			opt = radam_utils.RAdamOptimizer(
+								learning_rate,
+								 weight_decay=self.config.get("opt_decay_rate", 0.0),
+								 beta1=self.config.get("beta_1", 0.9),
+								 beta2=self.config.get("beta_2", 0.999),
+								 epsilon=self.config.get("epsilon", 1e-6)
+								)
 		if self.config.get("opt_ema", "no") == "yes":
 			print("==apply ema optimizer==")
 			opt = tf.contrib.opt.MovingAverageOptimizer(opt)
@@ -192,7 +232,10 @@ class Optimizer(object):
 		if self.config.get("warmup", "no") == "warmup":
 			print("==apply warmup==")
 			learning_rate = self.warm_up(learning_rate, init_lr, **kargs)
-		self.learning_rate = learning_rate
+		self.learning_rate = learning_rate #* (self.config.get('gpu_count', 1) / 2)
+		# self.learning_rate = learning_rate / np.sqrt(self.config.get('gpu_count', 1) / 2)
+		# self.learning_rate = learning_rate * np.sqrt(self.config.get('gpu_count', 1)) * 2
+		self.single_node_learning = learning_rate
 		
 		# add uber horvod distributed optimizer
 		if hvd and self.config["opt_type"] == "hvd":

@@ -29,6 +29,52 @@ def focal_loss_binary_v2(config, logits, labels):
 	# return tf.reduce_mean(losses), predictions
 	return losses, predictions
 
+def label_smoothing(inputs, epsilon=0.1):
+	'''Applies label smoothing. See 5.4 and https://arxiv.org/abs/1512.00567.
+	inputs: 3d tensor. [N, T, V], where V is the number of vocabulary.
+	epsilon: Smoothing rate.
+	
+	For example,
+	
+	```
+	import tensorflow as tf
+	inputs = tf.convert_to_tensor([[[0, 0, 1], 
+	   [0, 1, 0],
+	   [1, 0, 0]],
+	  [[1, 0, 0],
+	   [1, 0, 0],
+	   [0, 1, 0]]], tf.float32)
+	   
+	outputs = label_smoothing(inputs)
+	
+	with tf.Session() as sess:
+		print(sess.run([outputs]))
+	
+	>>
+	[array([[[ 0.03333334,  0.03333334,  0.93333334],
+		[ 0.03333334,  0.93333334,  0.03333334],
+		[ 0.93333334,  0.03333334,  0.03333334]],
+	   [[ 0.93333334,  0.03333334,  0.03333334],
+		[ 0.93333334,  0.03333334,  0.03333334],
+		[ 0.03333334,  0.93333334,  0.03333334]]], dtype=float32)]   
+	```    
+	'''
+	V = inputs.get_shape().as_list()[-1] # number of channels
+	return ((1-epsilon) * inputs) + (epsilon / V)
+
+def ce_label_smoothing(config, logits, labels):
+	gamma = config.get("gamma", 2.0)
+
+	log_probs = tf.nn.log_softmax(logits, axis=-1)
+
+	labels = tf.reshape(labels, [-1])
+	one_hot_labels = tf.one_hot(labels, depth=2, dtype=tf.float32)
+
+	smoothed_label = label_smoothing(one_hot_labels)
+	per_example_loss = -tf.reduce_sum(smoothed_label * log_probs, axis=-1)
+	
+	return per_example_loss
+
 def focal_loss_multi_v1(config, logits, labels):
 	gamma = config.get("gamma", 2.0)
 
@@ -45,6 +91,25 @@ def focal_loss_multi_v1(config, logits, labels):
 	labels = tf.cast(tf.squeeze(labels, axis=-1), tf.float32)
 
 	losses =  tf.log(y_true_pred+EPSILON) * tf.pow(1-y_true_pred, gamma)
+
+	return -losses, y_true_pred
+
+def class_balanced_focal_loss_multi_v1(config, logits, labels, label_weights):
+	gamma = config.get("gamma", 2.0)
+
+	class_balanced_weights = tf.gather(label_weights, labels)
+
+	labels = tf.cast(tf.expand_dims(labels, -1), tf.int32)
+
+	predictions = tf.exp(tf.nn.log_softmax(logits, axis=-1))
+
+	batch_idxs = tf.range(0, tf.shape(labels)[0])
+	batch_idxs = tf.expand_dims(batch_idxs, 1)
+
+	idxs = tf.concat([batch_idxs, labels], 1)
+	y_true_pred = tf.gather_nd(predictions, idxs)
+
+	losses =  tf.log(y_true_pred+EPSILON) * tf.pow(1-y_true_pred, gamma) * class_balanced_weights
 
 	return -losses, predictions
 

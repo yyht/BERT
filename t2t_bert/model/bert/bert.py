@@ -4,6 +4,7 @@ from utils.bert import bert_utils
 from utils.bert import bert_modules
 import copy
 
+
 class Bert(object):
 	"""
 	default scope: bert
@@ -62,7 +63,8 @@ class Bert(object):
 
 				# Run the stacked transformer.
 				# `sequence_output` shape = [batch_size, seq_length, hidden_size].
-				self.all_encoder_layers = bert_modules.transformer_model(
+				[self.all_encoder_layers,
+				self.all_attention_scores] = bert_modules.transformer_model(
 						input_tensor=self.embedding_output,
 						attention_mask=attention_mask,
 						hidden_size=self.config.hidden_size,
@@ -96,6 +98,9 @@ class Bert(object):
 						self.config.hidden_size,
 						activation=tf.tanh,
 						kernel_initializer=bert_modules.create_initializer(self.config.initializer_range))
+	
+	def get_multihead_attention(self):
+		return self.all_attention_scores
 	
 	def get_pooled_output(self):
 		return self.pooled_output

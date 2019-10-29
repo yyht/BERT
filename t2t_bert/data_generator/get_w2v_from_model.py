@@ -30,7 +30,7 @@ def main(_):
 	init_vars = tf.train.list_variables(model_path)
 	for name, shape in init_vars:
 		if 'word_embeddings' in name:
-			array = tf.train.load_variable(tf_path, name)
+			array = tf.train.load_variable(model_path, name)
 			
 	with open(vocab_path) as frobj:
 		vocab = []

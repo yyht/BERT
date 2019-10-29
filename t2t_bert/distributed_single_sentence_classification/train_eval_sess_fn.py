@@ -121,7 +121,8 @@ def train_eval_fn(FLAGS,
 							"decay":kargs.get("decay", "no"),
 							"warmup":kargs.get("warmup", "no"),
 							"grad_clip":config.get("grad_clip", "global_norm"),
-							"clip_norm":config.get("clip_norm", 1.0)})
+							"clip_norm":config.get("clip_norm", 1.0),
+							"epoch":FLAGS.epoch})
 
 		anneal_config = Bunch({
 					"initial_value":1.0,

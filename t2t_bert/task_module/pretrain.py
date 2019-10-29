@@ -12,8 +12,9 @@ import six
 import tensorflow as tf
 
 def get_masked_lm_output(config, input_tensor, output_weights, positions,
-							label_ids, label_weights, reuse=None):
+							label_ids, label_weights, **kargs):
 	"""Get loss and log probs for the masked LM."""
+	reuse = kargs.get('reuse', False)
 	input_tensor = tf.cast(input_tensor, tf.float32)
 	positions = tf.cast(positions, tf.int32)
 	label_ids = tf.cast(label_ids, tf.int32)
@@ -48,12 +49,13 @@ def get_masked_lm_output(config, input_tensor, output_weights, positions,
 		label_ids = tf.reshape(label_ids, [-1])
 		label_weights = tf.reshape(label_weights, [-1])
 
-		# one_hot_labels = tf.one_hot(
-		# 		label_ids, depth=config.vocab_size, dtype=tf.float32)
+		one_hot_labels = tf.one_hot(
+				label_ids, depth=config.vocab_size, dtype=tf.float32)
 
 		per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-													labels=label_ids,
+													labels=tf.stop_gradient(label_ids),
 													logits=logits)
+		# per_example_loss = -tf.reduce_sum(log_probs * one_hot_labels, axis=[-1])
 
 		numerator = tf.reduce_sum(label_weights * per_example_loss)
 		denominator = tf.reduce_sum(label_weights) + 1e-5
@@ -67,7 +69,7 @@ def get_masked_lm_output(config, input_tensor, output_weights, positions,
 		# denominator = tf.reduce_sum(label_weights) + 1e-5
 		loss = numerator / denominator
 
-	return (loss, per_example_loss, log_probs)
+	return (loss, per_example_loss, log_probs, label_weights)
 
 def get_next_sentence_output(config, input_tensor, labels, reuse=None):
 	"""Get loss and log probs for the next sentence prediction."""

@@ -252,6 +252,15 @@ flags.DEFINE_string(
 	"feature_output", "feature.info",
 	"if apply distillation"
 	)
+flags.DEFINE_integer(
+	"max_predictions_per_seq", 10,
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
+	"ln_type", 'postln',
+	"if apply distillation"
+	)
 
 def main(_):
 

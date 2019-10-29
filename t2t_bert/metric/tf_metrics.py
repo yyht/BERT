@@ -20,7 +20,7 @@ def precision(labels, predictions, num_classes, pos_indices=None,
     average : str, optional
         'micro': counts the total number of true positives, false
             positives, and false negatives for the classes in
-            `pos_indices` and infer the metric from it.
+            `pos_ind`ices` and infer the metric from it.
         'macro': will compute the metric separately for each class in
             `pos_indices` and average. Will not account for class
             imbalance.

@@ -36,7 +36,7 @@ def clean(text):
 	# text = text.lower()
 	text = HanziConv.toSimplified(text)
 	text = full2half(text)
-	text = re.sub("\\#.*?#|\\|.*?\\||\\[.*?]", "", text)
+	# text = re.sub("\\#.*?#|\\|.*?\\||\\[.*?]", "", text)
 	# text = re.sub("\s*", "", text)
 	return text
 
@@ -510,7 +510,7 @@ class FasttextClassifierProcessor(data_processor.DataProcessor):
 						text_b=None,
 						label=input_labels
 					))
-				
+				assert len(input_labels) == 1
 			except:
 				print(line, i)
 		return examples
@@ -1090,7 +1090,8 @@ class LCQMCStructureDistillationProcessor(data_processor.DataProcessor):
 						label=input_labels,
 						label_probs=distillation_dict_lst[cnt]['prob'],
 						label_ratio=1.0,
-						distillation_ratio=1.0
+						distillation_ratio=1.0,
+						feature=distillation_dict_lst[cnt]["feature"]
 					))
 				cnt += 1
 		assert cnt == len(distillation_dict_lst)
@@ -1123,7 +1124,8 @@ class LCQMCStructureDistillationProcessor(data_processor.DataProcessor):
 						label=input_labels,
 						label_probs=distillation_dict_lst[cnt]['prob'],
 						label_ratio=0.0,
-						distillation_ratio=1.0
+						distillation_ratio=1.0,
+						feature=distillation_dict_lst[cnt]["feature"]
 					))
 			cnt += 1
 		assert cnt == len(distillation_dict_lst)

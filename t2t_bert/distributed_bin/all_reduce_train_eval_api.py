@@ -31,6 +31,7 @@ import tensorflow as tf
 
 from distributed_single_sentence_classification import train_eval
 from distributed_multitask import train_eval as multitask_train_eval
+from distributed_distillation import train_eval as distillation_train_eval
 from tensorflow.contrib.distribute.python import cross_tower_ops as cross_tower_ops_lib
 
 import tensorflow as tf
@@ -38,6 +39,8 @@ import tensorflow as tf
 flags = tf.flags
 
 FLAGS = flags.FLAGS
+
+os.environ['NCCL_LL_THRESHOLD'] = '0' # to avoid collective reduce hangs on
 
 # os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 tf.logging.set_verbosity(tf.logging.INFO)
@@ -267,10 +270,22 @@ flags.DEFINE_integer(
 	"if apply distillation"
 	)
 
+flags.DEFINE_string(
+	"ln_type", 'postln',
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
+	"distillation_config", 'postln',
+	"if apply distillation"
+	)
+
 def main(_):
 
 	print(FLAGS)
 	print(tf.__version__, "==tensorflow version==")
+
+	os.environ['NCCL_LL_THRESHOLD'] = "0"
 
 	init_checkpoint = os.path.join(FLAGS.buckets, FLAGS.init_checkpoint)
 	train_file = []
@@ -325,6 +340,8 @@ def main(_):
 		train_eval_api = train_eval
 	elif FLAGS.mode == "multi_task":
 		train_eval_api = multitask_train_eval
+	elif FLAGS.mode == 'distillation':
+		train_eval_api = distillation_train_eval
 	
 	train_eval_api.monitored_estimator(
 		FLAGS=FLAGS,
