@@ -43,7 +43,7 @@ def train_eval_fn(FLAGS,
 		warmup_ratio = config.get('warmup', 0.1)
 
 		num_train_steps = int(
-			train_size / FLAGS.batch_size * epoch)
+			train_size / FLAGS.batch_size * FLAGS.epoch)
 		
 		num_warmup_steps = int(num_train_steps * warmup_ratio)
 		
@@ -92,8 +92,7 @@ def train_eval_fn(FLAGS,
 										FLAGS.max_length,
 										FLAGS.max_predictions_per_seq,
 										FLAGS.do_train,
-										num_cpu_threads=4,
-										batch_size=FLAGS.batch_size)
+										num_cpu_threads=4)
 
 		estimator = tf.contrib.tpu.TPUEstimator(
 				  use_tpu=True,
@@ -105,7 +104,13 @@ def train_eval_fn(FLAGS,
 		if FLAGS.do_train:
 			estimator.train(input_fn=input_features, max_steps=num_train_steps)
 		else:
-			result = estimator.evaluate(input_fn=input_features, steps=max_eval_steps)
+			eval_input_fn = input_fn_builder(
+							input_files=dev_file,
+							max_seq_length=FLAGS.max_seq_length,
+							max_predictions_per_seq=FLAGS.max_predictions_per_seq,
+							is_training=False)
+
+			result = estimator.evaluate(input_fn=eval_input_fn, steps=max_eval_steps)
 			output_eval_file = os.path.join(checkpoint_dir, "eval_results.txt")
 			with tf.gfile.GFile(output_eval_file, "w") as writer:
 				tf.logging.info("***** Eval results *****")

@@ -27,7 +27,7 @@ sys.path.extend([bert_path, t2t_bert_path])
 print(sys.path)
 
 import tensorflow as tf
-from pretrain_fineutning import train_eval_tpu_estimator
+from pretrain_finetuning import train_eval_tpu_estimator
 
 
 flags = tf.flags
@@ -239,6 +239,11 @@ flags.DEFINE_float(
 
 flags.DEFINE_integer(
 	"max_predictions_per_seq", 10,
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
+	"ln_type", 'postln',
 	"if apply distillation"
 	)
 
