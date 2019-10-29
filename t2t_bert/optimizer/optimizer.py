@@ -23,7 +23,7 @@ class Optimizer(object):
 
 		self.decay_global_step = tf.cond(global_steps_int < warmup_steps_int,
 									lambda:tf.cast(tf.constant(0), tf.int64),
-									lambda:self.global_step-tf.cast(tf.constant(warmup_steps_int), tf.int64))
+									lambda:self.global_step-tf.cast(warmup_steps_int, tf.int64))
 
 	def lr_decay_fn(self, init_lr, num_train_steps,
 					**kargs):
@@ -123,10 +123,10 @@ class Optimizer(object):
 
 	def get_train_op(self, loss, tvars, init_lr, 
 							num_train_steps, **kargs):
-		learning_rate = self.lr_decay_fn(init_lr, num_train_steps, **kargs)
-		learning_rate = self.warm_up(learning_rate, init_lr, **kargs)
+		self.learning_rate = self.lr_decay_fn(init_lr, num_train_steps, **kargs)
+		self.learning_rate = self.warm_up(learning_rate, init_lr, **kargs)
 		grads = self.grad_clip_fn(loss, tvars, **kargs)
-		opt = self.optimizer_op(learning_rate, **kargs)
+		opt = self.optimizer_op(self.learning_rate, **kargs)
 		if kargs.get("use_tpu", 0) == 1:
 			opt = tf.contrib.tpu.CrossShardOptimizer(opt)
 		train_op = opt.apply_gradients(

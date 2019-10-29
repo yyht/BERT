@@ -35,7 +35,7 @@ flags = tf.flags
 FLAGS = flags.FLAGS
 
 # os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-tf.logging.set_verbosity(tf.logging.ERROR)
+# tf.logging.set_verbosity(tf.logging.ERROR)
 
 flags.DEFINE_string("buckets", "", "oss buckets")
 

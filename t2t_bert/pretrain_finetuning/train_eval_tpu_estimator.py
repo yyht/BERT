@@ -2,7 +2,7 @@
 import tensorflow as tf
 
 from optimizer import distributed_optimizer as optimizer
-from data_generator import distributed_tf_data_utils as tf_data_utils
+from data_generator import tf_data_utils
 
 try:
 	from distributed_single_sentence_classification.model_interface import model_config_parser
@@ -88,12 +88,6 @@ def train_eval_fn(FLAGS,
 									target=kargs.get("input_target", ""),
 									**kargs)
 
-		input_features = tf_data_utils.input_fn_builder(train_file, 
-										FLAGS.max_length,
-										FLAGS.max_predictions_per_seq,
-										FLAGS.do_train,
-										num_cpu_threads=4)
-
 		estimator = tf.contrib.tpu.TPUEstimator(
 				  use_tpu=True,
 				  model_fn=model_fn,
@@ -102,9 +96,18 @@ def train_eval_fn(FLAGS,
 				  eval_batch_size=FLAGS.batch_size)
 
 		if FLAGS.do_train:
+			tf.logging.info("***** Running training *****")
+			tf.logging.info("  Batch size = %d", FLAGS.batch_size)
+			input_features = tf_data_utils.input_fn_builder(train_file, 
+										FLAGS.max_length,
+										FLAGS.max_predictions_per_seq,
+										True,
+										num_cpu_threads=4)
 			estimator.train(input_fn=input_features, max_steps=num_train_steps)
 		else:
-			eval_input_fn = input_fn_builder(
+			tf.logging.info("***** Running evaluation *****")
+    		tf.logging.info("  Batch size = %d", FLAGS.batch_size)
+			eval_input_fn = tf_data_utils.input_fn_builder(
 							input_files=dev_file,
 							max_seq_length=FLAGS.max_seq_length,
 							max_predictions_per_seq=FLAGS.max_predictions_per_seq,
