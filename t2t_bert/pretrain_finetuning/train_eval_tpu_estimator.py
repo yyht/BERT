@@ -92,10 +92,11 @@ def train_eval_fn(FLAGS,
 										FLAGS.max_length,
 										FLAGS.max_predictions_per_seq,
 										FLAGS.do_train,
-										num_cpu_threads=4)
+										num_cpu_threads=4,
+										batch_size=FLAGS.batch_size)
 
 		estimator = tf.contrib.tpu.TPUEstimator(
-				  use_tpu=FLAGS.use_tpu,
+				  use_tpu=True,
 				  model_fn=model_fn,
 				  config=kargs.get('run_config', {}),
 				  train_batch_size=FLAGS.batch_size,

@@ -126,15 +126,16 @@ def _truncate_seq(tokens_a, max_length, rng):
 			trunc_tokens.pop()
 
 def input_fn_builder(input_files,
-										 max_seq_length,
-										 max_predictions_per_seq,
-										 is_training,
-										 num_cpu_threads=4):
+					 max_seq_length,
+					 max_predictions_per_seq,
+					 is_training,
+					 num_cpu_threads=4,
+					 batch_size=512
+					 ):
 	"""Creates an `input_fn` closure to be passed to TPUEstimator."""
 
 	def input_fn(params):
 		"""The actual input function."""
-		batch_size = params["batch_size"]
 
 		name_to_features = {
 				"input_ids":
