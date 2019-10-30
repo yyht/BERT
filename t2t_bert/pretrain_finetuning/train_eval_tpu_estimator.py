@@ -52,8 +52,8 @@ def train_eval_fn(FLAGS,
 		print(" model type {}".format(FLAGS.model_type))
 
 		print(num_train_steps, num_warmup_steps, "=============", kargs.get('num_gpus', 1), '==number of gpus==')
-                tf.logging.info("***** Running evaluation *****")
-                tf.logging.info("***** train steps : %d", num_train_steps)
+		tf.logging.info("***** Running evaluation *****")
+		tf.logging.info("***** train steps : %d", num_train_steps)
 		max_eval_steps = int(int(FLAGS.eval_size) / FLAGS.batch_size)
 
 		clip_norm_scale = 1.0
@@ -95,7 +95,7 @@ def train_eval_fn(FLAGS,
 				  config=kargs.get('run_config', {}),
 				  train_batch_size=FLAGS.batch_size,
 				  eval_batch_size=FLAGS.batch_size)
-                tf.logging.info("****** do train ******* %s", str(FLAGS.do_train))
+		tf.logging.info("****** do train ******* %s", str(FLAGS.do_train))
 		if FLAGS.do_train:
 			tf.logging.info("***** Running training *****")
 			tf.logging.info("  Batch size = %d", FLAGS.batch_size)
@@ -113,7 +113,7 @@ def train_eval_fn(FLAGS,
 							max_seq_length=FLAGS.max_seq_length,
 							max_predictions_per_seq=FLAGS.max_predictions_per_seq,
 							is_training=False)
-                        tf.logging.info("***** Begining Running evaluation *****")
+						tf.logging.info("***** Begining Running evaluation *****")
 			result = estimator.evaluate(input_fn=eval_input_fn, steps=max_eval_steps)
 			output_eval_file = os.path.join(checkpoint_dir, "eval_results.txt")
 			with tf.gfile.GFile(output_eval_file, "w") as writer:
