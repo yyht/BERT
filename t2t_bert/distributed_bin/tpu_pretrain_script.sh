@@ -1,4 +1,4 @@
-python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
+nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--buckets "gs://yyht_source/pretrain" \
 	--config_file "./data/roberta_zh_l12_albert/bert_config_tiny.json" \
 	--init_checkpoint "" \

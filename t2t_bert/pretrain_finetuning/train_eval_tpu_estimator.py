@@ -106,7 +106,7 @@ def train_eval_fn(FLAGS,
 			estimator.train(input_fn=input_features, max_steps=num_train_steps)
 		else:
 			tf.logging.info("***** Running evaluation *****")
-    		tf.logging.info("  Batch size = %d", FLAGS.batch_size)
+			tf.logging.info("  Batch size = %d", FLAGS.batch_size)
 			eval_input_fn = tf_data_utils.input_fn_builder(
 							input_files=dev_file,
 							max_seq_length=FLAGS.max_seq_length,

@@ -243,9 +243,10 @@ flags.DEFINE_integer(
 	)
 
 flags.DEFINE_string(
-	"ln_type", 'postln',
-	"if apply distillation"
-	)
+            "ln_type", 'postln',
+                "if apply distillation"
+                    )
+
 
 flags.DEFINE_bool("do_train", True, "Whether to run training.")
 
@@ -332,3 +333,10 @@ def main(_):
 		decay=FLAGS.decay,
 		warmup=FLAGS.warmup,
 		input_target=FLAGS.input_target)
+
+
+
+
+
+if __name__ == "__main__":
+        tf.app.run()

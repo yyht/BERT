@@ -84,7 +84,6 @@ def classifier_model_fn_builder(
 	model_config.tsa = 'exp_schedule'
 	model_config.num_train_steps = opt_config.num_train_steps
 	# opt_config.init_lr /= 2
-	opt_config.grad_clip = None
 
 	def model_fn(features, labels, mode, params):
 
@@ -103,12 +102,21 @@ def classifier_model_fn_builder(
 		else:
 			scope = model_config.scope
 
+<<<<<<< HEAD
 		(nsp_loss, 
 		nsp_per_example_loss, 
 		nsp_log_prob) = pretrain.get_next_sentence_output(model_config,
 										model.get_pooled_output(),
 										features['next_sentence_labels'],
 										reuse=tf.AUTO_REUSE)
+=======
+                (nsp_loss, 
+		 nsp_per_example_loss, 
+		 nsp_log_prob) = pretrain.get_next_sentence_output(model_config,
+		 								model.get_pooled_output(),
+		 								features['next_sentence_labels'],
+		 								reuse=tf.AUTO_REUSE)
+>>>>>>> 27789e4b0bd21a9d501099161bda3e1aa87569db
 
 		masked_lm_positions = features["masked_lm_positions"]
 		masked_lm_ids = features["masked_lm_ids"]
@@ -158,9 +166,9 @@ def classifier_model_fn_builder(
 			scaffold_fn = None
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
-
+                        
 			optimizer_fn = optimizer.Optimizer(opt_config)
-
+                        
 			tvars = pretrained_tvars
 			model_io_fn.print_params(tvars, string=", trainable params")
 			
