@@ -102,12 +102,21 @@ def classifier_model_fn_builder(
 		else:
 			scope = model_config.scope
 
+<<<<<<< HEAD
+		(nsp_loss, 
+		nsp_per_example_loss, 
+		nsp_log_prob) = pretrain.get_next_sentence_output(model_config,
+										model.get_pooled_output(),
+										features['next_sentence_labels'],
+										reuse=tf.AUTO_REUSE)
+=======
                 (nsp_loss, 
 		 nsp_per_example_loss, 
 		 nsp_log_prob) = pretrain.get_next_sentence_output(model_config,
 		 								model.get_pooled_output(),
 		 								features['next_sentence_labels'],
 		 								reuse=tf.AUTO_REUSE)
+>>>>>>> 27789e4b0bd21a9d501099161bda3e1aa87569db
 
 		masked_lm_positions = features["masked_lm_positions"]
 		masked_lm_ids = features["masked_lm_ids"]
@@ -182,9 +191,9 @@ def classifier_model_fn_builder(
 						masked_lm_mask=masked_lm_mask
 					)
 
-			#	for key in train_metric_dict:
-			#		tf.summary.scalar(key, train_metric_dict[key])
-			#	tf.summary.scalar('learning_rate', optimizer_fn.learning_rate)
+				# for key in train_metric_dict:
+				# 	tf.summary.scalar(key, train_metric_dict[key])
+				# tf.summary.scalar('learning_rate', optimizer_fn.learning_rate)
 
 				estimator_spec = tf.contrib.tpu.TPUEstimatorSpec(
 								mode=mode,
