@@ -248,7 +248,7 @@ flags.DEFINE_string(
                     )
 
 
-flags.DEFINE_bool("do_train", True, "Whether to run training.")
+flags.DEFINE_bool("do_train", False, "Whether to run training.")
 
 flags.DEFINE_bool("do_eval", False, "Whether to run eval on the dev set.")
 
@@ -322,7 +322,7 @@ def main(_):
 	      iterations_per_loop=FLAGS.iterations_per_loop,
 	      num_shards=FLAGS.num_tpu_cores,
 	      per_host_input_for_training=is_per_host))
-
+        print(FLAGS.do_train, "=====do train flag======")
 	train_eval_tpu_estimator.train_eval_fn(FLAGS=FLAGS,
 		init_checkpoint=init_checkpoint,
 		train_file=train_file,
