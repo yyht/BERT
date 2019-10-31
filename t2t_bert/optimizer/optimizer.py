@@ -104,7 +104,7 @@ class Optimizer(object):
 							**kargs):
 		opt_type = self.config.get("train_op", "adam_decay")
 		tf.logging.info(" optimization method {}".format(opt_type))
-		if opt_type not in ["adam_decay", "adam"]:
+		if opt_type not in ["adam_decay", "adam", "lamb_v2"]:
 			raise NotImplementedError()
 		if opt_type == "adam_decay":
 			opt = optimizer_utils.AdamWeightDecayOptimizer(
