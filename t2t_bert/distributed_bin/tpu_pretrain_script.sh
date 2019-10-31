@@ -5,13 +5,13 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--vocab_file "./data/chinese_L-12_H-768_A-12/vocab.txt" \
 	--label_id "./data/lcqmc/label_dict.json" \
 	--max_length 512 \
-	--train_file "new_data/chunk_0.tfrecords,new_data/chunk_1.tfrecords,new_data/chunk_2.tfrecords,new_data/chunk_3.tfrecords,new_data/chunk_4.tfrecords,new_data/chunk_5.tfrecords,new_data/chunk_6.tfrecords,new_data/chunk_7.tfrecords,new_data/chunk_8.tfrecords,new_data/chunk_9.tfrecords,new_data/chunk_10.tfrecords,new_data/chunk_11.tfrecords,new_data/chunk_12.tfrecords,new_data/chunk_13.tfrecords,new_data/chunk_14.tfrecords,new_data/chunk_15.tfrecords,new_data/chunk_16.tfrecords,new_data/chunk_17.tfrecords" \
-	--dev_file "new_data/chunk_18.tfrecords,new_data/chunk_19.tfrecords" \
-	--model_output "model/albert_tiny_factorized" \
+	--train_file "data_single/chunk_0.tfrecords,data_single/chunk_1.tfrecords,data_single/chunk_2.tfrecords,data_single/chunk_3.tfrecords,data_single/chunk_4.tfrecords,data_single/chunk_5.tfrecords,data_single/chunk_6.tfrecords,data_single/chunk_7.tfrecords,data_single/chunk_8.tfrecords,data_single/chunk_9.tfrecords,data_single/chunk_10.tfrecords,data_single/chunk_11.tfrecords,data_single/chunk_12.tfrecords,data_single/chunk_13.tfrecords,data_single/chunk_14.tfrecords,data_single/chunk_15.tfrecords,data_single/chunk_16.tfrecords,data_single/chunk_17.tfrecords" \
+	--dev_file "data_single/chunk_18.tfrecords,data_single/chunk_19.tfrecords" \
+	--model_output "model/albert_tiny_factorized_with_single" \
 	--epoch 50 \
 	--num_classes 2 \
-	--train_size 12000000 \
-	--eval_size 1200000 \
+	--train_size 11000000 \
+	--eval_size 1100000 \
 	--batch_size 4096 \
 	--model_type "albert" \
 	--if_shard 1 \
