@@ -113,7 +113,7 @@ def train_eval_fn(FLAGS,
 							max_seq_length=FLAGS.max_seq_length,
 							max_predictions_per_seq=FLAGS.max_predictions_per_seq,
 							is_training=False)
-						tf.logging.info("***** Begining Running evaluation *****")
+			tf.logging.info("***** Begining Running evaluation *****")
 			result = estimator.evaluate(input_fn=eval_input_fn, steps=max_eval_steps)
 			output_eval_file = os.path.join(checkpoint_dir, "eval_results.txt")
 			with tf.gfile.GFile(output_eval_file, "w") as writer:
