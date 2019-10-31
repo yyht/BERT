@@ -122,7 +122,7 @@ class Optimizer(object):
 		elif opt_type == "lamb_v2":
 			opt = optimizer_utils.LAMBOptimizer_v2(learning_rate,
 				               weight_decay_rate=self.config.get("opt_decay_rate", 0.01),
-				               beta_1=self.config.get("beta_1", 0.9),,
+				               beta_1=self.config.get("beta_1", 0.9),
 				               beta_2=self.config.get("beta_2", 0.999),
 				               epsilon=self.config.get("epsilon", 1e-6),
 				               exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"],
