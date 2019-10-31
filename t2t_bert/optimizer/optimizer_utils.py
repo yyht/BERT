@@ -9,6 +9,7 @@ from tensorflow.python.ops import math_ops
 
 import re
 import tensorflow as tf
+import six
 
 class AdamWeightDecayOptimizer(tf.train.Optimizer):
 	"""A basic Adam optimizer that includes "correct" L2 weight decay."""
