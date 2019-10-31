@@ -125,6 +125,18 @@ def distillation_model_fn(model_config_dict,
 
 			print(distillation_config.get('hidden_uniform', 0.1), '===hidden_uniform===')
 
+		if "hidden_cls_uniform" in distillation_config.get('distillation_type', ['kl_logits']):
+			source_hidden = ta_dict['model'].get_all_encoder_layers()
+			target_hidden = st_dict['model'].get_all_encoder_layers()
+
+			print("==apply hidden_cls_uniform==")
+			with tf.variable_scope("distillation", reuse=tf.AUTO_REUSE):
+				hidden_cls_loss = uniform_mapping.hidden_cls_matching(source_hidden, target_hidden, 0)
+			tf.summary.scalar("hidden_cls_uniform_loss", hidden_cls_loss)
+			distilled_loss += hidden_cls_loss * distillation_config.get("hidden_uniform", 0.1)
+			feature_flag = True
+
+
 		if "mdd" in distillation_config.get('distillation_type', ['mdd']):
 			source = ta_dict['model'].get_pooled_output()
 			target = st_dict['model'].get_pooled_output()
