@@ -233,8 +233,8 @@ def classifier_model_fn_builder(
 
 			eval_metrics = (metric_fn, [
 			  masked_lm_example_loss, masked_lm_log_probs, masked_lm_ids,
-			  masked_lm_weights, next_sentence_example_loss,
-			  next_sentence_log_probs, next_sentence_labels
+			  masked_lm_weights, nsp_per_example_loss,
+			  nsp_log_prob, features['next_sentence_labels']
 			])
 
 			estimator_spec = tf.contrib.tpu.TPUEstimatorSpec(
