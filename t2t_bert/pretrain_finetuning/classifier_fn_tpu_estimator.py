@@ -237,13 +237,13 @@ def classifier_model_fn_builder(
 				  next_sentence_log_probs, next_sentence_labels
 				])
 
-				estimator_spec = tf.contrib.tpu.TPUEstimatorSpec(
-							  mode=mode,
-							  loss=loss,
-							  eval_metrics=eval_metrics,
-							  scaffold_fn=scaffold_fn)
+			estimator_spec = tf.contrib.tpu.TPUEstimatorSpec(
+						  mode=mode,
+						  loss=loss,
+						  eval_metrics=eval_metrics,
+						  scaffold_fn=scaffold_fn)
 
-				return estimator_spec
+			return estimator_spec
 		else:
 			raise NotImplementedError()
 
