@@ -124,7 +124,7 @@ class LAMBOptimizer_v1(tf.train.Optimizer):
 				 exclude_from_weight_decay=None,
 				 name="LAMBOptimizer"):
 		"""Constructs a LAMBOptimizer."""
-		super(LAMBOptimizer, self).__init__(False, name)
+		super(LAMBOptimizer_v1, self).__init__(False, name)
 
 		self.learning_rate = learning_rate
 		self.weight_decay_rate = weight_decay_rate
@@ -241,7 +241,7 @@ class LAMBOptimizer_v2(tf.train.Optimizer):
 				exclude_from_layer_adaptation=None,
 				name="LAMBOptimizer"):
 		"""Constructs a LAMBOptimizer."""
-		super(LAMBOptimizer, self).__init__(False, name)
+		super(LAMBOptimizer_v2, self).__init__(False, name)
 
 		self.learning_rate = learning_rate
 		self.weight_decay_rate = weight_decay_rate
