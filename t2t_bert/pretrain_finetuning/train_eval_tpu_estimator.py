@@ -110,7 +110,7 @@ def train_eval_fn(FLAGS,
 			tf.logging.info("  Batch size = %d", FLAGS.batch_size)
 			eval_input_fn = tf_data_utils.input_fn_builder(
 							input_files=dev_file,
-							max_seq_length=FLAGS.max_seq_length,
+							max_seq_length=FLAGS.max_length,
 							max_predictions_per_seq=FLAGS.max_predictions_per_seq,
 							is_training=False)
 			tf.logging.info("***** Begining Running evaluation *****")
