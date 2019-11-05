@@ -33,7 +33,7 @@ class Optimizer(object):
 		if lr_decay == "polynomial_decay":
 			learning_rate = tf.train.polynomial_decay(
 													learning_rate,
-													self.decay_global_step,
+													self.global_step,
 													num_train_steps,
 													end_learning_rate=0.0,
 													power=1.0,
@@ -41,7 +41,7 @@ class Optimizer(object):
 		elif lr_decay == "cosine_decay":
 			learning_rate = tf.train.cosin_decay(
 													learning_rate,
-													self.decay_global_step,
+													self.global_step,
 													num_train_steps,
 													alpha=0.0,
 													cycle=False)
@@ -49,7 +49,7 @@ class Optimizer(object):
 			decay_rate = self.config.get("lr_decay_rate", 0.999)
 			learning_rate = tf.train.exponential_decay(
 													learning_rate,
-													self.decay_global_step,
+													self.global_step,
 													num_train_steps,
 													decay_rate=decay_rate,
 													staircase=False)
@@ -57,7 +57,7 @@ class Optimizer(object):
 			decay_rate = self.config.get("lr_decay_rate", 0.999)
 			learning_rate = tf.train.natural_exp_decay(
 													learning_rate,
-													self.decay_global_step,
+													self.global_step,
 													num_train_steps,
 													decay_rate=decay_rate,
 													staircase=False)
@@ -118,7 +118,7 @@ class Optimizer(object):
 			opt = tf.train.AdamOptimizer(learning_rate,
 										beta1=self.config.get("beta_1", 0.9),
 										beta2=self.config.get("beta_2", 0.999),
-										epsilon=self.config.get("epsilon", 1e-6))
+										epsilon=self.config.get("epsilon", 1e-8))
 		elif opt_type == "lamb_v2":
 			opt = optimizer_utils.LAMBOptimizer_v2(learning_rate,
 				               weight_decay_rate=self.config.get("opt_decay_rate", 0.01),

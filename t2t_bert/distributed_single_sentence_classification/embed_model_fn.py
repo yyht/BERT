@@ -13,6 +13,7 @@ from metric import tf_metrics
 
 from optimizer import distributed_optimizer as optimizer
 from model_io import model_io
+from utils.bert import bert_utils
 
 def model_fn_builder(
 					model_config,
@@ -48,12 +49,26 @@ def model_fn_builder(
 		else:
 			scope = model_config.scope
 
-		if mode == tf.estimator.ModeKeys.TRAIN:
+		with tf.variable_scope(scope+"/feature_output", reuse=model_reuse):
+			hidden_size = bert_utils.get_shape_list(model.get_pooled_output(), expected_rank=2)[-1]
+			feature_output = tf.layers.dense(
+							model.get_pooled_output(),
+							hidden_size,
+							kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
+			feature_output = tf.nn.dropout(feature_output, keep_prob=1 - dropout_prob)
+			feature_output += model.get_pooled_output()
+			feature_output = tf.layers.dense(
+							feature_output,
+							hidden_size,
+							kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
+							activation=tf.tanh)
+
+		if mode == tf.estimator.ModeKeys.TRAIN or mode == tf.estimator.ModeKeys.EVAL:
 			with tf.variable_scope(scope, reuse=model_reuse):
 				(loss, 
 					per_example_loss, 
 					logits) = classifier.classifier(model_config,
-												model.get_pooled_output(),
+												feature_output,
 												num_labels,
 												label_ids,
 												dropout_prob)
@@ -67,8 +82,6 @@ def model_fn_builder(
 			model_io_fn.load_pretrained(tvars, 
 										init_checkpoint,
 										exclude_scope=exclude_scope)
-
-		
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
 
@@ -124,12 +137,12 @@ def model_fn_builder(
 									predictions={
 												# 'pred_label':pred_label,
 												# "max_prob":max_prob
-												"embedding":model.get_pooled_output()
+												"embedding":feature_output
 									},
 									export_outputs={
 										"output":tf.estimator.export.PredictOutput(
 													{
-														"embedding":model.get_pooled_output()
+														"embedding":feature_output
 													}
 												)
 									}

@@ -80,12 +80,12 @@ def model_fn_builder(
 								opt_config.init_lr, 
 								opt_config.num_train_steps,
 								**kargs)
-			train_op, hooks = model_io_fn.get_ema_hooks(train_op, 
-								tvars,
-								kargs.get('params_moving_average_decay', 0.99),
-								scope, mode, 
-								first_stage_steps=opt_config.num_warmup_steps,
-								two_stage=True)
+			# train_op, hooks = model_io_fn.get_ema_hooks(train_op, 
+			# 					tvars,
+			# 					kargs.get('params_moving_average_decay', 0.99),
+			# 					scope, mode, 
+			# 					first_stage_steps=opt_config.num_warmup_steps,
+			# 					two_stage=True)
 
 			model_io_fn.set_saver()
 
@@ -95,12 +95,12 @@ def model_fn_builder(
 			return estimator_spec
 		elif mode == tf.estimator.ModeKeys.EVAL:
 			
-			_, hooks = model_io_fn.get_ema_hooks(None,
-										None,
-										kargs.get('params_moving_average_decay', 0.99), 
-										scope, mode)
+			# _, hooks = model_io_fn.get_ema_hooks(None,
+			# 							None,
+			# 							kargs.get('params_moving_average_decay', 0.99), 
+			# 							scope, mode)
 
-			# hooks = None
+			hooks = None
 
 			def metric_fn(per_example_loss,
 						logits, 
