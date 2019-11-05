@@ -18,4 +18,5 @@ python ./t2t_bert/distributed_data_prepare/classification_data_prepare.py \
 	--char_len 5 \
 	--predefined_vocab_size 50000 \
 	--corpus_vocab_path sentence_embedding/new_data/data/char_id.txt \
-	--data_type fasttext
+	--data_type fasttext \
+	--tokenizer_type 'jieba'

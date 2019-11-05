@@ -104,6 +104,11 @@ def data_interface(FLAGS):
 				"input_ids_a":tf.FixedLenFeature([FLAGS.max_length], tf.int64),
 				"label_ids":tf.FixedLenFeature([FLAGS.num_classes], tf.int64)
 			}
+		elif FLAGS.task_type  == 'embed_sentence_classification':
+			name_to_features = {
+				"input_ids_a":tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+				"label_ids":tf.FixedLenFeature([], tf.int64)
+			}
 		if FLAGS.with_char == "char":
 			name_to_features["input_char_ids_a"] = tf.FixedLenFeature([FLAGS.max_length], tf.int64)
 			if FLAGS.task_type == "pair_sentence_classification":

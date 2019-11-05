@@ -54,7 +54,7 @@ def train_eval_fn(FLAGS,
 		config.label_type = "single_label"
 
 		config.model = FLAGS.model_type
-		config.init_lr = 3e-4
+		config.init_lr = 1e-4
 		config.ln_type = FLAGS.ln_type
 
 		print('==init learning rate==', config.init_lr)
@@ -90,8 +90,20 @@ def train_eval_fn(FLAGS,
 		print(" model type {}".format(FLAGS.model_type))
 
 		print(num_train_steps, num_warmup_steps, "=============")
+
+		if worker_count*kargs.get("num_gpus", 1) >= 2:
+			clip_norm_scale = 1.0
+			lr_scale = 0.75
+		else:
+			clip_norm_scale = 1.0
+			lr_scale = 1.0
+		lr = init_lr*worker_count*kargs.get("num_gpus", 1)*lr_scale
+		# if lr >= 1e-3:
+		# 	lr = 1e-3
+		lr = config.init_lr
+		print('--training learning rate--', lr)
 		
-		opt_config = Bunch({"init_lr":init_lr, 
+		opt_config = Bunch({"init_lr":lr, 
 							"num_train_steps":num_train_steps,
 							"num_warmup_steps":num_warmup_steps,
 							"worker_count":worker_count,
