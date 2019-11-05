@@ -7,8 +7,8 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--max_length 512 \
 	--train_file "data_single/chunk_0.tfrecords,data_single/chunk_1.tfrecords,data_single/chunk_2.tfrecords,data_single/chunk_3.tfrecords,data_single/chunk_4.tfrecords,data_single/chunk_5.tfrecords,data_single/chunk_6.tfrecords,data_single/chunk_7.tfrecords,data_single/chunk_8.tfrecords,data_single/chunk_9.tfrecords,data_single/chunk_10.tfrecords,data_single/chunk_11.tfrecords,data_single/chunk_12.tfrecords,data_single/chunk_13.tfrecords,data_single/chunk_14.tfrecords,data_single/chunk_15.tfrecords,data_single/chunk_16.tfrecords,data_single/chunk_17.tfrecords" \
 	--dev_file "data_single/chunk_18.tfrecords,data_single/chunk_19.tfrecords" \
-	--model_output "model/albert_tiny_factorized_with_single_adam_decay" \
-	--epoch 50 \
+	--model_output "model/albert_tiny_factorized_with_single_adam_decay_dropout" \
+	--epoch 15 \
 	--num_classes 2 \
 	--train_size 11000000 \
 	--eval_size 1100000 \
@@ -26,7 +26,7 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--ln_type "postln" \
 	--warmup "warmup" \
 	--decay "decay" \
-	--init_lr 1e-4 \
+	--init_lr 5e-4 \
 	--do_train true \
 	--tpu_name "htxu91"
 
