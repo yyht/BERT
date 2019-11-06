@@ -163,36 +163,36 @@ def classifier_model_fn_builder(
 			tvars = pretrained_tvars
 			model_io_fn.print_params(tvars, string=", trainable params")
 			
-			update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-			with tf.control_dependencies(update_ops):
-				print('==gpu count==', opt_config.get('gpu_count', 1))
+			# update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+			# with tf.control_dependencies(update_ops):
+			print('==gpu count==', opt_config.get('gpu_count', 1))
 
-				train_op = optimizer_fn.get_train_op(loss, tvars,
-								opt_config.init_lr, 
-								opt_config.num_train_steps,
-								use_tpu=opt_config.use_tpu)
+			train_op = optimizer_fn.get_train_op(loss, tvars,
+							opt_config.init_lr, 
+							opt_config.num_train_steps,
+							use_tpu=opt_config.use_tpu)
 
-				train_metric_dict = train_metric_fn(
-						masked_lm_example_loss, masked_lm_log_probs, 
-						masked_lm_ids,
-						masked_lm_weights, 
-						nsp_per_example_loss,
-						nsp_log_prob, 
-						features['next_sentence_labels'],
-						masked_lm_mask=masked_lm_mask
-					)
+			train_metric_dict = train_metric_fn(
+					masked_lm_example_loss, masked_lm_log_probs, 
+					masked_lm_ids,
+					masked_lm_weights, 
+					nsp_per_example_loss,
+					nsp_log_prob, 
+					features['next_sentence_labels'],
+					masked_lm_mask=masked_lm_mask
+				)
 
-				# for key in train_metric_dict:
-				# 	tf.summary.scalar(key, train_metric_dict[key])
-				# tf.summary.scalar('learning_rate', optimizer_fn.learning_rate)
+			# for key in train_metric_dict:
+			# 	tf.summary.scalar(key, train_metric_dict[key])
+			# tf.summary.scalar('learning_rate', optimizer_fn.learning_rate)
 
-				estimator_spec = tf.contrib.tpu.TPUEstimatorSpec(
-								mode=mode,
-								loss=loss,
-								train_op=train_op,
-								scaffold_fn=scaffold_fn)
+			estimator_spec = tf.contrib.tpu.TPUEstimatorSpec(
+							mode=mode,
+							loss=loss,
+							train_op=train_op,
+							scaffold_fn=scaffold_fn)
 
-				return estimator_spec
+			return estimator_spec
 
 		elif mode == tf.estimator.ModeKeys.EVAL:
 
