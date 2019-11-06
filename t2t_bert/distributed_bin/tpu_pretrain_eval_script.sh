@@ -1,7 +1,7 @@
 nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--buckets "gs://yyht_source/pretrain" \
 	--config_file "./data/roberta_zh_l12_albert/bert_config_tiny.json" \
-	--init_checkpoint "model/albert_tiny_factorized_with_single_adam_decay_dropout/model.ckpt-110000" \
+	--init_checkpoint "model/albert_tiny_factorized_with_single_adam_decay_dropout/model.ckpt-119000" \
 	--vocab_file "./data/chinese_L-12_H-768_A-12/vocab.txt" \
 	--label_id "./data/lcqmc/label_dict.json" \
 	--max_length 512 \

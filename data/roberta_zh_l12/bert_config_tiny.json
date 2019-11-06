@@ -4,7 +4,6 @@
   "hidden_act": "gelu", 
   "hidden_dropout_prob": 0.1, 
   "hidden_size": 312, 
-  "embedding_size": 128,
   "initializer_range": 0.02, 
   "intermediate_size": 1200, 
   "max_position_embeddings": 512, 
@@ -16,7 +15,5 @@
   "pooler_size_per_head": 128, 
   "pooler_type": "first_token_transform", 
   "type_vocab_size": 2, 
-  "vocab_size": 21128,
-  "shared_type": "all",
-  "embedding":"factorized"
+  "vocab_size": 21128
 }
