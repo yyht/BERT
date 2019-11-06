@@ -110,8 +110,12 @@ class ModelIO(object):
 											tvars, init_checkpoint, **kargs)
 			print("==succeeded in loading pretrained model==")
 		else:
+			tf.logging.info(" initializing parameter from init checkpoint ")
 			def tpu_scaffold():
-				tf.train.init_from_checkpoint(init_checkpoint, assignment_map)
+				model_io_utils.init_pretrained(assignment_map, 
+											initialized_variable_names,
+											tvars, init_checkpoint, **kargs)
+				# tf.train.init_from_checkpoint(init_checkpoint, assignment_map)
 				return tf.train.Scaffold()
 			scaffold_fn = tpu_scaffold 
 
