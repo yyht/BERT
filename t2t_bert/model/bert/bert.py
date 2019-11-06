@@ -105,6 +105,9 @@ class Bert(object):
 	def get_pooled_output(self):
 		return self.pooled_output
 
+	def get_embedding_projection_table(self):
+		return None
+
 	def get_sequence_output(self):
 		"""Gets final hidden layer of encoder.
 
