@@ -65,7 +65,6 @@ def classifier_model_fn_builder(
 		discriminator_features['input_mask'] = generator_dict['sampled_input_mask']
 		discriminator_features['segment_ids'] = generator_dict['sampled_segment_ids']
 		discriminator_features['input_ori_ids'] = generator_dict['sampled_input_ids']
-		discriminator_features['input_mask'] = generator_dict['sampled_input_mask']
 		discriminator_features['next_sentence_labels'] = features['next_sentence_labels']
 		discriminator_dict = discriminator_fn(discriminator_features, labels, mode, params)
 

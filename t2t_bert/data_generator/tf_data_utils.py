@@ -207,6 +207,8 @@ def electra_input_fn_builder(input_files,
 						tf.FixedLenFeature([max_seq_length], tf.int64),
 				"segment_ids":
 						tf.FixedLenFeature([max_seq_length], tf.int64),
+				"input_ori_ids":
+						tf.FixedLenFeature([max_seq_length], tf.int64),
 				"masked_lm_positions":
 						tf.FixedLenFeature([max_predictions_per_seq], tf.int64),
 				"masked_lm_ids":
