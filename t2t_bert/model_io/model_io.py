@@ -121,5 +121,35 @@ class ModelIO(object):
 
 		return scaffold_fn
 
+	def load_multi_pretrained(self, var_checkpoint_dict_list, **kargs):
+		print(kargs.get("exclude_scope", ""), "===============")
+		def init_multi_model(var_checkpoint_dict_list):
+			for item in var_checkpoint_dict_list:
+				tvars = item['tvars']
+				init_checkpoint = item['init_checkpoint']
+				exclude_scope = item['exclude_scope']
+				[assignment_map, 
+				initialized_variable_names] = model_io_utils.get_assigment_map_from_checkpoint(
+																	tvars, 
+																	init_checkpoint, 
+																	exclude_scope=exclude_scope)
+				model_io_utils.init_pretrained(assignment_map, 
+											initialized_variable_names,
+											tvars, init_checkpoint, **kargs)
+
+		scaffold_fn = None
+		if kargs.get('use_tpu', 0) == 0:
+			init_multi_model(var_checkpoint_dict_list)
+		else:
+			tf.logging.info(" initializing parameter from init checkpoint ")
+			def tpu_scaffold():
+				init_multi_model(var_checkpoint_dict_list)
+				return tf.train.Scaffold()
+			scaffold_fn = tpu_scaffold
+		return scaffold_fn
+
+
+
+
 
 

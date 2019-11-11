@@ -64,7 +64,10 @@ def model_config_parser(FLAGS):
 			print('==apply bert pretrain==', config.init_lr)
 		else:
 			if FLAGS.model_type in ['albert']:
-				config.init_lr = 1e-4
+				try:
+					config.init_lr = FLAGS.init_lr
+				except:
+					config.init_lr = 1e-4
 			else:
 				config.init_lr = 2e-5
 		config.loss = "entropy"

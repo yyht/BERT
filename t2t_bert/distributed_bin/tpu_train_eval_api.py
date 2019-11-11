@@ -28,6 +28,7 @@ print(sys.path)
 
 import tensorflow as tf
 from pretrain_finetuning import train_eval_tpu_estimator
+from pretrain_finetuning import train_eval_gpu_electra_estimator
 
 
 flags = tf.flags
@@ -284,7 +285,10 @@ flags.DEFINE_integer(
 	"num_tpu_cores", 8,
 	"Only used if `use_tpu` is True. Total number of TPU cores to use.")
 
-
+flags.DEFINE_string(
+	"joint_train", "0",
+	"if apply distillation"
+	)
 
 
 def main(_):
@@ -323,16 +327,31 @@ def main(_):
 		  num_shards=FLAGS.num_tpu_cores,
 		  per_host_input_for_training=is_per_host))
 	print(FLAGS.do_train, "=====do train flag======")
-	train_eval_tpu_estimator.train_eval_fn(FLAGS=FLAGS,
-		init_checkpoint=init_checkpoint,
-		train_file=train_file,
-		dev_file=dev_file,
-		checkpoint_dir=checkpoint_dir,
-		run_config=run_config,
-		train_op=FLAGS.train_op,
-		decay=FLAGS.decay,
-		warmup=FLAGS.warmup,
-		input_target=FLAGS.input_target)
+
+	if FLAGS.mode == 'pretrain':
+		train_eval_tpu_estimator.train_eval_fn(FLAGS=FLAGS,
+			init_checkpoint=init_checkpoint,
+			train_file=train_file,
+			dev_file=dev_file,
+			checkpoint_dir=checkpoint_dir,
+			run_config=run_config,
+			train_op=FLAGS.train_op,
+			decay=FLAGS.decay,
+			warmup=FLAGS.warmup,
+			input_target=FLAGS.input_target)
+	elif FLAGS.mode == 'electra':
+		train_eval_gpu_electra_estimator(
+			FLAGS=FLAGS,
+			init_checkpoint=init_checkpoint,
+			train_file=train_file,
+			dev_file=dev_file,
+			checkpoint_dir=checkpoint_dir,
+			run_config=run_config,
+			train_op=FLAGS.train_op,
+			decay=FLAGS.decay,
+			warmup=FLAGS.warmup,
+			input_target=FLAGS.input_target
+			)
 
 
 

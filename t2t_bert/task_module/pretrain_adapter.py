@@ -24,7 +24,16 @@ def get_masked_lm_output(config, input_tensor, output_weights, positions,
 	"""
 	flatten masked lm ids with positions
 	"""
-	with tf.variable_scope("cls/predictions", reuse=reuse):
+	scope = kargs.get('scope', None)
+	if scope:
+		scope = scope + '/' + 'cls/predictions'
+	else:
+		scope = 'cls/predictions'
+
+	tf.logging.info("**** mlm scope **** %s", str(scope))
+
+	# with tf.variable_scope("cls/predictions", reuse=tf.AUTO_REUSE):
+	with tf.variable_scope(scope, reuse=reuse):
 		# We apply one more non-linear transformation before the output layer.
 		# This matrix is not used after pre-training.
 		with tf.variable_scope("transform"):
@@ -77,7 +86,16 @@ def get_next_sentence_output(config, input_tensor, labels, reuse=None):
 	"""Get loss and log probs for the next sentence prediction."""
 	# Simple binary classification. Note that 0 is "next sentence" and 1 is
 	# "random sentence". This weight matrix is not used after pre-training.
-	with tf.variable_scope("cls/seq_relationship", reuse=reuse):
+
+	scope = kargs.get('scope', None)
+	if scope:
+		scope = scope + '/' + 'cls/seq_relationship'
+	else:
+		scope = 'cls/seq_relationship'
+	tf.logging.info("**** nsp scope **** %s", str(scope))
+
+	# with tf.variable_scope("cls/seq_relationship", reuse=reuse):
+	with tf.variable_scope(scope, reuse=reuse):
 		output_weights = tf.get_variable(
 				"output_weights",
 				shape=[2, config.hidden_size],

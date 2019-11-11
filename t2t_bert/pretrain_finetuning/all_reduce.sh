@@ -52,8 +52,8 @@ pai -name tensorflow1120
 	-DjobName='bert_mrc_pretrain'
 	-Dtags='bert'
 	-DentryFile='./BERT/t2t_bert/distributed_bin/all_reduce_train_eval_api.py' 
-	-DgpuRequired=400
-	-DhyperParameters='file:///Users/xuhaotian/Desktop/my_work/BERT/t2t_bert/pretrain_finetuning/fake_news_2019'
+	-DgpuRequired=200
+	-DhyperParameters='file:///Users/xuhaotian/Desktop/my_work/BERT/t2t_bert/pretrain_finetuning/electra_train'
 	-Dbuckets='oss://alg-misc/BERT/?role_arn=acs:ram::1265628042679515:role/yuefeng2&host=cn-hangzhou.oss-internal.aliyun-inc.com';
 "
 echo "${pai_command}"

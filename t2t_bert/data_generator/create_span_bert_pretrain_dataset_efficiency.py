@@ -140,7 +140,8 @@ except:
 	es_api = None
 
 TrainingInstance = namedtuple("TrainingInstance",
-										  ['tokens', 'segment_ids',
+										  ['original_tokens',
+										  	'tokens', 'segment_ids',
 										   'masked_lm_positions',
 										   'masked_lm_labels',
 										   'is_random_next'])
@@ -162,6 +163,7 @@ def whole_word_mask(cand_indexes, token, i):
 def write_single_sintance_to_example_files(writer, instance, tokenizer, max_seq_length,
 									max_predictions_per_seq, output_file, inst_index):
 	input_ids = tokenizer.convert_tokens_to_ids(instance.tokens)
+	input_ori_ids = tokenizer.convert_tokens_to_ids(instance.original_tokens)
 	input_mask = [1] * len(input_ids)
 	segment_ids = list(instance.segment_ids)
 
@@ -170,6 +172,7 @@ def write_single_sintance_to_example_files(writer, instance, tokenizer, max_seq_
 	input_ids = tokenizer.padding(input_ids, max_seq_length, 0)
 	input_mask = tokenizer.padding(input_mask, max_seq_length, 0)
 	segment_ids = tokenizer.padding(segment_ids, max_seq_length, 0)
+	input_ori_ids = tokenizer.padding(input_ori_ids, max_seq_length, 0)
 
 	masked_lm_positions = list(instance.masked_lm_positions)
 	masked_lm_ids = tokenizer.convert_tokens_to_ids(instance.masked_lm_labels)
@@ -185,6 +188,7 @@ def write_single_sintance_to_example_files(writer, instance, tokenizer, max_seq_
 	next_sentence_label = 1 if instance.is_random_next else 0
 	features = collections.OrderedDict()
 	features["input_ids"] = create_int_feature(input_ids)
+	features["input_ori_ids"] = create_int_feature(input_ori_ids)
 	features["input_mask"] = create_int_feature(input_mask)
 	features["segment_ids"] = create_int_feature(segment_ids)
 	features["masked_lm_positions"] = create_int_feature(masked_lm_positions)
@@ -310,17 +314,20 @@ def create_instances_from_document(
 		tokens.append("[CLS]")
 		segment_ids.append(0)
 		for token in tokens_a:
+			if token == '[UNK]':
+				continue
 			tokens.append(token)
 			segment_ids.append(0)
 
 		tokens.append("[SEP]")
 		segment_ids.append(0)
 
-		(tokens, masked_lm_positions,
+		(output_tokens, masked_lm_positions,
 		 masked_lm_labels) = create_masked_lm_predictions(
 				 tokens, masked_lm_prob, max_predictions_per_seq, vocab_words, rng)
 		instance = TrainingInstance(
-				tokens=tokens,
+				original_tokens=tokens,
+				tokens=output_tokens,
 				segment_ids=segment_ids,
 				is_random_next=is_random_next,
 				masked_lm_positions=masked_lm_positions,
@@ -552,7 +559,7 @@ def create_masked_lm_predictions(tokens, masked_lm_prob,
 
 	cand_indexes = []
 	for (i, token) in enumerate(tokens):
-		if token == "[CLS]" or token == "[SEP]":
+		if token == "[CLS]" or token == "[SEP]" or token == '[UNK]':
 			continue
 		# if (FLAGS.do_whole_word_mask and len(cand_indexes) >= 1 and token.startswith("##")):
 		# 	cand_indexes[-1].append(i)
@@ -669,7 +676,7 @@ def main(_):
 			output_file=output_file,
 			process_num=1,
 			dupe_factor=FLAGS.dupe_factor,
-			random_seed=2018
+			random_seed=1234567
 		)
 	print(time.time()-start, "==total time==")
 

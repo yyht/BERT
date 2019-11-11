@@ -161,10 +161,12 @@ def hidden_cls_matching(teacher_hidden, student_hidden, match_direction=0):
 	loss = tf.constant(0.0)
 	for i in range(len(student_hidden)):
 		student_hidden_ = student_hidden[i][:,0:1,:]
+		student_hidden_ = tf.squeeze(student_hidden_, axis=1)
 		student_hidden_ = projection_fn(student_hidden_)
 		student_hidden_ = tf.nn.l2_normalize(student_hidden_, axis=-1)
 		for j in range(len(teacher_hidden)):
 			teacher_hidden_ = teacher_hidden[j][:,0:1,:]
+			teacher_hidden_ = tf.squeeze(teacher_hidden_, axis=1)
 			teacher_hidden_ = tf.nn.l2_normalize(teacher_hidden_, axis=-1)
 			weight = normalized_weights[i,j] # normalized to [0,1]
 			loss += weight*l1_distance(student_hidden_, teacher_hidden_, axis=-1)

@@ -20,11 +20,20 @@ def get_masked_lm_output(config, input_tensor, output_weights, positions,
 	label_ids = tf.cast(label_ids, tf.int32)
 	label_weights = tf.cast(label_weights, tf.float32)
 
+	scope = kargs.get('scope', None)
+	if scope:
+		scope = scope + '/' + 'cls/predictions'
+	else:
+		scope = 'cls/predictions'
+
+	tf.logging.info("**** mlm scope **** %s", str(scope))
+
 	input_tensor = bert_utils.gather_indexes(input_tensor, positions)
 	"""
 	flatten masked lm ids with positions
 	"""
-	with tf.variable_scope("cls/predictions", reuse=reuse):
+	# with tf.variable_scope("cls/predictions", reuse=reuse):
+	with tf.variable_scope(scope, reuse=reuse):
 		# We apply one more non-linear transformation before the output layer.
 		# This matrix is not used after pre-training.
 		with tf.variable_scope("transform"):
@@ -71,11 +80,20 @@ def get_masked_lm_output(config, input_tensor, output_weights, positions,
 
 	return (loss, per_example_loss, log_probs, label_weights)
 
-def get_next_sentence_output(config, input_tensor, labels, reuse=None):
+def get_next_sentence_output(config, input_tensor, labels, reuse=None, **kargs):
 	"""Get loss and log probs for the next sentence prediction."""
 	# Simple binary classification. Note that 0 is "next sentence" and 1 is
 	# "random sentence". This weight matrix is not used after pre-training.
-	with tf.variable_scope("cls/seq_relationship", reuse=reuse):
+
+	scope = kargs.get('scope', None)
+	if scope:
+		scope = scope + '/' + 'cls/seq_relationship'
+	else:
+		scope = 'cls/seq_relationship'
+	tf.logging.info("**** nsp scope **** %s", str(scope))
+
+	# with tf.variable_scope("cls/seq_relationship", reuse=reuse):
+	with tf.variable_scope(scope, reuse=reuse):
 		output_weights = tf.get_variable(
 				"output_weights",
 				shape=[2, config.hidden_size],

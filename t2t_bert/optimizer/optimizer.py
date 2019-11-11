@@ -111,13 +111,13 @@ class Optimizer(object):
 						learning_rate=learning_rate,
 						weight_decay_rate=self.config.get("opt_decay_rate", 0.01),
 						beta_1=self.config.get("beta_1", 0.9),
-						beta_2=self.config.get("beta_2", 0.98),
+						beta_2=self.config.get("beta_2", 0.999),
 						epsilon=self.config.get("epsilon", 1e-6),
 						exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"])
 		elif opt_type == "adam":
 			opt = tf.train.AdamOptimizer(learning_rate,
 										beta1=self.config.get("beta_1", 0.9),
-										beta2=self.config.get("beta_2", 0.98),
+										beta2=self.config.get("beta_2", 0.999),
 										epsilon=self.config.get("epsilon", 1e-8))
 		elif opt_type == "lamb_v2":
 			opt = optimizer_utils.LAMBOptimizer_v2(learning_rate,
@@ -137,6 +137,7 @@ class Optimizer(object):
 		grads = self.grad_clip_fn(loss, tvars, **kargs)
 		opt = self.optimizer_op(self.learning_rate, **kargs)
 		if kargs.get("use_tpu", 0) == 1:
+			tf.logging.info("***** Using tpu cross shard optimizer *****")
 			opt = tf.contrib.tpu.CrossShardOptimizer(opt)
 		train_op = opt.apply_gradients(
 					zip(grads, tvars), global_step=self.global_step)

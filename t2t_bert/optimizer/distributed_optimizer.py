@@ -105,7 +105,6 @@ class Optimizer(object):
 
 	def grad_clip_fn(self, opt, loss, tvars, **kargs):
 		gpu_count = self.config.get('gpu_count', 1)
-
 		if self.config.get("opt_type", "pai_soar") == "pai_soar":
 			loss_fn = opt.compute_loss(loss, loss_scale=self.config.get("loss_scale", 1))
 			grads_and_vars = opt.compute_gradients(loss_fn, colocate_gradients_with_ops=True)

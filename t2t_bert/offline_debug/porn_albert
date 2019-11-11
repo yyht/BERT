@@ -1,12 +1,12 @@
 config_file=./BERT/data/roberta_zh_l12_albert/bert_config_tiny.json
-init_checkpoint=bert_pretrain/open_domain/pretrain_single/model/albert_tiny_factorized_with_single_adam_decay/model.ckpt-537100
+init_checkpoint=bert_pretrain/open_domain/pretrain_single_3/model/albert_tiny_factorized_with_single_adam_decay_15/model.ckpt-137000
 vocab_file=./BERT/data/roberta_zh_l12_albert/vocab.txt
 label_id=./BERT/data/lcqmc/label_dict.json
 max_length=128
 train_file=porn_2/data/train_tfrecords
 dev_file=porn_2/data/dev_tfrecords
-model_output=porn_2/data/model/estimator/albert_tiny_postln_4_new_5_tpu_25/
-epoch=10
+model_output=porn_2/data/model/estimator/albert_tiny_postln_15_5_2/
+epoch=5
 num_classes=2
 train_size=50000
 eval_size=190190

@@ -32,6 +32,7 @@ import tensorflow as tf
 from distributed_single_sentence_classification import train_eval
 from distributed_multitask import train_eval as multitask_train_eval
 from distributed_distillation import train_eval as distillation_train_eval
+from pretrain_finetuning import train_eval as pretrain_train_eval
 from tensorflow.contrib.distribute.python import cross_tower_ops as cross_tower_ops_lib
 
 import tensorflow as tf
@@ -280,6 +281,16 @@ flags.DEFINE_string(
 	"if apply distillation"
 	)
 
+flags.DEFINE_bool(
+	"use_tpu", False,
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
+	"joint_train", "0",
+	"if apply distillation"
+	)
+
 def main(_):
 
 	print(FLAGS)
@@ -342,31 +353,58 @@ def main(_):
 		train_eval_api = multitask_train_eval
 	elif FLAGS.mode == 'distillation':
 		train_eval_api = distillation_train_eval
-	
-	train_eval_api.monitored_estimator(
-		FLAGS=FLAGS,
-		worker_count=worker_count, 
-		task_index=task_index, 
-		cluster=cluster, 
-		is_chief=is_chief, 
-		target=target,
-		init_checkpoint=init_checkpoint,
-		train_file=train_file,
-		dev_file=dev_file,
-		checkpoint_dir=checkpoint_dir,
-		run_config=run_config,
-		distribution_strategy=FLAGS.distribution_strategy,
-		profiler=FLAGS.profiler,
-		parse_type=FLAGS.parse_type,
-		rule_model=FLAGS.rule_model,
-		train_op=FLAGS.train_op,
-		running_type=FLAGS.running_type,
-		decay=FLAGS.decay,
-		warmup=FLAGS.warmup,
-		input_target=FLAGS.input_target,
-		distillation=FLAGS.distillation,
-		temperature=FLAGS.temperature,
-		distillation_ratio=FLAGS.distillation_ratio)
+	elif FLAGS.mode == "electra":
+		train_eval_api = pretrain_train_eval
+
+	if FLAGS.mode == "electra":
+		train_eval_api.monitored_estimator(
+			FLAGS=FLAGS,
+			worker_count=worker_count, 
+			task_index=task_index, 
+			cluster=cluster, 
+			is_chief=is_chief, 
+			init_checkpoint=init_checkpoint,
+			train_file=train_file,
+			dev_file=dev_file,
+			checkpoint_dir=checkpoint_dir,
+			run_config=run_config,
+			distribution_strategy=FLAGS.distribution_strategy,
+			profiler=FLAGS.profiler,
+			parse_type=FLAGS.parse_type,
+			rule_model=FLAGS.rule_model,
+			train_op=FLAGS.train_op,
+			running_type=FLAGS.running_type,
+			decay=FLAGS.decay,
+			warmup=FLAGS.warmup,
+			input_target=FLAGS.input_target,
+			distillation=FLAGS.distillation,
+			temperature=FLAGS.temperature,
+			distillation_ratio=FLAGS.distillation_ratio)
+	else:
+		train_eval_api.monitored_estimator(
+			FLAGS=FLAGS,
+			worker_count=worker_count, 
+			task_index=task_index, 
+			cluster=cluster, 
+			is_chief=is_chief, 
+			target=target,
+			init_checkpoint=init_checkpoint,
+			train_file=train_file,
+			dev_file=dev_file,
+			checkpoint_dir=checkpoint_dir,
+			run_config=run_config,
+			distribution_strategy=FLAGS.distribution_strategy,
+			profiler=FLAGS.profiler,
+			parse_type=FLAGS.parse_type,
+			rule_model=FLAGS.rule_model,
+			train_op=FLAGS.train_op,
+			running_type=FLAGS.running_type,
+			decay=FLAGS.decay,
+			warmup=FLAGS.warmup,
+			input_target=FLAGS.input_target,
+			distillation=FLAGS.distillation,
+			temperature=FLAGS.temperature,
+			distillation_ratio=FLAGS.distillation_ratio)
 
 if __name__ == "__main__":
 	tf.app.run()
