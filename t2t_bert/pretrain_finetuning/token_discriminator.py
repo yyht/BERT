@@ -51,7 +51,7 @@ def classifier(config, seq_output,
 	loss = tf.reduce_sum(loss) / (1e-10 + tf.reduce_sum(tf.cast(input_mask, tf.float32)))
 
 	return (loss, logits, per_example_loss)
-
+	
 def discriminator_metric_train(per_example_loss, logits, input_ids, sampled_ids,
 						input_mask):
 	discriminator_label_ids = tf.equal(
@@ -72,8 +72,7 @@ def discriminator_metric_train(per_example_loss, logits, input_ids, sampled_ids,
 	discriminator_lm_accuracy = tf.reduce_sum(discriminator_lm_accuracy * tf.cast(input_mask, tf.float32)) / (1e-10 + tf.reduce_sum(tf.cast(input_mask, tf.float32)))
 	return {
 		"discriminator_lm_accuracy": discriminator_lm_accuracy,
-		"discriminator_lm_loss": discriminator_mean_loss,
-		"generated_sample_acc":	tf.reduce_mean(tf.cast(discriminator_label_ids, tf.float32))
+		"discriminator_lm_loss": discriminator_mean_loss
 		}
 
 def discriminator_metric_eval(per_example_loss, logits, input_ids, sampled_ids,

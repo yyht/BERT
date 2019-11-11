@@ -24,7 +24,12 @@ def top_k_logits(logits, k):
 	)
 
 def token_generator(config, input_tensor,
-					output_weights, **kargs):
+					output_weights, 
+					input_ids, 
+					input_ori_ids,
+					input_mask, 
+					**kargs):
+	
 	input_shape_list = bert_utils.get_shape_list(input_tensor, expected_rank=3)
 	batch_size = input_shape_list[0]
 	seq_length = input_shape_list[1]
@@ -99,10 +104,34 @@ def token_generator(config, input_tensor,
 								num_samples=config.get('gen_sample', 1), 
 								output_dtype=tf.int32)
 
+		label_diff_ids = tf.equal(
+						tf.cast(input_ids, tf.int32),
+						tf.cast(input_ori_ids, tf.int32)
+					)
+		label_diff_ids = tf.cast(label_diff_ids, tf.float32)
+		print(label_diff_ids, "===label diff ids===")
+		tf.summary.scalar('label_diff_ids', 
+							tf.reduce_sum(label_diff_ids*tf.cast(input_mask, tf.float32))/tf.reduce_sum(tf.cast(input_mask, tf.float32)))
+
 		if config.get('gen_sample', 1) == 1:
 			sampled_input_id = tf.reshape(samples, [batch_size, seq_length])
+			if kargs.get('mask_method', 'all') == 'only_mask':
+				label_diff_ids = tf.cast(label_diff_ids, tf.float32)
+				samples = (1 - label_diff_ids) * tf.cast(sampled_input_id, tf.float32) + label_diff_ids * tf.cast(input_ori_ids, tf.float32)
+				sampled_input_id = tf.cast(sampled_input_id, tf.int32)
 		else:
 			sampled_input_id = tf.reshape(samples, [batch_size, seq_length, config.get('gen_sample', 1)])
+			if kargs.get('mask_method', 'all') == 'only_mask':
+				# batch x seq_length x 1
+				label_diff_ids = tf.expand_dims(label_diff_ids, axis=-1)
+				label_diff_ids = tf.einsum('abc,cd->abd', label_diff_ids, tf.ones((1, model_config.get('gen_sample', 1))))
+				# batch x seq_length x 1
+				input_ori_ids = tf.expand_dims(input_ori_ids, axis=-1)
+				input_ori_ids = tf.einsum('abc,cd->abd', input_ori_ids, tf.ones((1, model_config.get('gen_sample', 1))))
+				input_ori_ids = tf.cast(input_ori_ids, tf.float32)
+
+				sampled_input_id = (1 - label_diff_ids) * tf.cast(sampled_input_id, tf.float32) + input_ori_ids * label_diff_ids
+				sampled_input_id = tf.cast(sampled_input_id, tf.int32)
 
 		return sampled_input_id
 

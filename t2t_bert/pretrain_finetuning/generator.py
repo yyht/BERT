@@ -89,8 +89,12 @@ def model_fn_builder(
 		sampled_ids = token_generator(model_config, 
 									model.get_sequence_output(), 
 									model.get_embedding_table(), 
+									features['input_ids'], 
+									features['input_ori_ids'],
+									features['input_mask'],	
 									embedding_projection=model.get_embedding_projection_table(),
-									scope='generator')
+									scope='generator',
+									mask_method='only_mask')
 
 		if model_config.get('gen_sample', 1) == 1:
 			input_ids = features['input_ori_ids']
