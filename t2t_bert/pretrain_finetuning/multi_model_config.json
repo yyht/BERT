@@ -146,7 +146,7 @@
 		"config_file":"./BERT/data/roberta_zh_l12/bert_config_tiny.json",
 		"target":"",
 		"not_storage_params":[],
-		"exclude_scope":"",
+		"exclude_scope":"generator",
 		"load_pretrained":"yes",
 		"num_labels":2,
 		"init_checkpoint":"bert_pretrain/open_domain/pretrain_single_3/model/bert_tiny_with_single_adam_decay_15/model.ckpt-161000",
