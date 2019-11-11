@@ -5,14 +5,14 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--vocab_file "./data/chinese_L-12_H-768_A-12/vocab.txt" \
 	--label_id "./data/lcqmc/label_dict.json" \
 	--max_length 512 \
-	--train_file "data_single/chunk_0.tfrecords,data_single/chunk_1.tfrecords,data_single/chunk_2.tfrecords,data_single/chunk_3.tfrecords,data_single/chunk_4.tfrecords,data_single/chunk_5.tfrecords,data_single/chunk_6.tfrecords,data_single/chunk_7.tfrecords,data_single/chunk_8.tfrecords,data_single/chunk_9.tfrecords,data_single/chunk_10.tfrecords,data_single/chunk_11.tfrecords,data_single/chunk_12.tfrecords,data_single/chunk_13.tfrecords,data_single/chunk_14.tfrecords,data_single/chunk_15.tfrecords,data_single/chunk_16.tfrecords,data_single/chunk_17.tfrecords" \
-	--dev_file "data_single/chunk_18.tfrecords,data_single/chunk_19.tfrecords" \
-	--model_output "model/bert_tiny_with_single_adam_decay_5" \
-	--epoch 5 \
+	--train_file "data_single_random/chunk_0.tfrecords,data_single_random/chunk_1.tfrecords,data_single_random/chunk_2.tfrecords,data_single_random/chunk_3.tfrecords,data_single_random/chunk_4.tfrecords,data_single_random/chunk_5.tfrecords,data_single_random/chunk_6.tfrecords,data_single_random/chunk_7.tfrecords,data_single_random/chunk_8.tfrecords,data_single_random/chunk_9.tfrecords,data_single_random/chunk_10.tfrecords,data_single_random/chunk_11.tfrecords,data_single_random/chunk_12.tfrecords,data_single_random/chunk_13.tfrecords,data_single_random/chunk_14.tfrecords,data_single_random/chunk_15.tfrecords,data_single_random/chunk_16.tfrecords,data_single_random/chunk_17.tfrecords" \
+	--dev_file "data_single_random/chunk_18.tfrecords,data_single_random/chunk_19.tfrecords" \
+	--model_output "model/bert_tiny_with_single_random_adam_decay_15" \
+	--epoch 15 \
 	--num_classes 2 \
 	--train_size 11000000 \
 	--eval_size 1100000 \
-	--batch_size 1024 \
+	--batch_size 1200 \
 	--model_type "bert" \
 	--if_shard 1 \
 	--is_debug 1 \
@@ -22,7 +22,7 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--with_char "no_char" \
 	--input_target "" \
 	--task_type "bert_pretrain" \
-	--max_predictions_per_seq 78 \
+	--max_predictions_per_seq 50 \
 	--ln_type "postln" \
 	--warmup "warmup" \
 	--decay "decay" \
