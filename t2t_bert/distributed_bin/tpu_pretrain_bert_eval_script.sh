@@ -27,7 +27,8 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--warmup "warmup" \
 	--decay "decay" \
 	--init_lr 5e-4 \
-	--tpu_name "htxu91"
+	--tpu_name "htxu91" \
+	--mode "pretrain"
 
 
 
