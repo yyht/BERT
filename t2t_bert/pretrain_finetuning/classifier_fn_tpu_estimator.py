@@ -155,7 +155,7 @@ def classifier_model_fn_builder(
 											use_tpu=1)
 		else:
 			scaffold_fn = None
-
+                print("******* scaffold fn *******", scaffold_fn)
 		if mode == tf.estimator.ModeKeys.TRAIN:
 						
 			optimizer_fn = optimizer.Optimizer(opt_config)
