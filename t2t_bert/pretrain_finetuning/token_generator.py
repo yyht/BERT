@@ -46,7 +46,7 @@ def random_input_ids_generation(config,
 	sampled_mask_binary_mask *= tf.cast(input_mask, tf.float32)
 	
 	vocab_sample_logits = tf.random.uniform(
-							[seq_length, config.vocab_size-valid_vocab],
+							[batch_size, seq_length, config.vocab_size-valid_vocab],
 							minval=0.0,
 							maxval=1.0,
 							dtype=tf.float32)
@@ -55,18 +55,14 @@ def random_input_ids_generation(config,
 	adder = (1.0 - tf.cast(input_mask_adder, tf.float32)) * -10000.0
 
 	vocab_sample_logits += adder
-	# vocab_sample_logits = tf.reshape(vocab_sample_logits, [seq_length, -1])
-	# flatten_vocab_sample_logits = tf.reshape(vocab_sample_logits, 
-	# 										[batch_size*seq_length, -1])
+	flatten_vocab_sample_logits = tf.reshape(vocab_sample_logits, 
+											[batch_size*seq_length, -1])
 
 	sample_vocab_ids = tf.multinomial(flatten_vocab_sample_logits, 
 								num_samples=config.get('gen_sample', 1), 
 								output_dtype=tf.int32)
 
-	sample_vocab_ids = tf.reshape(sample_vocab_ids+valid_vocab, [seq_length])
-	sample_vocab_ids = tf.expand_dims(sample_vocab_ids, axis=0)
-
-	# sample_vocab_ids = tf.reshape(sample_vocab_ids+valid_vocab, [batch_size, seq_length])
+	sample_vocab_ids = tf.reshape(sample_vocab_ids+valid_vocab, [batch_size, seq_length])
 	sample_vocab_ids = tf.cast(sample_vocab_ids, tf.float32)
 	input_ori_ids = tf.cast(input_ori_ids, tf.float32)
 
