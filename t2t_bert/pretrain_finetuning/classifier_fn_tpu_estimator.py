@@ -19,6 +19,8 @@ from task_module import tsa_pretrain
 import tensorflow as tf
 from metric import tf_metrics
 
+from pretrain_finetuning.token_generator import token_generator, random_input_ids_generation
+
 def train_metric_fn(masked_lm_example_loss, masked_lm_log_probs, 
 					masked_lm_ids,
 					masked_lm_weights, 
@@ -89,6 +91,21 @@ def classifier_model_fn_builder(
 
 		model_api = model_zoo(model_config)
 
+		input_ori_ids = features.get('input_ori_ids', None)
+		if mode == tf.estimator.ModeKeys.TRAIN:
+			if input_ori_ids is not None:
+				[output_ids, 
+				sampled_binary_mask] = random_input_ids_generation(
+											model_config, 
+											input_ori_ids,
+											features['input_mask'])
+
+				features['input_ids'] = output_ids
+			else:
+				sampled_binary_mask = None
+		else:
+			sampled_binary_mask = None
+
 		model = model_api(model_config, features, labels,
 							mode, target, reuse=tf.AUTO_REUSE)
 
@@ -115,26 +132,44 @@ def classifier_model_fn_builder(
 
 		if model_config.model_type == 'bert':
 			masked_lm_fn = pretrain.get_masked_lm_output
+			seq_masked_lm_fn = pretrain.seq_mask_masked_lm_output
 			print("==apply bert masked lm==")
 		elif model_config.model_type == 'albert':
 			masked_lm_fn = pretrain_albert.get_masked_lm_output
+			seq_masked_lm_fn = pretrain_albert.seq_mask_masked_lm_output
 			print("==apply albert masked lm==")
 		else:
 			masked_lm_fn = pretrain.get_masked_lm_output
+			seq_masked_lm_fn = pretrain_albert.seq_mask_masked_lm_output
 			print("==apply bert masked lm==")
 
-		(masked_lm_loss,
-		masked_lm_example_loss, 
-		masked_lm_log_probs,
-		masked_lm_mask) = masked_lm_fn(
-										model_config, 
+		if sampled_binary_mask is not None:
+			(masked_lm_loss,
+			masked_lm_example_loss, 
+			masked_lm_log_probs,
+			masked_lm_mask) = seq_masked_lm_fn(model_config, 
 										model.get_sequence_output(), 
 										model.get_embedding_table(),
-										masked_lm_positions, 
-										masked_lm_ids, 
-										masked_lm_weights,
+										features['input_mask'], 
+										features['input_ori_ids'], 
+										features['input_ids'],
+										sampled_binary_mask,
 										reuse=tf.AUTO_REUSE,
 										embedding_projection=model.get_embedding_projection_table())
+			masked_lm_ids = input_ori_ids
+		else:
+			(masked_lm_loss,
+			masked_lm_example_loss, 
+			masked_lm_log_probs,
+			masked_lm_mask) = masked_lm_fn(
+											model_config, 
+											model.get_sequence_output(), 
+											model.get_embedding_table(),
+											masked_lm_positions, 
+											masked_lm_ids, 
+											masked_lm_weights,
+											reuse=tf.AUTO_REUSE,
+											embedding_projection=model.get_embedding_projection_table())
 		print(model_config.lm_ratio, '==mlm lm_ratio==')
 		loss = model_config.lm_ratio * masked_lm_loss #+ model_config.nsp_ratio * nsp_loss
 		
@@ -155,7 +190,7 @@ def classifier_model_fn_builder(
 											use_tpu=1)
 		else:
 			scaffold_fn = None
-                print("******* scaffold fn *******", scaffold_fn)
+
 		if mode == tf.estimator.ModeKeys.TRAIN:
 						
 			optimizer_fn = optimizer.Optimizer(opt_config)
@@ -163,36 +198,34 @@ def classifier_model_fn_builder(
 			tvars = pretrained_tvars
 			model_io_fn.print_params(tvars, string=", trainable params")
 			
-			# update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-			# with tf.control_dependencies(update_ops):
-			print('==gpu count==', opt_config.get('gpu_count', 1))
+			update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+			with tf.control_dependencies(update_ops):
+				train_op = optimizer_fn.get_train_op(loss, tvars,
+								opt_config.init_lr, 
+								opt_config.num_train_steps,
+								use_tpu=opt_config.use_tpu)
 
-			train_op = optimizer_fn.get_train_op(loss, tvars,
-							opt_config.init_lr, 
-							opt_config.num_train_steps,
-							use_tpu=opt_config.use_tpu)
+				train_metric_dict = train_metric_fn(
+						masked_lm_example_loss, masked_lm_log_probs, 
+						masked_lm_ids,
+						masked_lm_mask, 
+						nsp_per_example_loss,
+						nsp_log_prob, 
+						features['next_sentence_labels'],
+						masked_lm_mask=masked_lm_mask
+					)
 
-			train_metric_dict = train_metric_fn(
-					masked_lm_example_loss, masked_lm_log_probs, 
-					masked_lm_ids,
-					masked_lm_weights, 
-					nsp_per_example_loss,
-					nsp_log_prob, 
-					features['next_sentence_labels'],
-					masked_lm_mask=masked_lm_mask
-				)
+				# for key in train_metric_dict:
+				# 	tf.summary.scalar(key, train_metric_dict[key])
+				# tf.summary.scalar('learning_rate', optimizer_fn.learning_rate)
 
-			# for key in train_metric_dict:
-			# 	tf.summary.scalar(key, train_metric_dict[key])
-			# tf.summary.scalar('learning_rate', optimizer_fn.learning_rate)
+				estimator_spec = tf.contrib.tpu.TPUEstimatorSpec(
+								mode=mode,
+								loss=loss,
+								train_op=train_op,
+								scaffold_fn=scaffold_fn)
 
-			estimator_spec = tf.contrib.tpu.TPUEstimatorSpec(
-							mode=mode,
-							loss=loss,
-							train_op=train_op,
-							scaffold_fn=scaffold_fn)
-
-			return estimator_spec
+				return estimator_spec
 
 		elif mode == tf.estimator.ModeKeys.EVAL:
 
@@ -233,7 +266,7 @@ def classifier_model_fn_builder(
 
 			eval_metrics = (metric_fn, [
 			  masked_lm_example_loss, masked_lm_log_probs, masked_lm_ids,
-			  masked_lm_weights, nsp_per_example_loss,
+			  masked_lm_mask, nsp_per_example_loss,
 			  nsp_log_prob, features['next_sentence_labels']
 			])
 
