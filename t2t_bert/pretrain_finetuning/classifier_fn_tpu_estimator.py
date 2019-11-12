@@ -40,6 +40,7 @@ def train_metric_fn(masked_lm_example_loss, masked_lm_log_probs,
 
 	masked_lm_mask = kargs.get('masked_lm_mask', None)
 	if masked_lm_mask is not None:
+		masked_lm_mask = tf.reshape(masked_lm_mask, [-1])
 		masked_lm_weights *= tf.cast(masked_lm_mask, tf.float32)
 
 	masked_lm_accuracy = tf.equal(
