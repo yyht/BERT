@@ -102,6 +102,7 @@ def classifier_model_fn_builder(
 											features['input_mask'])
 
 				features['input_ids'] = output_ids
+				tf.logging.info("***** Running random sample input generation *****")
 			else:
 				sampled_binary_mask = None
 		else:
