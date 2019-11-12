@@ -114,4 +114,81 @@ def get_next_sentence_output(config, input_tensor, labels, reuse=None):
 		loss = tf.reduce_mean(per_example_loss)
 		return (loss, per_example_loss, log_probs)
 
+def seq_mask_masked_lm_output(config, input_tensor, output_weights,
+							input_mask, input_ori_ids, input_ids, 
+							sampled_binary_mask, **kargs):
+
+	input_shape_list = bert_utils.get_shape_list(input_tensor, expected_rank=3)
+	batch_size = input_shape_list[0]
+	seq_length = input_shape_list[1]
+	hidden_dims = input_shape_list[2]
+
+	embedding_projection = kargs.get('embedding_projection', None)
+
+	scope = kargs.get('scope', None)
+	if scope:
+		scope = scope + '/' + 'cls/predictions'
+	else:
+		scope = 'cls/predictions'
+
+	tf.logging.info("**** mlm generator scope **** %s", str(scope))
+
+	# with tf.variable_scope("cls/predictions", reuse=tf.AUTO_REUSE):
+	with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
+		if config.get('ln_type', 'postln') == 'preln':
+			input_tensor = albert_modules.layer_norm(input_tensor)
+		elif config.get('ln_type', 'postln') == 'postln':
+			input_tensor = input_tensor
+		else:
+			input_tensor = input_tensor
+
+		if config.get("embedding", "factorized") == "factorized":
+			projection_width = config.hidden_size
+		else:
+			projection_width = config.embedding_size
+
+		with tf.variable_scope("transform"):
+			input_tensor = tf.layers.dense(
+					input_tensor,
+					units=projection_width,
+					activation=albert_modules.get_activation(config.hidden_act),
+					kernel_initializer=albert_modules.create_initializer(
+							config.initializer_range))
+
+			if config.get('ln_type', 'postln') == 'preln':
+				input_tensor = input_tensor
+			elif config.get('ln_type', 'postln') == 'postln':
+				input_tensor = albert_modules.layer_norm(input_tensor)
+			else:
+				input_tensor = albert_modules.layer_norm(input_tensor)
+
+		if embedding_projection is not None:
+			# batch x seq x hidden, embedding x hidden
+			print(input_tensor.get_shape(), embedding_projection.get_shape())
+			input_tensor = tf.einsum("abc,dc->abd", input_tensor, embedding_projection)
+		else:
+			print("==no need for embedding projection==")
+			input_tensor = input_tensor
+
+		output_bias = tf.get_variable(
+				"output_bias",
+				shape=[config.vocab_size],
+				initializer=tf.zeros_initializer())
+		# batch x seq x embedding
+		logits = tf.einsum("abc,dc->abd", input_tensor, output_weights)
+		logits = tf.nn.bias_add(logits, output_bias)
+
+		"""
+		if input_ori_ids[i] is random pertubated, sampled_binary_mask[i]=1
+		"""
+		sampled_binary_mask = tf.cast(sampled_binary_mask, tf.float32)
+		per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+												logits=logits,
+												labels=tf.stop_gradient(input_ori_ids),
+												)
+		per_example_loss *= sampled_binary_mask
+		loss = tf.reduce_sum(per_example_loss) / tf.reduce_sum(sampled_binary_mask)
+
+		return (loss, per_example_loss, logits, sampled_binary_mask)
+
 

@@ -9,7 +9,8 @@ try:
 except:
 	from distributed_single_sentence_classification.model_interface import model_zoo
 
-from pretrain_finetuning.token_generator import token_generator
+from pretrain_finetuning.token_generator import token_generator, random_input_ids_generation
+
 from utils.bert import bert_utils
 from model_io import model_io
 
@@ -34,6 +35,21 @@ def model_fn_builder(
 	def model_fn(features, labels, mode, params):
 
 		model_api = model_zoo(model_config)
+
+		if kargs.get('random_generator', 'yes') == 'yes':
+			if mode == tf.estimator.ModeKeys.TRAIN:
+				input_ori_ids = features['input_ori_ids']
+
+				[output_ids, 
+				sampled_binary_mask] = random_input_ids_generation(model_config,
+											features['input_ori_ids'],
+											features['input_mask'])
+				features['input_ids'] = output_ids
+				tf.logging.info("****** do random generator *******")
+			else:
+				sampled_binary_mask = None
+		else:
+			sampled_binary_mask = None
 
 		model = model_api(model_config, features, labels,
 							mode, target, reuse=tf.AUTO_REUSE)
@@ -62,27 +78,45 @@ def model_fn_builder(
 
 		if model_config.model_type == 'bert':
 			masked_lm_fn = pretrain.get_masked_lm_output
+			seq_masked_lm_fn = pretrain.seq_mask_masked_lm_output
 			print("==apply bert masked lm==")
 		elif model_config.model_type == 'albert':
 			masked_lm_fn = pretrain_albert.get_masked_lm_output
+			seq_masked_lm_fn = pretrain_albert.seq_mask_masked_lm_output
 			print("==apply albert masked lm==")
 		else:
 			masked_lm_fn = pretrain.get_masked_lm_output
+			seq_masked_lm_fn = pretrain_albert.seq_mask_masked_lm_output
 			print("==apply bert masked lm==")
 
-		(masked_lm_loss,
-		masked_lm_example_loss, 
-		masked_lm_log_probs,
-		masked_lm_mask) = masked_lm_fn(
-										model_config, 
+		if sampled_binary_mask is not None:
+			(masked_lm_loss,
+			masked_lm_example_loss, 
+			masked_lm_log_probs,
+			masked_lm_mask) = seq_masked_lm_fn(model_config, 
 										model.get_sequence_output(), 
 										model.get_embedding_table(),
-										masked_lm_positions, 
-										masked_lm_ids, 
-										masked_lm_weights,
+										features['input_mask'], 
+										features['input_ori_ids'], 
+										features['input_ids'],
+										sampled_binary_mask,
 										reuse=tf.AUTO_REUSE,
-										embedding_projection=model.get_embedding_projection_table(),
-										scope='generator')
+										embedding_projection=model.get_embedding_projection_table())
+			masked_lm_ids = features['input_ori_ids']
+		else:
+			(masked_lm_loss,
+			masked_lm_example_loss, 
+			masked_lm_log_probs,
+			masked_lm_mask) = masked_lm_fn(
+											model_config, 
+											model.get_sequence_output(), 
+											model.get_embedding_table(),
+											masked_lm_positions, 
+											masked_lm_ids, 
+											masked_lm_weights,
+											reuse=tf.AUTO_REUSE,
+											embedding_projection=model.get_embedding_projection_table(),
+											scope='generator')
 		print(model_config.lm_ratio, '==mlm lm_ratio==')
 		loss = model_config.lm_ratio * masked_lm_loss #+ model_config.nsp_ratio * nsp_loss
 		
@@ -155,9 +189,8 @@ def model_fn_builder(
 					"sampled_input_ids":input_ids,       # batch x gen_sample, seg_length,
 					"sampled_input_mask":input_mask,
 					"sampled_segment_ids":segment_ids,
-					"masked_lm_positions":masked_lm_positions,
 					"masked_lm_ids":masked_lm_ids,
-					"masked_lm_weights":masked_lm_weights,
+					"masked_lm_weights":masked_lm_mask,
 					"masked_lm_log_probs":masked_lm_log_probs,
 					"masked_lm_example_loss":masked_lm_example_loss
 				}
