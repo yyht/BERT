@@ -290,6 +290,11 @@ flags.DEFINE_string(
 	"if apply distillation"
 	)
 
+flags.DEFINE_string(
+	"random_generator", "1",
+	"if apply distillation"
+	)
+
 
 def main(_):
 

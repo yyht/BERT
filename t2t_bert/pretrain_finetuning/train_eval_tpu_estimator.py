@@ -99,8 +99,10 @@ def train_eval_fn(FLAGS,
 
 		if FLAGS.random_generator == "1":
 			input_fn_builder = tf_data_utils.electra_input_fn_builder
+			tf.logging.info("***** Running random sample input fn builder *****")
 		else:
 			input_fn_builder = tf_data_utils.input_fn_builder
+			tf.logging.info("***** Running fixed sample input fn builder *****")
 
 		if FLAGS.do_train:
 			tf.logging.info("***** Running training *****")
