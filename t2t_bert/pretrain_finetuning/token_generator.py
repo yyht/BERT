@@ -80,10 +80,6 @@ def random_input_ids_generation(config,
 							maxval=1.0,
 							dtype=tf.float32)
 
-	input_mask_adder = tf.expand_dims(input_mask, axis=-1) # batch x seq_length
-	adder = (1.0 - tf.cast(input_mask_adder, tf.float32)) * -10000.0
-
-	vocab_sample_logits += adder
 	flatten_vocab_sample_logits = tf.reshape(vocab_sample_logits, 
 											[batch_size*seq_length, -1])
 
