@@ -18,31 +18,46 @@ def random_input_ids_generation(config,
 
 	none_replace_mask =  unk_mask + cls_mask + sep_mask
 
-	input_shape_list = get_shape_list(input_ori_ids, expected_rank=2)
+	input_shape_list = bert_utils.get_shape_list(input_ori_ids, expected_rank=2)
 	batch_size = input_shape_list[0]
 	seq_length = input_shape_list[1]
 
 	sample_probs = tf.ones_like(input_ori_ids) * input_mask
-	sample_probs = 0.15 * tf.cast(sample_probs, tf.float32) # mask 15% token
+	sample_probs = 0.20 * tf.cast(sample_probs, tf.float32) # mask 15% token
 
 	noise_dist = tf.distributions.Bernoulli(probs=sample_probs, dtype=tf.float32)
 	sampled_binary_mask = noise_dist.sample()
 	sampled_binary_mask = tf.cast(sampled_binary_mask, tf.float32)
 
-	mask_binary_probs = 0.9 * sampled_binary_mask # use 80% [mask] for masked token
-	mask_noise_dist = tf.distributions.Bernoulli(probs=mask_binary_probs, dtype=tf.float32)
-	sampled_mask_binary_mask = mask_noise_dist.sample()
-	sampled_mask_binary_mask = tf.cast(sampled_mask_binary_mask, tf.float32)
+	# mask_binary_probs = 0.8 * sampled_binary_mask # use 80% [mask] for masked token
+	# mask_noise_dist = tf.distributions.Bernoulli(probs=mask_binary_probs, dtype=tf.float32)
+	# sampled_mask_binary_mask = mask_noise_dist.sample()
+	# sampled_mask_binary_mask = tf.cast(sampled_mask_binary_mask, tf.float32)
 
-	replace_binary_probs = 0.5 * (sampled_binary_mask - sampled_mask_binary_mask) # use 10% [mask] to replace token
-	replace_noise_dist = tf.distributions.Bernoulli(probs=replace_binary_probs, dtype=tf.float32)
-	sampled_replace_binary_mask = replace_noise_dist.sample()
-	sampled_replace_binary_mask = tf.cast(sampled_replace_binary_mask, tf.float32)
+	# replace_binary_probs = 0.5 * (sampled_binary_mask - sampled_mask_binary_mask) # use 10% [mask] to replace token
+	# replace_noise_dist = tf.distributions.Bernoulli(probs=replace_binary_probs, dtype=tf.float32)
+	# sampled_replace_binary_mask = replace_noise_dist.sample()
+	# sampled_replace_binary_mask = tf.cast(sampled_replace_binary_mask, tf.float32)
 
-	ori_binary_probs = 0.5 * (sampled_binary_mask - sampled_mask_binary_mask - sampled_replace_binary_mask)
-	ori_noise_dist = tf.distributions.Bernoulli(probs=ori_binary_probs, dtype=tf.float32)
-	sampled_ori_binary_mask = ori_noise_dist.sample()
-	sampled_ori_binary_mask = tf.cast(sampled_ori_binary_mask, tf.float32)
+	# ori_binary_probs = 1.0 * (sampled_binary_mask - sampled_mask_binary_mask - sampled_replace_binary_mask)
+	# ori_noise_dist = tf.distributions.Bernoulli(probs=ori_binary_probs, dtype=tf.float32)
+	# sampled_ori_binary_mask = ori_noise_dist.sample()
+	# sampled_ori_binary_mask = tf.cast(sampled_ori_binary_mask, tf.float32)
+
+	replace_binary_probs = 0.15 * (sampled_binary_mask) # use 10% [mask] to replace token
+    replace_noise_dist = tf.distributions.Bernoulli(probs=replace_binary_probs, dtype=tf.float32)
+    sampled_replace_binary_mask = replace_noise_dist.sample()
+    sampled_replace_binary_mask = tf.cast(sampled_replace_binary_mask, tf.float32)
+
+    ori_binary_probs = 0.15 * (sampled_binary_mask - sampled_replace_binary_mask)
+    ori_noise_dist = tf.distributions.Bernoulli(probs=ori_binary_probs, dtype=tf.float32)
+    sampled_ori_binary_mask = ori_noise_dist.sample()
+    sampled_ori_binary_mask = tf.cast(sampled_ori_binary_mask, tf.float32)
+
+    mask_binary_probs = 0.85 * (sampled_binary_mask - sampled_replace_binary_mask - sampled_ori_binary_mask) # use 80% [mask] for masked token
+    mask_noise_dist = tf.distributions.Bernoulli(probs=mask_binary_probs, dtype=tf.float32)
+    sampled_mask_binary_mask = mask_noise_dist.sample()
+    sampled_mask_binary_mask = tf.cast(sampled_mask_binary_mask, tf.float32)
 	
 	sampled_replace_binary_mask *=  (1 - tf.cast(none_replace_mask, tf.float32)) 
 	sampled_replace_binary_mask *= tf.cast(input_mask, tf.float32)
