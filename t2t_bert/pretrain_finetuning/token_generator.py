@@ -13,7 +13,7 @@ def random_input_ids_generation(config,
 	valid_vocab = kargs.get('valid_vocab', 105)
 
 	input_ori_ids = tf.cast(input_ori_ids, tf.int32)
-    input_mask = tf.cast(input_mask, tf.int32)
+	input_mask = tf.cast(input_mask, tf.int32)
 
 	unk_mask = tf.cast(tf.math.equal(input_ori_ids, 100), tf.float32) # not replace unk
 	cls_mask =  tf.cast(tf.math.equal(input_ori_ids, 101), tf.float32) # not replace cls
@@ -63,7 +63,7 @@ def random_input_ids_generation(config,
 	# sampled_mask_binary_mask = tf.cast(sampled_mask_binary_mask, tf.float32)
 
 	sampled_mask_binary_mask = (sampled_binary_mask - sampled_replace_binary_mask - sampled_ori_binary_mask)
-    sampled_mask_binary_mask = tf.cast(sampled_mask_binary_mask, tf.float32)
+	sampled_mask_binary_mask = tf.cast(sampled_mask_binary_mask, tf.float32)
 	
 	# sampled_replace_binary_mask *=  (1 - tf.cast(none_replace_mask, tf.float32)) 
 	# sampled_replace_binary_mask *= tf.cast(input_mask, tf.float32)
@@ -99,6 +99,8 @@ def random_input_ids_generation(config,
 	output_input_ids += sample_vocab_ids * tf.cast(sampled_replace_binary_mask, tf.float32)
 	output_input_ids += (1 - tf.cast(sampled_mask_binary_mask + sampled_replace_binary_mask, tf.float32)) * input_ori_ids
 	output_sampled_binary_mask = sampled_mask_binary_mask + sampled_replace_binary_mask + sampled_ori_binary_mask
+
+	output_sampled_binary_mask = tf.cast(output_sampled_binary_mask, tf.int32)
 
 	return [tf.cast(output_input_ids, tf.int32), 
 				output_sampled_binary_mask]
