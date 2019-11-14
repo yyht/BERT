@@ -41,20 +41,28 @@ def classifier(config, seq_output,
 	input_ids = tf.cast(input_ids, tf.int32)
 	sampled_ids = tf.cast(sampled_ids, tf.int32)
 
-	discriminator_label_ids = tf.cast(tf.equal(input_ids, sampled_ids), tf.int32)
+	# original:0, replace:1
+	not_equal_label_ids = tf.cast(tf.not_equal(input_ids, sampled_ids), tf.int32)
+	not_equal_label_ids *= tf.cast(input_mask, tf.int32)
 
 	per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
 												logits=logits,
-												labels=tf.stop_gradient(discriminator_label_ids))
+												labels=tf.stop_gradient(not_equal_label_ids))
 	loss = per_example_loss * tf.cast(input_mask, tf.float32)
-
 	loss = tf.reduce_sum(loss) / (1e-10 + tf.reduce_sum(tf.cast(input_mask, tf.float32)))
+
+	only_mask_loss = per_example_loss * tf.cast(not_equal_label_ids, tf.float32) # not equal:1, equal:0
+	only_mask_loss = tf.reduce_sum(only_mask_loss) / (1e-10 + tf.reduce_sum(tf.cast(not_equal_label_ids, tf.float32)))
+
+	tf.summary.scalar('only_different_loss', 
+						only_mask_loss)
 
 	return (loss, logits, per_example_loss)
 	
 def discriminator_metric_train(per_example_loss, logits, input_ids, sampled_ids,
 						input_mask):
-	discriminator_label_ids = tf.equal(
+	# original:0, replace:1
+	discriminator_label_ids = tf.not_equal(
 						tf.cast(input_ids, tf.int32),
 						tf.cast(sampled_ids, tf.int32)
 					)
@@ -69,15 +77,19 @@ def discriminator_metric_train(per_example_loss, logits, input_ids, sampled_ids,
 						tf.cast(discriminator_label_ids, tf.int32)
 					)
 	discriminator_lm_accuracy = tf.cast(discriminator_lm_accuracy, tf.float32)
+	discriminator_lm_accuracy_diff = tf.reduce_sum(discriminator_lm_accuracy * tf.cast(discriminator_label_ids, tf.float32)) / (1e-10 + tf.reduce_sum(tf.cast(discriminator_label_ids, tf.float32)))
 	discriminator_lm_accuracy = tf.reduce_sum(discriminator_lm_accuracy * tf.cast(input_mask, tf.float32)) / (1e-10 + tf.reduce_sum(tf.cast(input_mask, tf.float32)))
+
 	return {
 		"discriminator_lm_accuracy": discriminator_lm_accuracy,
-		"discriminator_lm_loss": discriminator_mean_loss
+		"discriminator_lm_loss": discriminator_mean_loss,
+		"discriminator_lm_accuracy_diff":discriminator_lm_accuracy_diff
 		}
 
 def discriminator_metric_eval(per_example_loss, logits, input_ids, sampled_ids,
 					input_mask):
-	discriminator_label_ids = tf.equal(
+	# original:0, replace:1
+	discriminator_label_ids = tf.not_equal(
 		tf.cast(input_ids, tf.int32),
 		tf.cast(sampled_ids, tf.int32)
 	)

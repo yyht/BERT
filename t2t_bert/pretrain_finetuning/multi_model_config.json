@@ -138,7 +138,7 @@
 		"do_lower_case":true,
 		"ln_type":"postln"
 	},
-	"generator":{
+	"generator_bert":{
 		"task_type":"single_sentence_classification",
 		"label_id":"multi_task/data/sentence_pair/lcqmc/label_dict.json",
 		"data_type":"sentence_pair",
@@ -150,6 +150,29 @@
 		"load_pretrained":"yes",
 		"num_labels":2,
 		"init_checkpoint":"bert_pretrain/open_domain/pretrain_single_3/model/bert_tiny_with_single_adam_decay_15/model.ckpt-161000",
+		"max_length":128,
+		"lm_augumentation":false,
+		"masked_lm_prob":0.2,
+		"max_predictions_per_seq":3,
+		"masked_lm_loss_ratio":0.1,
+		"dupe_factor":5,
+		"short_seq_prob":0.2,
+		"vocab_file":"./BERT/data/chinese_L-12_H-768_A-12/vocab.txt",
+		"do_lower_case":true,
+		"ln_type":"postln"
+	},
+	"generator":{
+		"task_type":"single_sentence_classification",
+		"label_id":"multi_task/data/sentence_pair/lcqmc/label_dict.json",
+		"data_type":"sentence_pair",
+		"model_type":"albert",
+		"config_file":"./BERT/data/roberta_zh_l12_albert/bert_config_tiny.json",
+		"target":"",
+		"not_storage_params":[],
+		"exclude_scope":"generator",
+		"load_pretrained":"yes",
+		"num_labels":2,
+		"init_checkpoint":"bert_pretrain/open_domain/pretrain_single_3/model/albert_tiny_factorized_with_single_adam_decay_15/model.ckpt-137000",
 		"max_length":128,
 		"lm_augumentation":false,
 		"masked_lm_prob":0.2,

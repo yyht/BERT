@@ -203,11 +203,11 @@ def token_generator(config, input_tensor,
 
 		sampled_binary_mask = kargs.get('sampled_binary_mask', None)
 		if sampled_binary_mask is not None:
-			label_diff_ids =  1 - sampled_binary_mask # none replace ids
+			label_diff_ids =  sampled_binary_mask # 0 for original and 1 for replace
 		else:
-			label_diff_ids = tf.equal(
+			label_diff_ids = tf.not_equal(
 							tf.cast(input_ids, tf.int32),
-							tf.cast(input_ori_ids, tf.int32)
+							tf.cast(input_ori_ids, tf.int32) # 0 for original and 1 for replace
 						)
 		label_diff_ids = tf.cast(label_diff_ids, tf.float32)
 		print(label_diff_ids, "===label diff ids===")
@@ -216,13 +216,15 @@ def token_generator(config, input_tensor,
 
 		if config.get('gen_sample', 1) == 1:
 			sampled_input_id = tf.reshape(samples, [batch_size, seq_length])
-			if kargs.get('mask_method', 'all') == 'only_mask':
+			if kargs.get('mask_method', 'only_mask') == 'only_mask':
+				tf.logging.info("****** only mask sample *******")
 				label_diff_ids = tf.cast(label_diff_ids, tf.float32)
-				samples = (1 - label_diff_ids) * tf.cast(sampled_input_id, tf.float32) + label_diff_ids * tf.cast(input_ori_ids, tf.float32)
+				sampled_input_id = (label_diff_ids) * tf.cast(sampled_input_id, tf.float32) + (1 - label_diff_ids) * tf.cast(input_ori_ids, tf.float32)
 				sampled_input_id = tf.cast(sampled_input_id, tf.int32)
 		else:
 			sampled_input_id = tf.reshape(samples, [batch_size, seq_length, config.get('gen_sample', 1)])
-			if kargs.get('mask_method', 'all') == 'only_mask':
+			if kargs.get('mask_method', 'only_mask') == 'only_mask':
+				tf.logging.info("****** only mask sample *******")
 				# batch x seq_length x 1
 				label_diff_ids = tf.expand_dims(label_diff_ids, axis=-1)
 				label_diff_ids = tf.einsum('abc,cd->abd', label_diff_ids, tf.ones((1, model_config.get('gen_sample', 1))))
@@ -231,8 +233,22 @@ def token_generator(config, input_tensor,
 				input_ori_ids = tf.einsum('abc,cd->abd', input_ori_ids, tf.ones((1, model_config.get('gen_sample', 1))))
 				input_ori_ids = tf.cast(input_ori_ids, tf.float32)
 
-				sampled_input_id = (1 - label_diff_ids) * tf.cast(sampled_input_id, tf.float32) + input_ori_ids * label_diff_ids
+				sampled_input_id = (label_diff_ids) * tf.cast(sampled_input_id, tf.float32) + (1 - input_ori_ids) * label_diff_ids
 				sampled_input_id = tf.cast(sampled_input_id, tf.int32)
+
+				input_mask = tf.expand_dims(input_mask, axis=-1)
+				input_mask = tf.einsum('abc,cd->abd', input_mask, tf.ones((1, model_config.get('gen_sample', 1))))
+				input_mask = tf.cast(input_mask, tf.float32)
+
+		sampled_not_equal_id = tf.not_equal(
+				tf.cast(sampled_input_id, tf.int32),
+				tf.cast(input_ori_ids, tf.int32)
+		)
+		sampled_not_equal = tf.cast(sampled_not_equal_id, tf.float32) * tf.cast(input_mask, tf.float32)
+		sampled_not_equal = 1 - tf.reduce_sum(sampled_not_equal) / (1e-10 + tf.reduce_sum(tf.cast(label_diff_ids, tf.float32)))
+
+		tf.summary.scalar('generator_sample_acc', 
+							sampled_not_equal)
 
 		return sampled_input_id
 
