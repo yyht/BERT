@@ -12,7 +12,7 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--num_classes 2 \
 	--train_size 11000000 \
 	--eval_size 1100000 \
-	--batch_size 1200 \
+	--batch_size 768 \
 	--model_type "albert" \
 	--if_shard 1 \
 	--is_debug 1 \
@@ -26,13 +26,13 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--ln_type "postln" \
 	--warmup "warmup" \
 	--decay "decay" \
-	--init_lr 5e-4 \
+	--init_lr 5e-5 \
 	--do_train true \
 	--tpu_name "htxu91" \
 	--num_tpu_cores 8 \
 	--mode 'electra' \
 	--multi_task_type "generator,discriminator" \
-	--multi_task_config "./BERT/t2t_bert/pretrain_finetuning/multi_model_config.json" \
+	--multi_task_config "./BERT/t2t_bert/pretrain_finetuning/multi_model_gs.json" \
 	--joint_train "0"
 
 
