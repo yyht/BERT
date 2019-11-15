@@ -104,14 +104,14 @@ def classifier_model_fn_builder(
 			scaffold_fn = None
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
-
-			metric_dict = discriminator_metric_train(discriminator_dict['per_example_loss'],
-								discriminator_dict['logits'], 
+                        if kargs.get('summary_debug', False):
+		    	    metric_dict = discriminator_metric_train(discriminator_dict['per_example_loss'],
+			    					discriminator_dict['logits'], 
 								generator_dict['sampled_input_ids'], 
 								generator_dict['sampled_ids'],
 								generator_dict['sampled_input_mask'])
 
-			for key in metric_dict:
+			    for key in metric_dict:
 				tf.summary.scalar(key, metric_dict[key])
 	
 			if kargs.get('use_tpu', False):

@@ -32,7 +32,7 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--num_tpu_cores 8 \
 	--mode 'electra' \
 	--multi_task_type "generator,discriminator" \
-	--multi_task_config "./BERT/t2t_bert/pretrain_finetuning/multi_model_gs.json" \
+	--multi_task_config "./t2t_bert/pretrain_finetuning/multi_model_gs.json" \
 	--joint_train "0"
 
 
