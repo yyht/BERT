@@ -345,7 +345,7 @@ def main(_):
 			warmup=FLAGS.warmup,
 			input_target=FLAGS.input_target)
 	elif FLAGS.mode == 'electra':
-		train_eval_gpu_electra_estimator(
+		train_eval_gpu_electra_estimator.train_eval_fn(
 			FLAGS=FLAGS,
 			init_checkpoint=init_checkpoint,
 			train_file=train_file,
