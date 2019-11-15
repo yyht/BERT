@@ -117,8 +117,8 @@ def init_pretrained(assignment_map, initialized_variable_names,
 		init_string = ""
 		if var.name in initialized_variable_names:
 			init_string = ", *INIT_FROM_CKPT*"
-		tf.logging.info(" name = %s, shape = %s%s", var.name, var.shape,
-										init_string)
+		tf.logging.info(" name = %s, shape = %s%s, from checkpoint = %s", 
+						var.name, var.shape, init_string, init_checkpoint)
 
 def get_actual_scope(name, exclude_scope):
 	return "/".join([exclude_scope, name])
