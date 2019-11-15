@@ -81,18 +81,20 @@ def classifier(config, seq_output,
 
 	loss = (equal_loss + 10*not_equal_loss) / (1e-10 + tf.reduce_sum(tf.cast(input_mask, tf.float32)))
 
-	tf.summary.scalar('mask_based_loss', 
-						loss)
+	try:
+		tf.summary.scalar('mask_based_loss', 
+							loss)
 
-	tf.summary.scalar('equal_loss', 
-						equal_loss/(1e-10 + tf.reduce_sum(tf.cast(input_mask, tf.float32))))
+		tf.summary.scalar('equal_loss', 
+							equal_loss/(1e-10 + tf.reduce_sum(tf.cast(input_mask, tf.float32))))
 
-	tf.summary.scalar('not_equal_loss', 
-						not_equal_loss/(1e-10 + tf.reduce_sum(tf.cast(input_mask, tf.float32))))
+		tf.summary.scalar('not_equal_loss', 
+							not_equal_loss/(1e-10 + tf.reduce_sum(tf.cast(input_mask, tf.float32))))
 
-	tf.summary.scalar('loss_decomposition', 
-						loss - (equal_loss+not_equal_loss)/(1e-10 + tf.reduce_sum(tf.cast(input_mask, tf.float32))))
-
+		tf.summary.scalar('loss_decomposition', 
+							loss - (equal_loss+not_equal_loss)/(1e-10 + tf.reduce_sum(tf.cast(input_mask, tf.float32))))
+	except:
+		tf.logging.info("***** Not summarization *****")
 	return (loss, logits, per_example_loss)
 	
 def discriminator_metric_train(per_example_loss, logits, input_ids, sampled_ids,
