@@ -59,6 +59,8 @@ def model_fn_builder(
 									features['input_mask'],
 									2,
 									dropout_prob)
+									# ,
+									# loss='focal_loss')
 
 		loss += 0.0 * nsp_loss
 
@@ -66,12 +68,12 @@ def model_fn_builder(
 
 		pretrained_tvars = model_io_fn.get_params(model_config.scope, 
 										not_storage_params=not_storage_params)
-
-		lm_pretrain_tvars = model_io_fn.get_params("cls/seq_predictions", 
+		lm_seq_prediction_tvars = model_io_fn.get_params("cls/seq_predictions", 
 									not_storage_params=not_storage_params)
 		lm_pretrain_tvars = model_io_fn.get_params("cls/seq_relationship", 
 									not_storage_params=not_storage_params)
 
+		pretrained_tvars.extend(lm_seq_prediction_tvars)
 		pretrained_tvars.extend(lm_pretrain_tvars)
 		tvars = pretrained_tvars
 

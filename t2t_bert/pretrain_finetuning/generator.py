@@ -119,7 +119,7 @@ def model_fn_builder(
 											scope='generator')
 		print(model_config.lm_ratio, '==mlm lm_ratio==')
 		loss = model_config.lm_ratio * masked_lm_loss #+ model_config.nsp_ratio * nsp_loss
-		
+
 		sampled_ids = token_generator(model_config, 
 									model.get_sequence_output(), 
 									model.get_embedding_table(), 

@@ -10,14 +10,21 @@ def classifier(config, seq_output,
 						num_labels,
 						dropout_prob,
 						**kargs):
-
 	"""
 	input_ids: original input ids
 	sampled_ids: generated fake ids
 	"""
-
 	output_layer = seq_output
 	hidden_size = output_layer.shape[-1].value
+
+	unk_mask = tf.cast(tf.math.equal(input_ids, 100), tf.float32) # not replace unk
+	cls_mask =  tf.cast(tf.math.equal(input_ids, 101), tf.float32) # not replace cls
+	sep_mask = tf.cast(tf.math.equal(input_ids, 102), tf.float32) # not replace sep
+
+	none_replace_mask =  unk_mask + cls_mask + sep_mask
+
+	input_mask = tf.cast(input_mask, tf.int32)
+	input_mask *= tf.cast(1 - none_replace_mask, tf.int32) # cls, unk, sep are not considered as replace or original
 
 	output_weights = tf.get_variable(
 			"output_weights", [num_labels, hidden_size],
@@ -28,14 +35,17 @@ def classifier(config, seq_output,
 
 	if config.get('ln_type', 'postln') == 'preln':
 		output_layer = albert_modules.layer_norm(output_layer)
+		print('====preln transformer====')
 	elif config.get('ln_type', 'postln') == 'postln':
 		output_layer = output_layer
+		print('====postln transformer====')
 	else:
 		output_layer = output_layer
+		print('====no layer layer_norm====')
 
 	output_layer = tf.nn.dropout(output_layer, keep_prob=1 - dropout_prob)
 
-	logits = tf.einsum("abc,dc->abd", seq_output, output_weights)
+	logits = tf.einsum("abc,dc->abd", output_layer, output_weights)
 	logits = tf.nn.bias_add(logits, output_bias) # batch x seq_length x 2
 
 	input_ids = tf.cast(input_ids, tf.int32)
@@ -45,17 +55,43 @@ def classifier(config, seq_output,
 	not_equal_label_ids = tf.cast(tf.not_equal(input_ids, sampled_ids), tf.int32)
 	not_equal_label_ids *= tf.cast(input_mask, tf.int32)
 
-	per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-												logits=logits,
-												labels=tf.stop_gradient(not_equal_label_ids))
-	loss = per_example_loss * tf.cast(input_mask, tf.float32)
-	loss = tf.reduce_sum(loss) / (1e-10 + tf.reduce_sum(tf.cast(input_mask, tf.float32)))
+	if kargs.get('loss', 'cross_entropy') == 'cross_entropy':
+		per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+													logits=logits,
+													labels=tf.stop_gradient(not_equal_label_ids))
+	elif kargs.get('loss', 'cross_entropy') == 'focal_loss':
+		input_shape_list = bert_utils.get_shape_list(input_ids, expected_rank=2)
+		batch_size = input_shape_list[0]
+		seq_length = input_shape_list[1]
+		not_equal_label_ids_ = tf.reshape(not_equal_label_ids, [batch_size*seq_length])
+		logits_ = tf.reshape(logits, [batch_size*seq_length, -1])
+		per_example_loss, _ = loss_utils.focal_loss_binary_v2(config, logits_, not_equal_label_ids_)
+		per_example_loss = tf.reshape(per_example_loss, [batch_size, seq_length])
 
-	only_mask_loss = per_example_loss * tf.cast(not_equal_label_ids, tf.float32) # not equal:1, equal:0
-	only_mask_loss = tf.reduce_sum(only_mask_loss) / (1e-10 + tf.reduce_sum(tf.cast(not_equal_label_ids, tf.float32)))
+	# loss = per_example_loss * tf.cast(input_mask, tf.float32)
+	# loss = tf.reduce_sum(loss) / (1e-10 + tf.reduce_sum(tf.cast(input_mask, tf.float32)))
 
-	tf.summary.scalar('only_different_loss', 
-						only_mask_loss)
+	equal_label_ids = (1 - tf.cast(not_equal_label_ids, tf.float32)) * tf.cast(input_mask, tf.float32)
+	equal_loss = tf.reduce_sum(per_example_loss * equal_label_ids)
+
+	equal_loss_output = equal_loss / (1e-10 + tf.reduce_sum(equal_label_ids))
+
+	not_equal_loss = tf.reduce_sum(per_example_loss * tf.cast(not_equal_label_ids, tf.float32)) # not equal:1, equal:0
+	not_equal_loss_output = not_equal_loss / (1e-10 + tf.reduce_sum(tf.cast(not_equal_label_ids, tf.float32)))
+
+	loss = (equal_loss + 10*not_equal_loss) / (1e-10 + tf.reduce_sum(tf.cast(input_mask, tf.float32)))
+
+	tf.summary.scalar('mask_based_loss', 
+						loss)
+
+	tf.summary.scalar('equal_loss', 
+						equal_loss/(1e-10 + tf.reduce_sum(tf.cast(input_mask, tf.float32))))
+
+	tf.summary.scalar('not_equal_loss', 
+						not_equal_loss/(1e-10 + tf.reduce_sum(tf.cast(input_mask, tf.float32))))
+
+	tf.summary.scalar('loss_decomposition', 
+						loss - (equal_loss+not_equal_loss)/(1e-10 + tf.reduce_sum(tf.cast(input_mask, tf.float32))))
 
 	return (loss, logits, per_example_loss)
 	
@@ -77,13 +113,15 @@ def discriminator_metric_train(per_example_loss, logits, input_ids, sampled_ids,
 						tf.cast(discriminator_label_ids, tf.int32)
 					)
 	discriminator_lm_accuracy = tf.cast(discriminator_lm_accuracy, tf.float32)
+	discriminator_lm_accuracy_original = tf.reduce_sum(discriminator_lm_accuracy * tf.cast(discriminator_label_ids, tf.float32)) / (1e-10 + tf.reduce_sum(tf.cast(input_mask, tf.float32)))
 	discriminator_lm_accuracy_diff = tf.reduce_sum(discriminator_lm_accuracy * tf.cast(discriminator_label_ids, tf.float32)) / (1e-10 + tf.reduce_sum(tf.cast(discriminator_label_ids, tf.float32)))
 	discriminator_lm_accuracy = tf.reduce_sum(discriminator_lm_accuracy * tf.cast(input_mask, tf.float32)) / (1e-10 + tf.reduce_sum(tf.cast(input_mask, tf.float32)))
 
 	return {
 		"discriminator_lm_accuracy": discriminator_lm_accuracy,
 		"discriminator_lm_loss": discriminator_mean_loss,
-		"discriminator_lm_accuracy_diff":discriminator_lm_accuracy_diff
+		"discriminator_lm_accuracy_diff":discriminator_lm_accuracy_diff,
+		"discriminator_lm_accuracy_original":discriminator_lm_accuracy_original,
 		}
 
 def discriminator_metric_eval(per_example_loss, logits, input_ids, sampled_ids,

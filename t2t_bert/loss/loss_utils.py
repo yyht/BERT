@@ -17,6 +17,8 @@ def focal_loss_binary_v2(config, logits, labels):
 	batch_idxs = tf.range(0, tf.shape(labels)[0])
 	batch_idxs = tf.expand_dims(batch_idxs, 1)
 
+	print(batch_idxs.get_shape(), labels.get_shape(), '=======focal loss shape=====')
+
 	idxs = tf.concat([batch_idxs, labels], 1)
 	y_true_pred = tf.gather_nd(predictions, idxs)
 
