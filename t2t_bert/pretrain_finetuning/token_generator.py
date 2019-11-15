@@ -211,11 +211,10 @@ def token_generator(config, input_tensor,
 						)
 		label_diff_ids = tf.cast(label_diff_ids, tf.float32)
 		print(label_diff_ids, "===label diff ids===")
-		try:
+		if kargs.get('summary_debug', False):
 			tf.summary.scalar('label_diff_ids', 
 							tf.reduce_sum(label_diff_ids*tf.cast(input_mask, tf.float32))/tf.reduce_sum(tf.cast(input_mask, tf.float32)))
-		except:
-			tf.logging.info("****** Not summarization *******")
+		
 		if config.get('gen_sample', 1) == 1:
 			sampled_input_id = tf.reshape(samples, [batch_size, seq_length])
 			if kargs.get('mask_method', 'only_mask') == 'only_mask':
