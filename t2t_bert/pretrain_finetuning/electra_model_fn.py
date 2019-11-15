@@ -104,6 +104,7 @@ def classifier_model_fn_builder(
 			scaffold_fn = None
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
+
                         if kargs.get('summary_debug', False):
 		    	    metric_dict = discriminator_metric_train(discriminator_dict['per_example_loss'],
 			    					discriminator_dict['logits'], 
