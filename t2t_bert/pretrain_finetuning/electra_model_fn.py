@@ -167,6 +167,7 @@ def classifier_model_fn_builder(
 										generator_dict.get('next_sentence_labels', None)])]
 			else:
 				generator_metric = {}
+				eval_generator_metric = []
 
 			discriminator_metric = discriminator_metric_eval(
 							discriminator_dict['per_example_loss'],
