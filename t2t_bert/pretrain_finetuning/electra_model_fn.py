@@ -105,7 +105,7 @@ def classifier_model_fn_builder(
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
 
-			if kargs.get('summary_debug', True):
+			if kargs.get('summary_debug', False):
 				metric_dict = discriminator_metric_train(discriminator_dict['per_example_loss'],
 								discriminator_dict['logits'], 
 							generator_dict['sampled_input_ids'], 
@@ -175,13 +175,13 @@ def classifier_model_fn_builder(
 							generator_dict['sampled_input_ids'], 
 							generator_dict['sampled_ids'],
 							generator_dict['sampled_input_mask'])
-			eval_metrics = [(discriminator_metric_eval, [
+			eval_metrics = (discriminator_metric_eval, [
 						  				discriminator_dict['per_example_loss'],
 										discriminator_dict['logits'], 
 										generator_dict['sampled_input_ids'], 
 										generator_dict['sampled_ids'],
 										generator_dict['sampled_input_mask']
-						])]
+						])
 
 			metric_dict = discriminator_metric
 			if len(generator_metric):
