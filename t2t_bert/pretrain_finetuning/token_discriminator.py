@@ -172,16 +172,17 @@ def discriminator_metric_eval(per_example_loss, logits, input_ids, sampled_ids,
 		values=discriminator_per_example_loss, 
 		weights=discriminator_mask)
 
-#	discriminator_f1 = tf_metrics.f1(discriminator_label_ids, 
-#							discriminator_lm_predictions, 
-#							num_classes=2, 
-#							weights=discriminator_mask, 
-#							average="macro")
+	# discriminator_f1 = tf_metrics.f1(discriminator_label_ids, 
+	# 						discriminator_lm_predictions, 
+	# 						num_classes=2, 
+	# 						weights=discriminator_mask, 
+	# 						average="macro")
+
 
 	return {
 		"discriminator_accuracy":discriminator_accuracy,
 		"discriminator_loss":discriminator_mean_loss,
-#		"discriminator_f1":discriminator_f1
+		# "discriminator_f1":discriminator_f1
 	}
 
 	

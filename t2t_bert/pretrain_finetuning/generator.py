@@ -37,7 +37,7 @@ def model_fn_builder(
 		model_api = model_zoo(model_config)
 
 		if kargs.get('random_generator', 'yes') == 'yes':
-			if mode in [tf.estimator.ModeKeys.TRAIN, tf.estimator.ModeKeys.EVAL]:
+			if mode in tf.estimator.ModeKeys.TRAIN:
 				input_ori_ids = features['input_ori_ids']
 
 				[output_ids, 
@@ -47,9 +47,9 @@ def model_fn_builder(
 				features['input_ids'] = output_ids
 				tf.logging.info("****** do random generator *******")
 			else:
-				sampled_binary_mask = features['input_mask']
+				sampled_binary_mask = None
 		else:
-			sampled_binary_mask = features['input_mask']
+			sampled_binary_mask = None
 
 		model = model_api(model_config, features, labels,
 							mode, target, reuse=tf.AUTO_REUSE)
