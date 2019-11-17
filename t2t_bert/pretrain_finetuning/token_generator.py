@@ -197,6 +197,7 @@ def token_generator(config, input_tensor,
 
 		# flat_logits_tempered_topk = top_k_logits(flat_logits_tempered, int(config.vocab_size/2))
 
+
 		samples = tf.multinomial(flat_logits_tempered, 
 								num_samples=config.get('gen_sample', 1), 
 								output_dtype=tf.int32)
