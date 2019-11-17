@@ -81,7 +81,7 @@ def classifier(config, seq_output,
 	not_equal_loss = tf.reduce_sum(per_example_loss * tf.cast(not_equal_label_ids, tf.float32)) # not equal:1, equal:0
 	not_equal_loss_output = not_equal_loss / (1e-10 + tf.reduce_sum(tf.cast(not_equal_label_ids, tf.float32)))
 
-	loss = (equal_loss + 10*not_equal_loss) / (1e-10 + tf.reduce_sum(tf.cast(input_mask, tf.float32)))
+	loss = (equal_loss + not_equal_loss) / (1e-10 + tf.reduce_sum(tf.cast(input_mask, tf.float32)))
 
 	if kargs.get('summary_debug', False):
 		tf.summary.scalar('mask_based_loss', 
@@ -172,17 +172,21 @@ def discriminator_metric_eval(per_example_loss, logits, input_ids, sampled_ids,
 		values=discriminator_per_example_loss, 
 		weights=discriminator_mask)
 
-	# discriminator_f1 = tf_metrics.f1(discriminator_label_ids, 
-	# 						discriminator_lm_predictions, 
-	# 						num_classes=2, 
-	# 						weights=discriminator_mask, 
-	# 						average="macro")
+	discriminator_recall = tf.compat.v1.metrics.recall(discriminator_label_ids, 
+						discriminator_lm_predictions,
+						weights=discriminator_mask)
+
+	discriminator_precision = tf.compat.v1.metrics.precision(discriminator_label_ids, 
+						discriminator_lm_predictions,
+						weights=discriminator_mask)
+
+	discriminator_f1 = 2*(discriminator_recall * discriminator_precision) / ( discriminator_recall + discriminator_precision)
 
 
 	return {
 		"discriminator_accuracy":discriminator_accuracy,
 		"discriminator_loss":discriminator_mean_loss,
-		# "discriminator_f1":discriminator_f1
+		"discriminator_f1":discriminator_f1
 	}
 
 	
