@@ -47,9 +47,9 @@ def model_fn_builder(
 				features['input_ids'] = output_ids
 				tf.logging.info("****** do random generator *******")
 			else:
-				sampled_binary_mask = None
+				sampled_binary_mask = features['input_mask']
 		else:
-			sampled_binary_mask = None
+			sampled_binary_mask = features['input_mask']
 
 		model = model_api(model_config, features, labels,
 							mode, target, reuse=tf.AUTO_REUSE)
