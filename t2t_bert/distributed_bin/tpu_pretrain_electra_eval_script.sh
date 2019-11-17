@@ -27,7 +27,6 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--warmup "warmup" \
 	--decay "decay" \
 	--init_lr 5e-5 \
-	--do_train true \
 	--tpu_name "htxu91" \
 	--num_tpu_cores 8 \
 	--mode 'electra' \
