@@ -36,7 +36,7 @@ def classifier_model_fn_builder(
 	def model_fn(features, labels, mode, params):
 
 		generator_fn = generator(model_config_dict['generator'],
-		 			num_labels_dict['generator'],
+					num_labels_dict['generator'],
 					init_checkpoint_dict['generator'],
 					model_reuse=None,
 					load_pretrained=load_pretrained_dict['generator'],
@@ -49,7 +49,7 @@ def classifier_model_fn_builder(
 		generator_dict = generator_fn(features, labels, mode, params)
 
 		discriminator_fn = discriminator(model_config_dict['discriminator'],
-		 			num_labels_dict['discriminator'],
+					num_labels_dict['discriminator'],
 					init_checkpoint_dict['discriminator'],
 					model_reuse=None,
 					load_pretrained=load_pretrained_dict['discriminator'],
@@ -105,15 +105,15 @@ def classifier_model_fn_builder(
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
 
-                        if kargs.get('summary_debug', False):
-		    	    metric_dict = discriminator_metric_train(discriminator_dict['per_example_loss'],
-			    					discriminator_dict['logits'], 
-								generator_dict['sampled_input_ids'], 
-								generator_dict['sampled_ids'],
-								generator_dict['sampled_input_mask'])
+			if kargs.get('summary_debug', True):
+				metric_dict = discriminator_metric_train(discriminator_dict['per_example_loss'],
+								discriminator_dict['logits'], 
+							generator_dict['sampled_input_ids'], 
+							generator_dict['sampled_ids'],
+							generator_dict['sampled_input_mask'])
 
-			    for key in metric_dict:
-				tf.summary.scalar(key, metric_dict[key])
+				for key in metric_dict:
+					tf.summary.scalar(key, metric_dict[key])
 	
 			if kargs.get('use_tpu', False):
 				optimizer_fn = optimizer.Optimizer(opt_config)
@@ -157,6 +157,14 @@ def classifier_model_fn_builder(
 									generator_dict.get('next_sentence_log_probs', None),
 									generator_dict.get('next_sentence_labels', None)
 									)
+				eval_generator_metric = [(generator_metric_fn_eval, [
+						  				generator_dict['masked_lm_example_loss'],
+										generator_dict['masked_lm_log_probs'],
+										generator_dict['masked_lm_ids'],
+										generator_dict['masked_lm_weights'],
+										generator_dict.get('next_sentence_example_loss', None),
+										generator_dict.get('next_sentence_log_probs', None),
+										generator_dict.get('next_sentence_labels', None)])]
 			else:
 				generator_metric = {}
 
@@ -166,16 +174,26 @@ def classifier_model_fn_builder(
 							generator_dict['sampled_input_ids'], 
 							generator_dict['sampled_ids'],
 							generator_dict['sampled_input_mask'])
+			eval_metrics = [(discriminator_metric_eval, [
+						  				discriminator_dict['per_example_loss'],
+										discriminator_dict['logits'], 
+										generator_dict['sampled_input_ids'], 
+										generator_dict['sampled_ids'],
+										generator_dict['sampled_input_mask']
+						])]
 
 			metric_dict = discriminator_metric
 			if len(generator_metric):
 				metric_dict.update(discriminator_metric)
 
+			if len(eval_generator_metric):
+				eval_metrics.extend(eval_generator_metric)
+
 			if kargs.get('use_tpu', False):
 				estimator_spec = tf.contrib.tpu.TPUEstimatorSpec(
 							  mode=mode,
 							  loss=loss,
-							  eval_metrics=metric_dict,
+							  eval_metrics=eval_metrics,
 							  scaffold_fn=scaffold_fn)
 			else:
 				estimator_spec = tf.estimator.EstimatorSpec(mode=mode, 

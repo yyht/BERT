@@ -195,7 +195,8 @@ def token_generator(config, input_tensor,
 		flat_logits_tempered = tf.reshape(logits_tempered,
 									[batch_size * seq_length, width])
 
-		#flat_logits_tempered_topk = top_k_logits(flat_logits_tempered, int(config.vocab_size/2))
+		# flat_logits_tempered_topk = top_k_logits(flat_logits_tempered, int(config.vocab_size/2))
+
 
 		samples = tf.multinomial(flat_logits_tempered, 
 								num_samples=config.get('gen_sample', 1), 
@@ -247,9 +248,9 @@ def token_generator(config, input_tensor,
 		)
 		sampled_not_equal = tf.cast(sampled_not_equal_id, tf.float32) * tf.cast(input_mask, tf.float32)
 		sampled_not_equal = 1 - tf.reduce_sum(sampled_not_equal) / (1e-10 + tf.reduce_sum(tf.cast(label_diff_ids, tf.float32)))
-                
-                if kargs.get('summary_debug', False):
-	            tf.summary.scalar('generator_sample_acc', 
+				
+		if kargs.get('summary_debug', False):
+			tf.summary.scalar('generator_sample_acc', 
 							sampled_not_equal)
 
 		return sampled_input_id

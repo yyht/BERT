@@ -2,6 +2,8 @@ import tensorflow as tf
 from utils.bert import bert_utils
 from loss import loss_utils
 from utils.bert import albert_modules
+from metric import tf_metrics
+
 
 def classifier(config, seq_output,
 						input_ids,
@@ -93,7 +95,7 @@ def classifier(config, seq_output,
 
 		tf.summary.scalar('loss_decomposition', 
 							loss - (equal_loss+not_equal_loss)/(1e-10 + tf.reduce_sum(tf.cast(input_mask, tf.float32))))
-	
+
 	return (loss, logits, per_example_loss)
 	
 def discriminator_metric_train(per_example_loss, logits, input_ids, sampled_ids,
@@ -103,6 +105,16 @@ def discriminator_metric_train(per_example_loss, logits, input_ids, sampled_ids,
 						tf.cast(input_ids, tf.int32),
 						tf.cast(sampled_ids, tf.int32)
 					)
+
+	unk_mask = tf.cast(tf.math.equal(input_ids, 100), tf.float32) # not replace unk
+	cls_mask =  tf.cast(tf.math.equal(input_ids, 101), tf.float32) # not replace cls
+	sep_mask = tf.cast(tf.math.equal(input_ids, 102), tf.float32) # not replace sep
+
+	none_replace_mask =  unk_mask + cls_mask + sep_mask
+
+	input_mask = tf.cast(input_mask, tf.int32)
+	input_mask *= tf.cast(1 - none_replace_mask, tf.int32) # cls, unk, sep are not considered as replace or original
+
 	discriminator_lm_predictions = tf.argmax(
 		logits, axis=-1, output_type=tf.int32)
 
@@ -132,6 +144,16 @@ def discriminator_metric_eval(per_example_loss, logits, input_ids, sampled_ids,
 		tf.cast(input_ids, tf.int32),
 		tf.cast(sampled_ids, tf.int32)
 	)
+
+	unk_mask = tf.cast(tf.math.equal(input_ids, 100), tf.float32) # not replace unk
+	cls_mask =  tf.cast(tf.math.equal(input_ids, 101), tf.float32) # not replace cls
+	sep_mask = tf.cast(tf.math.equal(input_ids, 102), tf.float32) # not replace sep
+
+	none_replace_mask =  unk_mask + cls_mask + sep_mask
+
+	input_mask = tf.cast(input_mask, tf.int32)
+	input_mask *= tf.cast(1 - none_replace_mask, tf.int32) # cls, unk, sep are not considered as replace or original
+
 	discriminator_lm_predictions = tf.argmax(
 		logits, axis=-1, output_type=tf.int32)
 
@@ -150,9 +172,16 @@ def discriminator_metric_eval(per_example_loss, logits, input_ids, sampled_ids,
 		values=discriminator_per_example_loss, 
 		weights=discriminator_mask)
 
+	discriminator_f1 = tf_metrics.f1(discriminator_label_ids, 
+							discriminator_lm_predictions, 
+							num_classes=2, 
+							weights=discriminator_mask, 
+							average="macro")
+
 	return {
 		"discriminator_accuracy":discriminator_accuracy,
-		"discriminator_loss":discriminator_mean_loss
+		"discriminator_loss":discriminator_mean_loss,
+		"discriminator_f1":discriminator_f1
 	}
 
 	

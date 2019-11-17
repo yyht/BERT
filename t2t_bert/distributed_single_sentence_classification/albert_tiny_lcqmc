@@ -1,11 +1,11 @@
 config_file=./BERT/data/roberta_zh_l12/bert_config_tiny.json
-init_checkpoint=bert_pretrain/open_domain/pretrain_single_random_hard_gan/bert_tiny_with_single_random_generator_adam_decay_15/model.ckpt-214000
+init_checkpoint=bert_pretrain/open_domain/pretrain_single_random_hard_gan/electra_debug_only_mask_generator_debug/model.ckpt-90000
 vocab_file=./BERT/data/chinese_L-12_H-768_A-12/vocab.txt
 label_id=./BERT/data/lcqmc/label_dict.json
 max_length=128
 train_file=lcqmc/albert_tiny/train_tfrecords
 dev_file=lcqmc/albert_tiny/test_tfrecords
-model_output=lcqmc/albert_tiny/model/estimator/bert_tiny_214000_random_generator_1
+model_output=lcqmc/albert_tiny/model/estimator/electra_discrimiantor_90000_2
 epoch=10
 num_classes=2
 train_size=238766
