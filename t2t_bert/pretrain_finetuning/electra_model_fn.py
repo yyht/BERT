@@ -147,7 +147,7 @@ def classifier_model_fn_builder(
 
 		elif mode == tf.estimator.ModeKeys.EVAL:
 
-			if kargs.get('joint_train', '0') == '1':
+			if kargs.get('joint_train', '1') == '1':
 
 				def joint_metric(masked_lm_example_loss, masked_lm_log_probs,
 								masked_lm_ids, masked_lm_weights,
@@ -181,12 +181,12 @@ def classifier_model_fn_builder(
 										generator_dict['masked_lm_weights'],
 										generator_dict.get('next_sentence_example_loss', None),
 										generator_dict.get('next_sentence_log_probs', None),
-										generator_dict.get('next_sentence_labels', None)],
+										generator_dict.get('next_sentence_labels', None),
 										discriminator_dict['per_example_loss'],
 										discriminator_dict['logits'], 
 										generator_dict['sampled_input_ids'], 
 										generator_dict['sampled_ids'],
-										generator_dict['sampled_input_mask'])
+										generator_dict['sampled_input_mask']])
 				gpu_eval_metrics = joint_metric(generator_dict['masked_lm_example_loss'],
 										generator_dict['masked_lm_log_probs'],
 										generator_dict['masked_lm_ids'],
