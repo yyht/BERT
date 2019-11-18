@@ -192,7 +192,10 @@ def model_fn_builder(
 					"masked_lm_ids":masked_lm_ids,
 					"masked_lm_weights":masked_lm_mask,
 					"masked_lm_log_probs":masked_lm_log_probs,
-					"masked_lm_example_loss":masked_lm_example_loss
+					"masked_lm_example_loss":masked_lm_example_loss,
+					"next_sentence_example_loss":nsp_per_example_loss,
+					"next_sentence_log_probs":nsp_log_prob, 
+					"next_sentence_labels":features['next_sentence_labels']
 				}
 		return return_dict
 	return model_fn
