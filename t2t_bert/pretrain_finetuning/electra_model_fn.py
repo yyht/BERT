@@ -148,58 +148,82 @@ def classifier_model_fn_builder(
 		elif mode == tf.estimator.ModeKeys.EVAL:
 
 			if kargs.get('joint_train', '0') == '1':
-				generator_metric = generator_metric_fn_eval(
-									generator_dict['masked_lm_example_loss'],
-									generator_dict['masked_lm_log_probs'],
-									generator_dict['masked_lm_ids'],
-									generator_dict['masked_lm_weights'],
-									generator_dict.get('next_sentence_example_loss', None),
-									generator_dict.get('next_sentence_log_probs', None),
-									generator_dict.get('next_sentence_labels', None)
-									)
-				eval_generator_metric = [(generator_metric_fn_eval, [
+
+				def joint_metric(masked_lm_example_loss, masked_lm_log_probs,
+								masked_lm_ids, masked_lm_weights,
+								next_sentence_example_loss, next_sentence_log_probs,
+								next_sentence_labels,
+								per_example_loss, logits,
+								input_ori_ids, input_ids,
+								input_mask):
+					generator_metric = generator_metric_fn_eval(
+										masked_lm_example_loss,
+										masked_lm_log_probs,
+										masked_lm_ids,
+										masked_lm_weights,
+										next_sentence_example_loss,
+										next_sentence_log_probs,
+										next_sentence_labels
+										)
+					discriminator_metric = discriminator_metric_eval(
+							per_example_loss,
+							logits, 
+							input_ori_ids, 
+							input_ids,
+							input_mask)
+					generator_metric.update(discriminator_metric)
+					return generator_metric
+
+				tpu_eval_metrics = (joint_metric, [
 						  				generator_dict['masked_lm_example_loss'],
 										generator_dict['masked_lm_log_probs'],
 										generator_dict['masked_lm_ids'],
 										generator_dict['masked_lm_weights'],
 										generator_dict.get('next_sentence_example_loss', None),
 										generator_dict.get('next_sentence_log_probs', None),
-										generator_dict.get('next_sentence_labels', None)])]
-			else:
-				generator_metric = {}
-				eval_generator_metric = []
-
-			discriminator_metric = discriminator_metric_eval(
-							discriminator_dict['per_example_loss'],
-							discriminator_dict['logits'], 
-							generator_dict['sampled_input_ids'], 
-							generator_dict['sampled_ids'],
-							generator_dict['sampled_input_mask'])
-			eval_metrics = (discriminator_metric_eval, [
-						  				discriminator_dict['per_example_loss'],
+										generator_dict.get('next_sentence_labels', None)],
+										discriminator_dict['per_example_loss'],
 										discriminator_dict['logits'], 
 										generator_dict['sampled_input_ids'], 
 										generator_dict['sampled_ids'],
-										generator_dict['sampled_input_mask']
-						])
-
-			metric_dict = discriminator_metric
-			if len(generator_metric):
-				metric_dict.update(discriminator_metric)
-
-			if len(eval_generator_metric):
-				eval_metrics.extend(eval_generator_metric)
+										generator_dict['sampled_input_mask'])
+				gpu_eval_metrics = joint_metric(generator_dict['masked_lm_example_loss'],
+										generator_dict['masked_lm_log_probs'],
+										generator_dict['masked_lm_ids'],
+										generator_dict['masked_lm_weights'],
+										generator_dict.get('next_sentence_example_loss', None),
+										generator_dict.get('next_sentence_log_probs', None),
+										generator_dict.get('next_sentence_labels', None),
+										discriminator_dict['per_example_loss'],
+										discriminator_dict['logits'], 
+										generator_dict['sampled_input_ids'], 
+										generator_dict['sampled_ids'],
+										generator_dict['sampled_input_mask'])
+			else:
+				gpu_eval_metrics = discriminator_metric_eval(
+								discriminator_dict['per_example_loss'],
+								discriminator_dict['logits'], 
+								generator_dict['sampled_input_ids'], 
+								generator_dict['sampled_ids'],
+								generator_dict['sampled_input_mask'])
+				tpu_eval_metrics = (discriminator_metric_eval, [
+							  				discriminator_dict['per_example_loss'],
+											discriminator_dict['logits'], 
+											generator_dict['sampled_input_ids'], 
+											generator_dict['sampled_ids'],
+											generator_dict['sampled_input_mask']
+							])		
 
 			if kargs.get('use_tpu', False):
 				estimator_spec = tf.contrib.tpu.TPUEstimatorSpec(
 							  mode=mode,
 							  loss=loss,
-							  eval_metrics=eval_metrics,
+							  eval_metrics=tpu_eval_metrics,
 							  scaffold_fn=scaffold_fn)
 			else:
 				estimator_spec = tf.estimator.EstimatorSpec(mode=mode, 
 								loss=loss,
-								eval_metric_ops=metric_dict)
+								eval_metric_ops=gpu_eval_metrics)
 
 			return estimator_spec
 		else:
