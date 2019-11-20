@@ -147,7 +147,7 @@ def classifier_model_fn_builder(
 
 		elif mode == tf.estimator.ModeKeys.EVAL:
 
-			if kargs.get('joint_train', '1') == '1':
+			if kargs.get('joint_train', '0') == '1':
 
 				def joint_metric(masked_lm_example_loss, masked_lm_log_probs,
 								masked_lm_ids, masked_lm_weights,
