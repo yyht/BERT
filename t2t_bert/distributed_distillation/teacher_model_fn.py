@@ -30,9 +30,9 @@ def model_fn_builder(
 	print('==before scope==', model_config.scope)
 
 	model_config = copy.deepcopy(model_config)
-	# model_config.dropout_prob = 0.0
-	# model_config.attention_probs_dropout_prob = 0.0
-	# model_config.hidden_dropout_prob = 0.0
+	model_config.dropout_prob = 0.0
+	model_config.attention_probs_dropout_prob = 0.0
+	model_config.hidden_dropout_prob = 0.0
 
 	model_config.scope = 'teacher/' + model_config.scope
 

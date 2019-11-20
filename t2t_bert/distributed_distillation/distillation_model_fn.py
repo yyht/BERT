@@ -16,6 +16,7 @@ from distillation import mdd_utils
 from distillation import repo_distillation_utils
 from metric import tf_metrics
 from distillation import uniform_mapping
+from distillation import cpc_utils
 
 def distillation_model_fn(model_config_dict,
 					num_labels_dict,
@@ -104,6 +105,7 @@ def distillation_model_fn(model_config_dict,
 			with tf.variable_scope("distillation", reuse=tf.AUTO_REUSE):  
 				attention_loss = uniform_mapping.attention_score_matching(source_attention_score, 
 																		target_attention_score,
+																		features['input_mask'],
 																		0)
 			tf.summary.scalar("attention_score_uniform_loss", attention_loss)
 			feature_flag = True
@@ -118,7 +120,9 @@ def distillation_model_fn(model_config_dict,
 			print("==apply hidden_uniform==")
 
 			with tf.variable_scope("distillation", reuse=tf.AUTO_REUSE):
-				hidden_loss = uniform_mapping.hidden_matching(source_hidden, target_hidden, 0)
+				hidden_loss = uniform_mapping.hidden_matching(source_hidden, target_hidden, 
+															features['input_mask'],
+															0)
 			tf.summary.scalar("hidden_uniform_loss", hidden_loss)
 			distilled_loss += hidden_loss * distillation_config.get("hidden_uniform", 0.1)
 			feature_flag = True
@@ -143,6 +147,12 @@ def distillation_model_fn(model_config_dict,
 
 			print("==apply mdd==")
 
+		if "cpc" in distillation_config.get('distillation_type', ['mdd']):
+			source_hidden = ta_dict['model'].get_all_encoder_layers()
+			target_hidden = st_dict['model'].get_all_encoder_layers()
+			with tf.variable_scope("distillation", reuse=tf.AUTO_REUSE):
+				cpc_loss = cpc_utils.CPC_Hidden(target_hidden, source_hidden, features['input_mask'])
+			distilled_loss += cpc_loss + distillation_config.get("cpc_hidden", 0.1)
 
 		total_loss = distilled_loss + original_loss
 
