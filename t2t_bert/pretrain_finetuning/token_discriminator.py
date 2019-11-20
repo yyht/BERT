@@ -182,6 +182,7 @@ def discriminator_metric_eval(per_example_loss, logits, input_ids, sampled_ids,
 
 	# discriminator_f1 = 2*(discriminator_recall * discriminator_precision) / ( discriminator_recall + discriminator_precision)
 
+
 	return {
 		"discriminator_accuracy":discriminator_accuracy,
 		"discriminator_loss":discriminator_mean_loss,
