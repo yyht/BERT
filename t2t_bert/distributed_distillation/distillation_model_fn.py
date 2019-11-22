@@ -152,7 +152,16 @@ def distillation_model_fn(model_config_dict,
 			target_hidden = st_dict['model'].get_all_encoder_layers()
 			with tf.variable_scope("distillation", reuse=tf.AUTO_REUSE):
 				cpc_loss = cpc_utils.CPC_Hidden(target_hidden, source_hidden, features['input_mask'])
+			tf.summary.scalar("hidden_cpc_loss", cpc_loss)
 			distilled_loss += cpc_loss + distillation_config.get("cpc_hidden", 0.1)
+
+		if "wpc" in distillation_config.get('distillation_type', ['mdd']):
+			source_hidden = ta_dict['model'].get_all_encoder_layers()
+			target_hidden = st_dict['model'].get_all_encoder_layers()
+			with tf.variable_scope("distillation", reuse=tf.AUTO_REUSE):
+				wpc_loss = cpc_utils.WPC_Hidden(target_hidden, source_hidden, features['input_mask'])
+			tf.summary.scalar("hidden_wpc_loss", wpc_loss)
+			distilled_loss += wpc_loss + distillation_config.get("wpc_hidden", 0.1)
 
 		total_loss = distilled_loss + original_loss
 

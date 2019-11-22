@@ -17,7 +17,7 @@ def CPC_Hidden(student_tensor, teacher_tensor, input_mask):
 
 	with tf.variable_scope("cpc_weights", reuse=tf.AUTO_REUSE): 
 		cpc_weights = tf.get_variable(
-				"weights", [student_shape[0],teacher_shape[0]],
+				"weights", [student_shape[-1],teacher_shape[-1]],
 				initializer=create_initializer(0.02)
 				)
 
@@ -41,19 +41,18 @@ def CPC_Hidden(student_tensor, teacher_tensor, input_mask):
 
 	marginal_term = tf.reduce_logsumexp(marginal_masked_cpc_tensor, axis=[1]) # batch x seq
 
-	log_n = tf.math.log(tf.cast(cpc_tensor.shape[1], logu.dtype))
-
-	marginal_term -= log_n
+	# log_n = tf.math.log(tf.cast(cpc_tensor.shape[1], cpc_tensor.dtype))
 
 	return -tf.reduce_sum((joint_term - marginal_term)*mask) / (1e-10 + tf.reduce_sum(mask))
 
-def WPC_Hidden(student_tensor, teacher_tensor, input_mask, opt):
+
+def WPC_Hidden(student_tensor, teacher_tensor, input_mask, opt=None):
 	teacher_shape = bert_utils.get_shape_list(teacher_tensor[0], expected_rank=[3])
 	student_shape = bert_utils.get_shape_list(student_tensor[0], expected_rank=[3])
 
 	with tf.variable_scope("wpc_weights", reuse=tf.AUTO_REUSE): 
 		cpc_weights = tf.get_variable(
-				"weights", [student_shape[0],teacher_shape[0]],
+				"weights", [student_shape[-1],teacher_shape[-1]],
 				initializer=create_initializer(0.02)
 				)
 
@@ -82,12 +81,12 @@ def WPC_Hidden(student_tensor, teacher_tensor, input_mask, opt):
 
 	loss = -tf.reduce_sum((joint_term - marginal_term)*mask) / (1e-10 + tf.reduce_sum(mask))
 
-	wpc_grad = opt.compute_gradients(loss, [])
+	# wpc_grad = opt.compute_gradients(loss, [])
 		
-	wpc_grad = tf.sqrt(tf.reduce_sum(tf.square(wpc_grad), axis=1))
-	wpc_grad_penality = tf.reduce_mean(tf.square(wpc_grad - 1.0) * 0.1)
+	# wpc_grad = tf.sqrt(tf.reduce_sum(tf.square(wpc_grad), axis=1))
+	# wpc_grad_penality = tf.reduce_mean(tf.square(wpc_grad - 1.0) * 0.1)
 
-	return loss + wpc_grad_penality
+	return loss
 
 
 

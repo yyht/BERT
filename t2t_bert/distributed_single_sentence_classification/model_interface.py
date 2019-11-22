@@ -69,7 +69,11 @@ def model_config_parser(FLAGS):
 				except:
 					config.init_lr = 1e-4
 			else:
-				config.init_lr = 2e-5
+				try:
+					config.init_lr = FLAGS.init_lr
+				except:
+					config.init_lr = 2e-5
+		print("===learning rate===", config.init_lr)
 		config.loss = "entropy"
 		config.rule_type_size = 2
 		config.lm_ratio = 1.0

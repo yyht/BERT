@@ -72,8 +72,7 @@ def classifier_model_fn_builder(
 		model_io_fn = model_io.ModelIO(model_io_config)
 
 		tvars = []
-		loss = 10*discriminator_dict['loss']
-
+		loss = 10 * discriminator_dict['loss']
 		# for var in discriminator_dict['tvars']:
 		#	if re.search('word_embeddings', var.name):
 		#		continue
@@ -81,9 +80,10 @@ def classifier_model_fn_builder(
 		#		tvars.append(var)
 
 		tvars.extend(discriminator_dict['tvars'])
+
 		if kargs.get('joint_train', '1') == '1':
                         tf.logging.info("****** joint generator and discriminator training *******")
-			tvars.extend(generator_fn['tvars'])
+			tvars.extend(generator_dict['tvars'])
 			loss += generator_dict['loss']
 		tvars = list(set(tvars))
 
