@@ -6,5 +6,7 @@
 	"hidden_uniform":1.0,
 	"hidden_cls_uniform":0.0,
 	"rkd_ratio":0.0,
-	"distillation_type":["kl_logits"]
+	"wpc_hidden":1.0,
+	"cpc_hidden":1.0,
+	"distillation_type":["cpc"]
 }

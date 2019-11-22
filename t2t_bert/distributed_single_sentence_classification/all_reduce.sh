@@ -32,7 +32,7 @@ pai -name tensorflow1120
 	-project algo_public_dev 
 	-Dscript='file://${model_zip}'
 	-DentryFile='./BERT/t2t_bert/distributed_bin/all_reduce_train_eval_api.py' 
-	-DgpuRequired=400
+	-DgpuRequired=100
 	-DjobName='bert_qqp'
 	-Dtags='bert'
 	-DhyperParameters='file:///Users/xuhaotian/Desktop/my_work/BERT/t2t_bert/distributed_single_sentence_classification/albert_tiny_lcqmc'
