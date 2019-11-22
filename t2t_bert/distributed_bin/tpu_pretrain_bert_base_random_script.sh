@@ -28,7 +28,7 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--decay "decay" \
 	--init_lr 5e-4 \
 	--do_train true \
-	--tpu_name "htxu91" \
+	--tpu_name $TPU_NAME \
 	--mode "pretrain" \
 	--random_generator "1"
 

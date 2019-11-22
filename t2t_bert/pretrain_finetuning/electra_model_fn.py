@@ -82,7 +82,7 @@ def classifier_model_fn_builder(
 		tvars.extend(discriminator_dict['tvars'])
 
 		if kargs.get('joint_train', '1') == '1':
-                        tf.logging.info("****** joint generator and discriminator training *******")
+			tf.logging.info("****** joint generator and discriminator training *******")
 			tvars.extend(generator_dict['tvars'])
 			loss += generator_dict['loss']
 		tvars = list(set(tvars))
@@ -185,7 +185,7 @@ def classifier_model_fn_builder(
 					return generator_metric
 
 				tpu_eval_metrics = (joint_metric, [
-						  				generator_dict['masked_lm_example_loss'],
+										generator_dict['masked_lm_example_loss'],
 										generator_dict['masked_lm_log_probs'],
 										generator_dict['masked_lm_ids'],
 										generator_dict['masked_lm_weights'],
@@ -217,7 +217,7 @@ def classifier_model_fn_builder(
 								generator_dict['sampled_ids'],
 								generator_dict['sampled_input_mask'])
 				tpu_eval_metrics = (discriminator_metric_eval, [
-							  				discriminator_dict['per_example_loss'],
+											discriminator_dict['per_example_loss'],
 											discriminator_dict['logits'], 
 											generator_dict['sampled_input_ids'], 
 											generator_dict['sampled_ids'],
