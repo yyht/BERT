@@ -41,13 +41,13 @@ zip -r ${model_zip} ${model_folder} -x "*.DS_Store,*.git*"
 # echo "${pai_command}"
 # ${odpscmd} -e "${pai_command}"
 # echo "finish..."
+# 	-project algo_public_dev 
 
 
 pai_command="
 # set odps.running.cluster=AY100G;
 # set odps.algo.hybrid.deploy.info=LABEL:V100:OPER_EQUAL;
 pai -name tensorflow1120
-	-project algo_public_dev 
 	-Dscript='file://${model_zip}'
 	-DjobName='bert_mrc_pretrain'
 	-Dtags='bert'

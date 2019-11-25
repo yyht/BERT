@@ -291,6 +291,11 @@ flags.DEFINE_string(
 	"if apply distillation"
 	)
 
+flags.DEFINE_string(
+	"electra_mode", "solo_training",
+	"if apply distillation"
+	)
+
 def main(_):
 
 	print(FLAGS)
@@ -379,7 +384,8 @@ def main(_):
 			input_target=FLAGS.input_target,
 			distillation=FLAGS.distillation,
 			temperature=FLAGS.temperature,
-			distillation_ratio=FLAGS.distillation_ratio)
+			distillation_ratio=FLAGS.distillation_ratio,
+			electra_mode=FLAGS.electra_mode)
 	else:
 		train_eval_api.monitored_estimator(
 			FLAGS=FLAGS,
