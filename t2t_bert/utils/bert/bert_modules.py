@@ -152,6 +152,45 @@ def embedding_lookup(input_ids,
 											input_shape[0:-1] + [input_shape[-1] * embedding_size])
 	return (output, embedding_table)
 
+def gumbel_embedding_lookup(input_ids,
+										 vocab_size,
+										 embedding_size=128,
+										 initializer_range=0.02,
+										 word_embedding_name="word_embeddings",
+										 use_one_hot_embeddings=False):
+	"""Looks up words embeddings for id tensor.
+
+	Args:
+		input_ids: int32 Tensor of shape [batch_size, seq_length] containing word
+			ids.
+		vocab_size: int. Size of the embedding vocabulary.
+		embedding_size: int. Width of the word embeddings.
+		initializer_range: float. Embedding initialization range.
+		word_embedding_name: string. Name of the embedding table.
+		use_one_hot_embeddings: bool. If True, use one-hot method for word
+			embeddings. If False, use `tf.nn.embedding_lookup()`. One hot is better
+			for TPUs.
+
+	Returns:
+		float Tensor of shape [batch_size, seq_length, embedding_size].
+	"""
+	# This function assumes that the input is of shape [batch_size, seq_length,
+	# num_inputs].
+	#
+	# If the input is a 2D tensor of shape [batch_size, seq_length], we
+	# reshape to [batch_size, seq_length, 1].
+
+	input_shape = bert_utils.get_shape_list(input_ids, expected_rank=[3])
+
+	embedding_table = tf.get_variable(
+			name=word_embedding_name,
+			shape=[vocab_size, embedding_size],
+			initializer=create_initializer(initializer_range))
+		
+	output = tf.einsum("abc,cd->abd", tf.cast(input_ids, tf.float32), embedding_table)
+	
+	return (output, embedding_table)
+
 def embedding_postprocessor(input_tensor,
 														use_token_type=False,
 														token_type_ids=None,

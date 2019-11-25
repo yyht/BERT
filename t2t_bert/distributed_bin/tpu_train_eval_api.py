@@ -295,6 +295,10 @@ flags.DEFINE_string(
 	"if apply distillation"
 	)
 
+flags.DEFINE_string(
+	"electra_mode", "solo_training",
+	"if apply distillation"
+	)
 
 def main(_):
 
@@ -355,8 +359,9 @@ def main(_):
 			train_op=FLAGS.train_op,
 			decay=FLAGS.decay,
 			warmup=FLAGS.warmup,
-			input_target=FLAGS.input_target
-			)
+			input_target=FLAGS.input_target,
+			electra_mode=FLAGS.electra_mode,
+			joint_train=FLAGS.joint_train)
 
 
 if __name__ == "__main__":

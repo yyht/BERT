@@ -15,6 +15,11 @@ try:
 except:
 	from electra_model_fn import classifier_model_fn_builder
 
+try:
+	from .electra_model_fn_gumbel import classifier_model_fn_builder as classifier_model_fn_builder_gumbel
+except:
+	from electra_model_fn_gumbel import classifier_model_fn_builder as classifier_model_fn_builder_gumbel
+
 import numpy as np
 import tensorflow as tf
 from bunch import Bunch
@@ -174,7 +179,17 @@ def train_eval_fn(FLAGS,
 			target_dict[task_type] = distillation_config[task_type]["target"]
 
 		tf.logging.info("***** use tpu ***** %s", str(FLAGS.use_tpu))
-		model_fn = classifier_model_fn_builder(model_config_dict,
+
+		if kargs.get('electra_mode', 'solo_training') == 'solo_training':
+			tf.logging.info("***** electra mode ***** generator and discriminator seperate training")
+			model_fn_builder = classifier_model_fn_builder
+		elif kargs.get('electra_mode', 'solo_training') == 'gumbel_training':
+			tf.logging.info("***** electra mode ***** gumbel generator and discriminator joint training")
+			model_fn_builder = classifier_model_fn_builder_gumbel
+		else:
+			model_fn_builder = classifier_model_fn_builder
+
+		model_fn = model_fn_builder(model_config_dict,
 					num_labels_dict,
 					init_checkpoint_dict,
 					load_pretrained_dict,

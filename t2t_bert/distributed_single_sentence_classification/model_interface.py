@@ -2,6 +2,7 @@ from distributed_encoder.bert_encoder import bert_encoder
 from distributed_encoder.bert_encoder import bert_rule_encoder
 from distributed_encoder.gpt_encoder import gpt_encoder
 from distributed_encoder.bert_encoder import albert_encoder
+from distributed_encoder.bert_encoder import electra_gumbel_encoder
 
 from distributed_encoder.classifynet_encoder import textcnn_encoder
 from distributed_encoder.classifynet_encoder import textlstm_encoder
@@ -39,13 +40,15 @@ def model_zoo(model_config):
 		model_interface = gpt_encoder
 	elif model_config.get("model_type", "albert") == "albert": 
 		model_interface = albert_encoder
+	elif model_config.get("model_type", "electra_gumbel_encoder") == "electra_gumbel_encoder":
+		model_interface = electra_gumbel_encoder
 	return model_interface
 
 def model_config_parser(FLAGS):
 
 	print(FLAGS.model_type)
 
-	if FLAGS.model_type in ["bert", "bert_rule", "albert"]:
+	if FLAGS.model_type in ["bert", "bert_rule", "albert", "electra_gumbel_encoder"]:
 		config = json.load(open(FLAGS.config_file, "r"))
 		print(config, '==model config==')
 		config = Bunch(config)
@@ -74,6 +77,7 @@ def model_config_parser(FLAGS):
 				except:
 					config.init_lr = 2e-5
 		print("===learning rate===", config.init_lr)
+		tf.logging.info("****** learning rate ******* %s", str(config.init_lr))
 		config.loss = "entropy"
 		config.rule_type_size = 2
 		config.lm_ratio = 1.0

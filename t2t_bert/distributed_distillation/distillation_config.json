@@ -8,5 +8,5 @@
 	"rkd_ratio":0.0,
 	"wpc_hidden":1.0,
 	"cpc_hidden":1.0,
-	"distillation_type":["cpc"]
+	"distillation_type":[ "kl_logits"]
 }

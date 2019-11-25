@@ -9,7 +9,8 @@ try:
 except:
 	from distributed_single_sentence_classification.model_interface import model_zoo
 
-from pretrain_finetuning.token_generator import token_generator, random_input_ids_generation
+from pretrain_finetuning.token_generator import random_input_ids_generation
+from pretrain_finetuning.token_generator_gumbel import token_generator_gumbel
 
 from utils.bert import bert_utils
 from model_io import model_io
@@ -118,9 +119,9 @@ def model_fn_builder(
 											embedding_projection=model.get_embedding_projection_table(),
 											scope='generator')
 		print(model_config.lm_ratio, '==mlm lm_ratio==')
-		loss = model_config.lm_ratio * masked_lm_loss #+ model_config.nsp_ratio * nsp_loss
+		loss = model_config.lm_ratio * masked_lm_loss + 0.0 * nsp_loss
 
-		sampled_ids = token_generator(model_config, 
+		sampled_ids = token_generator_gumbel(model_config, 
 									model.get_sequence_output(), 
 									model.get_embedding_table(), 
 									features['input_ids'], 
@@ -134,30 +135,6 @@ def model_fn_builder(
 			input_ids = features['input_ori_ids']
 			input_mask = features['input_mask']
 			segment_ids = features['segment_ids']
-		else:
-			input_ids = tf.expand_dims(features['input_ori_ids'], axis=-1)
-			# batch x seq_length x 1
-			input_ids = tf.einsum('abc,cd->abd', input_ids, tf.ones((1, model_config.get('gen_sample', 1))))
-			input_ids = tf.cast(input_ids, tf.int32)
-
-			input_shape_list = bert_utils.get_shape_list(input_ids, expected_rank=3)
-			batch_size = input_shape_list[0]
-			seq_length = input_shape_list[1]
-			gen_sample = input_shape_list[2]
-
-			sampled_ids = tf.reshape(sampled_ids, [batch*gen_sample, seq_length])
-			input_ids = tf.reshape(input_ids, [batch*gen_sample, seq_length])
-
-			input_mask = tf.expand_dims(features['input_mask'], axis=-1)
-			input_mask = tf.einsum('abc,cd->abd', input_mask, tf.ones((1, model_config.get('gen_sample', 1))))
-			input_mask = tf.cast(input_mask, tf.int32)
-
-			segment_ids = tf.expand_dims(features['segmnet_ids'], axis=-1)
-			segment_ids = tf.einsum('abc,cd->abd', segment_ids, tf.ones((1, model_config.get('gen_sample', 1))))
-			segment_ids = tf.cast(segment_ids, tf.int32)
-
-			segment_ids = tf.reshape(segment_ids, [batch*gen_sample, seq_length])
-			input_mask = tf.reshape(input_mask, [batch*gen_sample, seq_length])
 
 		model_io_fn = model_io.ModelIO(model_io_config)
 
@@ -167,11 +144,7 @@ def model_fn_builder(
 		lm_pretrain_tvars = model_io_fn.get_params("generator/cls/predictions", 
 									not_storage_params=not_storage_params)
 
-		nsp_pretrain_vars = model_io_fn.get_params("generator/cls/seq_relationship",
-									not_storage_params=not_storage_params)
-
 		pretrained_tvars.extend(lm_pretrain_tvars)
-		pretrained_tvars.extend(nsp_pretrain_vars)
 		tvars = pretrained_tvars
 
 		print('==generator parameters==', tvars)

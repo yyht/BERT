@@ -110,6 +110,13 @@ class Optimizer(object):
 			grads_and_vars = opt.compute_gradients(loss_fn, colocate_gradients_with_ops=True)
 		else:	
 			grads_and_vars = opt.compute_gradients(loss, tvars)
+
+			for grad, var in grads_and_vars:
+				if grad is not None:
+					continue
+				else:
+					print(var.name, "=====none grad======")
+
 			grads = [grad/gpu_count for grad, _ in grads_and_vars] # allreduce from sum to mean
 			grad_clip = self.config.get("grad_clip", "global_norm")
 			use_norm = tf.global_norm(grads)
