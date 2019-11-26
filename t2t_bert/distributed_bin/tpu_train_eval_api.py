@@ -291,7 +291,7 @@ flags.DEFINE_string(
 	)
 
 flags.DEFINE_string(
-	"random_generator", "yes",
+	"random_generator", "1",
 	"if apply distillation"
 	)
 
