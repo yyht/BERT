@@ -106,7 +106,7 @@ def token_generator_gumbel(config, input_tensor,
 
 		# [batch x seq] x config.vocab_size x config.get('gen_sample', 1)
 		sampled_logprob = gumbel_softmax(flat_logits_tempered, 
-										temperature=annealed_temp,
+										temperature=1.0,
 										samples=config.get('gen_sample', 1))
 
 		# argmax on config.vocab_size which is always axis=1
