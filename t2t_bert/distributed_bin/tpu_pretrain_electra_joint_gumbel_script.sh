@@ -35,7 +35,7 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--multi_task_config "./t2t_bert/pretrain_finetuning/multi_model_gs_gumbel.json" \
 	--joint_train "1" \
 	--electra_mode "gumbel_training" \
-	--sharing_mode "none"
+	--sharing_mode "all_sharing"
 
 
 
