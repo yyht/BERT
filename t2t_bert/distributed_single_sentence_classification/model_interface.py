@@ -60,9 +60,9 @@ def model_config_parser(FLAGS):
 		config.ln_type = FLAGS.ln_type
 		if FLAGS.task_type in ['bert_pretrain']:
 			if FLAGS.load_pretrained == "yes":
-				config.init_lr = 2e-5
+				config.init_lr = FLAGS.init_lr
 			else:
-				config.init_lr = 1e-4
+				config.init_lr = FLAGS.init_lr
 				config.warmup = 0.1
 			print('==apply bert pretrain==', config.init_lr)
 		else:
