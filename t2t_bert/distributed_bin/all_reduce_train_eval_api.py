@@ -296,6 +296,11 @@ flags.DEFINE_string(
 	"if apply distillation"
 	)
 
+flags.DEFINE_string(
+	"sharing_mode", "none",
+	"if apply distillation"
+	)
+
 def main(_):
 
 	print(FLAGS)
@@ -385,7 +390,8 @@ def main(_):
 			distillation=FLAGS.distillation,
 			temperature=FLAGS.temperature,
 			distillation_ratio=FLAGS.distillation_ratio,
-			electra_mode=FLAGS.electra_mode)
+			electra_mode=FLAGS.electra_mode,
+			sharing_mode=FLAGS.sharing_mode)
 	else:
 		train_eval_api.monitored_estimator(
 			FLAGS=FLAGS,

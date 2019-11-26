@@ -31,7 +31,18 @@ def model_fn_builder(
 					**kargs):
 
 	model_config = copy.deepcopy(model_config)
-	model_config.scope = 'generator/' + model_config.scope
+	if kargs.get("sharing_mode", "none") == "none":
+		"""
+		'generator/' + model_config.scope
+		"""
+		model_config.scope = exclude_scope + '/' + model_config.scope
+		generator_scope_prefix = exclude_scope
+		exclude_scope = exclude_scope
+		tf.logging.info("****** generator parameter *******")
+	elif kargs.get("sharing_mode", "none") == "all_sharing":
+		generator_scope_prefix = None
+		exclude_scope = ''
+		tf.logging.info("****** generator parameter sharing with discriminator *******")
 
 	def model_fn(features, labels, mode, params):
 
@@ -71,7 +82,7 @@ def model_fn_builder(
 										model.get_pooled_output(),
 										features['next_sentence_labels'],
 										reuse=tf.AUTO_REUSE,
-										scope='generator')
+										scope=generator_scope_prefix)
 
 		masked_lm_positions = features["masked_lm_positions"]
 		masked_lm_ids = features["masked_lm_ids"]
@@ -102,7 +113,8 @@ def model_fn_builder(
 										features['input_ids'],
 										sampled_binary_mask,
 										reuse=tf.AUTO_REUSE,
-										embedding_projection=model.get_embedding_projection_table())
+										embedding_projection=model.get_embedding_projection_table(),
+										scope=generator_scope_prefix)
 			masked_lm_ids = features['input_ori_ids']
 		else:
 			(masked_lm_loss,
@@ -117,7 +129,7 @@ def model_fn_builder(
 											masked_lm_weights,
 											reuse=tf.AUTO_REUSE,
 											embedding_projection=model.get_embedding_projection_table(),
-											scope='generator')
+											scope=generator_scope_prefix)
 		print(model_config.lm_ratio, '==mlm lm_ratio==')
 		loss = model_config.lm_ratio * masked_lm_loss + 0.0 * nsp_loss
 
@@ -128,7 +140,7 @@ def model_fn_builder(
 									features['input_ori_ids'],
 									features['input_mask'],	
 									embedding_projection=model.get_embedding_projection_table(),
-									scope='generator',
+									scope=generator_scope_prefix,
 									mask_method='only_mask')
 
 		if model_config.get('gen_sample', 1) == 1:
@@ -141,8 +153,21 @@ def model_fn_builder(
 		pretrained_tvars = model_io_fn.get_params(model_config.scope, 
 										not_storage_params=not_storage_params)
 
-		lm_pretrain_tvars = model_io_fn.get_params("generator/cls/predictions", 
-									not_storage_params=not_storage_params)
+		if generator_scope_prefix:
+			"""
+			"generator/cls/predictions"
+			"""
+			lm_pretrain_tvars = model_io_fn.get_params(generator_scope_prefix+"/cls/predictions", 
+										not_storage_params=not_storage_params)
+
+			nsp_pretrain_vars = model_io_fn.get_params(generator_scope_prefix+"/cls/seq_relationship",
+										not_storage_params=not_storage_params)
+		else:
+			lm_pretrain_tvars = model_io_fn.get_params("cls/predictions", 
+										not_storage_params=not_storage_params)
+
+			nsp_pretrain_vars = model_io_fn.get_params("cls/seq_relationship",
+										not_storage_params=not_storage_params)
 
 		pretrained_tvars.extend(lm_pretrain_tvars)
 		tvars = pretrained_tvars
@@ -153,7 +178,7 @@ def model_fn_builder(
 			use_tpu = 1 if kargs.get('use_tpu', False) else 0
 			scaffold_fn = model_io_fn.load_pretrained(tvars, 
 											init_checkpoint,
-											exclude_scope="generator",
+											exclude_scope=exclude_scope,
 											use_tpu=use_tpu)
 		else:
 			scaffold_fn = None

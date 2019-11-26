@@ -96,6 +96,8 @@ def classifier_model_fn_builder(
 						"init_checkpoint":init_checkpoint_dict['generator'],
 						"exclude_scope":exclude_scope_dict[key]
 					}
+					if kargs.get("sharing_mode", "none") != "none":
+						tmp['exclude_scope'] = ''
 					var_checkpoint_dict_list.append(tmp)
 				elif key == 'discriminator':
 					tmp = {

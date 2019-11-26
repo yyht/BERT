@@ -74,7 +74,7 @@ def classifier_model_fn_builder(
 		model_io_fn = model_io.ModelIO(model_io_config)
 
 		tvars = []
-		loss = 10 * discriminator_dict['loss']
+		loss = discriminator_dict['loss']
 
 		tvars.extend(discriminator_dict['tvars'])
 
@@ -89,10 +89,12 @@ def classifier_model_fn_builder(
 			if load_pretrained_dict[key] == "yes":
 				if key == 'generator':
 					tmp = {
-						"tvars":generator_dict['tvars'],
-						"init_checkpoint":init_checkpoint_dict['generator'],
-						"exclude_scope":exclude_scope_dict[key]
+							"tvars":generator_dict['tvars'],
+							"init_checkpoint":init_checkpoint_dict['generator'],
+							"exclude_scope":exclude_scope_dict[key]
 					}
+					if kargs.get("sharing_mode", "none") != "none":
+						tmp['exclude_scope'] = ''
 					var_checkpoint_dict_list.append(tmp)
 				elif key == 'discriminator':
 					tmp = {

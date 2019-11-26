@@ -300,6 +300,11 @@ flags.DEFINE_string(
 	"if apply distillation"
 	)
 
+flags.DEFINE_string(
+	"sharing_mode", "none",
+	"if apply distillation"
+	)
+
 def main(_):
 
 	init_checkpoint = os.path.join(FLAGS.buckets, FLAGS.init_checkpoint)
@@ -361,7 +366,8 @@ def main(_):
 			warmup=FLAGS.warmup,
 			input_target=FLAGS.input_target,
 			electra_mode=FLAGS.electra_mode,
-			joint_train=FLAGS.joint_train)
+			joint_train=FLAGS.joint_train,
+			sharing_mode=FLAGS.sharing_mode)
 
 
 if __name__ == "__main__":

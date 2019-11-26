@@ -33,7 +33,8 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--mode 'electra' \
 	--multi_task_type "generator,discriminator" \
 	--multi_task_config "./t2t_bert/pretrain_finetuning/multi_model_gs_base.json" \
-	--joint_train "1"
+	--joint_train "1" \
+	--sharing_mode "none"
 
 
 
