@@ -26,7 +26,7 @@ def random_input_ids_generation(config,
 	seq_length = input_shape_list[1]
 
 	sample_probs = tf.ones_like(input_ori_ids) * input_mask * (1 - tf.cast(none_replace_mask, tf.int32))
-	sample_probs = 0.15 * tf.cast(sample_probs, tf.float32) # mask 15% token
+	sample_probs = 0.2 * tf.cast(sample_probs, tf.float32) # mask 15% token
 
 	noise_dist = tf.distributions.Bernoulli(probs=sample_probs, dtype=tf.float32)
 	sampled_binary_mask = noise_dist.sample()

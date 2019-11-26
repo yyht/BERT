@@ -132,6 +132,7 @@ class Optimizer(object):
 
 	def get_train_op(self, loss, tvars, init_lr, 
 							num_train_steps, **kargs):
+		tf.logging.info("****** optimizer learning rate ******* %s", str(init_lr))
 		self.learning_rate = self.lr_decay_fn(init_lr, num_train_steps, **kargs)
 		self.learning_rate = self.warm_up(self.learning_rate, init_lr, **kargs)
 		grads = self.grad_clip_fn(loss, tvars, **kargs)

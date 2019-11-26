@@ -61,6 +61,7 @@ def model_config_parser(FLAGS):
 		if FLAGS.task_type in ['bert_pretrain']:
 			if FLAGS.load_pretrained == "yes":
 				config.init_lr = FLAGS.init_lr
+				config.warmup = 0.1
 			else:
 				config.init_lr = FLAGS.init_lr
 				config.warmup = 0.1
@@ -76,6 +77,7 @@ def model_config_parser(FLAGS):
 					config.init_lr = FLAGS.init_lr
 				except:
 					config.init_lr = 2e-5
+			print('==apply albert finetuning==', config.init_lr)
 		print("===learning rate===", config.init_lr)
 		tf.logging.info("****** learning rate ******* %s", str(config.init_lr))
 		config.loss = "entropy"
