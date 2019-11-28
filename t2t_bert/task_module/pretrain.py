@@ -187,7 +187,7 @@ def seq_mask_masked_lm_output(config, input_tensor, output_weights,
 												labels=tf.stop_gradient(input_ori_ids),
 												)
 		per_example_loss *= sampled_binary_mask
-		loss = tf.reduce_sum(per_example_loss) / tf.reduce_sum(sampled_binary_mask)
+		loss = tf.reduce_sum(per_example_loss) / (1e-10 + tf.reduce_sum(sampled_binary_mask))
 
 		return (loss, per_example_loss, logits, sampled_binary_mask)
 

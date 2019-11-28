@@ -173,7 +173,7 @@ def classifier_model_fn_builder(
 											reuse=tf.AUTO_REUSE,
 											embedding_projection=model.get_embedding_projection_table())
 		print(model_config.lm_ratio, '==mlm lm_ratio==')
-		loss = model_config.lm_ratio * masked_lm_loss #+ model_config.nsp_ratio * nsp_loss
+		loss = model_config.lm_ratio * masked_lm_loss #+ 0.0 * nsp_loss
 		
 		model_io_fn = model_io.ModelIO(model_io_config)
 

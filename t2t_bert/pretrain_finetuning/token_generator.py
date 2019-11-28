@@ -25,8 +25,10 @@ def random_input_ids_generation(config,
 	batch_size = input_shape_list[0]
 	seq_length = input_shape_list[1]
 
+	must_have_one = tf.cast(tf.expand_dims(tf.eye(seq_length)[5], axis=[0]), tf.float32) # batch x seq_length
+
 	sample_probs = tf.ones_like(input_ori_ids) * input_mask * (1 - tf.cast(none_replace_mask, tf.int32))
-	sample_probs = 0.2 * tf.cast(sample_probs, tf.float32) # mask 15% token
+	sample_probs = 0.2 * tf.cast(sample_probs, tf.float32) + 0.8 * must_have_one # mask 15% token
 
 	noise_dist = tf.distributions.Bernoulli(probs=sample_probs, dtype=tf.float32)
 	sampled_binary_mask = noise_dist.sample()
@@ -75,7 +77,7 @@ def random_input_ids_generation(config,
 	# sampled_ori_binary_mask *= tf.cast(input_mask, tf.float32)
 
 	vocab_sample_logits = tf.random.uniform(
-							[batch_size, seq_length, config.vocab_size-valid_vocab],
+							[batch_size, seq_length, config.vocab_size],
 							minval=0.0,
 							maxval=1.0,
 							dtype=tf.float32)
@@ -87,7 +89,7 @@ def random_input_ids_generation(config,
 								num_samples=config.get('gen_sample', 1), 
 								output_dtype=tf.int32)
 
-	sample_vocab_ids = tf.reshape(sample_vocab_ids+valid_vocab, [batch_size, seq_length])
+	sample_vocab_ids = tf.reshape(sample_vocab_ids, [batch_size, seq_length])
 	sample_vocab_ids = tf.cast(sample_vocab_ids, tf.float32)
 	input_ori_ids = tf.cast(input_ori_ids, tf.float32)
 
