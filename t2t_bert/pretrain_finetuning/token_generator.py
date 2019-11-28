@@ -25,10 +25,10 @@ def random_input_ids_generation(config,
 	batch_size = input_shape_list[0]
 	seq_length = input_shape_list[1]
 
-	must_have_one = tf.cast(tf.expand_dims(tf.eye(seq_length)[4], axis=[0]), tf.float32) # batch x seq_length
+	must_have_one = tf.cast(tf.expand_dims(tf.eye(seq_length)[4], axis=[0]), tf.int32) # batch x seq_length
 	must_have_one *= input_mask * (1 - tf.cast(none_replace_mask, tf.int32))
 	sample_probs = tf.ones_like(input_ori_ids) * input_mask * (1 - tf.cast(none_replace_mask, tf.int32))
-	sample_probs = 0.2 * tf.cast(sample_probs, tf.float32) + 0.8 * must_have_one # mask 15% token
+	sample_probs = 0.2 * tf.cast(sample_probs, tf.float32) + 0.8 * tf.cast(must_have_one, tf.float32) # mask 15% token
 
 	noise_dist = tf.distributions.Bernoulli(probs=sample_probs, dtype=tf.float32)
 	sampled_binary_mask = noise_dist.sample()
