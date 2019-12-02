@@ -7,12 +7,12 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--max_length 512 \
 	--train_file "data_single_hard_gan/chunk_0.tfrecords,data_single_hard_gan/chunk_1.tfrecords,data_single_hard_gan/chunk_2.tfrecords,data_single_hard_gan/chunk_3.tfrecords,data_single_hard_gan/chunk_4.tfrecords,data_single_hard_gan/chunk_5.tfrecords,data_single_hard_gan/chunk_6.tfrecords,data_single_hard_gan/chunk_7.tfrecords,data_single_hard_gan/chunk_8.tfrecords,data_single_hard_gan/chunk_9.tfrecords,data_single_hard_gan/chunk_10.tfrecords,data_single_hard_gan/chunk_11.tfrecords,data_single_hard_gan/chunk_12.tfrecords,data_single_hard_gan/chunk_13.tfrecords,data_single_hard_gan/chunk_14.tfrecords,data_single_hard_gan/chunk_15.tfrecords,data_single_hard_gan/chunk_16.tfrecords,data_single_hard_gan/chunk_17.tfrecords" \
 	--dev_file "data_single_hard_gan/chunk_18.tfrecords,data_single_hard_gan/chunk_19.tfrecords" \
-	--model_output "model/electra_bert_tiny_gen_bert_tiny_dis_joint_gumbel_no_sharing_base" \
+	--model_output "model/electra_bert_tiny_gen_bert_tiny_dis_joint_gumbel_no_sharing" \
 	--epoch 15 \
 	--num_classes 2 \
 	--train_size 11000000 \
 	--eval_size 1100000 \
-	--batch_size 128 \
+	--batch_size 1024 \
 	--model_type "albert" \
 	--if_shard 1 \
 	--is_debug 1 \
@@ -27,14 +27,13 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--warmup "warmup" \
 	--decay "decay" \
 	--init_lr 1e-4 \
-	--do_train true \
-	--tpu_name "albert4" \
+	--tpu_name "albert2" \
 	--num_tpu_cores 8 \
 	--mode 'electra' \
 	--multi_task_type "generator,discriminator" \
-	--multi_task_config "./t2t_bert/pretrain_finetuning/multi_model_gs_base_gumbel.json" \
+	--multi_task_config "./t2t_bert/pretrain_finetuning/multi_model_gs_gumbel.json" \
 	--joint_train "1" \
-	--electra_mode "gumbel_training" \
+	--electra_mode "solo_training" \
 	--sharing_mode "none"
 
 
