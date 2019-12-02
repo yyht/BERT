@@ -63,18 +63,24 @@ def classifier_model_fn_builder(
 					**kargs)
 
 		discriminator_features = {}
+		if kargs.get('minmax_mode', 'corrupted') == 'corrupted':
+			tf.logging.info("****** gumbel 3-D sampled_ids *******")
+		elif kargs.get('minmax_mode', 'corrupted') == 'masked':
+			discriminator_features['ori_sampled_ids'] = generator_dict['output_ids']
+			tf.logging.info("****** conditioanl sampled_ids *******")
 		discriminator_features['input_ids'] = generator_dict['sampled_ids']
 		discriminator_features['input_mask'] = generator_dict['sampled_input_mask']
 		discriminator_features['segment_ids'] = generator_dict['sampled_segment_ids']
 		discriminator_features['input_ori_ids'] = generator_dict['sampled_input_ids']
 		discriminator_features['next_sentence_labels'] = features['next_sentence_labels']
-		discriminator_features['ori_input_ids'] = features['input_ids']
+		discriminator_features['ori_input_ids'] = generator_dict['sampled_ids']
+		
 		discriminator_dict = discriminator_fn(discriminator_features, labels, mode, params)
 
 		model_io_fn = model_io.ModelIO(model_io_config)
 
 		tvars = []
-		loss = discriminator_dict['loss']
+		loss = 10 * discriminator_dict['loss']
 
 		tvars.extend(discriminator_dict['tvars'])
 

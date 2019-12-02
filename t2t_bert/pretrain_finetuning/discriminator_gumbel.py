@@ -10,6 +10,7 @@ except:
 	from distributed_single_sentence_classification.model_interface import model_zoo
 
 from pretrain_finetuning.token_discriminator import classifier
+
 from model_io import model_io
 
 import tensorflow as tf
@@ -80,10 +81,9 @@ def model_fn_builder(
 									features['ori_input_ids'],
 									features['input_mask'],
 									2,
-									dropout_prob)
-									# ,
-									# loss='focal_loss')
-
+									dropout_prob,
+									ori_sampled_ids=features.get('ori_sampled_ids', None))
+	
 		loss += 0.0 * nsp_loss
 
 		model_io_fn = model_io.ModelIO(model_io_config)

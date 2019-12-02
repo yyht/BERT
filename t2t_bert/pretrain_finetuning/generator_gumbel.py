@@ -56,12 +56,14 @@ def model_fn_builder(
 				sampled_binary_mask] = random_input_ids_generation(model_config,
 											features['input_ori_ids'],
 											features['input_mask'])
-				features['input_ids'] = output_ids
+				features['input_ids'] = tf.identity(output_ids)
 				tf.logging.info("****** do random generator *******")
 			else:
 				sampled_binary_mask = None
+				output_ids = tf.identity(features['input_ids'])
 		else:
 			sampled_binary_mask = None
+			output_ids = tf.identity(features['input_ids'])
 
 		model = model_api(model_config, features, labels,
 							mode, target, reuse=tf.AUTO_REUSE)
@@ -197,7 +199,8 @@ def model_fn_builder(
 					"masked_lm_example_loss":masked_lm_example_loss,
 					"next_sentence_example_loss":nsp_per_example_loss,
 					"next_sentence_log_probs":nsp_log_prob, 
-					"next_sentence_labels":features['next_sentence_labels']
+					"next_sentence_labels":features['next_sentence_labels'],
+					"output_ids":output_ids
 				}
 		return return_dict
 	return model_fn
