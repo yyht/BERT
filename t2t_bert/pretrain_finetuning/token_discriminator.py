@@ -53,11 +53,11 @@ def classifier(config, seq_output,
 	input_ids = tf.cast(input_ids, tf.int32)
 
 	input_shape_list = bert_utils.get_shape_list(sampled_ids, expected_rank=[2,3])
-	if len(input_shape) == 3:
+	if len(input_shape_list) == 3:
 		tmp_sampled_ids = tf.argmax(sampled_ids, axis=-1) # batch x seq x vocab
 		tmp_sampled_ids = tf.cast(tmp_sampled_ids, tf.int32)
 		tf.logging.info("****** gumbel 3-D sampled_ids *******")
-	elif len(input_shape) == 2:
+	elif len(input_shape_list) == 2:
 		tmp_sampled_ids = sampled_ids
 		tmp_sampled_ids = tf.cast(tmp_sampled_ids, tf.int32)
 		tf.logging.info("****** normal 2-D sampled_ids *******")
@@ -65,11 +65,11 @@ def classifier(config, seq_output,
 	ori_sampled_ids = kargs.get('ori_sampled_ids', None)
 	if ori_sampled_ids is not None:
 		input_shape_list = bert_utils.get_shape_list(ori_sampled_ids, expected_rank=[2,3])
-		if len(input_shape) == 3:
+		if len(input_shape_list) == 3:
 			tmp_ori_sampled_ids = tf.argmax(ori_sampled_ids, axis=-1) # batch x seq x vocab
 			tmp_ori_sampled_ids = tf.cast(tmp_sampled_ori_ids, tf.int32)
 			tf.logging.info("****** gumbel 3-D sampled_ids *******")
-		elif len(input_shape) == 2:
+		elif len(input_shape_list) == 2:
 			tmp_ori_sampled_ids = tf.cast(ori_sampled_ids, tf.int32)
 			tf.logging.info("****** normal 2-D sampled_ids *******")
 
