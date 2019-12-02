@@ -159,6 +159,23 @@ def model_fn_builder(
 													)
 										}
 							)
+			elif model_config.get('label_type', 'single_label') == "single_label":
+				prob = tf.nn.softmax(logits)
+				estimator_spec = tf.estimator.EstimatorSpec(
+										mode=mode,
+										predictions={
+													'pred_label':prob,
+													"max_prob":prob
+										},
+										export_outputs={
+											"output":tf.estimator.export.PredictOutput(
+														{
+															'pred_label':prob,
+															"max_prob":prob
+														}
+													)
+										}
+							)
 			return estimator_spec
 
 		elif mode == tf.estimator.ModeKeys.EVAL:

@@ -49,7 +49,7 @@ def model_fn_builder(
 										features['next_sentence_labels'],
 										reuse=tf.AUTO_REUSE)
 
-		with tf.variable_scope('cls/seq_predictions', reuse=model_reuse):
+		with tf.variable_scope('cls/seq_predictions', reuse=tf.AUTO_REUSE):
 			(loss, 
 			logits, 
 			per_example_loss) = classifier(model_config, 

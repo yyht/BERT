@@ -1,14 +1,14 @@
 CUDA_VISIBLE_DEVICES="" python ./t2t_bert/distributed_bin/export_api.py \
  	--buckets "/data/xuht" \
 	--config_file "./data/textcnn_feature_distillation/textcnn.json" \
-	--init_checkpoint "green_lazada_model/model.ckpt-403393" \
+	--init_checkpoint "lazada/new_data/20190521/data/distillation/st/model/textcnn_0614_128_no_lower/model.ckpt-403393" \
 	--vocab_file "multi_cased_L-12_H-768_A-12/vocab.txt" \
 	--label_id "./data/lazada_multilingual/label_dict.json" \
 	--max_length 128 \
 	--train_file "porn/clean_data/textcnn/distillation/train_tfrecords" \
 	--dev_file "porn/clean_data/textcnn/distillation/test_tfrecords" \
-	--model_output "green_lazada_model/" \
-	--export_dir "green_lazada_model/export" \
+	--model_output "lazada/new_data/20190521/data/distillation/st/model/textcnn_0614_128_no_lower" \
+	--export_dir "lazada/new_data/20190521/data/distillation/st/model/textcnn_0614_128_no_lower/export" \
 	--epoch 8 \
 	--num_classes 5 \
 	--train_size 952213 \

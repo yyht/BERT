@@ -20,6 +20,11 @@ try:
 except:
 	from electra_model_fn_gumbel import classifier_model_fn_builder as classifier_model_fn_builder_gumbel
 
+try:
+	from .electra_model_fn_gumbel_nce import classifier_model_fn_builder as classifier_model_fn_builder_gumbel_nce
+except:
+	from electra_model_fn_gumbel_nce import classifier_model_fn_builder as classifier_model_fn_builder_gumbel_nce
+
 import numpy as np
 import tensorflow as tf
 from bunch import Bunch
@@ -186,6 +191,9 @@ def train_eval_fn(FLAGS,
 		elif kargs.get('electra_mode', 'solo_training') == 'gumbel_training':
 			tf.logging.info("***** electra mode ***** gumbel generator and discriminator joint training")
 			model_fn_builder = classifier_model_fn_builder_gumbel
+		elif kargs.get('electra_mode', 'solo_training') == 'gumbel_nce':
+			tf.logging.info("***** electra mode ***** gumbel nce generator and discriminator joint training")
+			model_fn_builder = classifier_model_fn_builder_gumbel_nce
 		else:
 			model_fn_builder = classifier_model_fn_builder
 

@@ -4,6 +4,8 @@
     "scope":"TextCNN",
     "num_classes":3,
 
+    "highway":"conv_highway",
+
     "with_char": false,
     "char_embedding":"conv",
     "char_emb_dim": 20,
@@ -55,7 +57,7 @@
 
     "elmo_pca":false,
 
-    "num_filters":192,
+    "num_filters":128,
     "max_pool_size":5,
     "encoder_type":"textcnn",
     "num_blocks":2,

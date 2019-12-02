@@ -16,7 +16,7 @@ if_shard=1
 is_debug=1
 run_type=estimator
 opt_type="all_reduce"
-num_gpus=2
+num_gpus=1
 parse_type=parse_batch
 rule_model=normal
 profiler="no"
@@ -42,5 +42,5 @@ multi_task_type="generator,discriminator"
 multi_task_config="./BERT/t2t_bert/pretrain_finetuning/multi_model_config_gumbel.json"
 joint_train=1
 init_lr=1e-4
-electra_mode=gumbel_training
+electra_mode=gumbel_nce
 

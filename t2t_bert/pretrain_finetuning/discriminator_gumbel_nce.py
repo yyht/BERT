@@ -9,7 +9,7 @@ try:
 except:
 	from distributed_single_sentence_classification.model_interface import model_zoo
 
-from pretrain_finetuning.token_discriminator import classifier
+from pretrain_finetuning.token_discriminator_nce import classifier
 
 from model_io import model_io
 
