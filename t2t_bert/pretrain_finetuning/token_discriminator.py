@@ -70,7 +70,7 @@ def classifier(config, seq_output,
 			tmp_ori_sampled_ids = tf.cast(tmp_sampled_ori_ids, tf.int32)
 			tf.logging.info("****** gumbel 3-D sampled_ids *******")
 		elif len(input_shape) == 2:
-			tmp_ori_sampled_ids = tf.cast(ori_sampled_ids, tf.int32) * 
+			tmp_ori_sampled_ids = tf.cast(ori_sampled_ids, tf.int32)
 			tf.logging.info("****** normal 2-D sampled_ids *******")
 
 		masked_not_equal_mask = tf.cast(tf.not_equal(input_ids, tmp_ori_sampled_ids), tf.int32)
