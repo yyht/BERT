@@ -172,8 +172,8 @@ def nce_loss(true_model_dict, true_features_dict,
 												logits=fake_logits,
 												labels=tf.stop_gradient(fake_labels))
 
-	loss = tf.reduce_sum(true_per_example_loss + fake_per_example_loss) * tf.cast(loss_mask, tf.float32)
-	loss /= (1e-10 + tf.cast(loss_mask, tf.float32))
+	loss = tf.reduce_sum((true_per_example_loss + fake_per_example_loss) * tf.cast(loss_mask, tf.float32))
+	loss /= tf.reduce_sum(1e-10 + tf.cast(loss_mask, tf.float32))
 
 	return loss
 	
