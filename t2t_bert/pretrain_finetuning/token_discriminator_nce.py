@@ -162,17 +162,17 @@ def nce_loss(true_model_dict, true_features_dict,
 	true_labels = tf.zeros_like(loss_mask)
 	fake_labels = tf.ones_like(loss_mask)
 
-	# nce positive part,
+	# nce positive part, batch x seq
 	true_per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
 												logits=true_logits,
 												labels=tf.stop_gradient(true_labels))
 
-	# nce genative part
+	# nce genative part, batch x seq
 	fake_per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
 												logits=fake_logits,
 												labels=tf.stop_gradient(fake_labels))
 
-	loss = (true_per_example_loss + fake_per_example_loss) * tf.cast(loss_mask, tf.float32)
+	loss = tf.reduce_sum(true_per_example_loss + fake_per_example_loss) * tf.cast(loss_mask, tf.float32)
 	loss /= (1e-10 + tf.cast(loss_mask, tf.float32))
 
 	return loss
