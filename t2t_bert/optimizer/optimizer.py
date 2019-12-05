@@ -104,7 +104,7 @@ class Optimizer(object):
 							**kargs):
 		opt_type = self.config.get("train_op", "adam_decay")
 		tf.logging.info(" optimization method {}".format(opt_type))
-		if opt_type not in ["adam_decay", "adam", "lamb_v2"]:
+		if opt_type not in ["adam_decay", "adam", "lamb_v2", "lamb_v1"]:
 			raise NotImplementedError()
 		if opt_type == "adam_decay":
 			opt = optimizer_utils.AdamWeightDecayOptimizer(
@@ -121,6 +121,15 @@ class Optimizer(object):
 										epsilon=self.config.get("epsilon", 1e-6))
 		elif opt_type == "lamb_v2":
 			opt = optimizer_utils.LAMBOptimizer_v2(learning_rate,
+				               weight_decay_rate=self.config.get("opt_decay_rate", 0.01),
+				               beta_1=self.config.get("beta_1", 0.9),
+				               beta_2=self.config.get("beta_2", 0.999),
+				               epsilon=self.config.get("epsilon", 1e-6),
+				               exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"],
+				               exclude_from_layer_adaptation=None,
+				               name="LAMBOptimizer")
+		elif opt_type == "lamb_v1":
+			opt = optimizer_utils.LAMBOptimizer_v1(learning_rate,
 				               weight_decay_rate=self.config.get("opt_decay_rate", 0.01),
 				               beta_1=self.config.get("beta_1", 0.9),
 				               beta_2=self.config.get("beta_2", 0.999),

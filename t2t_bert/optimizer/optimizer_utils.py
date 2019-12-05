@@ -41,6 +41,8 @@ class AdamWeightDecayOptimizer(tf.train.Optimizer):
 
 			param_name = self._get_variable_name(param.name)
 
+			tf.logging.info("***** apply gradients parameter name ***** %s", param_name)
+
 			m = tf.get_variable(
 					name=param_name + "/adam_m",
 					shape=param.shape.as_list(),
@@ -142,6 +144,8 @@ class LAMBOptimizer_v1(tf.train.Optimizer):
 				continue
 
 			param_name = self._get_variable_name(param.name)
+
+			tf.logging.info("***** apply gradients parameter name ***** %s", param_name)
 
 			m = tf.get_variable(
 				name=param_name + "/lamb_m",
@@ -266,6 +270,8 @@ class LAMBOptimizer_v2(tf.train.Optimizer):
 				continue
 
 			param_name = self._get_variable_name(param.name)
+
+			tf.logging.info("***** apply gradients parameter name ***** %s", param_name)
 
 			m = tf.get_variable(
 			  name=param_name + "/adam_m",
