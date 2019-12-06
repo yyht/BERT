@@ -34,7 +34,7 @@ def model_fn_builder(
 		model_api = model_zoo(model_config)
 
 		model = model_api(model_config, features, labels,
-							mode, target, reuse=model_reuse)
+							mode, target, reuse=model_reuse, **kargs)
 
 		label_ids = features["label_ids"]
 

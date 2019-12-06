@@ -63,7 +63,8 @@ def model_fn_builder(
 			sampled_binary_mask = None
 
 		model = model_api(model_config, features, labels,
-							mode, target, reuse=tf.AUTO_REUSE)
+							mode, target, reuse=tf.AUTO_REUSE,
+							**kargs)
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
 			dropout_prob = model_config.dropout_prob

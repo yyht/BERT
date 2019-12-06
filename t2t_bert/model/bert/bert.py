@@ -63,8 +63,19 @@ class Bert(object):
 
 				# Run the stacked transformer.
 				# `sequence_output` shape = [batch_size, seq_length, hidden_size].
+
+				if kargs.get('attention_type', 'efficient_attention') == 'normal_attention':
+					tf.logging.info("****** normal attention *******")
+					transformer_model = bert_modules.transformer_model
+				elif kargs.get('attention_type', 'efficient_attention') == 'efficient_attention':
+					tf.logging.info("****** efficient attention *******")
+					transformer_model = bert_modules.transformer_efficient_model
+				else:
+					tf.logging.info("****** normal attention *******")
+					transformer_model = bert_modules.transformer_model
+
 				[self.all_encoder_layers,
-				self.all_attention_scores] = bert_modules.transformer_model(
+				self.all_attention_scores] = transformer_model(
 						input_tensor=self.embedding_output,
 						attention_mask=attention_mask,
 						hidden_size=self.config.hidden_size,

@@ -305,6 +305,11 @@ flags.DEFINE_string(
 	"if apply distillation"
 	)
 
+flags.DEFINE_string(
+	"attention_type", "normal_attention",
+	"if apply distillation"
+	)
+
 def main(_):
 
 	init_checkpoint = os.path.join(FLAGS.buckets, FLAGS.init_checkpoint)
@@ -329,6 +334,8 @@ def main(_):
 	print("###tpu_cluster_resolver:",tpu_cluster_resolver,";FLAGS.use_tpu:",FLAGS.use_tpu,";FLAGS.tpu_name:",FLAGS.tpu_name,";FLAGS.tpu_zone:",FLAGS.tpu_zone)
 	# ###tpu_cluster_resolver: <tensorflow.python.distribute.cluster_resolver.tpu_cluster_resolver.TPUClusterResolver object at 0x7f4b387b06a0> ;FLAGS.use_tpu: True ;FLAGS.tpu_name: grpc://10.240.1.83:8470
 
+	tf.logging.info("****** tpu_name ******* %s", FLAGS.tpu_name)
+
 	is_per_host = tf.contrib.tpu.InputPipelineConfig.PER_HOST_V2
 	run_config = tf.contrib.tpu.RunConfig(
 	  keep_checkpoint_max=20, # 10
@@ -352,7 +359,8 @@ def main(_):
 			train_op=FLAGS.train_op,
 			decay=FLAGS.decay,
 			warmup=FLAGS.warmup,
-			input_target=FLAGS.input_target)
+			input_target=FLAGS.input_target,
+			attention_type=FLAGS.attention_type)
 	elif FLAGS.mode == 'electra':
 		train_eval_gpu_electra_estimator.train_eval_fn(
 			FLAGS=FLAGS,
@@ -367,7 +375,8 @@ def main(_):
 			input_target=FLAGS.input_target,
 			electra_mode=FLAGS.electra_mode,
 			joint_train=FLAGS.joint_train,
-			sharing_mode=FLAGS.sharing_mode)
+			sharing_mode=FLAGS.sharing_mode,
+			attention_type=FLAGS.attention_type)
 
 
 if __name__ == "__main__":

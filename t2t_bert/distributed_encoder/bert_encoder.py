@@ -6,7 +6,7 @@ import tensorflow as tf
 import numpy as np
 
 def bert_encoder(model_config, features, labels, 
-			mode, target, reuse=None):
+			mode, target, reuse=None, **kargs):
 
 	if target:
 		input_ids = features["input_ids_{}".format(target)]
@@ -36,7 +36,8 @@ def bert_encoder(model_config, features, labels,
 						input_mask,
 						hidden_dropout_prob, 
 						attention_probs_dropout_prob,
-						reuse=reuse)
+						reuse=reuse,
+						attention_type=kargs.get('attention_type', 'normal_attention'))
 	model.build_pooler(reuse=reuse)
 
 	return model
@@ -120,7 +121,7 @@ def albert_encoder(model_config, features, labels,
 	return model
 
 def electra_gumbel_encoder(model_config, features, labels, 
-			mode, target, reuse=None):
+			mode, target, reuse=None, **kargs):
 	if target:
 		input_ids = features["input_ids_{}".format(target)]
 		input_mask = features["input_mask_{}".format(target)]
@@ -152,7 +153,8 @@ def electra_gumbel_encoder(model_config, features, labels,
 						input_mask,
 						hidden_dropout_prob, 
 						attention_probs_dropout_prob,
-						reuse=reuse)
+						reuse=reuse,
+						attention_type=kargs.get('attention_type', 'normal_attention'))
 	model.build_pooler(reuse=reuse)
 
 	return model

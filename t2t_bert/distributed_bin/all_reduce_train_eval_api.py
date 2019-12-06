@@ -301,6 +301,11 @@ flags.DEFINE_string(
 	"if apply distillation"
 	)
 
+flags.DEFINE_string(
+	"attention_type", "normal_attention",
+	"if apply distillation"
+	)
+
 def main(_):
 
 	print(FLAGS)
@@ -391,7 +396,8 @@ def main(_):
 			temperature=FLAGS.temperature,
 			distillation_ratio=FLAGS.distillation_ratio,
 			electra_mode=FLAGS.electra_mode,
-			sharing_mode=FLAGS.sharing_mode)
+			sharing_mode=FLAGS.sharing_mode,
+			attention_type=FLAGS.attention_type)
 	else:
 		train_eval_api.monitored_estimator(
 			FLAGS=FLAGS,
@@ -416,7 +422,8 @@ def main(_):
 			input_target=FLAGS.input_target,
 			distillation=FLAGS.distillation,
 			temperature=FLAGS.temperature,
-			distillation_ratio=FLAGS.distillation_ratio)
+			distillation_ratio=FLAGS.distillation_ratio,
+			attention_type=FLAGS.attention_type)
 
 if __name__ == "__main__":
 	tf.app.run()
