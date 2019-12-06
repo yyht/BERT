@@ -53,7 +53,8 @@ def model_fn_builder(
 		model_api = model_zoo(model_config)
 
 		model = model_api(model_config, features, labels,
-							mode, target, reuse=tf.AUTO_REUSE)
+							mode, target, reuse=tf.AUTO_REUSE,
+							**kargs)
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
 			dropout_prob = model_config.dropout_prob

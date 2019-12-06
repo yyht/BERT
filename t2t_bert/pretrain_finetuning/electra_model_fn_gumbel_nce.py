@@ -99,7 +99,8 @@ def classifier_model_fn_builder(
 		model_io_fn = model_io.ModelIO(model_io_config)
 
 		tvars = []
-		loss =  nce_loss
+
+		loss = kargs.get('dis_loss', 1.0) *  nce_loss
 
 		tvars.extend(fake_discriminator_dict['tvars'])
 

@@ -39,11 +39,12 @@ class TextCNN(base_model.BaseModel):
 		sent_repres *= tf.cast(mask, tf.float32)
 
 		with tf.variable_scope(self.config.scope+"_encoder", reuse=reuse):
-			self.output = textcnn_utils.text_cnn(sent_repres, self.config.get("filter_size", [1,3,5,7]), 
+			self.output = textcnn_utils.text_cnn_v1(sent_repres, self.config.get("filter_size", [1,3,5,7]), 
 					"textcnn", 
 					sent_repres.get_shape()[-1], 
 					self.config.num_filters, 
-					max_pool_size=self.config.max_pool_size)
+					max_pool_size=self.config.max_pool_size,
+					input_mask=input_mask)
 			print("output shape====", self.output.get_shape())
 
 	def get_pooled_output(self):
