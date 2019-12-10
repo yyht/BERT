@@ -10,30 +10,7 @@ except:
 	from distributed_single_sentence_classification.model_interface import model_zoo
 
 from pretrain_finetuning.token_discriminator import classifier
-
 from model_io import model_io
-
-import tensorflow as tf
-from tensorflow.python.framework import ops
-
-class FlipGradientBuilder(object):
-	def __init__(self):
-		self.num_calls = 0
-
-	def __call__(self, x, l=1.0):
-		grad_name = "FlipGradient%d" % self.num_calls
-		@ops.RegisterGrad                                                                                   ient(grad_name)
-		def _flip_gradients(op, grad):
-			return [tf.negative(grad) * l]
-		
-		g = tf.get_default_graph()
-		with g.gradient_override_map({"Identity": grad_name}):
-			y = tf.identity(x)
-			
-		self.num_calls += 1
-		return y
-	
-flip_gradient = FlipGradientBuilder()
 
 def model_fn_builder(
 					model_config,
@@ -79,12 +56,13 @@ def model_fn_builder(
 			per_example_loss) = classifier(model_config, 
 									model.get_sequence_output(),
 									features['input_ori_ids'],
-									features['ori_input_ids'],
+									features['input_ids'],
 									features['input_mask'],
 									2,
-									dropout_prob,
-									ori_sampled_ids=features.get('ori_sampled_ids', None))
-	
+									dropout_prob)
+									# ,
+									# loss='focal_loss')
+
 		loss += 0.0 * nsp_loss
 
 		model_io_fn = model_io.ModelIO(model_io_config)

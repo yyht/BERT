@@ -262,6 +262,23 @@ def multi_label_hot(config, prediction, **kargs):
 
 	return pred_label
 
+def dmi_loss(config, logits, labels):
+	# N x C
+	probs = tf.exp(tf.nn.log_softmax(logits, axis=-1))
+	# N x C
+	one_hot_labels = tf.one_hot(labels, depth=2, dtype=tf.float32)
+
+	# C x N matmul N x C
+	mat = tf.matmul(tf.stop_gradient(one_hot_labels), probs, transpose_a=True) #
+	print('==mutul informaton shape==', mat.get_shape())
+	per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+												logits=logits, 
+												labels=tf.stop_gradient(labels))
+
+	# loss = -tf.log(tf.abs(tf.linalg.det(mat)) + 1e-10)
+
+	loss = -tf.reduce_sum(tf.log(tf.linalg.svd(mat, compute_uv=False))) / tf.shape(labels)[0]
+	return loss, per_example_loss
 
 
 

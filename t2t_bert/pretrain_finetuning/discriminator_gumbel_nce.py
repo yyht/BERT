@@ -77,7 +77,7 @@ def model_fn_builder(
 			(loss, 
 			logits, 
 			per_example_loss) = classifier(model_config, 
-									flip_gradient(model.get_sequence_output()),
+									model.get_sequence_output(),
 									features['input_ori_ids'],
 									features['ori_input_ids'],
 									features['input_mask'],

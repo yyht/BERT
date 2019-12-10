@@ -80,6 +80,7 @@ def model_config_parser(FLAGS):
 			print('==apply albert finetuning==', config.init_lr)
 		print("===learning rate===", config.init_lr)
 		tf.logging.info("****** learning rate ******* %s", str(config.init_lr))
+		# config.loss = "dmi_loss"
 		config.loss = "entropy"
 		config.rule_type_size = 2
 		config.lm_ratio = 1.0
