@@ -92,7 +92,8 @@ def classifier_model_fn_builder(
 
 		logging_hook = tf.train.LoggingTensorHook({"loss" : loss, 
 						"generator_loss" : generator_dict['loss'],
-						"discriminator_loss":discriminator_dict['loss']})
+						"discriminator_loss":discriminator_dict['loss']},
+						every_n_iter=1000)
 
 		var_checkpoint_dict_list = []
 		for key in init_checkpoint_dict:
