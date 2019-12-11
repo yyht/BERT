@@ -179,8 +179,8 @@ def classifier_model_fn_builder(
 								mode=mode,
 								loss=loss,
 								train_op=train_op,
-								# scaffold_fn=scaffold_fn,
-								# training_hooks=[logging_hook]
+								scaffold_fn=scaffold_fn,
+								training_hooks=[logging_hook]
 								)
 			else:
 				estimator_spec = tf.estimator.EstimatorSpec(
