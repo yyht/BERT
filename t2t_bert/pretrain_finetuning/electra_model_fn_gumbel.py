@@ -51,15 +51,15 @@ def classifier_model_fn_builder(
 					**kargs)
 		generator_dict = generator_fn(features, labels, mode, params)
 
-		# for key in generator_dict:
-		# 	if isinstance(generator_dict[key], list):
-		# 		for item in generator_dict[key]:
-		# 			print(key, item.graph, '=====generator graph=====')
-		# 	else:
-		# 		try:
-		# 			print(key, generator_dict[key].graph, '=====generator graph=====')
-		# 		except:
-		# 			print(key, type(generator_dict[key]), '=====generator graph=====')
+		for key in generator_dict:
+			if isinstance(generator_dict[key], list):
+				for item in generator_dict[key]:
+					print(key, item.graph, '=====generator graph=====')
+			else:
+				try:
+					print(key, generator_dict[key].graph, '=====generator graph=====')
+				except:
+					print(key, type(generator_dict[key]), '=====generator graph=====')
 
 		discriminator_fn = discriminator(model_config_dict['discriminator'],
 					num_labels_dict['discriminator'],
@@ -88,15 +88,15 @@ def classifier_model_fn_builder(
 		
 		discriminator_dict = discriminator_fn(discriminator_features, labels, mode, params)
 
-		# for key in discriminator_dict:
-		# 	if isinstance(discriminator_dict[key], list):
-		# 		for item in discriminator_dict[key]:
-		# 			print(key, item.graph, '=====discriminator graph=====')
-		# 	else:
-		# 		try:
-		# 			print(key, discriminator_dict[key].graph, '=====discriminator graph=====')
-		# 		except:
-		# 			print(key, type(discriminator_dict[key]), '=====discriminator graph=====')
+		for key in discriminator_dict:
+			if isinstance(discriminator_dict[key], list):
+				for item in discriminator_dict[key]:
+					print(key, item.graph, '=====discriminator graph=====')
+			else:
+				try:
+					print(key, discriminator_dict[key].graph, '=====discriminator graph=====')
+				except:
+					print(key, type(discriminator_dict[key]), '=====discriminator graph=====')
 
 		model_io_fn = model_io.ModelIO(model_io_config)
 
