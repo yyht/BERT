@@ -85,6 +85,7 @@ def model_fn_builder(
 									dropout_prob,
 									ori_sampled_ids=features.get('ori_sampled_ids', None))
 	
+		tf.add_to_collection("discriminator_loss", loss)
 		loss += 0.0 * nsp_loss
 
 		model_io_fn = model_io.ModelIO(model_io_config)
@@ -110,7 +111,6 @@ def model_fn_builder(
 											use_tpu=use_tpu)
 		else:
 			scaffold_fn = None
-		tf.add_to_collection("discriminator_loss", loss)
 		return_dict = {
 					"loss":loss, 
 					"logits":logits,

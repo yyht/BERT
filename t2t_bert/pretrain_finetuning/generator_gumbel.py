@@ -134,7 +134,7 @@ def model_fn_builder(
 											embedding_projection=model.get_embedding_projection_table(),
 											scope=generator_scope_prefix)
 		print(model_config.lm_ratio, '==mlm lm_ratio==')
-		loss = model_config.lm_ratio * masked_lm_loss #+ 0.0 * nsp_loss
+		loss = model_config.lm_ratio * masked_lm_loss + 0.0 * nsp_loss
 
 		sampled_ids = token_generator_gumbel(model_config, 
 									model.get_sequence_output(), 
@@ -185,7 +185,8 @@ def model_fn_builder(
 											use_tpu=use_tpu)
 		else:
 			scaffold_fn = None
-		tf.add_to_collection("generator_loss", loss)
+			
+		tf.add_to_collection("generator_loss", masked_lm_loss)
 		return_dict = {
 					"loss":loss, 
 					"tvars":tvars,
