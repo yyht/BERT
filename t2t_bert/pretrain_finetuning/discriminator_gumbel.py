@@ -22,7 +22,7 @@ class FlipGradientBuilder(object):
 
 	def __call__(self, x, l=1.0):
 		grad_name = "FlipGradient%d" % self.num_calls
-		@ops.RegisterGrad                                                                                   ient(grad_name)
+		@ops.RegisterGradient(grad_name)
 		def _flip_gradients(op, grad):
 			return [tf.negative(grad) * l]
 		

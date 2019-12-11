@@ -76,7 +76,7 @@ def diff_loss(shared_feat, task_feat):
 	correlation_matrix = tf.matmul(
 		task_feat, shared_feat, transpose_a=True)
 
-	cost = tf.reduce_mean(tf.square(correlation_matrix)) * 0.01
+	cost = tf.reduce_mean(tf.square(correlation_matrix))
 	cost = tf.where(cost > 0, cost, 0, name='value')
 
 	assert_op = tf.Assert(tf.is_finite(cost), [cost])
