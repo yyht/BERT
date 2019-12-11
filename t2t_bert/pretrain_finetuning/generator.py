@@ -207,7 +207,7 @@ def model_fn_builder(
 											use_tpu=use_tpu)
 		else:
 			scaffold_fn = None
-
+		tf.add_to_collection("generator_loss", loss)
 		return_dict = {
 					"loss":loss, 
 					"tvars":tvars,
