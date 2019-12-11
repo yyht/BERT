@@ -36,9 +36,7 @@ def classifier_model_fn_builder(
 						**kargs):
 	
 	def model_fn(features, labels, mode, params):
-
-
-		graph = tf.Graph()
+		graph = kargs.get('graph', None)
 		with graph.as_default():
 			generator_fn = generator(model_config_dict['generator'],
 						num_labels_dict['generator'],
