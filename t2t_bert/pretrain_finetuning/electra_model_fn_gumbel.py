@@ -113,10 +113,10 @@ def classifier_model_fn_builder(
 
 		print(loss.graph, '===total graph===')
 
-		logging_hook = tf.train.LoggingTensorHook({ 
-						"generator_loss" : tf.get_collection('generator_loss'),
-						"discriminator_loss":tf.get_collection('discriminator_loss')},
-						every_n_iter=1000)
+		# logging_hook = tf.train.LoggingTensorHook({ 
+		# 				"generator_loss" : tf.get_collection('generator_loss'),
+		# 				"discriminator_loss":tf.get_collection('discriminator_loss')},
+		# 				every_n_iter=1000)
 
 		var_checkpoint_dict_list = []
 		for key in init_checkpoint_dict:
@@ -179,8 +179,8 @@ def classifier_model_fn_builder(
 								mode=mode,
 								loss=loss,
 								train_op=train_op,
-								scaffold_fn=scaffold_fn,
-								training_hooks=[logging_hook]
+								scaffold_fn=scaffold_fn
+								# training_hooks=[logging_hook]
 								)
 			else:
 				estimator_spec = tf.estimator.EstimatorSpec(
