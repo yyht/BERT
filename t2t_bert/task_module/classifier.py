@@ -35,12 +35,18 @@ def classifier(config, pooled_output,
 	if config.get("label_type", "single_label") == "single_label":
 		if config.get("loss", "entropy") == "entropy":
 			print("==standard cross entropy==")
+			tf.logging.info("****** loss type ******* %s", "entropy")
 			per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
 												logits=logits, 
 												labels=tf.stop_gradient(labels))
 		elif config.get("loss", "entropy") == "focal_loss":
 			print("==multi_label focal loss==")
 			per_example_loss, _ = loss_utils.focal_loss_multi_v1(config,
+														logits=logits, 
+														labels=labels)
+		elif config.get("loss", "entropy") == "dmi_loss":
+			tf.logging.info("****** loss type ******* %s", "dmi_loss")
+			loss, per_example_loss = loss_utils.dmi_loss(config,
 														logits=logits, 
 														labels=labels)
 			
@@ -51,7 +57,11 @@ def classifier(config, pooled_output,
 			loss = tf.reduce_sum(per_example_loss)
 			print(" == applying weighted loss == ")
 		except:
-			loss = tf.reduce_mean(per_example_loss)
+			if config.get("loss", "entropy") in ["entropy", "focal_loss"]:
+				loss = tf.reduce_mean(per_example_loss)
+			elif config.get("loss", "entropy") == "dmi_loss":
+				tf.logging.info("****** dmi loss need no further calculation ******* ")
+				loss = loss
 
 		if config.get("with_center_loss", "no") == "center_loss":
 			print("==apply with center loss==")

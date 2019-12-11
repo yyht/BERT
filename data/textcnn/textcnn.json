@@ -20,7 +20,7 @@
     "context_layer_num": 1,
     "context_lstm_dim": 100,
 
-    "label_type":"all_label",
+    "label_type":"single_label",
 
     // "label_type":"multi_label",
 

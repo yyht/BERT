@@ -4,6 +4,25 @@ import numpy as np
 from utils.bert import bert_utils
 from utils.bert import bert_modules, albert_modules
 
+class FlipGradientBuilder(object):
+	def __init__(self):
+		self.num_calls = 0
+
+	def __call__(self, x, l=1.0):
+		grad_name = "FlipGradient%d" % self.num_calls
+		@ops.RegisterGrad                                                                                   ient(grad_name)
+		def _flip_gradients(op, grad):
+			return [tf.negative(grad) * l]
+		
+		g = tf.get_default_graph()
+		with g.gradient_override_map({"Identity": grad_name}):
+			y = tf.identity(x)
+			
+		self.num_calls += 1
+		return y
+	
+flip_gradient = FlipGradientBuilder()
+
 def sample_gumbel(shape, samples=1, eps=1e-20): 
 	"""Sample from Gumbel(0, 1)"""
 	if samples > 1:
@@ -116,7 +135,7 @@ def token_generator_gumbel(config, input_tensor,
 								axis=1) # sampled multiminal id
 
 		# straight-thourth gumbel softmax estimator
-		sampled_id = tf.stop_gradient(sampled_id-sampled_logprob) + sampled_logprob
+		sampled_id = tf.stop_gradient(sampled_id-sampled_logprob) + flip_gradient(sampled_logprob)
 
 		sampled_binary_mask = kargs.get('sampled_binary_mask', None)
 		if sampled_binary_mask is not None:
