@@ -113,7 +113,7 @@ def classifier_model_fn_builder(
 
 		print(loss.graph, '===total graph===')
 
-		logging_hook = tf.train.LoggingTensorHook({"loss":loss, 
+		logging_hook = tf.train.LoggingTensorHook({ 
 						"generator_loss" : tf.get_collection('generator_loss'),
 						"discriminator_loss":tf.get_collection('discriminator_loss')},
 						every_n_iter=1000)
