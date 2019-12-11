@@ -4,6 +4,9 @@ import numpy as np
 from utils.bert import bert_utils
 from utils.bert import bert_modules, albert_modules
 
+import tensorflow as tf
+from tensorflow.python.framework import ops
+
 class FlipGradientBuilder(object):
 	def __init__(self):
 		self.num_calls = 0
