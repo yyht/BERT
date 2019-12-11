@@ -74,7 +74,7 @@ def model_fn_builder(
 										reuse=tf.AUTO_REUSE)
 
 		with tf.variable_scope('cls/seq_predictions', reuse=tf.AUTO_REUSE):
-			(loss, 
+			(disc_loss, 
 			logits, 
 			per_example_loss) = classifier(model_config, 
 									model.get_sequence_output(),
@@ -85,7 +85,7 @@ def model_fn_builder(
 									dropout_prob,
 									ori_sampled_ids=features.get('ori_sampled_ids', None))
 	
-		# loss += 0.0 * nsp_loss
+		loss = disc_loss + 0.0 * nsp_loss
 
 		model_io_fn = model_io.ModelIO(model_io_config)
 
@@ -111,7 +111,7 @@ def model_fn_builder(
 		else:
 			scaffold_fn = None
 		
-		tf.add_to_collection("discriminator_loss", loss)
+		tf.add_to_collection("discriminator_loss", disc_loss)
 		return_dict = {
 					"loss":loss, 
 					"logits":logits,
