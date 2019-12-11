@@ -90,6 +90,10 @@ def classifier_model_fn_builder(
 			loss += generator_dict['loss']
 		tvars = list(set(tvars))
 
+		logging_hook = tf.train.LoggingTensorHook({"loss" : loss, 
+						"generator_loss" : generator_dict['loss'],
+						"discriminator_loss":discriminator_dict['loss']})
+
 		var_checkpoint_dict_list = []
 		for key in init_checkpoint_dict:
 			if load_pretrained_dict[key] == "yes":
@@ -151,7 +155,9 @@ def classifier_model_fn_builder(
 								mode=mode,
 								loss=loss,
 								train_op=train_op,
-								scaffold_fn=scaffold_fn)
+								scaffold_fn=scaffold_fn,
+								training_hooks=[logging_hook]
+								)
 			else:
 				estimator_spec = tf.estimator.EstimatorSpec(
 								mode=mode, 
