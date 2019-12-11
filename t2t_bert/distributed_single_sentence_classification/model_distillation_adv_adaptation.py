@@ -6,6 +6,8 @@ except:
 import tensorflow as tf
 import numpy as np
 
+from utils.bert import bert_utils
+
 from model_io import model_io
 from task_module import classifier
 import tensorflow as tf
@@ -49,7 +51,6 @@ def adversarial_loss(model_config, feature, adv_ids, dropout_prob, model_reuse,
 	the shared feature
 	'''
 	# input = tf.stop_gradient(input)
-	feature = flip_gradient(feature, 1.0)
 	feature = tf.nn.dropout(feature, 1 - dropout_prob)
 
 	with tf.variable_scope(model_config.scope+"/adv_classifier", reuse=model_reuse):
@@ -104,13 +105,13 @@ def model_fn_builder(
 		model_api = model_zoo(model_config)
 
 		model = model_api(model_config, features, labels,
-							mode, target, reuse=model_reuse)
+							mode, target, reuse=tf.AUTO_REUSE)
 
-		model_adv_config = copy.deepcopy(model_config)
-		model_adv_config.scope = model_config.scope + "/adv_encoder"
+		# model_adv_config = copy.deepcopy(model_config)
+		# model_adv_config.scope = model_config.scope + "/adv_encoder"
 
-		model_adv_adaptation = model_api(model_adv_config, features, labels,
-							mode, target, reuse=model_reuse)
+		# model_adv_adaptation = model_api(model_adv_config, features, labels,
+		# 					mode, target, reuse=tf.AUTO_REUSE)
 
 		label_ids = features["label_ids"]
 
@@ -124,9 +125,40 @@ def model_fn_builder(
 		else:
 			scope = model_config.scope
 
-		with tf.variable_scope(scope, reuse=model_reuse):
-			concat_feature = tf.concat([model.get_pooled_output(), 
-										model_adv_adaptation.get_pooled_output()], 
+		common_feature = model.get_pooled_output()
+
+		with tf.variable_scope(scope+"/task_residual", reuse=tf.AUTO_REUSE):
+			hidden_size = bert_utils.get_shape_list(common_feature, expected_rank=2)[-1]
+			task_feature = tf.layers.dense(
+							common_feature,
+							hidden_size,
+							kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
+			task_feature = tf.nn.dropout(task_feature, keep_prob=1 - dropout_prob)
+			task_feature += common_feature
+			task_feature = tf.layers.dense(
+							task_feature,
+							hidden_size,
+							kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
+							activation=tf.tanh)
+
+		with tf.variable_scope(scope+"/adv_residual", reuse=tf.AUTO_REUSE):
+			hidden_size = bert_utils.get_shape_list(common_feature, expected_rank=2)[-1]
+			flipped_feature = flip_gradient(common_feature)
+			adv_task_feature = tf.layers.dense(
+							flipped_feature,
+							hidden_size,
+							kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
+			adv_task_feature = tf.nn.dropout(adv_task_feature, keep_prob=1 - dropout_prob)
+			adv_task_feature += flipped_feature
+			adv_task_feature = tf.layers.dense(
+							adv_task_feature,
+							hidden_size,
+							kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
+							activation=tf.tanh)
+
+		with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
+			concat_feature = tf.concat([task_feature, 
+										adv_task_feature], 
 										axis=-1)
 			(loss, 
 				per_example_loss, 
@@ -135,34 +167,39 @@ def model_fn_builder(
 											num_labels,
 											label_ids,
 											dropout_prob)
-			if mode == tf.estimator.ModeKeys.TRAIN:
-				adv_ids = features["adv_ids"]
-				(adv_loss, 
+
+		with tf.variable_scope(scope+"/adv_classifier", reuse=tf.AUTO_REUSE):
+			adv_ids = features["adv_ids"]
+			(adv_loss, 
 				adv_per_example_loss, 
-				adv_logits) = adversarial_loss(model_adv_config, 
-												model_adv_adaptation.get_pooled_output(), 
-												adv_ids, dropout_prob, model_reuse)
+				adv_logits) = classifier.classifier(model_config,
+											adv_task_feature,
+											kargs.get('adv_num_labels', 12),
+											adv_ids,
+											dropout_prob)
 
-				loss_diff = diff_loss(model.get_pooled_output(), 
-										model_adv_adaptation.get_pooled_output())
+		if mode == tf.estimator.ModeKeys.TRAIN:
 
-				print(kargs.get("temperature", 0.5), kargs.get("distillation_ratio", 0.5), "==distillation hyparameter==")
+			loss_diff = diff_loss(task_feature, 
+									adv_task_feature)
 
-				# get teacher logits
-				teacher_logit = tf.log(features["label_probs"]+1e-10)/kargs.get("temperature", 2.0) # log_softmax logits
-				student_logit = tf.nn.log_softmax(logits /kargs.get("temperature", 2.0)) # log_softmax logits
+			print(kargs.get("temperature", 0.5), kargs.get("distillation_ratio", 0.5), "==distillation hyparameter==")
 
-				distillation_loss = kd_distance(teacher_logit, student_logit, kargs.get("distillation_distance", "kd")) 
-				distillation_loss *= features["distillation_ratio"]
-				distillation_loss = tf.reduce_sum(distillation_loss) / (1e-10+tf.reduce_sum(features["distillation_ratio"]))
+			# get teacher logits
+			teacher_logit = tf.log(features["label_probs"]+1e-10)/kargs.get("temperature", 2.0) # log_softmax logits
+			student_logit = tf.nn.log_softmax(logits /kargs.get("temperature", 2.0)) # log_softmax logits
 
-				label_loss = tf.reduce_sum(per_example_loss * features["label_ratio"]) / (1e-10+tf.reduce_sum(features["label_ratio"]))
-				print("==distillation loss ratio==", kargs.get("distillation_ratio", 0.9)*tf.pow(kargs.get("temperature", 2.0), 2))
+			distillation_loss = kd_distance(teacher_logit, student_logit, kargs.get("distillation_distance", "kd")) 
+			distillation_loss *= features["distillation_ratio"]
+			distillation_loss = tf.reduce_sum(distillation_loss) / (1e-10+tf.reduce_sum(features["distillation_ratio"]))
 
-				# loss = label_loss + kargs.get("distillation_ratio", 0.9)*tf.pow(kargs.get("temperature", 2.0), 2)*distillation_loss
-				loss = (1-kargs.get("distillation_ratio", 0.9))*label_loss + kargs.get("distillation_ratio", 0.9) * distillation_loss
-				if mode == tf.estimator.ModeKeys.TRAIN:
-					loss += kargs.get("adv_ratio", 0.01) * adv_loss + loss_diff
+			label_loss = tf.reduce_sum(per_example_loss * features["label_ratio"]) / (1e-10+tf.reduce_sum(features["label_ratio"]))
+			print("==distillation loss ratio==", kargs.get("distillation_ratio", 0.9)*tf.pow(kargs.get("temperature", 2.0), 2))
+
+			# loss = label_loss + kargs.get("distillation_ratio", 0.9)*tf.pow(kargs.get("temperature", 2.0), 2)*distillation_loss
+			loss = (1-kargs.get("distillation_ratio", 0.9))*label_loss + kargs.get("distillation_ratio", 0.9) * distillation_loss
+			if mode == tf.estimator.ModeKeys.TRAIN:
+				loss += kargs.get("adv_ratio", 1.0) * adv_loss + loss_diff
 
 		model_io_fn = model_io.ModelIO(model_io_config)
 
@@ -235,22 +272,19 @@ def model_fn_builder(
 					return estimator_spec
 
 		elif mode == tf.estimator.ModeKeys.PREDICT:
-			print(logits.get_shape(), "===logits shape===")
-			pred_label = tf.argmax(logits, axis=-1, output_type=tf.int32)
-			prob = tf.nn.softmax(logits)
-			max_prob = tf.reduce_max(prob, axis=-1)
-			
+			task_prob = tf.exp(tf.nn.log_softmax(logits))
+			adv_prob = tf.exp(tf.nn.log_softmax(adv_logits))
 			estimator_spec = tf.estimator.EstimatorSpec(
 									mode=mode,
 									predictions={
-												'pred_label':pred_label,
-												"max_prob":max_prob
+												'adv_prob':adv_prob,
+												"task_prob":task_prob
 									},
 									export_outputs={
 										"output":tf.estimator.export.PredictOutput(
 													{
-														'pred_label':pred_label,
-														"max_prob":max_prob
+														'adv_prob':adv_prob,
+														"task_prob":task_prob
 													}
 												)
 									}
