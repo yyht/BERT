@@ -79,8 +79,14 @@ def classifier_model_fn_builder(
 			discriminator_dict = discriminator_fn(discriminator_features, labels, mode, params)
 
 			for key in discriminator_dict:
-				print(key, discriminator_dict[key].graph)
-
+				if isinstance(discriminator_dict[key], list):
+					for item in discriminator_dict[key]:
+						print(key, item.graph)
+				else:
+                                    try:
+					print(key, discriminator_dict[key].graph)
+                                    except:
+                                        print(key, type(discriminator_dict[key]))
 			model_io_fn = model_io.ModelIO(model_io_config)
 
 			tvars = []
