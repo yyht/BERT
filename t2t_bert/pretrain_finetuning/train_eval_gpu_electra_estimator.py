@@ -43,6 +43,8 @@ def train_eval_fn(FLAGS,
 	graph = tf.Graph()
 	with graph.as_default():
 		import json
+
+		print("==global graph==", graph)
 				
 		config = model_config_parser(FLAGS)
 		
