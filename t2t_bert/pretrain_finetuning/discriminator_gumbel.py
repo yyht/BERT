@@ -85,7 +85,7 @@ def model_fn_builder(
 									dropout_prob,
 									ori_sampled_ids=features.get('ori_sampled_ids', None))
 	
-		loss += 0.0 * nsp_loss
+		# loss += 0.0 * nsp_loss
 
 		model_io_fn = model_io.ModelIO(model_io_config)
 
