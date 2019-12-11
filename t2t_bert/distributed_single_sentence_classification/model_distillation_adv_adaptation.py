@@ -85,6 +85,23 @@ def diff_loss(shared_feat, task_feat):
 
 	return loss_diff
 
+def get_task_feature(config, common_feature, dropout_prob, scope):
+	with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
+		hidden_size = bert_utils.get_shape_list(common_feature, expected_rank=2)[-1]
+		task_feature = tf.layers.dense(
+						common_feature,
+						hidden_size,
+						kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
+		task_feature = tf.nn.dropout(task_feature, keep_prob=1 - dropout_prob)
+		task_feature += common_feature
+		task_feature = tf.layers.dense(
+						task_feature,
+						hidden_size,
+						kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
+						activation=tf.tanh)
+		return task_feature
+
+
 def model_fn_builder(
 					model_config,
 					num_labels,
@@ -127,39 +144,14 @@ def model_fn_builder(
 
 		common_feature = model.get_pooled_output()
 
-		with tf.variable_scope(scope+"/task_residual", reuse=tf.AUTO_REUSE):
-			hidden_size = bert_utils.get_shape_list(common_feature, expected_rank=2)[-1]
-			task_feature = tf.layers.dense(
-							common_feature,
-							hidden_size,
-							kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
-			task_feature = tf.nn.dropout(task_feature, keep_prob=1 - dropout_prob)
-			task_feature += common_feature
-			task_feature = tf.layers.dense(
-							task_feature,
-							hidden_size,
-							kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
-							activation=tf.tanh)
-
-		with tf.variable_scope(scope+"/adv_residual", reuse=tf.AUTO_REUSE):
-			hidden_size = bert_utils.get_shape_list(common_feature, expected_rank=2)[-1]
-			flipped_feature = flip_gradient(common_feature)
-			adv_task_feature = tf.layers.dense(
-							flipped_feature,
-							hidden_size,
-							kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
-			adv_task_feature = tf.nn.dropout(adv_task_feature, keep_prob=1 - dropout_prob)
-			adv_task_feature += flipped_feature
-			adv_task_feature = tf.layers.dense(
-							adv_task_feature,
-							hidden_size,
-							kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
-							activation=tf.tanh)
+		task_feature = get_task_feature(model_config, common_feature, dropout_prob, scope+"/task_residual")
+		adv_task_feature = get_task_feature(model_config, flip_gradient(common_feature), dropout_prob, scope+"/adv_residual")
 
 		with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
-			concat_feature = tf.concat([task_feature, 
-										adv_task_feature], 
-										axis=-1)
+			concat_feature = task_feature
+			# concat_feature = tf.concat([task_feature, 
+			# 							adv_task_feature], 
+			# 							axis=-1)
 			(loss, 
 				per_example_loss, 
 				logits) = classifier.classifier(model_config,
@@ -179,9 +171,11 @@ def model_fn_builder(
 											dropout_prob)
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
+			loss_diff = tf.constant(0.0)
+			# adv_task_feature_no_grl = get_task_feature(model_config, common_feature, dropout_prob, scope+"/adv_residual")
 
-			loss_diff = diff_loss(task_feature, 
-									adv_task_feature)
+			# loss_diff = diff_loss(task_feature, 
+			# 						adv_task_feature_no_grl)
 
 			print(kargs.get("temperature", 0.5), kargs.get("distillation_ratio", 0.5), "==distillation hyparameter==")
 
