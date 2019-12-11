@@ -209,7 +209,7 @@ def train_eval_fn(FLAGS,
 				not_storage_params_dict=not_storage_params_dict,
 				target_dict=target_dict,
 				use_tpu=FLAGS.use_tpu,
-				graph=graph,
+				graph=None,
 				**kargs)
 
 	if FLAGS.use_tpu:
