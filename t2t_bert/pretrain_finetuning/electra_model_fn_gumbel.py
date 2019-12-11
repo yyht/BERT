@@ -34,10 +34,10 @@ def classifier_model_fn_builder(
 						not_storage_params_dict={},
 						target_dict={},
 						**kargs):
-	
-	def model_fn(features, labels, mode, params):
-		graph = kargs.get('graph', None)
-		with graph.as_default():
+	graph = kargs.get('graph', None)
+	with graph.as_default():
+		def model_fn(features, labels, mode, params):
+			
 			generator_fn = generator(model_config_dict['generator'],
 						num_labels_dict['generator'],
 						init_checkpoint_dict['generator'],
