@@ -51,6 +51,16 @@ def classifier_model_fn_builder(
 						**kargs)
 			generator_dict = generator_fn(features, labels, mode, params)
 
+			for key in generator_dict:
+				if isinstance(generator_dict[key], list):
+					for item in generator_dict[key]:
+						print(key, item.graph)
+				else:
+					try:
+						print(key, generator_dict[key].graph)
+					except:
+						print(key, type(generator_dict[key]))
+
 			discriminator_fn = discriminator(model_config_dict['discriminator'],
 						num_labels_dict['discriminator'],
 						init_checkpoint_dict['discriminator'],
@@ -83,7 +93,10 @@ def classifier_model_fn_builder(
 					for item in discriminator_dict[key]:
 						print(key, item.graph)
 				else:
-					print(key, discriminator_dict[key].graph)
+					try:
+						print(key, discriminator_dict[key].graph)
+					except:
+						print(key, type(discriminator_dict[key]))
 
 			model_io_fn = model_io.ModelIO(model_io_config)
 
