@@ -278,6 +278,9 @@ def data_interface_server(FLAGS):
 			if FLAGS.task_type == "pair_sentence_classification":
 				name_to_features["input_char_ids_b"] = tf.FixedLenFeature([FLAGS.max_length], tf.int64)
 
+		if FLAGS.distillation in ['adv_adaptation_distillation']:
+			receiver_tensors['adv_ids'] = tf.placeholder(tf.int32, [None], name='adv_ids')
+
 	elif FLAGS.model_type in ["match_pyramid"]:
 		receiver_tensors = {
 			"input_ids_a":tf.placeholder(tf.int32, [None, FLAGS.max_length], name='input_ids_a'),

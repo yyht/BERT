@@ -210,6 +210,7 @@ def train_eval_fn(FLAGS,
 				target_dict=target_dict,
 				use_tpu=FLAGS.use_tpu,
 				graph=None,
+				num_train_steps=num_train_steps,
 				**kargs)
 
 	if FLAGS.use_tpu:
