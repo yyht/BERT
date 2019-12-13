@@ -135,7 +135,6 @@ class Optimizer(object):
 				               beta_2=self.config.get("beta_2", 0.999),
 				               epsilon=self.config.get("epsilon", 1e-6),
 				               exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"],
-				               exclude_from_layer_adaptation=None,
 				               name="LAMBOptimizer")
 		return opt
 
