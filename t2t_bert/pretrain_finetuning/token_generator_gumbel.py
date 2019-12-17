@@ -120,12 +120,17 @@ def token_generator_gumbel(config, input_tensor,
 		flat_logits_tempered = tf.reshape(logits_tempered,
 									[batch_size * seq_length, width])
 
-		annealed_temp = tf.train.polynomial_decay(config.get('gumbel_temperature', 1.0),
-												tf.train.get_or_create_global_step(),
-												kargs.get("num_train_steps", 10000),
-												end_learning_rate=0.1,
-												power=1.0,
-												cycle=False)
+		num_train_steps = kargs.get('num_train_steps', None)
+		if num_train_steps:
+			tf.logging.info("****** apply annealed tenperature ******* %s", str(num_train_steps))
+			annealed_temp = tf.train.polynomial_decay(config.get('gumbel_temperature', 1.0),
+													tf.train.get_or_create_global_step(),
+													kargs.get("num_train_steps", 10000),
+													end_learning_rate=0.1,
+													power=1.0,
+													cycle=False)
+		else:
+			annealed_temp = 1.0
 
 		# [batch x seq] x config.vocab_size x config.get('gen_sample', 1)
 		sampled_logprob_temp, sampled_logprob = gumbel_softmax(flat_logits_tempered, 
