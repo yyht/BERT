@@ -3,6 +3,10 @@ import numpy as np
 
 from utils.bert import bert_utils
 from utils.bert import bert_modules, albert_modules
+try:
+	from .token_generator_gumbel import sample_gumbel, gumbel_softmax
+except:
+	from token_generator_gumbel import sample_gumbel, gumbel_softmax
 
 def random_input_ids_generation(config,
 							input_ori_ids,
@@ -82,12 +86,19 @@ def random_input_ids_generation(config,
 							maxval=1.0,
 							dtype=tf.float32)
 
+	vocab_sample_logits = tf.nn.log_softmax(vocab_sample_logits)
 	flatten_vocab_sample_logits = tf.reshape(vocab_sample_logits, 
 											[batch_size*seq_length, -1])
 
-	sample_vocab_ids = tf.multinomial(flatten_vocab_sample_logits, 
-								num_samples=config.get('gen_sample', 1), 
-								output_dtype=tf.int32)
+	sampled_logprob_temp, sampled_logprob = gumbel_softmax(flatten_vocab_sample_logits, 
+										temperature=1.0,
+										samples=config.get('gen_sample', 1))
+
+	sample_vocab_ids = tf.argmax(sampled_logprob, axis=1) # batch x seq
+
+	# sample_vocab_ids = tf.multinomial(flatten_vocab_sample_logits, 
+	# 							num_samples=config.get('gen_sample', 1), 
+	# 							output_dtype=tf.int32)
 
 	sample_vocab_ids = tf.reshape(sample_vocab_ids, [batch_size, seq_length])
 	sample_vocab_ids = tf.cast(sample_vocab_ids, tf.float32)
@@ -192,16 +203,22 @@ def token_generator(config, input_tensor,
 		input_shape_list = bert_utils.get_shape_list(logits, expected_rank=3)
 		width = input_shape_list[2]
 
-		logits_tempered = logits / config.get("temperature", 1.0)
+		logits_tempered = tf.nn.log_softmax(logits / config.get("temperature", 1.0))
 
 		flat_logits_tempered = tf.reshape(logits_tempered,
 									[batch_size * seq_length, width])
 
 		# flat_logits_tempered_topk = top_k_logits(flat_logits_tempered, int(config.vocab_size/2))
 
-		samples = tf.multinomial(flat_logits_tempered, 
-								num_samples=config.get('gen_sample', 1), 
-								output_dtype=tf.int32)
+		sampled_logprob_temp, sampled_logprob = gumbel_softmax(flat_logits_tempered, 
+										temperature=1.0,
+										samples=config.get('gen_sample', 1))
+
+		samples = tf.argmax(sampled_logprob, axis=1) # batch x seq
+
+		# samples = tf.multinomial(flat_logits_tempered, 
+		# 						num_samples=config.get('gen_sample', 1), 
+		# 						output_dtype=tf.int32)
 
 		sampled_binary_mask = kargs.get('sampled_binary_mask', None)
 		if sampled_binary_mask is not None:
