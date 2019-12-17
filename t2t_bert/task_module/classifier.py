@@ -48,7 +48,8 @@ def classifier(config, pooled_output,
 			tf.logging.info("****** loss type ******* %s", "dmi_loss")
 			loss, per_example_loss = loss_utils.dmi_loss(config,
 														logits=logits, 
-														labels=labels)
+														labels=labels,
+														**kargs)
 			
 		try:
 			per_example_loss = loss_utils.weighted_loss_ratio(

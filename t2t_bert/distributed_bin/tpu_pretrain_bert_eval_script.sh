@@ -6,7 +6,7 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--label_id "./data/lcqmc/label_dict.json" \
 	--max_length 512 \
 	--train_file "data_single/chunk_0.tfrecords,data_single/chunk_1.tfrecords,data_single/chunk_2.tfrecords,data_single/chunk_3.tfrecords,data_single/chunk_4.tfrecords,data_single/chunk_5.tfrecords,data_single/chunk_6.tfrecords,data_single/chunk_7.tfrecords,data_single/chunk_8.tfrecords,data_single/chunk_9.tfrecords,data_single/chunk_10.tfrecords,data_single/chunk_11.tfrecords,data_single/chunk_12.tfrecords,data_single/chunk_13.tfrecords,data_single/chunk_14.tfrecords,data_single/chunk_15.tfrecords,data_single/chunk_16.tfrecords,data_single/chunk_17.tfrecords" \
-	--dev_file "data_single/chunk_18.tfrecords,data_single/chunk_19.tfrecords" \
+	--dev_file "data_single_hard_gan/chunk_18.tfrecords,data_single_hard_gan/chunk_19.tfrecords" \
 	--model_output "model/bert_tiny_with_single_random_generator_adam_decay_15" \
 	--epoch 15 \
 	--num_classes 2 \
@@ -27,9 +27,10 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--warmup "warmup" \
 	--decay "decay" \
 	--init_lr 5e-4 \
-	--tpu_name $TPU_NAME \
+	--tpu_name "albert3" \
 	--mode "pretrain" \
-	--random_generator "0"
+	--random_generator "0" \
+	--attention_type "normal_attention"
 
 
 

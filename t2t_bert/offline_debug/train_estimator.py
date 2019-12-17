@@ -57,6 +57,8 @@ def train_eval_fn(FLAGS,
 		config.init_lr = 1e-4
 		config.ln_type = FLAGS.ln_type
 
+		config.loss = 'dmi_loss'
+
 		print('==init learning rate==', config.init_lr)
 		
 		if FLAGS.if_shard == "0":

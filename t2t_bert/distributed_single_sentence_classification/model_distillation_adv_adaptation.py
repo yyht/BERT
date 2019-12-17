@@ -85,8 +85,11 @@ def diff_loss(shared_feat, task_feat):
 
 	return loss_diff
 
-def get_task_feature(config, common_feature, dropout_prob, scope):
+def get_task_feature(config, common_feature, dropout_prob, scope, if_grl=False):
 	with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
+		if if_grl:
+			common_feature = flip_gradient(common_feature)
+			print("==apply gradient reversal op==", scope)
 		hidden_size = bert_utils.get_shape_list(common_feature, expected_rank=2)[-1]
 		task_feature = tf.layers.dense(
 						common_feature,
@@ -100,7 +103,6 @@ def get_task_feature(config, common_feature, dropout_prob, scope):
 						kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
 						activation=tf.tanh)
 		return task_feature
-
 
 def model_fn_builder(
 					model_config,
@@ -144,8 +146,8 @@ def model_fn_builder(
 
 		common_feature = model.get_pooled_output()
 
-		task_feature = get_task_feature(model_config, common_feature, dropout_prob, scope+"/task_residual")
-		adv_task_feature = get_task_feature(model_config, flip_gradient(common_feature), dropout_prob, scope+"/adv_residual")
+		task_feature = get_task_feature(model_config, common_feature, dropout_prob, scope+"/task_residual", if_grl=False)
+		adv_task_feature = get_task_feature(model_config, common_feature, dropout_prob, scope+"/adv_residual", if_grl=True)
 
 		with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
 			concat_feature = task_feature
@@ -158,7 +160,8 @@ def model_fn_builder(
 											concat_feature,
 											num_labels,
 											label_ids,
-											dropout_prob)
+											dropout_prob,
+											*kargs)
 
 		with tf.variable_scope(scope+"/adv_classifier", reuse=tf.AUTO_REUSE):
 			adv_ids = features["adv_ids"]
@@ -168,7 +171,8 @@ def model_fn_builder(
 											adv_task_feature,
 											kargs.get('adv_num_labels', 12),
 											adv_ids,
-											dropout_prob)
+											dropout_prob,
+											**kargs)
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
 			loss_diff = tf.constant(0.0)
@@ -187,13 +191,13 @@ def model_fn_builder(
 			distillation_loss *= features["distillation_ratio"]
 			distillation_loss = tf.reduce_sum(distillation_loss) / (1e-10+tf.reduce_sum(features["distillation_ratio"]))
 
-			label_loss = tf.reduce_sum(per_example_loss * features["label_ratio"]) / (1e-10+tf.reduce_sum(features["label_ratio"]))
+			label_loss = loss #tf.reduce_sum(per_example_loss * features["label_ratio"]) / (1e-10+tf.reduce_sum(features["label_ratio"]))
 			print("==distillation loss ratio==", kargs.get("distillation_ratio", 0.9)*tf.pow(kargs.get("temperature", 2.0), 2))
 
 			# loss = label_loss + kargs.get("distillation_ratio", 0.9)*tf.pow(kargs.get("temperature", 2.0), 2)*distillation_loss
 			loss = (1-kargs.get("distillation_ratio", 0.9))*label_loss + kargs.get("distillation_ratio", 0.9) * distillation_loss
 			if mode == tf.estimator.ModeKeys.TRAIN:
-				loss += kargs.get("adv_ratio", 1.0) * adv_loss + loss_diff
+				loss += kargs.get("adv_ratio", 0.1) * adv_loss + loss_diff
 
 		model_io_fn = model_io.ModelIO(model_io_config)
 

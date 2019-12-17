@@ -186,7 +186,7 @@ def model_fn_builder(
 		else:
 			scaffold_fn = None
 			
-		tf.add_to_collection("generator_loss", masked_lm_loss)
+		# tf.add_to_collection("generator_loss", masked_lm_loss)
 		return_dict = {
 					"loss":loss, 
 					"tvars":tvars,

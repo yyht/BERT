@@ -12,10 +12,9 @@ zip -r ${model_zip} ${model_folder} -x "*.DS_Store,*.git*"
 
 pai_command="
 pai -name tensorflow1120
-	-project algo_public_dev 
 	-Dscript='file://${model_zip}'
 	-DentryFile='./BERT/t2t_bert/offline_debug/run.py'
-	-DgpuRequired=400
+	-DgpuRequired=100
 	-Dtags='bert'
 	-DjobName='bert_mrc_pretrain'
 	-DhyperParameters='file:///Users/xuhaotian/Desktop/my_work/BERT/t2t_bert/offline_debug/porn_albert'

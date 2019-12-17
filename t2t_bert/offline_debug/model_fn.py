@@ -29,11 +29,11 @@ def model_fn_builder(
 
 	def model_fn(features, labels, mode):
 
-		# model = bert_encoder(model_config, features, labels,
-		# 					mode, target, reuse=model_reuse)
-
-		model = albert_encoder(model_config, features, labels,
+		model = bert_encoder(model_config, features, labels,
 							mode, target, reuse=model_reuse)
+
+		# model = albert_encoder(model_config, features, labels,
+		# 					mode, target, reuse=model_reuse)
 
 		label_ids = features["label_ids"]
 
@@ -54,7 +54,8 @@ def model_fn_builder(
 											model.get_pooled_output(),
 											num_labels,
 											label_ids,
-											dropout_prob)
+											dropout_prob,
+											**kargs)
 
 		model_io_fn = model_io.ModelIO(model_io_config)
 

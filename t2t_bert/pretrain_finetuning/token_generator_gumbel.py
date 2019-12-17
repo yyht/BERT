@@ -119,7 +119,7 @@ def token_generator_gumbel(config, input_tensor,
 		flat_logits_tempered = tf.reshape(logits_tempered,
 									[batch_size * seq_length, width])
 
-		annealed_temp = tf.train.polynomial_decay(config.get('gumbel_temperature', 2.0),
+		annealed_temp = tf.train.polynomial_decay(config.get('gumbel_temperature', 1.0),
 												tf.train.get_or_create_global_step(),
 												kargs.get("num_train_steps", 10000),
 												end_learning_rate=0.1,
@@ -128,7 +128,7 @@ def token_generator_gumbel(config, input_tensor,
 
 		# [batch x seq] x config.vocab_size x config.get('gen_sample', 1)
 		sampled_logprob = gumbel_softmax(flat_logits_tempered, 
-										temperature=1.0,
+										temperature=annealed_temp,
 										samples=config.get('gen_sample', 1))
 
 		# argmax on config.vocab_size which is always axis=1
@@ -137,7 +137,7 @@ def token_generator_gumbel(config, input_tensor,
 								config.vocab_size,
 								axis=1) # sampled multiminal id
 
-		# straight-thourth gumbel softmax estimator
+		# straight-through gumbel softmax estimator
 		sampled_id = tf.stop_gradient(sampled_id-sampled_logprob) + flip_gradient(sampled_logprob)
 
 		sampled_binary_mask = kargs.get('sampled_binary_mask', None)

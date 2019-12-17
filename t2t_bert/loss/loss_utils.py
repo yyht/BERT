@@ -1,5 +1,6 @@
 import tensorflow as tf
 import numpy as np
+from utils.bert import bert_utils
 
 EPSILON = 1e-30
 
@@ -262,11 +263,15 @@ def multi_label_hot(config, prediction, **kargs):
 
 	return pred_label
 
-def dmi_loss(config, logits, labels):
+def removenan(x):
+	return tf.where(tf.is_finite(x), x, tf.ones_like(x))
+
+def dmi_loss(config, logits, labels, **kargs):
 	# N x C
 	probs = tf.exp(tf.nn.log_softmax(logits, axis=-1))
+	input_shape_list = bert_utils.get_shape_list(logits, expected_rank=[2])
 	# N x C
-	one_hot_labels = tf.one_hot(labels, depth=2, dtype=tf.float32)
+	one_hot_labels = tf.one_hot(labels, depth=kargs.get('num_classes', 2), dtype=tf.float32)
 
 	# C x N matmul N x C
 	mat = tf.matmul(tf.stop_gradient(one_hot_labels), probs, transpose_a=True) #
@@ -275,9 +280,8 @@ def dmi_loss(config, logits, labels):
 												logits=logits, 
 												labels=tf.stop_gradient(labels))
 
-	# loss = -tf.log(tf.abs(tf.linalg.det(mat)) + 1e-10)
-
-	loss = -tf.reduce_sum(tf.log(tf.linalg.svd(mat, compute_uv=False))) / tf.shape(labels)[0]
+	mat_det = tf.reduce_prod(tf.abs((tf.linalg.svd(mat, compute_uv=False))))
+	loss = -tf.reduce_sum(tf.log(1e-10+mat_det))
 	return loss, per_example_loss
 
 

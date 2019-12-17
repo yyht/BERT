@@ -111,7 +111,7 @@ def model_fn_builder(
 		else:
 			scaffold_fn = None
 		
-		tf.add_to_collection("discriminator_loss", disc_loss)
+		# tf.add_to_collection("discriminator_loss", disc_loss)
 		return_dict = {
 					"loss":loss, 
 					"logits":logits,
