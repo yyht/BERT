@@ -144,7 +144,8 @@ def model_fn_builder(
 									features['input_mask'],	
 									embedding_projection=model.get_embedding_projection_table(),
 									scope=generator_scope_prefix,
-									mask_method='only_mask')
+									mask_method='only_mask',
+									**kargs)
 
 		if model_config.get('gen_sample', 1) == 1:
 			input_ids = features['input_ori_ids']
@@ -185,7 +186,7 @@ def model_fn_builder(
 											use_tpu=use_tpu)
 		else:
 			scaffold_fn = None
-			
+
 		# tf.add_to_collection("generator_loss", masked_lm_loss)
 		return_dict = {
 					"loss":loss, 
