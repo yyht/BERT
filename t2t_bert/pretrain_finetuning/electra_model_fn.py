@@ -72,7 +72,7 @@ def classifier_model_fn_builder(
 		model_io_fn = model_io.ModelIO(model_io_config)
 
 		tvars = []
-		loss = 10 * discriminator_dict['loss']
+		loss = 50 * discriminator_dict['loss']
 		# for var in discriminator_dict['tvars']:
 		#	if re.search('word_embeddings', var.name):
 		#		continue

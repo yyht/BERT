@@ -82,6 +82,7 @@ def distillation_model_fn(model_config_dict,
 														distilled_student_logit))
 
 			tf.summary.scalar("kl_logits_loss", kl_distilled_loss)
+			tf.logging.info("***** with knowledge distillation %s tenperature *****", str(temperature))
 			
 			# kl_distilled_loss *= np.power(temperature, 2)
 			distilled_loss += kl_distilled_loss * distillation_config.get('kl_logits_ratio', 0.9)

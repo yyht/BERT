@@ -153,3 +153,69 @@ class Optimizer(object):
 		new_global_step = self.global_step + 1
 		train_op = tf.group(train_op, [self.global_step.assign(new_global_step)])
 		return train_op
+
+	def get_group_train_op(self, loss_list, tvars_list, num_train_steps, **kargs):
+		tf.logging.info("****** optimizer learning rate ******* %s", str(init_lr))
+		self.learning_rate = self.lr_decay_fn(init_lr, num_train_steps, **kargs)
+		self.learning_rate = self.warm_up(self.learning_rate, init_lr, **kargs)
+		opt_list = []
+
+		optimizer_list = []
+
+		for i in range(loss_list):
+			opt = self.optimizer_op(learning_rate, **kargs)
+			if kargs.get("use_tpu", 0) == 1:
+				tf.logging.info("***** Using tpu cross shard optimizer *****")
+				opt = tf.contrib.tpu.CrossShardOptimizer(opt)
+			optimizer_list.apend(opt)
+
+		for loss, tvars, optimizer in zip(loss_list, tvars_list, optimizer_list):
+			grads = self.grad_clip_fn(loss, tvars, **kargs)
+			train_op = optimizer.apply_gradients(
+					zip(grads, tvars))
+			opt_list.append(train_op)
+
+		with tf.control_dependencies(opt_list):
+			train_op = self.global_step.assign_add(1)
+		return train_op
+
+	def get_alternate_train_op(self, loss_list, tvars_list,
+		num_train_steps, **kargs):
+		tf.logging.info("****** optimizer learning rate ******* %s", str(init_lr))
+		self.learning_rate = self.lr_decay_fn(init_lr, num_train_steps, **kargs)
+		self.learning_rate = self.warm_up(self.learning_rate, init_lr, **kargs)
+		opt_list = []
+
+		prev_op = tf.no_op()
+
+		loop_step_list = kargs.get('loop_step_list', None)
+		if not loop_step_list:
+			loop_step_list = [1]*len(loss_list)
+
+		optimizer_list = []
+
+		for i in range(loss_list):
+			opt = self.optimizer_op(learning_rate, **kargs)
+			if kargs.get("use_tpu", 0) == 1:
+				tf.logging.info("***** Using tpu cross shard optimizer *****")
+				opt = tf.contrib.tpu.CrossShardOptimizer(opt)
+			optimizer_list.apend(opt)
+
+		for loss, tvars, loop_steps, optimizer in zip(loss_list, tvars_list, 
+													loop_step_list, optimizer_list):
+			grads = self.grad_clip_fn(loss, tvars, **kargs)
+			for i in range(loop_steps):
+				with tf.control_dependencies([prev_op]):
+					prev_op = optimizer.apply_gradients(
+						zip(grads, tvars))
+		with tf.control_dependencies([prev_op]):
+			train_op = self.global_step.assign_add(1)
+		return train_op
+
+
+			
+
+
+
+
+
