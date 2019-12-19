@@ -7,9 +7,11 @@ try:
 	from .generator_gumbel import model_fn_builder as generator
 	from .token_discriminator import discriminator_metric_train, discriminator_metric_eval
 	from .token_generator import generator_metric_fn_train, generator_metric_fn_eval
+	from .generator_gumbel_normal import model_fn_builder as generator_normal
 except:
 	from discriminator_gumbel import model_fn_builder as discriminator
 	from generator_gumbel import model_fn_builder as generator
+	from generator_gumbel_normal import model_fn_builder as generator_normal
 	from token_discriminator import discriminator_metric_train, discriminator_metric_eval
 	from token_generator import generator_metric_fn_train, generator_metric_fn_eval
 
@@ -44,7 +46,7 @@ def get_train_op(generator_dict, discriminator_dict, optimizer_fn, opt_config,
 							opt_config.num_train_steps,
 							**kargs)
 	elif kargs.get('train_op_type', 'joint') in ['alternate', 'group']:
-		generator_loss = kargs.get('dis_loss', 50.0) * discriminator_dict['loss'] + generator_dict['loss']
+		generator_loss = generator_dict['loss'] - kargs.get('dis_loss', 50.0) * discriminator_dict['loss'] + 
 		discriminator_loss = kargs.get('dis_loss', 50.0) * discriminator_dict['loss']
 		loss_dict = dict(zip(['generator', 'discriminator'], [generator_loss, discriminator_loss]))
 		tvars_dict = dict(zip(['generator', 'discriminator'], [generator_dict['tvars'], discriminator_dict['tvars']]))
@@ -52,10 +54,10 @@ def get_train_op(generator_dict, discriminator_dict, optimizer_fn, opt_config,
 		optimizer_type_dict = dict(zip(['generator', 'discriminator'], [generator_config['optimizer_type'], discriminator_config['optimizer_type']]))
 	        print(loss_dict, '===loss dict=====')
 		if kargs.get('train_op_type', 'joint') == 'alternate':
-			tf.logging.info("***** alternate train op for minmax with grl *****")
+			tf.logging.info("***** alternate train op for minmax *****")
 			train_op_fn = optimizer_fn.get_alternate_train_op
 		elif kargs.get('train_op_type', 'joint') == 'group':
-			tf.logging.info("***** joint train op for minmax with grl *****")
+			tf.logging.info("***** joint train op for minmax *****")
 			train_op_fn = optimizer_fn.get_group_train_op
 
 		update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
@@ -82,18 +84,47 @@ def classifier_model_fn_builder(
 	# graph = kargs.get('graph', None)
 	# with graph.as_default():
 	def model_fn(features, labels, mode, params):
-		
-		generator_fn = generator(model_config_dict['generator'],
-					num_labels_dict['generator'],
-					init_checkpoint_dict['generator'],
-					model_reuse=None,
-					load_pretrained=load_pretrained_dict['generator'],
-					model_io_config=model_io_config,
-					opt_config=opt_config,
-					exclude_scope=exclude_scope_dict.get('generator', ""),
-					not_storage_params=not_storage_params_dict.get('generator', []),
-					target=target_dict['generator'],
-					**kargs)
+
+		train_op_type = kargs.get('train_op_type', 'joint')
+		if kargs.get('optimization_type', 'grl') == 'grl':
+			generator_fn = generator(model_config_dict['generator'],
+						num_labels_dict['generator'],
+						init_checkpoint_dict['generator'],
+						model_reuse=None,
+						load_pretrained=load_pretrained_dict['generator'],
+						model_io_config=model_io_config,
+						opt_config=opt_config,
+						exclude_scope=exclude_scope_dict.get('generator', ""),
+						not_storage_params=not_storage_params_dict.get('generator', []),
+						target=target_dict['generator'],
+						**kargs)
+			train_op_type = 'joint'
+		elif kargs.get('optimization_type', 'grl') == 'minmax':
+			generator_fn = generator_normal(model_config_dict['generator'],
+						num_labels_dict['generator'],
+						init_checkpoint_dict['generator'],
+						model_reuse=None,
+						load_pretrained=load_pretrained_dict['generator'],
+						model_io_config=model_io_config,
+						opt_config=opt_config,
+						exclude_scope=exclude_scope_dict.get('generator', ""),
+						not_storage_params=not_storage_params_dict.get('generator', []),
+						target=target_dict['generator'],
+						**kargs)
+		else:
+			generator_fn = generator(model_config_dict['generator'],
+						num_labels_dict['generator'],
+						init_checkpoint_dict['generator'],
+						model_reuse=None,
+						load_pretrained=load_pretrained_dict['generator'],
+						model_io_config=model_io_config,
+						opt_config=opt_config,
+						exclude_scope=exclude_scope_dict.get('generator', ""),
+						not_storage_params=not_storage_params_dict.get('generator', []),
+						target=target_dict['generator'],
+						**kargs)
+		tf.logging.info("****** train_op_type:%s *******", train_op_type)
+		tf.logging.info("****** optimization_type:%s *******", kargs.get('optimization_type', 'grl'))
 		generator_dict = generator_fn(features, labels, mode, params)
 
 		# for key in generator_dict:
@@ -215,7 +246,7 @@ def classifier_model_fn_builder(
 
 			train_op = get_train_op(generator_dict, discriminator_dict, optimizer_fn, opt_config,
 						model_config_dict['generator'], model_config_dict['discriminator'],
-						use_tpu=1, train_op_type='alternate')
+						use_tpu=1, train_op_type=train_op_type)
 			
 			# update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 			# with tf.control_dependencies(update_ops):
