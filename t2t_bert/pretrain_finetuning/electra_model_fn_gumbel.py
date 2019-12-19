@@ -23,6 +23,51 @@ from model_io import model_io
 import tensorflow as tf
 from metric import tf_metrics
 
+
+def get_train_op(generator_dict, discriminator_dict, optimizer_fn, opt_config,
+				generator_config, discriminator_config,
+				**kargs):
+	if kargs.get('train_op_type', 'joint') == 'joint':
+		tf.logging.info("***** original joint train op *****")
+		tvars = []
+		tvars.extend(discriminator_dict['tvars'])
+		loss = kargs.get('dis_loss', 50.0) * discriminator_dict['loss']
+		if kargs.get('joint_train', '1') == '1':
+			tf.logging.info("****** joint generator and discriminator training *******")
+			tvars.extend(generator_dict['tvars'])
+			loss += generator_dict['loss']
+		tvars = list(set(tvars))
+		update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+		with tf.control_dependencies(update_ops):
+			train_op = optimizer_fn.get_train_op(loss, list(set(tvars)),
+							opt_config.init_lr, 
+							opt_config.num_train_steps,
+							**kargs)
+	elif kargs.get('train_op_type', 'joint') in ['alternate', 'group']:
+		generator_loss = kargs.get('dis_loss', 50.0) * discriminator_dict['loss'] + generator_dict['loss']
+		discriminator_loss = kargs.get('dis_loss', 50.0) * discriminator_dict['loss']
+		loss_dict = dict(zip(['generator', 'discriminator'], [generator_loss, discriminator_loss]))
+		tvars_dict = dict(zip(['generator', 'discriminator'], [generator_dict['tvars'], discriminator_dict['tvars']]))
+		init_lr_dict = dict(zip(['generator', 'discriminator'], [generator_config['init_lr'], discriminator_config['init_lr']]))
+		optimizer_type_dict = dict(zip(['generator', 'discriminator'], [generator_config['optimizer_type'], discriminator_config['optimizer_type']]))
+	        print(loss_dict, '===loss dict=====')
+		if kargs.get('train_op_type', 'joint') == 'alternate':
+			tf.logging.info("***** alternate train op for minmax with grl *****")
+			train_op_fn = optimizer_fn.get_alternate_train_op
+		elif kargs.get('train_op_type', 'joint') == 'group':
+			tf.logging.info("***** joint train op for minmax with grl *****")
+			train_op_fn = optimizer_fn.get_group_train_op
+
+		update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+		with tf.control_dependencies(update_ops):
+			train_op = train_op_fn(loss_dict, 
+									tvars_dict, 
+									init_lr_dict,
+									optimizer_type_dict,
+									opt_config.num_train_steps,
+									**kargs)
+	return train_op
+
 def classifier_model_fn_builder(
 						model_config_dict,
 						num_labels_dict,
@@ -167,13 +212,17 @@ def classifier_model_fn_builder(
 				use_tpu = 0
 
 			model_io_fn.print_params(tvars, string=", trainable params")
+
+			train_op = get_train_op(generator_dict, discriminator_dict, optimizer_fn, opt_config,
+						model_config_dict['generator'], model_config_dict['discriminator'],
+						use_tpu=1, train_op_type='alternate')
 			
-			update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-			with tf.control_dependencies(update_ops):
-				train_op = optimizer_fn.get_train_op(loss, list(set(tvars)),
-								opt_config.init_lr, 
-								opt_config.num_train_steps,
-								use_tpu=use_tpu)
+			# update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+			# with tf.control_dependencies(update_ops):
+			# 	train_op = optimizer_fn.get_train_op(loss, list(set(tvars)),
+			# 					opt_config.init_lr, 
+			# 					opt_config.num_train_steps,
+			# 					use_tpu=use_tpu)
 
 			if kargs.get('use_tpu', False):
 				estimator_spec = tf.contrib.tpu.TPUEstimatorSpec(
