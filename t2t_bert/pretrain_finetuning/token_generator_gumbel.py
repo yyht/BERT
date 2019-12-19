@@ -130,7 +130,8 @@ def token_generator_gumbel(config, input_tensor,
 													power=1.0,
 													cycle=False)
 		else:
-			annealed_temp = 1.0
+                        annealed_temp = 1.0
+                        tf.logging.info("****** not apply annealed tenperature with fixed temp ******* %s", str(annealed_temp))
 
 		# [batch x seq] x config.vocab_size x config.get('gen_sample', 1)
 		sampled_logprob_temp, sampled_logprob = gumbel_softmax(flat_logits_tempered, 
@@ -146,6 +147,7 @@ def token_generator_gumbel(config, input_tensor,
 									config.vocab_size,
 									axis=1) # sampled multiminal id
 		else:
+                        tf.logging.info("****** apply gumbel-softmax logprob for logits *******")
 			sampled_id = tf.one_hot(tf.argmax(sampled_logprob_temp, axis=1), 
 									config.vocab_size,
 									axis=1) # sampled multiminal id
