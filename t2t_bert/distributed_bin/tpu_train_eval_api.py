@@ -291,6 +291,16 @@ flags.DEFINE_string(
 	)
 
 flags.DEFINE_string(
+	"optimization_type", "grl",
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
+	"train_op_type", "joint",
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
 	"random_generator", "1",
 	"if apply distillation"
 	)
@@ -376,7 +386,9 @@ def main(_):
 			electra_mode=FLAGS.electra_mode,
 			joint_train=FLAGS.joint_train,
 			sharing_mode=FLAGS.sharing_mode,
-			attention_type=FLAGS.attention_type)
+			attention_type=FLAGS.attention_type,
+			optimization_type=FLAGS.optimization_type,
+			train_op_type=FLAGS.train_op_type)
 
 
 if __name__ == "__main__":
