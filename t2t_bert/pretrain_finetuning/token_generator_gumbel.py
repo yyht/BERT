@@ -121,7 +121,7 @@ def token_generator_gumbel(config, input_tensor,
 									[batch_size * seq_length, width])
 
 		num_train_steps = kargs.get('num_train_steps', None)
-		if num_train_steps:
+		if num_train_steps and kargs.get('gumbel_anneal', True):
 			tf.logging.info("****** apply annealed tenperature ******* %s", str(num_train_steps))
 			annealed_temp = tf.train.polynomial_decay(config.get('gumbel_temperature', 1.0),
 													tf.train.get_or_create_global_step(),
@@ -131,7 +131,8 @@ def token_generator_gumbel(config, input_tensor,
 													cycle=False)
 		else:
 			annealed_temp = 1.0
-
+			tf.logging.info("****** not apply annealed tenperature with fixed temp ******* %s", str(annealed_temp))
+			
 		# [batch x seq] x config.vocab_size x config.get('gen_sample', 1)
 		sampled_logprob_temp, sampled_logprob = gumbel_softmax(flat_logits_tempered, 
 										temperature=annealed_temp,
@@ -146,6 +147,7 @@ def token_generator_gumbel(config, input_tensor,
 									config.vocab_size,
 									axis=1) # sampled multiminal id
 		else:
+			tf.logging.info("****** apply gumbel-softmax logprob for logits *******")
 			sampled_id = tf.one_hot(tf.argmax(sampled_logprob_temp, axis=1), 
 									config.vocab_size,
 									axis=1) # sampled multiminal id

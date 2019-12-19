@@ -284,3 +284,5 @@ class Optimizer(object):
 			train_op = tf.group(train_op, [self.global_step.assign(new_global_step)])
 		train_op = train_op
 		return train_op
+
+	

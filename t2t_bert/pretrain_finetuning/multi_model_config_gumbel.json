@@ -20,7 +20,9 @@
 		"short_seq_prob":0.2,
 		"vocab_file":"./BERT/data/chinese_L-12_H-768_A-12/vocab.txt",
 		"do_lower_case":true,
-		"ln_type":"postln"
+		"ln_type":"postln",
+		"init_lr":1e-4,
+		"optimizer_type":"adam_decay"
 	},
 	"teacher_porn":{
 		"task_type":"single_sentence_classification",
@@ -43,7 +45,9 @@
 		"short_seq_prob":0.2,
 		"vocab_file":"./BERT/data/chinese_L-12_H-768_A-12/vocab.txt",
 		"do_lower_case":true,
-		"ln_type":"postln"
+		"ln_type":"postln",
+		"init_lr":1e-4,
+		"optimizer_type":"adam_decay"
 	},
 	"student_gpu":{
 		"task_type":"single_sentence_classification",
@@ -67,7 +71,9 @@
 		"short_seq_prob":0.2,
 		"vocab_file":"./BERT/data/chinese_L-12_H-768_A-12/vocab.txt",
 		"do_lower_case":true,
-		"ln_type":"postln"
+		"ln_type":"postln",
+		"init_lr":1e-4,
+		"optimizer_type":"adam_decay"
 	},
 	"student_my":{
 		"task_type":"single_sentence_classification",
@@ -90,7 +96,9 @@
 		"short_seq_prob":0.2,
 		"vocab_file":"./BERT/data/chinese_L-12_H-768_A-12/vocab.txt",
 		"do_lower_case":true,
-		"ln_type":"postln"
+		"ln_type":"postln",
+		"init_lr":1e-4,
+		"optimizer_type":"adam_decay"
 	},
 	"student_dropout":{
 		"task_type":"single_sentence_classification",
@@ -113,7 +121,9 @@
 		"short_seq_prob":0.2,
 		"vocab_file":"./BERT/data/chinese_L-12_H-768_A-12/vocab.txt",
 		"do_lower_case":true,
-		"ln_type":"postln"
+		"ln_type":"postln",
+		"init_lr":1e-4,
+		"optimizer_type":"adam_decay"
 	},
 	"student_albert":{
 		"task_type":"single_sentence_classification",
@@ -136,7 +146,9 @@
 		"short_seq_prob":0.2,
 		"vocab_file":"./BERT/data/chinese_L-12_H-768_A-12/vocab.txt",
 		"do_lower_case":true,
-		"ln_type":"postln"
+		"ln_type":"postln",
+		"init_lr":1e-4,
+		"optimizer_type":"adam_decay"
 	},
 	"generator_fixed":{
 		"task_type":"single_sentence_classification",
@@ -159,7 +171,9 @@
 		"short_seq_prob":0.2,
 		"vocab_file":"./BERT/data/chinese_L-12_H-768_A-12/vocab.txt",
 		"do_lower_case":true,
-		"ln_type":"postln"
+		"ln_type":"postln",
+		"init_lr":1e-4,
+		"optimizer_type":"adam_decay"
 	},
 	"generator":{
 		"task_type":"single_sentence_classification",
@@ -182,7 +196,9 @@
 		"short_seq_prob":0.2,
 		"vocab_file":"./BERT/data/chinese_L-12_H-768_A-12/vocab.txt",
 		"do_lower_case":true,
-		"ln_type":"postln"
+		"ln_type":"postln",
+		"init_lr":1e-4,
+		"optimizer_type":"adam_decay"
 	},
 	"generator_albert":{
 		"task_type":"single_sentence_classification",
@@ -205,6 +221,8 @@
 		"short_seq_prob":0.2,
 		"vocab_file":"./BERT/data/chinese_L-12_H-768_A-12/vocab.txt",
 		"do_lower_case":true,
-		"ln_type":"postln"
+		"ln_type":"postln",
+		"init_lr":1e-4,
+		"optimizer_type":"adam_decay"
 	}
 }
