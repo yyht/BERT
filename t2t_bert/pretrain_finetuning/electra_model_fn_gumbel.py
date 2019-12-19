@@ -47,7 +47,7 @@ def get_train_op(generator_dict, discriminator_dict, optimizer_fn, opt_config,
 		generator_loss = kargs.get('dis_loss', 50.0) * discriminator_dict['loss'] + generator_dict['loss']
 		discriminator_loss = kargs.get('dis_loss', 50.0) * discriminator_dict['loss']
 		loss_dict = dict(zip(['generator', 'discriminator'], [generator_loss, discriminator_loss]))
-		tavs_dict = dict(zip(['generator', 'discriminator'], [generator_dict['tvars'], discriminator_dict['tvars']]))
+		tvars_dict = dict(zip(['generator', 'discriminator'], [generator_dict['tvars'], discriminator_dict['tvars']]))
 		init_lr_dict = dict(zip(['generator', 'discriminator'], [generator_config['init_lr'], discriminator_config['init_lr']]))
 		optimizer_type_dict = dict(zip(['generator', 'discriminator'], [generator_config['optimizer_type'], discriminator_config['optimizer_type']]))
 		
@@ -64,7 +64,7 @@ def get_train_op(generator_dict, discriminator_dict, optimizer_fn, opt_config,
 									tvars_dict, 
 									init_lr_dict,
 									optimizer_type_dict,
-									opt_config.num_train_steps
+									opt_config.num_train_steps,
 									**kargs)
 	return train_op
 
