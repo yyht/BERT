@@ -18,6 +18,33 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import sys,os
+
+father_path = os.path.join(os.getcwd())
+print(father_path, "==father path==")
+
+def find_bert(father_path):
+  if father_path.split("/")[-1] == "BERT":
+    return father_path
+
+  output_path = ""
+  for fi in os.listdir(father_path):
+    if fi == "BERT":
+      output_path = os.path.join(father_path, fi)
+      break
+    else:
+      if os.path.isdir(os.path.join(father_path, fi)):
+        find_bert(os.path.join(father_path, fi))
+      else:
+        continue
+  return output_path
+
+bert_path = find_bert(father_path)
+t2t_bert_path = os.path.join(bert_path, "t2t_bert")
+sys.path.extend([bert_path, t2t_bert_path])
+
+print(sys.path)
+
 import collections
 import json
 import math

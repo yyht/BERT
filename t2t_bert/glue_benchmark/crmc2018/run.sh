@@ -1,4 +1,4 @@
-nohup python ./t2t_bert/glue_benchmark/run_baseline.py \
+nohup python ./t2t_bert/glue_benchmark/crmc2018/run_baseline.py \
 	--buckets "gs://yyht_source/pretrain" \
 	--config_file "./data/roberta_zh_l12_albert/bert_config.json" \
 	--init_checkpoint "model/bert_base_with_single_random_generator_adam_decay_15/model.ckpt-644000" \
