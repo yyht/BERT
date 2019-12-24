@@ -58,9 +58,8 @@ import tensorflow as tf
 import numpy
 import pdb
 
-FLAGS = flags.FLAGS
-
 flags = tf.flags
+FLAGS = flags.FLAGS
 
 flags.DEFINE_string("buckets", "", "oss buckets")
 
