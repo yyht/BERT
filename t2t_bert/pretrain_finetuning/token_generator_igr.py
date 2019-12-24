@@ -44,7 +44,23 @@ def gumbel_softmax(logits, temperature, samples=1):
 	return [tf.exp(tf.nn.log_softmax(y / temperature, axis=1)), 
 			y]
 
-def token_generator_gumbel(config, input_tensor,
+def sample_normal(shape, samples=1, eps=1e-20):
+	if samples > 1:
+		sample_shape = shape + [samples]
+	else:
+		sample_shape = shape
+	epsilon = tf.random.normal(shape=sample_shape)
+	return epsilon
+
+def iso_gaussian_sample(logits, temperature, samples=1):
+	input_shape_list = bert_utils.get_shape_list(logits, expected_rank=2)
+	if samples > 1:
+		logits = tf.expand_dims(logits, -1)
+	y = logits + sample_normal(input_shape_list, samples)
+	return [tf.exp(tf.nn.log_softmax(y / temperature)), y]
+
+
+def token_generator_igr(config, input_tensor,
 					output_weights, 
 					input_ids, 
 					input_ori_ids,
@@ -114,10 +130,10 @@ def token_generator_gumbel(config, input_tensor,
 		input_shape_list = bert_utils.get_shape_list(logits, expected_rank=3)
 		width = input_shape_list[2]
 
-		logits_tempered = tf.nn.log_softmax(logits, axis=-1)
+		# logits_tempered = tf.nn.log_softmax(logits, axis=-1)
 
 		# width=config.vocab_size
-		flat_logits_tempered = tf.reshape(logits_tempered,
+		flat_logits_tempered = tf.reshape(logits,
 									[batch_size * seq_length, width])
 
 		num_train_steps = kargs.get('num_train_steps', None)
@@ -143,11 +159,11 @@ def token_generator_gumbel(config, input_tensor,
 					tf.logging.info("****** apply auto-scale temperature for multi-sampling *******")
 					annealed_temp = tf.expand_dims(annealed_temp, -1)
 		else:
-                        annealed_temp = 1.0
-                        tf.logging.info("****** not apply annealed tenperature with fixed temp ******* %s", str(annealed_temp))
-
+			annealed_temp = 0.2
+			tf.logging.info("****** not apply annealed tenperature with fixed temp ******* %s", str(annealed_temp))
+			
 		# [batch x seq] x config.vocab_size x config.get('gen_sample', 1)
-		sampled_logprob_temp, sampled_logprob = gumbel_softmax(flat_logits_tempered, 
+		sampled_logprob_temp, sampled_logprob = iso_gaussian_sample(flat_logits_tempered, 
 										temperature=annealed_temp,
 										samples=config.get('gen_sample', 1))
 
@@ -160,7 +176,7 @@ def token_generator_gumbel(config, input_tensor,
 									config.vocab_size,
 									axis=1) # sampled multiminal id
 		else:
-                        tf.logging.info("****** apply gumbel-softmax logprob for logits *******")
+			tf.logging.info("****** apply gumbel-softmax logprob for logits *******")
 			sampled_id = tf.one_hot(tf.argmax(sampled_logprob_temp, axis=1), 
 									config.vocab_size,
 									axis=1) # sampled multiminal id

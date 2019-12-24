@@ -57,7 +57,7 @@ def train_eval_fn(FLAGS,
 		config.init_lr = 1e-4
 		config.ln_type = FLAGS.ln_type
 
-		config.loss = 'dmi_loss'
+		config.loss = 'entropy'
 
 		print('==init learning rate==', config.init_lr)
 		
