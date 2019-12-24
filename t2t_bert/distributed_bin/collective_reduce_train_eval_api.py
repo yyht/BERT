@@ -314,6 +314,11 @@ flags.DEFINE_string(
 	"if apply distillation"
 	)
 
+flags.DEFINE_string(
+	"ues_token_type", "yes",
+	"if apply distillation"
+	)
+
 def make_distributed_info_without_evaluator():
 	worker_hosts = FLAGS.worker_hosts.split(",")
 	if len(worker_hosts) > 1:
@@ -453,7 +458,8 @@ def main(_):
 			distillation_ratio=FLAGS.distillation_ratio,
 			electra_mode=FLAGS.electra_mode,
 			sharing_mode=FLAGS.sharing_mode,
-			attention_type=FLAGS.attention_type)
+			attention_type=FLAGS.attention_type,
+			ues_token_type=FLAGS.ues_token_type)
 	else:
 		train_eval_api.monitored_estimator(
 			FLAGS=FLAGS,
@@ -479,7 +485,8 @@ def main(_):
 			distillation=FLAGS.distillation,
 			temperature=FLAGS.temperature,
 			distillation_ratio=FLAGS.distillation_ratio,
-			attention_type=FLAGS.attention_type)
+			attention_type=FLAGS.attention_type,
+			ues_token_type=FLAGS.ues_token_type)
 
 if __name__ == "__main__":
 	tf.app.run()

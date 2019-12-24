@@ -320,6 +320,11 @@ flags.DEFINE_string(
 	"if apply distillation"
 	)
 
+flags.DEFINE_string(
+	"gumbel_anneal", "anneal",
+	"if apply distillation"
+	)
+
 def main(_):
 
 	init_checkpoint = os.path.join(FLAGS.buckets, FLAGS.init_checkpoint)
@@ -388,7 +393,8 @@ def main(_):
 			sharing_mode=FLAGS.sharing_mode,
 			attention_type=FLAGS.attention_type,
 			optimization_type=FLAGS.optimization_type,
-			train_op_type=FLAGS.train_op_type)
+			train_op_type=FLAGS.train_op_type,
+			gumbel_anneal=FLAGS.gumbel_anneal)
 
 
 if __name__ == "__main__":

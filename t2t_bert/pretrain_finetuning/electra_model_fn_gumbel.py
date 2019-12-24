@@ -46,8 +46,8 @@ def get_train_op(generator_dict, discriminator_dict, optimizer_fn, opt_config,
 							opt_config.num_train_steps,
 							**kargs)
 	elif kargs.get('train_op_type', 'joint') in ['alternate', 'group']:
-		generator_loss = generator_dict['loss'] - kargs.get('dis_loss', 50.0) * discriminator_dict['loss'] + 
-		discriminator_loss = kargs.get('dis_loss', 50.0) * discriminator_dict['loss']
+		generator_loss = generator_dict['loss'] - kargs.get('dis_loss', 1.0) * discriminator_dict['loss']
+		discriminator_loss = kargs.get('dis_loss', 1.0) * discriminator_dict['loss']
 		loss_dict = dict(zip(['generator', 'discriminator'], [generator_loss, discriminator_loss]))
 		tvars_dict = dict(zip(['generator', 'discriminator'], [generator_dict['tvars'], discriminator_dict['tvars']]))
 		init_lr_dict = dict(zip(['generator', 'discriminator'], [generator_config['init_lr'], discriminator_config['init_lr']]))
