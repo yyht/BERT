@@ -57,7 +57,7 @@ import six
 import tensorflow as tf
 import numpy
 import pdb
-from glue_benchmark.flags import FLAGS, flags
+from glue_benchmark.flags import flags
 
 # flags = tf.flags
 # FLAGS = flags.FLAGS
@@ -188,6 +188,12 @@ from glue_benchmark.flags import FLAGS, flags
 # # set random seed (i don't know whether it works or not)
 # numpy.random.seed(int(FLAGS.rand_seed))
 # tf.set_random_seed(int(FLAGS.rand_seed))
+
+FLAGS = flags.FLAGS
+
+# set random seed (i don't know whether it works or not)
+numpy.random.seed(int(FLAGS.rand_seed))
+tf.set_random_seed(int(FLAGS.rand_seed))
 
 #
 class SquadExample(object):
