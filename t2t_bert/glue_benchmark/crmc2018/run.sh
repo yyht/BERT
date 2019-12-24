@@ -1,6 +1,6 @@
 nohup python ./t2t_bert/glue_benchmark/crmc2018/run_baseline.py \
 	--buckets "gs://yyht_source/pretrain" \
-	--config_file "./data/roberta_zh_l12_albert/bert_config.json" \
+	--bert_config_file "./data/roberta_zh_l12_albert/bert_config.json" \
 	--init_checkpoint "model/bert_base_with_single_random_generator_adam_decay_15/model.ckpt-644000" \
 	--vocab_file "./data/chinese_L-12_H-768_A-12/vocab.txt" \
 	--max_seq_length 512 \
