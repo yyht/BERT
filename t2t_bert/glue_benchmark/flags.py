@@ -13,7 +13,6 @@ import numpy
 import pdb
 
 flags = tf.flags
-FLAGS = flags.FLAGS
 
 flags.DEFINE_string("buckets", "", "oss buckets")
 
@@ -148,8 +147,4 @@ flags.DEFINE_bool(
     "A number of warnings are expected for a normal SQuAD evaluation.")
 
 flags.DEFINE_integer("rand_seed", 12345, "set random seed")
-
-# set random seed (i don't know whether it works or not)
-numpy.random.seed(int(FLAGS.rand_seed))
-tf.set_random_seed(int(FLAGS.rand_seed))
 
