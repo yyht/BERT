@@ -103,7 +103,7 @@ flags.DEFINE_integer(
     "The maximum length of an answer that can be generated. This is needed "
     "because the start and end predictions are not conditioned on one another.")
 
-flags.DEFINE_bool("use_tpu", False, "Whether to use TPU or GPU/CPU.")
+flags.DEFINE_bool("use_tpu", True, "Whether to use TPU or GPU/CPU.")
 
 flags.DEFINE_string(
     "tpu_name", None,
@@ -132,7 +132,7 @@ flags.DEFINE_string("model_type", "bert", "[Optional] TensorFlow master URL.")
 flags.DEFINE_string("attention_type", "normal_attention", "[Optional] TensorFlow master URL.")
 flags.DEFINE_string("optimizer_type", "tpu_adamw", "[Optional] TensorFlow master URL.")
 flags.DEFINE_string(
-    "ues_token_type", "yes",
+    "use_token_type", "yes",
     "if apply distillation"
     )
 flags.DEFINE_string(
@@ -163,7 +163,6 @@ flags.DEFINE_bool(
     "A number of warnings are expected for a normal SQuAD evaluation.")
 
 flags.DEFINE_integer("rand_seed", 12345, "set random seed")
-
 
 numpy.random.seed(int(FLAGS.rand_seed))
 tf.set_random_seed(int(FLAGS.rand_seed))

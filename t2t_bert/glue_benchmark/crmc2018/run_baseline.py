@@ -629,11 +629,11 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids, i
                  use_one_hot_embeddings, **kargs):
   """Creates a classification model."""
   model = modeling.BertModel(
-      config=bert_config,
+      bert_config=bert_config,
       is_training=is_training,
       input_ids=input_ids,
       input_mask=input_mask,
-      token_type_ids=segment_ids,
+      segment_ids=segment_ids,
       use_one_hot_embeddings=use_one_hot_embeddings,
       **kargs)
 
@@ -1189,6 +1189,8 @@ def main(_):
     tpu_cluster_resolver = tf.contrib.cluster_resolver.TPUClusterResolver(
         FLAGS.tpu_name, zone=FLAGS.tpu_zone, project=FLAGS.gcp_project)
 
+  print("###tpu_cluster_resolver:",tpu_cluster_resolver,";FLAGS.use_tpu:",FLAGS.use_tpu,";FLAGS.tpu_name:",FLAGS.tpu_name,";FLAGS.tpu_zone:",FLAGS.tpu_zone)
+
   is_per_host = tf.contrib.tpu.InputPipelineConfig.PER_HOST_V2
   run_config = tf.contrib.tpu.RunConfig(
       cluster=tpu_cluster_resolver,
@@ -1252,8 +1254,9 @@ def main(_):
       exclude_scope=FLAGS.exclude_scope,
       model_type=FLAGS.model_type,
       attention_type=FLAGS.attention_type,
-      ues_token_type=FLAGS.ues_token_type,
-      ln_type=FLAGS.ln_type)
+      use_token_type=FLAGS.use_token_type,
+      ln_type=FLAGS.ln_type,
+      optimizer_type=FLAGS.optimizer_type)
 
   # If TPU is not available, this will fall back to normal Estimator on CPU
   # or GPU.
