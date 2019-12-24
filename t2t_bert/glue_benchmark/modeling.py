@@ -18,12 +18,12 @@ def BertModel(bert_config, is_training, input_ids, input_mask, segment_ids,
 	model_config.use_one_hot_embeddings = use_one_hot_embeddings
 
 	if kargs.get('exclude_scope', None):
-		model_config.scope = exclude_scope + '/' + model_config.scope
+		model_config.scope = exclude_scope + '/' + 'bert'
 	else:
-		model_config.scope = model_config.scope
+		model_config.scope = 'bert'
 
-	config.ln_type = kargs.get('ln_type', 'postln')
-	tf.logging.info(" ln type %s ", config.ln_type)
+	model_config.ln_type = kargs.get('ln_type', 'postln')
+	tf.logging.info(" ln type %s ", model_config.ln_type)
 
 	if not is_training:
 		model_config.hidden_dropout_prob = 0.0
