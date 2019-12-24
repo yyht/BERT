@@ -1253,7 +1253,7 @@ def main(_):
       exclude_scope=FLAGS.exclude_scope,
       model_type=FLAGS.model_type,
       attention_type=FLAGS.attention_type,
-      ues_token_type=FLAGS.ues_token_type,
+      use_token_type=FLAGS.use_token_type,
       ln_type=FLAGS.ln_type,
       optimizer_type=FLAGS.optimizer_type)
 

@@ -29,7 +29,7 @@ def BertModel(bert_config, is_training, input_ids, input_mask, segment_ids,
 		model_config.hidden_dropout_prob = 0.0
 		model_config.attention_probs_dropout_prob = 0.0
 
-	if kargs.get('ues_token_type', 'yes') == 'yes':
+	if kargs.get('use_token_type', 'yes') == 'yes':
 		tf.logging.info(" using segment embedding with different types ")
 	else:
 		tf.logging.info(" using segment embedding with same types ")
