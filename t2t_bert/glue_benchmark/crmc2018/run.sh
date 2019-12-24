@@ -9,7 +9,7 @@ nohup python ./t2t_bert/glue_benchmark/crmc2018/run_baseline.py \
 	--warmup_proportion 0.1 \
 	--train_file "chinese_glue/crmc_2018/cmrc2018_train.json" \
 	--eval_file "chinese_glue/crmc_2018/cmrc2018_dev.json" \
-	--model_output "chinese_glue/crmc_2018" \
+	--output_dir "chinese_glue/crmc_2018" \
 	--epoch 5 \
 	--train_size 10000 \
 	--eval_size 3200 \
