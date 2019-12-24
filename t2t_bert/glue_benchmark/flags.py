@@ -123,6 +123,9 @@ flags.DEFINE_string(
     "specified, we will attempt to automatically detect the GCE project from "
     "metadata.")
 
+"""
+#.  my flags
+"""
 flags.DEFINE_string("master", None, "[Optional] TensorFlow master URL.")
 flags.DEFINE_string("exclude_scope", "", "[Optional] TensorFlow master URL.")
 flags.DEFINE_string("model_type", "bert", "[Optional] TensorFlow master URL.")
@@ -136,6 +139,19 @@ flags.DEFINE_string(
     "ln_type", "postln",
     "if apply distillation"
     )
+flags.DEFINE_integer(
+    "train_size", 20,
+    "The total number of n-best predictions to generate in the "
+    "nbest_predictions.json output file.")
+
+flags.DEFINE_integer(
+    "eval_size", 20,
+    "The total number of n-best predictions to generate in the "
+    "nbest_predictions.json output file.")
+
+"""
+#.  my flags
+"""
 
 flags.DEFINE_integer(
     "num_tpu_cores", 8,
