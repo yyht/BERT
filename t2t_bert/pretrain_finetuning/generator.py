@@ -54,7 +54,8 @@ def model_fn_builder(
 				[output_ids, 
 				sampled_binary_mask] = random_input_ids_generation(model_config,
 											features['input_ori_ids'],
-											features['input_mask'])
+											features['input_mask'],
+											**kargs)
 				features['input_ids'] = output_ids
 				tf.logging.info("****** do random generator *******")
 			else:

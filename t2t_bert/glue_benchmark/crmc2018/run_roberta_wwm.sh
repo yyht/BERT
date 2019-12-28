@@ -1,7 +1,7 @@
 nohup python ./t2t_bert/glue_benchmark/crmc2018/run_baseline.py \
 	--buckets "gs://yyht_source/pretrain" \
 	--bert_config_file "./data/roberta_zh_l12/bert_config.json" \
-	--init_checkpoint "model/bert_base_with_single_random_generator_adam_decay_15/model.ckpt-644000" \
+	--init_checkpoint "model/chinese_roberta_wwm_ext_L-12_H-768_A-12/bert_model.ckpt" \
 	--vocab_file "./data/chinese_L-12_H-768_A-12/vocab.txt" \
 	--max_seq_length 512 \
 	--max_query_length 64 \
@@ -9,8 +9,8 @@ nohup python ./t2t_bert/glue_benchmark/crmc2018/run_baseline.py \
 	--warmup_proportion 0.1 \
 	--train_file "chinese_glue/cmrc2018/cmrc2018_train.json" \
 	--eval_file "chinese_glue/cmrc2018/cmrc2018_dev.json" \
-	--output_dir "chinese_glue/cmrc2018/bert_base_dynamic_mask_adam_decay_15" \
-	--num_train_epochs 2 \
+	--output_dir "chinese_glue/cmrc2018/chinese_roberta_wwm_ext_L-12_H-768_A-12" \
+	--num_train_epochs 5 \
 	--train_size 10000 \
 	--eval_size 3200 \
 	--train_batch_size 64 \
@@ -26,4 +26,3 @@ nohup python ./t2t_bert/glue_benchmark/crmc2018/run_baseline.py \
 	--do_train true \
 	--do_eval true \
 	--use_tpu true 
-

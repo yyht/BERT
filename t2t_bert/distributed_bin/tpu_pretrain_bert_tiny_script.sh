@@ -7,17 +7,17 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--max_length 512 \
 	--train_file "data_single_hard_gan/chunk_0.tfrecords,data_single_hard_gan/chunk_1.tfrecords,data_single_hard_gan/chunk_2.tfrecords,data_single_hard_gan/chunk_3.tfrecords,data_single_hard_gan/chunk_4.tfrecords,data_single_hard_gan/chunk_5.tfrecords,data_single_hard_gan/chunk_6.tfrecords,data_single_hard_gan/chunk_7.tfrecords,data_single_hard_gan/chunk_8.tfrecords,data_single_hard_gan/chunk_9.tfrecords,data_single_hard_gan/chunk_10.tfrecords,data_single_hard_gan/chunk_11.tfrecords,data_single_hard_gan/chunk_12.tfrecords,data_single_hard_gan/chunk_13.tfrecords,data_single_hard_gan/chunk_14.tfrecords,data_single_hard_gan/chunk_15.tfrecords,data_single_hard_gan/chunk_16.tfrecords,data_single_hard_gan/chunk_17.tfrecords" \
 	--dev_file "data_single_hard_gan/chunk_18.tfrecords,data_single_hard_gan/chunk_19.tfrecords" \
-	--model_output "model/bert_tiny_lamb_v1_15" \
-	--epoch 15 \
+	--model_output "model/bert_tiny_with_single_random_adam_decay_40" \
+	--epoch 40 \
 	--num_classes 2 \
 	--train_size 11000000 \
 	--eval_size 1100000 \
-	--batch_size 512 \
+	--batch_size 384 \
 	--model_type "bert" \
 	--if_shard 1 \
 	--is_debug 1 \
 	--profiler "no" \
-	--train_op "lamb_v1" \
+	--train_op "adam_decay" \
 	--load_pretrained "no" \
 	--with_char "no_char" \
 	--input_target "" \
@@ -26,12 +26,11 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--ln_type "postln" \
 	--warmup "warmup" \
 	--decay "decay" \
-	--init_lr 1e-4 \
-	--do_train true \
-	--tpu_name "albert2" \
+	--init_lr 2e-4 \
 	--num_tpu_cores 8 \
-	--mode 'pretrain' \
-	--attention_type 'normal_attention'
+	--do_train true \
+	--tpu_name "albert3" \
+	--mode "pretrain"
 
 
 
