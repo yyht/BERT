@@ -6,11 +6,11 @@ nohup python ./t2t_bert/glue_benchmark/crmc2018/run_baseline.py \
 	--max_seq_length 512 \
 	--max_query_length 64 \
 	--doc_stride 128 \
-	--warmup_proportion 0.1 \
+	--warmup_proportion 0.05 \
 	--train_file "chinese_glue/cmrc2018/cmrc2018_train.json" \
 	--eval_file "chinese_glue/cmrc2018/cmrc2018_dev.json" \
-	--output_dir "chinese_glue/cmrc2018/bert_base_dynamic_mask_adam_decay_15" \
-	--num_train_epochs 5 \
+	--output_dir "chinese_glue/cmrc2018/bert_base_dynamic_mask_adam_decay_15/epoch2_no_segment_id_warmup_0.05" \
+	--num_train_epochs 2 \
 	--train_size 10000 \
 	--eval_size 3200 \
 	--train_batch_size 64 \
@@ -18,11 +18,11 @@ nohup python ./t2t_bert/glue_benchmark/crmc2018/run_baseline.py \
 	--model_type "bert" \
 	--optimizer_type "tpu_adamw" \
 	--ln_type "postln" \
-	--learning_rate 3e-5 \
+	--learning_rate 5e-5 \
 	--num_tpu_cores 8 \
 	--tpu_name "albert1" \
 	--exclude_scope "" \
-	--use_token_type "yes" \
+	--use_token_type "no" \
 	--do_train true \
 	--do_eval true \
 	--use_tpu true 

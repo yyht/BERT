@@ -178,7 +178,7 @@ def classifier_model_fn_builder(
 
 		tvars = []
 
-		loss = kargs.get('dis_loss', 50.0) * discriminator_dict['loss']
+		loss = kargs.get('dis_loss', 1.0) * discriminator_dict['loss']
 
 		tvars.extend(discriminator_dict['tvars'])
 
