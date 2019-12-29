@@ -408,7 +408,7 @@ def main(_):
 			optimization_type=FLAGS.optimization_type,
 			train_op_type=FLAGS.train_op_type,
 			gumbel_anneal=FLAGS.gumbel_anneal,
-			exclude_scope=FLAGS.exclude_scope,
+		#	exclude_scope=FLAGS.exclude_scope,
 			annealed_mask_prob=FLAGS.annealed_mask_prob)
 
 
