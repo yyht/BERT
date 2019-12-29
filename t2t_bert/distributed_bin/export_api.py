@@ -224,6 +224,11 @@ flags.DEFINE_string(
 	"if apply distillation"
 	)
 
+flags.DEFINE_string(
+	"model_scope", "bert",
+	"if apply distillation"
+	)
+
 def main(_):
 
 	print(FLAGS)
