@@ -29,10 +29,22 @@ def random_input_ids_generation(config,
 	batch_size = input_shape_list[0]
 	seq_length = input_shape_list[1]
 
+	if kargs.get('annealed_mask_prob', False):
+		mask_probability = 1 - tf.train.polynomial_decay(0.95,
+														tf.train.get_or_create_global_step(),
+														kargs.get("num_train_steps", 10000)*0.1,
+														end_learning_rate=0.85,
+														power=1.0,
+														cycle=False)
+		tf.logging.info("**** apply annealed_mask_prob **** ")
+	else:
+		mask_probability = 0.15
+		tf.logging.info("**** apply fixed_mask_prob %s **** ", str(mask_probability))
+
 	# must_have_one = tf.cast(tf.expand_dims(tf.eye(seq_length)[4], axis=[0]), tf.int32) # batch x seq_length
 	# must_have_one = must_have_one * input_mask * (1 - tf.cast(none_replace_mask, tf.int32))
 	sample_probs = tf.ones_like(input_ori_ids) * input_mask * (1 - tf.cast(none_replace_mask, tf.int32))
-	sample_probs = 0.2 * tf.cast(sample_probs, tf.float32) #+ 0.8 * tf.cast(must_have_one, tf.float32) # mask 15% token
+	sample_probs = mask_probability * tf.cast(sample_probs, tf.float32) #+ 0.8 * tf.cast(must_have_one, tf.float32) # mask 15% token
 
 	noise_dist = tf.distributions.Bernoulli(probs=sample_probs, dtype=tf.float32)
 	sampled_binary_mask = noise_dist.sample()

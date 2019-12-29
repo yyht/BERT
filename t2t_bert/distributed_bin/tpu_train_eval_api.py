@@ -325,6 +325,17 @@ flags.DEFINE_string(
 	"if apply distillation"
 	)
 
+flags.DEFINE_string(
+	"exclude_scope", "",
+	"if apply distillation"
+	)
+
+flags.DEFINE_bool(
+	"annealed_mask_prob", False,
+	"if apply distillation"
+	)
+
+
 def main(_):
 
 	init_checkpoint = os.path.join(FLAGS.buckets, FLAGS.init_checkpoint)
@@ -375,7 +386,9 @@ def main(_):
 			decay=FLAGS.decay,
 			warmup=FLAGS.warmup,
 			input_target=FLAGS.input_target,
-			attention_type=FLAGS.attention_type)
+			attention_type=FLAGS.attention_type,
+			exclude_scope=FLAGS.exclude_scope,
+			annealed_mask_prob=FLAGS.annealed_mask_prob)
 	elif FLAGS.mode == 'electra':
 		train_eval_gpu_electra_estimator.train_eval_fn(
 			FLAGS=FLAGS,
@@ -394,7 +407,9 @@ def main(_):
 			attention_type=FLAGS.attention_type,
 			optimization_type=FLAGS.optimization_type,
 			train_op_type=FLAGS.train_op_type,
-			gumbel_anneal=FLAGS.gumbel_anneal)
+			gumbel_anneal=FLAGS.gumbel_anneal,
+			exclude_scope=FLAGS.exclude_scope,
+			annealed_mask_prob=FLAGS.annealed_mask_prob)
 
 
 if __name__ == "__main__":

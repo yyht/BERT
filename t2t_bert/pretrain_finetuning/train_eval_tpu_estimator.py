@@ -84,9 +84,10 @@ def train_eval_fn(FLAGS,
 									model_io_config=model_io_config,
 									opt_config=opt_config,
 									model_io_fn=model_io_fn,
-									exclude_scope="",
+									#exclude_scope=kargs.get('exclude_scope', ""),
 									not_storage_params=[],
 									target=kargs.get("input_target", ""),
+									num_train_steps=num_train_steps,
 									**kargs)
 
 		estimator = tf.contrib.tpu.TPUEstimator(

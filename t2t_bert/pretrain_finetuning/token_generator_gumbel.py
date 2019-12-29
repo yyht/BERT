@@ -139,9 +139,9 @@ def token_generator_gumbel(config, input_tensor,
 												) + 1.0
                                 annealed_temp = 1./ annealed_temp
 				annealed_temp = tf.reshape(annealed_temp, [batch_size * seq_length, 1])
-				if config.get('gen_sample', 1) > 1:
-					tf.logging.info("****** apply auto-scale temperature for multi-sampling *******")
-					annealed_temp = tf.expand_dims(annealed_temp, -1)
+			if config.get('gen_sample', 1) > 1:
+				tf.logging.info("****** apply auto-scale temperature for multi-sampling *******")
+				annealed_temp = tf.expand_dims(annealed_temp, -1)
 		else:
                         annealed_temp = 1.0
                         tf.logging.info("****** not apply annealed tenperature with fixed temp ******* %s", str(annealed_temp))

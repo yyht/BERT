@@ -10,6 +10,7 @@ nohup python ./t2t_bert/glue_benchmark/crmc2018/run_baseline.py \
 	--train_file "chinese_glue/cmrc2018/cmrc2018_train.json" \
 	--eval_file "chinese_glue/cmrc2018/cmrc2018_dev.json" \
 	--output_dir "chinese_glue/cmrc2018/bert_base_dynamic_mask_adam_decay_15/epoch2_no_segment_id_warmup_0.05" \
+	--output_dir "chinese_glue/cmrc2018/bert_base_dynamic_mask_adam_decay_15" \
 	--num_train_epochs 2 \
 	--train_size 10000 \
 	--eval_size 3200 \
@@ -26,3 +27,4 @@ nohup python ./t2t_bert/glue_benchmark/crmc2018/run_baseline.py \
 	--do_train true \
 	--do_eval true \
 	--use_tpu true 
+

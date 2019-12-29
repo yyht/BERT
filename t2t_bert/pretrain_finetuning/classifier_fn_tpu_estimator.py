@@ -99,7 +99,8 @@ def classifier_model_fn_builder(
 				sampled_binary_mask] = random_input_ids_generation(
 											model_config, 
 											input_ori_ids,
-											features['input_mask'])
+											features['input_mask'],
+											**kargs)
 
 				features['input_ids'] = output_ids
 				tf.logging.info("***** Running random sample input generation *****")
