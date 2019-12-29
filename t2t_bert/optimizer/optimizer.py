@@ -11,6 +11,7 @@ import six
 import tensorflow as tf
 
 from optimizer import optimizer_utils
+from optimizer import radam_utils
 
 class Optimizer(object):
 	def __init__(self, config, **kargs):
@@ -106,7 +107,7 @@ class Optimizer(object):
 		if opt_type is None:
 			opt_type = self.config.get("train_op", "adam_decay")
 		tf.logging.info(" optimization method {}".format(opt_type))
-		if opt_type not in ["adam_decay", "adam", "lamb_v2", "lamb_v1"]:
+		if opt_type not in ["adam_decay", "adam", "lamb_v2", "lamb_v1", "radam"]:
 			raise NotImplementedError()
 		if opt_type == "adam_decay":
 			opt = optimizer_utils.AdamWeightDecayOptimizer(
@@ -116,11 +117,13 @@ class Optimizer(object):
 						beta_2=self.config.get("beta_2", 0.999),
 						epsilon=self.config.get("epsilon", 1e-6),
 						exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"])
+			tf.logging.info("***** apply adam_decay *****")
 		elif opt_type == "adam":
 			opt = tf.train.AdamOptimizer(learning_rate,
 										beta1=self.config.get("beta_1", 0.9),
 										beta2=self.config.get("beta_2", 0.999),
 										epsilon=self.config.get("epsilon", 1e-6))
+			tf.logging.info("***** apply adam *****")
 		elif opt_type == "lamb_v2":
 			opt = optimizer_utils.LAMBOptimizer_v2(learning_rate,
 				               weight_decay_rate=self.config.get("opt_decay_rate", 0.01),
@@ -130,6 +133,7 @@ class Optimizer(object):
 				               exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"],
 				               exclude_from_layer_adaptation=None,
 				               name="LAMBOptimizer")
+			tf.logging.info("***** apply lamb_v2 *****")
 		elif opt_type == "lamb_v1":
 			opt = optimizer_utils.LAMBOptimizer_v1(learning_rate,
 				               weight_decay_rate=self.config.get("opt_decay_rate", 0.01),
@@ -138,13 +142,28 @@ class Optimizer(object):
 				               epsilon=self.config.get("epsilon", 1e-6),
 				               exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"],
 				               name="LAMBOptimizer")
+			tf.logging.info("***** apply lamb_v1 *****")
+		elif opt_type == 'radam':
+			opt = radam_utils.RAdamOptimizer(learning_rate=learning_rate,
+		                 beta1=self.config.get("beta_1", 0.9),
+		                 beta2=self.config.get("beta_2", 0.999),
+		                 epsilon=self.config.get("epsilon", 1e-6),
+		                 weight_decay=self.config.get("opt_decay_rate", 0.01),
+		                 amsgrad=False,
+		                 total_steps=config['num_train_steps'],
+		                 warmup_proportion=0.1,
+		                 min_lr=0.,
+		                 use_locking=False,
+		                 exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"])
+			tf.logging.info("***** apply radam *****")
 		return opt
 
 	def get_train_op(self, loss, tvars, init_lr, 
 							num_train_steps, **kargs):
 		tf.logging.info("****** optimizer learning rate ******* %s", str(init_lr))
-		self.learning_rate = self.lr_decay_fn(init_lr, num_train_steps, **kargs)
-		self.learning_rate = self.warm_up(self.learning_rate, init_lr, **kargs)
+		if kargs.get('train_op', 'adam_decay') != "radam":
+			self.learning_rate = self.lr_decay_fn(init_lr, num_train_steps, **kargs)
+			self.learning_rate = self.warm_up(self.learning_rate, init_lr, **kargs)
 		grads = self.grad_clip_fn(loss, tvars, **kargs)
 		opt = self.optimizer_op(self.learning_rate, **kargs)
 		if kargs.get("use_tpu", 0) == 1:
@@ -165,8 +184,9 @@ class Optimizer(object):
 		for key in loss_dict:
 			init_lr = init_lr_dict[key]
 			optimizer_type = optimizer_type_dict[key]
-			learning_rate = self.lr_decay_fn(init_lr, num_train_steps, **kargs)
-			learning_rate = self.warm_up(learning_rate, init_lr, **kargs)
+			if optimizer_type != 'radam':
+				learning_rate = self.lr_decay_fn(init_lr, num_train_steps, **kargs)
+				learning_rate = self.warm_up(learning_rate, init_lr, **kargs)
 
 			tf.logging.info("****** model:%s, optimizer: %s, learning_rate:%s", key, optimizer_type, str(init_lr))
 			opt = self.optimizer_op(learning_rate, train_op=optimizer_type, **kargs)
@@ -213,8 +233,9 @@ class Optimizer(object):
 		for key in init_lr_dict:
 			init_lr = init_lr_dict[key]
 			optimizer_type = optimizer_type_dict[key]
-			learning_rate = self.lr_decay_fn(init_lr, num_train_steps, **kargs)
-			learning_rate = self.warm_up(learning_rate, init_lr, **kargs)
+			if optimizer_type != 'radam':
+				learning_rate = self.lr_decay_fn(init_lr, num_train_steps, **kargs)
+				learning_rate = self.warm_up(learning_rate, init_lr, **kargs)
 
 			tf.logging.info("****** model:%s, optimizer: %s, learning_rate:%s", key, optimizer_type, str(init_lr))
 			opt = self.optimizer_op(learning_rate, train_op=optimizer_type, **kargs)

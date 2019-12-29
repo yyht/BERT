@@ -53,7 +53,12 @@ def model_config_parser(FLAGS):
 		print(config, '==model config==')
 		config = Bunch(config)
 		config.use_one_hot_embeddings = True
-		config.scope = "bert"
+		if FLAGS.exclude_scope:
+			config.scope = FLAGS.exclude_scope + "/" + "bert"
+			tf.logging.info("****** add exclude_scope ******* %s", str(config.scope))
+		else:
+			config.scope = "bert"
+			tf.logging.info("****** original scope ******* %s", str(config.scope))
 		config.dropout_prob = 0.1
 		config.label_type = "single_label"
 		config.model_type = FLAGS.model_type
