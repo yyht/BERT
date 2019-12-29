@@ -262,6 +262,21 @@ flags.DEFINE_string(
 	"if apply distillation"
 	)
 
+flags.DEFINE_string(
+	"attention_type", "normal_attention",
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
+	"exclude_scope", "",
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
+	"ues_token_type", "yes",
+	"if apply distillation"
+	)
+
 def main(_):
 
 	print(FLAGS)
@@ -321,7 +336,9 @@ def main(_):
 			rule_model=FLAGS.rule_model,
 			train_op=FLAGS.train_op,
 			running_type="eval",
-			input_target=FLAGS.input_target)
+			input_target=FLAGS.input_target,
+			ues_token_type=FLAGS.ues_token_type,
+			attention_type=FLAGS.attention_type)
 	elif FLAGS.run_type == "sess":
 		result_dict = train_eval_api.monitored_sess(FLAGS=FLAGS,
 			worker_count=worker_count,
@@ -339,7 +356,9 @@ def main(_):
 			rule_model=FLAGS.rule_model,
 			train_op=FLAGS.train_op,
 			running_type="eval",
-			input_target=FLAGS.input_target)
+			input_target=FLAGS.input_target,
+			ues_token_type=FLAGS.ues_token_type,
+			attention_type=FLAGS.attention_type)
 
 		result_log_file = os.path.join(checkpoint_dir, FLAGS.feature_output)
 		print(result_log_file, "==result log path==")
