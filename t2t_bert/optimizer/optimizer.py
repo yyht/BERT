@@ -171,9 +171,12 @@ class Optimizer(object):
 			opt = tf.contrib.tpu.CrossShardOptimizer(opt)
 		train_op = opt.apply_gradients(
 					zip(grads, tvars), global_step=self.global_step)
-		new_global_step = self.global_step + 1
-		train_op = tf.group(train_op, [self.global_step.assign(new_global_step)])
-		return train_op
+		if kargs.get('train_op', 'adam_decay') in ['adam_decay', 'lamb_v2', 'lamb_v1']:
+			new_global_step = self.global_step + 1
+			train_op = tf.group(train_op, [self.global_step.assign(new_global_step)])
+			return train_op
+		else:
+			return train_op
 
 	def get_group_train_op(self, loss_dict, tvars_dict, init_lr_dict,
 							optimizer_type_dict,
