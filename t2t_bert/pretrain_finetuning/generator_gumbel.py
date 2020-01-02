@@ -204,7 +204,8 @@ def model_fn_builder(
 					"next_sentence_example_loss":nsp_per_example_loss,
 					"next_sentence_log_probs":nsp_log_prob, 
 					"next_sentence_labels":features['next_sentence_labels'],
-					"output_ids":output_ids
+					"output_ids":output_ids,
+					"sampled_binary_mask":sampled_binary_mask
 				}
 		return return_dict
 	return model_fn

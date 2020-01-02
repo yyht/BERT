@@ -4,13 +4,10 @@ from loss import loss_utils
 from utils.bert import albert_modules
 from metric import tf_metrics
 
-def classifier(config, seq_output,
-						input_ids,
-						sampled_ids,
-						input_mask,
-						num_labels,
-						dropout_prob,
-						**kargs):
+
+def seq_mask_masked_lm_output(cconfig, input_tensor, output_weights,
+							input_mask, input_ori_ids, input_ids, 
+							sampled_binary_mask, **kargs):
 	"""
 	input_ids: original input ids
 	sampled_ids: generated fake ids
@@ -113,9 +110,7 @@ def classifier(config, seq_output,
 
 	loss = (equal_loss + not_equal_loss) / (1e-10 + tf.reduce_sum(tf.cast(loss_mask, tf.float32)))
 
-	tf.logging.info("====discriminator classifier use_tpu %s ====", str(kargs.get('use_tpu', True)))
-	if not kargs.get('use_tpu', True):
-		tf.logging.info("====logging discriminator loss ====")
+	if kargs.get('summary_debug', False):
 		tf.summary.scalar('mask_based_loss', 
 							loss)
 
@@ -129,55 +124,6 @@ def classifier(config, seq_output,
 							loss - (equal_loss+not_equal_loss)/(1e-10 + tf.reduce_sum(tf.cast(input_mask, tf.float32))))
 
 	return (loss, logits, per_example_loss)
-
-def nce_loss(true_model_dict, true_features_dict,
-					fake_model_dict, fake_features_dict):
-
-	true_input_ids = tf.cast(true_features_dict['input_ids'], tf.int32)
-	sampled_input_ids = tf.cast(fake_features_dict['input_ids'], tf.int32)
-
-	unk_mask = tf.cast(tf.math.equal(true_input_ids, 100), tf.float32) # not replace unk
-	cls_mask =  tf.cast(tf.math.equal(true_input_ids, 101), tf.float32) # not replace cls
-	sep_mask = tf.cast(tf.math.equal(true_input_ids, 102), tf.float32) # not replace sep
-
-	none_replace_mask =  unk_mask + cls_mask + sep_mask
-
-	input_mask = tf.cast(true_features_dict['input_mask'], tf.int32)
-	input_mask *= tf.cast(1 - none_replace_mask, tf.int32) # cls, unk, sep are not considered as replace or original
-
-	true_logits = true_model_dict['logits']
-	fake_logits = fake_model_dict['logits']
-
-	input_shape_list = bert_utils.get_shape_list(sampled_input_ids, expected_rank=[2,3])
-	if len(input_shape_list) == 3:
-		tmp_sampled_ids = tf.argmax(sampled_input_ids, axis=-1) # batch x seq x vocab
-		tmp_sampled_ids = tf.cast(tmp_sampled_ids, tf.int32)
-		tf.logging.info("****** gumbel 3-D sampled_ids *******")
-	elif len(input_shape_list) == 2:
-		tmp_sampled_ids = sampled_input_ids
-		tmp_sampled_ids = tf.cast(tmp_sampled_ids, tf.int32)
-		tf.logging.info("****** normal 2-D sampled_ids *******")
-
-	masked_not_equal_mask = tf.cast(tf.not_equal(true_input_ids, tmp_sampled_ids), tf.int32)
-	loss_mask = masked_not_equal_mask * tf.cast(input_mask, tf.int32)
-
-	true_labels = tf.zeros_like(loss_mask)
-	fake_labels = tf.ones_like(loss_mask)
-
-	# nce positive part, batch x seq
-	true_per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-												logits=true_logits,
-												labels=tf.stop_gradient(true_labels))
-
-	# nce genative part, batch x seq
-	fake_per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-												logits=fake_logits,
-												labels=tf.stop_gradient(fake_labels))
-
-	loss = tf.reduce_sum((true_per_example_loss + fake_per_example_loss) * tf.cast(loss_mask, tf.float32))
-	loss /= tf.reduce_sum(1e-10 + tf.cast(loss_mask, tf.float32))
-
-	return loss
 	
 def discriminator_metric_train(per_example_loss, logits, input_ids, sampled_ids,
 						input_mask):

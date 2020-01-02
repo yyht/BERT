@@ -83,7 +83,8 @@ def model_fn_builder(
 									features['input_mask'],
 									2,
 									dropout_prob,
-									ori_sampled_ids=features.get('ori_sampled_ids', None))
+									ori_sampled_ids=features.get('ori_sampled_ids', None),
+									use_tpu=kargs.get('use_tpu', True))
 	
 		tf.add_to_collection("discriminator_loss", loss)
 		loss += 0.0 * nsp_loss

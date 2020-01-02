@@ -19,9 +19,9 @@ def classifier(config, seq_output,
 	output_layer = seq_output
 	hidden_size = output_layer.shape[-1].value
 
-	unk_mask = tf.cast(tf.math.equal(input_ids, 100), tf.float32) # not replace unk
-	cls_mask =  tf.cast(tf.math.equal(input_ids, 101), tf.float32) # not replace cls
-	sep_mask = tf.cast(tf.math.equal(input_ids, 102), tf.float32) # not replace sep
+	unk_mask = tf.cast(tf.equal(input_ids, 100), tf.float32) # not replace unk
+	cls_mask =  tf.cast(tf.equal(input_ids, 101), tf.float32) # not replace cls
+	sep_mask = tf.cast(tf.equal(input_ids, 102), tf.float32) # not replace sep
 
 	none_replace_mask =  unk_mask + cls_mask + sep_mask
 
@@ -105,16 +105,21 @@ def classifier(config, seq_output,
 	# loss = tf.reduce_sum(loss) / (1e-10 + tf.reduce_sum(tf.cast(loss_mask, tf.float32)))
 
 	equal_label_ids = (1 - tf.cast(not_equal_label_ids, tf.float32)) * tf.cast(loss_mask, tf.float32)
-	equal_loss = tf.reduce_sum(per_example_loss * equal_label_ids)
-
+	equal_per_example_loss = per_example_loss * equal_label_ids
+	equal_loss = tf.reduce_sum(equal_per_example_loss)
+	equal_loss_all = equal_loss / (1e-10 + tf.reduce_sum(tf.cast(loss_mask, tf.float32)))
 	equal_loss_output = equal_loss / (1e-10 + tf.reduce_sum(equal_label_ids))
 
-	not_equal_loss = tf.reduce_sum(per_example_loss * tf.cast(not_equal_label_ids, tf.float32)) # not equal:1, equal:0
+	not_equal_per_example_loss = per_example_loss * tf.cast(not_equal_label_ids, tf.float32)
+	not_equal_loss = tf.reduce_sum(not_equal_per_example_loss) # not equal:1, equal:0
+	not_equal_loss_all = not_equal_loss / (1e-10 + tf.reduce_sum(tf.cast(loss_mask, tf.float32)))
 	not_equal_loss_output = not_equal_loss / (1e-10 + tf.reduce_sum(tf.cast(not_equal_label_ids, tf.float32)))
 
 	loss = (equal_loss + not_equal_loss) / (1e-10 + tf.reduce_sum(tf.cast(loss_mask, tf.float32)))
 
-	if kargs.get('summary_debug', False):
+	tf.logging.info("====discriminator classifier use_tpu %s ====", str(kargs.get('use_tpu', True)))
+	if not kargs.get('use_tpu', True):
+		tf.logging.info("====logging discriminator loss ====")
 		tf.summary.scalar('mask_based_loss', 
 							loss)
 
@@ -128,13 +133,54 @@ def classifier(config, seq_output,
 							loss - (equal_loss+not_equal_loss)/(1e-10 + tf.reduce_sum(tf.cast(input_mask, tf.float32))))
 
 	return (loss, logits, per_example_loss)
+
+def modified_loss(per_example_loss, logits, input_ids, 
+				sampled_ids, input_mask, **kargs):
+	input_ids = tf.cast(input_ids, tf.int32)
+	input_shape_list = bert_utils.get_shape_list(sampled_ids, expected_rank=[2,3])
+	if len(input_shape_list) == 3:
+		tmp_sampled_ids = tf.argmax(sampled_ids, axis=-1) # batch x seq x vocab
+		tmp_sampled_ids = tf.cast(tmp_sampled_ids, tf.int32)
+		tf.logging.info("****** gumbel 3-D sampled_ids *******")
+	elif len(input_shape_list) == 2:
+		tmp_sampled_ids = sampled_ids
+		tmp_sampled_ids = tf.cast(tmp_sampled_ids, tf.int32)
+		tf.logging.info("****** normal 2-D sampled_ids *******")
+
+	not_equal_label_ids = tf.cast(tf.not_equal(input_ids, tmp_sampled_ids), tf.int32)
+	not_equal_label_ids *= tf.cast(input_mask, tf.int32)
+
+	equal_label_ids = (1 - tf.cast(not_equal_label_ids, tf.float32)) * tf.cast(input_mask, tf.float32)
+	equal_per_example_loss = per_example_loss * equal_label_ids
+	equal_loss = tf.reduce_sum(equal_per_example_loss)
+	equal_loss_all = equal_loss / (1e-10 + tf.reduce_sum(tf.cast(input_mask, tf.float32)))
+	equal_loss_self = equal_loss / (1e-10 + tf.reduce_sum(equal_label_ids))
+
+	not_equal_per_example_loss = per_example_loss * tf.cast(not_equal_label_ids, tf.float32)
+	not_equal_loss = tf.reduce_sum(not_equal_per_example_loss) # not equal:1, equal:0
+	not_equal_loss_all = not_equal_loss / (1e-10 + tf.reduce_sum(tf.cast(input_mask, tf.float32)))
+	not_equal_loss_self = not_equal_loss / (1e-10 + tf.reduce_sum(tf.cast(not_equal_label_ids, tf.float32)))
+
+	return [equal_per_example_loss, equal_loss_all, equal_loss_self,
+			not_equal_per_example_loss, not_equal_loss_all, not_equal_loss_self]
 	
 def discriminator_metric_train(per_example_loss, logits, input_ids, sampled_ids,
 						input_mask):
 	# original:0, replace:1
+
+	input_shape_list = bert_utils.get_shape_list(sampled_ids, expected_rank=[2,3])
+	if len(input_shape_list) == 3:
+		tmp_sampled_ids = tf.argmax(sampled_ids, axis=-1) # batch x seq x vocab
+		tmp_sampled_ids = tf.cast(tmp_sampled_ids, tf.int32)
+		tf.logging.info("****** gumbel 3-D sampled_ids *******")
+	elif len(input_shape_list) == 2:
+		tmp_sampled_ids = sampled_ids
+		tmp_sampled_ids = tf.cast(tmp_sampled_ids, tf.int32)
+		tf.logging.info("****** normal 2-D sampled_ids *******")
+
 	discriminator_label_ids = tf.not_equal(
 						tf.cast(input_ids, tf.int32),
-						tf.cast(sampled_ids, tf.int32)
+						tf.cast(tmp_sampled_ids, tf.int32)
 					)
 
 	unk_mask = tf.cast(tf.math.equal(input_ids, 100), tf.float32) # not replace unk

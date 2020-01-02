@@ -3,13 +3,13 @@ import numpy as np
 import re
 
 try:
-	from .discriminator_gumbel import model_fn_builder as discriminator
+	from .generator_as_discriminator import model_fn_builder as discriminator
 	from .generator_gumbel import model_fn_builder as generator
 	from .token_discriminator import discriminator_metric_train, discriminator_metric_eval
 	from .token_generator import generator_metric_fn_train, generator_metric_fn_eval
 	from .generator_gumbel_normal import model_fn_builder as generator_normal
 except:
-	from discriminator_gumbel import model_fn_builder as discriminator
+	from generator_as_discriminator import model_fn_builder as discriminator
 	from generator_gumbel import model_fn_builder as generator
 	from generator_gumbel_normal import model_fn_builder as generator_normal
 	from token_discriminator import discriminator_metric_train, discriminator_metric_eval
@@ -37,7 +37,7 @@ def get_train_op(generator_dict, discriminator_dict, optimizer_fn, opt_config,
 		if kargs.get('joint_train', '1') == '1':
 			tf.logging.info("****** joint generator and discriminator training *******")
 			tvars.extend(generator_dict['tvars'])
-			loss += kargs.get('gen_loss', 1.0)*generator_dict['loss']
+			loss += generator_dict['loss']
 		tvars = list(set(tvars))
 		update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 		with tf.control_dependencies(update_ops):
@@ -46,20 +46,7 @@ def get_train_op(generator_dict, discriminator_dict, optimizer_fn, opt_config,
 							opt_config.num_train_steps,
 							**kargs)
 	elif kargs.get('train_op_type', 'joint') in ['alternate', 'group']:
-		if kargs.get('gen_disc_type', 'all_disc') == 'all_disc':
-			gen_disc_loss = discriminator_dict['loss']
-			tf.logging.info("****** using all disc loss for updating generator *******")
-		elif kargs.get('gen_disc_type', 'all_disc') == 'not_equal_disc_loss':
-			gen_disc_loss = discriminator_dict['not_equal_loss_self']
-			tf.logging.info("****** using not equal loss for updating generator *******")
-		elif kargs.get('gen_disc_type', 'all_disc') == 'equal_not_equal_disc_loss':
-			tf.logging.info("****** using not equal and equal loss for updating generator *******")
-			gen_disc_loss =  discriminator_dict['not_equal_loss_self'] - discriminator_dict['equal_loss_self']
-		else:
-			gen_disc_loss = discriminator_dict['loss']
-			tf.logging.info("****** using all disc loss for updating generator *******")
-
-		generator_loss = generator_dict['loss'] - kargs.get('dis_loss', 1.0) * gen_disc_loss
+		generator_loss = generator_dict['loss'] - kargs.get('dis_loss', 10.0) * discriminator_dict['loss']
 		discriminator_loss = kargs.get('dis_loss', 1.0) * discriminator_dict['loss']
 		loss_dict = dict(zip(['generator', 'discriminator'], [generator_loss, discriminator_loss]))
 		tvars_dict = dict(zip(['generator', 'discriminator'], [generator_dict['tvars'], discriminator_dict['tvars']]))
@@ -174,6 +161,11 @@ def classifier_model_fn_builder(
 		discriminator_features['input_ori_ids'] = generator_dict['sampled_input_ids']
 		discriminator_features['next_sentence_labels'] = features['next_sentence_labels']
 		discriminator_features['ori_input_ids'] = generator_dict['sampled_ids']
+		discriminator_features['sampled_binary_mask'] = generator_dict['sampled_binary_mask']
+		discriminator_features['masked_lm_positions'] = features['masked_lm_positions']
+		discriminator_features['masked_lm_ids'] = features['masked_lm_ids']
+		discriminator_features['masked_lm_weights'] = features['masked_lm_weights']
+		discriminator_features['next_sentence_labels'] = features['next_sentence_labels']
 		
 		discriminator_dict = discriminator_fn(discriminator_features, labels, mode, params)
 
@@ -238,7 +230,7 @@ def classifier_model_fn_builder(
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
 
-			if not kargs.get('use_tpu', False):
+			if kargs.get('summary_debug', False):
 				metric_dict = discriminator_metric_train(discriminator_dict['per_example_loss'],
 								discriminator_dict['logits'], 
 							generator_dict['sampled_input_ids'], 
@@ -247,8 +239,6 @@ def classifier_model_fn_builder(
 
 				for key in metric_dict:
 					tf.summary.scalar(key, metric_dict[key])
-				tf.summary.scalar("generator_loss", generator_dict['loss'])
-				tf.summary.scalar("discriminator_loss", discriminator_dict['loss'])
 	
 			if kargs.get('use_tpu', False):
 				optimizer_fn = optimizer.Optimizer(opt_config)

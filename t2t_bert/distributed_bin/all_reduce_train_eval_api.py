@@ -321,6 +321,21 @@ flags.DEFINE_string(
 	"if apply distillation"
 	)
 
+flags.DEFINE_string(
+	"gumbel_anneal", "anneal",
+	"if apply distillation"
+	)
+
+flags.DEFINE_bool(
+	"annealed_mask_prob", False,
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
+	"optimization_type", "grl",
+	"if apply distillation"
+	)
+
 def main(_):
 
 	print(FLAGS)
@@ -413,7 +428,11 @@ def main(_):
 			electra_mode=FLAGS.electra_mode,
 			sharing_mode=FLAGS.sharing_mode,
 			attention_type=FLAGS.attention_type,
-			ues_token_type=FLAGS.ues_token_type)
+			ues_token_type=FLAGS.ues_token_type,
+			gumbel_anneal=FLAGS.gumbel_anneal,
+			annealed_mask_prob=FLAGS.annealed_mask_prob,
+			joint_train=FLAGS.joint_train,
+			optimization_type=FLAGS.optimization_type)
 	else:
 		train_eval_api.monitored_estimator(
 			FLAGS=FLAGS,

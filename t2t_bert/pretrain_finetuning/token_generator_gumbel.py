@@ -203,6 +203,18 @@ def token_generator_gumbel(config, input_tensor,
 				tf.logging.info("****** only mask sample *******")
 				sampled_input_id = (label_diff_ids) * tf.cast(sampled_input_id, tf.float32) + (1 - input_ori_ids) * label_diff_ids
 
+		tf.logging.info("====generator use_tpu %s ====", str(kargs.get('use_tpu', True)))
+		if not kargs.get('use_tpu', True):
+			tf.logging.info("====logging generator loss ====")
+			sampled_not_equal_id = tf.not_equal(
+				tf.cast(tf.argmax(sampled_input_id, axis=2), tf.int32),
+				tf.cast(tf.argmax(input_ori_ids, axis=2), tf.int32)
+			)
+			sampled_not_equal = tf.cast(sampled_not_equal_id, tf.float32) * tf.cast(input_mask, tf.float32)
+			sampled_not_equal = 1 - tf.reduce_sum(sampled_not_equal) / (1e-10 + tf.reduce_sum(tf.cast(label_diff_ids, tf.float32)))
+			tf.summary.scalar('generator_sample_acc', 
+							sampled_not_equal)
+
 		return sampled_input_id
 
 def token_generator_gumbel_normal(config, input_tensor,
@@ -350,6 +362,18 @@ def token_generator_gumbel_normal(config, input_tensor,
 			if kargs.get('mask_method', 'only_mask') == 'only_mask':
 				tf.logging.info("****** only mask sample *******")
 				sampled_input_id = (label_diff_ids) * tf.cast(sampled_input_id, tf.float32) + (1 - input_ori_ids) * label_diff_ids
+				
+		tf.logging.info("====generator use_tpu %s ====", str(kargs.get('use_tpu', True)))
+		if not kargs.get('use_tpu', True):
+			tf.logging.info("====logging generator loss ====")
+			sampled_not_equal_id = tf.not_equal(
+				tf.cast(tf.argmax(sampled_input_id, axis=2), tf.int32),
+				tf.cast(tf.argmax(input_ori_ids, axis=2), tf.int32)
+			)
+			sampled_not_equal = tf.cast(sampled_not_equal_id, tf.float32) * tf.cast(input_mask, tf.float32)
+			sampled_not_equal = 1 - tf.reduce_sum(sampled_not_equal) / (1e-10 + tf.reduce_sum(tf.cast(label_diff_ids, tf.float32)))
+			tf.summary.scalar('generator_sample_acc', 
+							sampled_not_equal)
 
 		return sampled_input_id
 
