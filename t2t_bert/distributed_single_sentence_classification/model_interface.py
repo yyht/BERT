@@ -57,7 +57,10 @@ def model_config_parser(FLAGS):
 		#	config.scope = FLAGS.exclude_scope + "/" + "bert"
 		#	tf.logging.info("****** add exclude_scope ******* %s", str(config.scope))
 	#	else:
-		config.scope = "bert"
+		# 	config.scope = FLAGS.exclude_scope + "/" + "bert"
+		# 	tf.logging.info("****** add exclude_scope ******* %s", str(config.scope))
+		# else:
+		config.scope = FLAGS.model_scope #"bert"
 		tf.logging.info("****** original scope ******* %s", str(config.scope))
 		config.dropout_prob = 0.1
 		config.label_type = "single_label"

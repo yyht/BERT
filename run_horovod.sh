@@ -11,3 +11,4 @@ sudo nvidia-docker run -it -d -p 8318:8888 --name uber_distributed_xuht_py3 \
 uber/horovod:0.13.8-tf1.8.0-torch0.4.0-py3.5
 
 sudo docker exec -it uber_distributed_xuht_py3 bash
+
