@@ -57,7 +57,7 @@ def iso_gaussian_sample(logits, temperature, samples=1):
 	if samples > 1:
 		logits = tf.expand_dims(logits, -1)
 	y = logits + sample_normal(input_shape_list, samples)
-	return [tf.exp(tf.nn.log_softmax(y / temperature)), y]
+	return [tf.exp(tf.nn.log_softmax(y / temperature)), logits]
 
 
 def token_generator_igr(config, input_tensor,
@@ -159,7 +159,7 @@ def token_generator_igr(config, input_tensor,
 					tf.logging.info("****** apply auto-scale temperature for multi-sampling *******")
 					annealed_temp = tf.expand_dims(annealed_temp, -1)
 		else:
-			annealed_temp = 0.2
+			annealed_temp = 1.0
 			tf.logging.info("****** not apply annealed tenperature with fixed temp ******* %s", str(annealed_temp))
 			
 		# [batch x seq] x config.vocab_size x config.get('gen_sample', 1)

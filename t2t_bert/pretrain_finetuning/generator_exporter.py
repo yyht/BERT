@@ -82,10 +82,10 @@ def model_fn_builder(
 			seq_masked_lm_fn = pretrain_albert.seq_mask_masked_lm_output
 			print("==apply bert masked lm==")
 
-		(masked_lm_loss,
-			masked_lm_example_loss, 
+		(_,
+			_, 
 			masked_lm_log_probs,
-			masked_lm_mask) = seq_masked_lm_fn(model_config, 
+			_) = seq_masked_lm_fn(model_config, 
 										model.get_sequence_output(), 
 										model.get_embedding_table(),
 										features['input_mask'], 
@@ -97,7 +97,7 @@ def model_fn_builder(
 										scope=generator_scope_prefix)
 
 		print(model_config.lm_ratio, '==mlm lm_ratio==')
-		loss = model_config.lm_ratio * masked_lm_loss + 0.0 * nsp_loss
+		# loss = model_config.lm_ratio * masked_lm_loss + 0.0 * nsp_loss
 
 		model_io_fn = model_io.ModelIO(model_io_config)
 
@@ -136,15 +136,8 @@ def model_fn_builder(
 			scaffold_fn = None
 
 		return_dict = {
-					"loss":loss, 
-					"tvars":tvars,
-					"model":model,
-					"masked_lm_weights":masked_lm_mask,
 					"masked_lm_log_probs":masked_lm_log_probs,
-					"masked_lm_example_loss":masked_lm_example_loss,
-					"next_sentence_example_loss":nsp_per_example_loss,
-					"next_sentence_log_probs":nsp_log_prob, 
-					"next_sentence_labels":features['next_sentence_labels']
+					"tvars":tvars
 				}
 		return return_dict
 	return model_fn

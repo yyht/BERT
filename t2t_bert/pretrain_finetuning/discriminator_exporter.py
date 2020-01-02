@@ -43,17 +43,17 @@ def model_fn_builder(
 		else:
 			scope = model_config.scope
 
-		(nsp_loss, 
-		 nsp_per_example_loss, 
+		(_, 
+		 _, 
 		 nsp_log_prob) = pretrain.get_next_sentence_output(model_config,
 										model.get_pooled_output(),
 										features['next_sentence_labels'],
 										reuse=tf.AUTO_REUSE)
 
 		with tf.variable_scope('cls/seq_predictions', reuse=tf.AUTO_REUSE):
-			(loss, 
+			(_, 
 			logits, 
-			per_example_loss) = classifier(model_config, 
+			_) = classifier(model_config, 
 									model.get_sequence_output(),
 									features['input_ori_ids'],
 									features['input_ids'],
@@ -63,7 +63,7 @@ def model_fn_builder(
 									# ,
 									# loss='focal_loss')
 
-		loss += 0.0 * nsp_loss
+		# loss += 0.0 * nsp_loss
 
 		model_io_fn = model_io.ModelIO(model_io_config)
 
@@ -90,11 +90,8 @@ def model_fn_builder(
 			scaffold_fn = None
 		
 		return_dict = {
-					"loss":loss, 
 					"logits":logits,
-					"tvars":tvars,
-					"model":model,
-					"per_example_loss":per_example_loss
+					"tvars":tvars
 				}
 		return return_dict
 	return model_fn

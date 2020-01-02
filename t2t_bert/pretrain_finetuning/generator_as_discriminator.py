@@ -47,21 +47,21 @@ def model_fn_builder(
 
 		model_api = model_zoo(model_config)
 
-		if kargs.get('random_generator', '1') == '1':
-			if mode in [tf.estimator.ModeKeys.TRAIN, tf.estimator.ModeKeys.EVAL]:
-				input_ori_ids = features['input_ori_ids']
+		# if kargs.get('random_generator', '1') == '1':
+		# 	if mode in [tf.estimator.ModeKeys.TRAIN, tf.estimator.ModeKeys.EVAL]:
+		# 		input_ori_ids = features['input_ori_ids']
 
-				[output_ids, 
-				sampled_binary_mask] = random_input_ids_generation(model_config,
-											features['input_ori_ids'],
-											features['input_mask'],
-											**kargs)
-				features['input_ids'] = output_ids
-				tf.logging.info("****** do random generator *******")
-			else:
-				sampled_binary_mask = None
-		else:
-			sampled_binary_mask = None
+		# 		[output_ids, 
+		# 		sampled_binary_mask] = random_input_ids_generation(model_config,
+		# 									features['input_ori_ids'],
+		# 									features['input_mask'],
+		# 									**kargs)
+		# 		features['input_ids'] = output_ids
+		# 		tf.logging.info("****** do random generator *******")
+		# 	else:
+		# 		sampled_binary_mask = None
+		# else:
+		# 	sampled_binary_mask = None
 
 		model = model_api(model_config, features, labels,
 							mode, target, reuse=tf.AUTO_REUSE,
@@ -102,6 +102,8 @@ def model_fn_builder(
 			seq_masked_lm_fn = pretrain_albert.seq_mask_masked_lm_output
 			print("==apply bert masked lm==")
 
+		sampled_binary_mask = features.get('sampled_binary_mask', None)
+
 		if sampled_binary_mask is not None:
 			(masked_lm_loss,
 			masked_lm_example_loss, 
@@ -134,45 +136,44 @@ def model_fn_builder(
 		print(model_config.lm_ratio, '==mlm lm_ratio==')
 		loss = model_config.lm_ratio * masked_lm_loss + 0.0 * nsp_loss
 
-		sampled_ids = token_generator(model_config, 
-									model.get_sequence_output(), 
-									model.get_embedding_table(), 
-									features['input_ids'], 
-									features['input_ori_ids'],
-									features['input_mask'],	
-									embedding_projection=model.get_embedding_projection_table(),
-									scope=generator_scope_prefix,
-									mask_method='only_mask',
-									use_tpu=kargs.get('use_tpu', True))
+		# sampled_ids = token_generator(model_config, 
+		# 							model.get_sequence_output(), 
+		# 							model.get_embedding_table(), 
+		# 							features['input_ids'], 
+		# 							features['input_ori_ids'],
+		# 							features['input_mask'],	
+		# 							embedding_projection=model.get_embedding_projection_table(),
+		# 							scope=generator_scope_prefix,
+		# 							mask_method='only_mask')
 
-		if model_config.get('gen_sample', 1) == 1:
-			input_ids = features['input_ori_ids']
-			input_mask = features['input_mask']
-			segment_ids = features['segment_ids']
-		else:
-			input_ids = tf.expand_dims(features['input_ori_ids'], axis=-1)
-			# batch x seq_length x 1
-			input_ids = tf.einsum('abc,cd->abd', input_ids, tf.ones((1, model_config.get('gen_sample', 1))))
-			input_ids = tf.cast(input_ids, tf.int32)
+		# if model_config.get('gen_sample', 1) == 1:
+		# 	input_ids = features['input_ori_ids']
+		# 	input_mask = features['input_mask']
+		# 	segment_ids = features['segment_ids']
+		# else:
+		# 	input_ids = tf.expand_dims(features['input_ori_ids'], axis=-1)
+		# 	# batch x seq_length x 1
+		# 	input_ids = tf.einsum('abc,cd->abd', input_ids, tf.ones((1, model_config.get('gen_sample', 1))))
+		# 	input_ids = tf.cast(input_ids, tf.int32)
 
-			input_shape_list = bert_utils.get_shape_list(input_ids, expected_rank=3)
-			batch_size = input_shape_list[0]
-			seq_length = input_shape_list[1]
-			gen_sample = input_shape_list[2]
+		# 	input_shape_list = bert_utils.get_shape_list(input_ids, expected_rank=3)
+		# 	batch_size = input_shape_list[0]
+		# 	seq_length = input_shape_list[1]
+		# 	gen_sample = input_shape_list[2]
 
-			sampled_ids = tf.reshape(sampled_ids, [batch*gen_sample, seq_length])
-			input_ids = tf.reshape(input_ids, [batch*gen_sample, seq_length])
+		# 	sampled_ids = tf.reshape(sampled_ids, [batch*gen_sample, seq_length])
+		# 	input_ids = tf.reshape(input_ids, [batch*gen_sample, seq_length])
 
-			input_mask = tf.expand_dims(features['input_mask'], axis=-1)
-			input_mask = tf.einsum('abc,cd->abd', input_mask, tf.ones((1, model_config.get('gen_sample', 1))))
-			input_mask = tf.cast(input_mask, tf.int32)
+		# 	input_mask = tf.expand_dims(features['input_mask'], axis=-1)
+		# 	input_mask = tf.einsum('abc,cd->abd', input_mask, tf.ones((1, model_config.get('gen_sample', 1))))
+		# 	input_mask = tf.cast(input_mask, tf.int32)
 
-			segment_ids = tf.expand_dims(features['segmnet_ids'], axis=-1)
-			segment_ids = tf.einsum('abc,cd->abd', segment_ids, tf.ones((1, model_config.get('gen_sample', 1))))
-			segment_ids = tf.cast(segment_ids, tf.int32)
+		# 	segment_ids = tf.expand_dims(features['segmnet_ids'], axis=-1)
+		# 	segment_ids = tf.einsum('abc,cd->abd', segment_ids, tf.ones((1, model_config.get('gen_sample', 1))))
+		# 	segment_ids = tf.cast(segment_ids, tf.int32)
 
-			segment_ids = tf.reshape(segment_ids, [batch*gen_sample, seq_length])
-			input_mask = tf.reshape(input_mask, [batch*gen_sample, seq_length])
+		# 	segment_ids = tf.reshape(segment_ids, [batch*gen_sample, seq_length])
+		# 	input_mask = tf.reshape(input_mask, [batch*gen_sample, seq_length])
 
 		model_io_fn = model_io.ModelIO(model_io_config)
 
@@ -209,24 +210,37 @@ def model_fn_builder(
 											use_tpu=use_tpu)
 		else:
 			scaffold_fn = None
-		tf.add_to_collection("generator_loss", loss)
+		tf.add_to_collection("discriminator_loss", loss)
 		return_dict = {
 					"loss":loss, 
+					"logits":logits,
 					"tvars":tvars,
 					"model":model,
-					"sampled_ids":sampled_ids,  # batch x gen_sample, seg_length
-					"sampled_input_ids":input_ids,       # batch x gen_sample, seg_length,
-					"sampled_input_mask":input_mask,
-					"sampled_segment_ids":segment_ids,
+					"per_example_loss":per_example_loss,
+					"masked_lm_ids":masked_lm_ids,
 					"masked_lm_ids":masked_lm_ids,
 					"masked_lm_weights":masked_lm_mask,
 					"masked_lm_log_probs":masked_lm_log_probs,
-					"masked_lm_example_loss":masked_lm_example_loss,
 					"next_sentence_example_loss":nsp_per_example_loss,
 					"next_sentence_log_probs":nsp_log_prob, 
-					"next_sentence_labels":features['next_sentence_labels'],
-					"sampled_binary_mask":sampled_binary_mask
+					"next_sentence_labels":features['next_sentence_labels']
 				}
+		# return_dict = {
+		# 			"loss":loss, 
+		# 			"tvars":tvars,
+		# 			"model":model,
+		# 			"sampled_ids":sampled_ids,  # batch x gen_sample, seg_length
+		# 			"sampled_input_ids":input_ids,       # batch x gen_sample, seg_length,
+		# 			"sampled_input_mask":input_mask,
+		# 			"sampled_segment_ids":segment_ids,
+		# 			"masked_lm_ids":masked_lm_ids,
+		# 			"masked_lm_weights":masked_lm_mask,
+		# 			"masked_lm_log_probs":masked_lm_log_probs,
+		# 			"masked_lm_example_loss":masked_lm_example_loss,
+		# 			"next_sentence_example_loss":nsp_per_example_loss,
+		# 			"next_sentence_log_probs":nsp_log_prob, 
+		# 			"next_sentence_labels":features['next_sentence_labels']
+		# 		}
 		return return_dict
 	return model_fn
 		

@@ -340,6 +340,11 @@ flags.DEFINE_string(
 	"if apply distillation"
 	)
 
+flags.DEFINE_string(
+	"gen_disc_type", "all_disc",
+	"if apply distillation"
+	)
+
 
 def main(_):
 
@@ -414,7 +419,8 @@ def main(_):
 			train_op_type=FLAGS.train_op_type,
 			gumbel_anneal=FLAGS.gumbel_anneal,
 			# exclude_scope=FLAGS.exclude_scope,
-			annealed_mask_prob=FLAGS.annealed_mask_prob)
+			annealed_mask_prob=FLAGS.annealed_mask_prob,
+			gen_disc_type=FLAGS.gen_disc_type)
 
 
 if __name__ == "__main__":

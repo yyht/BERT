@@ -59,7 +59,8 @@ def model_fn_builder(
 									features['input_ids'],
 									features['input_mask'],
 									2,
-									dropout_prob)
+									dropout_prob,
+									use_tpu=kargs.get('use_tpu', True))
 									# ,
 									# loss='focal_loss')
 

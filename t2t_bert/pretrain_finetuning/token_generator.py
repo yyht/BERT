@@ -279,7 +279,7 @@ def token_generator(config, input_tensor,
 		sampled_not_equal = tf.cast(sampled_not_equal_id, tf.float32) * tf.cast(input_mask, tf.float32)
 		sampled_not_equal = 1 - tf.reduce_sum(sampled_not_equal) / (1e-10 + tf.reduce_sum(tf.cast(label_diff_ids, tf.float32)))
 				
-		if kargs.get('summary_debug', False):
+		if not kargs.get('use_tpu', True):
 			tf.summary.scalar('generator_sample_acc', 
 							sampled_not_equal)
 

@@ -9,7 +9,7 @@ try:
 except:
 	from distributed_single_sentence_classification.model_interface import model_zoo
 
-from pretrain_finetuning.token_discriminator import classifier
+from pretrain_finetuning.token_discriminator import classifier, modified_loss
 
 from model_io import model_io
 
@@ -83,7 +83,19 @@ def model_fn_builder(
 									features['input_mask'],
 									2,
 									dropout_prob,
-									ori_sampled_ids=features.get('ori_sampled_ids', None))
+									ori_sampled_ids=features.get('ori_sampled_ids', None),
+									use_tpu=kargs.get('use_tpu', True))
+
+		[equal_per_example_loss, 
+		equal_loss_all, 
+		equal_loss_self,
+		not_equal_per_example_loss, 
+		not_equal_loss_all, 
+		not_equal_loss_self] = modified_loss(per_example_loss, 
+											logits, 
+											features['input_ori_ids'], 
+											features['ori_input_ids'], 
+											features['input_mask'], **kargs)
 	
 		loss = disc_loss + 0.0 * nsp_loss
 
@@ -117,7 +129,13 @@ def model_fn_builder(
 					"logits":logits,
 					"tvars":tvars,
 					"model":model,
-					"per_example_loss":per_example_loss
+					"per_example_loss":per_example_loss,
+					"equal_per_example_loss":equal_per_example_loss,
+					"equal_loss_all":equal_loss_all,
+					"equal_loss_self":equal_loss_self,
+					"not_equal_per_example_loss":not_equal_per_example_loss,
+					"not_equal_loss_all":not_equal_loss_all,
+					"not_equal_loss_self":not_equal_loss_self
 				}
 		return return_dict
 	return model_fn
