@@ -294,14 +294,27 @@ def token_generator_gumbel_normal(config, input_tensor,
 									[batch_size * seq_length, width])
 
 		num_train_steps = kargs.get('num_train_steps', None)
-		if num_train_steps and kargs.get('gumbel_anneal', True):
-			tf.logging.info("****** apply annealed tenperature ******* %s", str(num_train_steps))
+		if num_train_steps and kargs.get('gumbel_anneal', "anneal") == 'anneal':
+			tf.logging.info("****** apply annealed temperature ******* %s", str(num_train_steps))
 			annealed_temp = tf.train.polynomial_decay(config.get('gumbel_temperature', 1.0),
 													tf.train.get_or_create_global_step(),
 													kargs.get("num_train_steps", 10000),
 													end_learning_rate=0.1,
 													power=1.0,
 													cycle=False)
+		elif kargs.get('gumbel_anneal', "anneal") == 'softplus':
+			tf.logging.info("****** apply auto-scale temperature *******")
+			# batch x seq x dim
+			with tf.variable_scope("gumbel_auto_scaling_temperature"):
+				annealed_temp = tf.layers.dense(input_tensor, 
+												1,
+												activation=tf.nn.softplus,
+												) + 1.0
+                                annealed_temp = 1./ annealed_temp
+				annealed_temp = tf.reshape(annealed_temp, [batch_size * seq_length, 1])
+			if config.get('gen_sample', 1) > 1:
+				tf.logging.info("****** apply auto-scale temperature for multi-sampling *******")
+				annealed_temp = tf.expand_dims(annealed_temp, -1)
 		else:
 			annealed_temp = 1.0
 			tf.logging.info("****** not apply annealed tenperature with fixed temp ******* %s", str(annealed_temp))
