@@ -99,6 +99,7 @@ def classifier_model_fn_builder(
 	def model_fn(features, labels, mode, params):
 
 		train_op_type = kargs.get('train_op_type', 'joint')
+		gen_disc_type = kargs.get('gen_disc_type', 'all_disc')
 		if kargs.get('optimization_type', 'grl') == 'grl':
 			generator_fn = generator(model_config_dict['generator'],
 						num_labels_dict['generator'],
@@ -261,7 +262,7 @@ def classifier_model_fn_builder(
 
 			train_op = get_train_op(generator_dict, discriminator_dict, optimizer_fn, opt_config,
 						model_config_dict['generator'], model_config_dict['discriminator'],
-						use_tpu=1, train_op_type=train_op_type)
+						use_tpu=1, train_op_type=train_op_type, gen_disc_type=gen_disc_type)
 			
 			# update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 			# with tf.control_dependencies(update_ops):
