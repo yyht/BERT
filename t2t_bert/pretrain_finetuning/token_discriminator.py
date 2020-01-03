@@ -183,6 +183,8 @@ def discriminator_metric_train(per_example_loss, logits, input_ids, sampled_ids,
 						tf.cast(tmp_sampled_ids, tf.int32)
 					)
 
+	equal_label_ids = (1 - tf.cast(discriminator_label_ids, tf.float32)) * tf.cast(input_mask, tf.float32)
+
 	unk_mask = tf.cast(tf.math.equal(input_ids, 100), tf.float32) # not replace unk
 	cls_mask =  tf.cast(tf.math.equal(input_ids, 101), tf.float32) # not replace cls
 	sep_mask = tf.cast(tf.math.equal(input_ids, 102), tf.float32) # not replace sep
@@ -203,7 +205,7 @@ def discriminator_metric_train(per_example_loss, logits, input_ids, sampled_ids,
 						tf.cast(discriminator_label_ids, tf.int32)
 					)
 	discriminator_lm_accuracy = tf.cast(discriminator_lm_accuracy, tf.float32)
-	discriminator_lm_accuracy_original = tf.reduce_sum(discriminator_lm_accuracy * tf.cast(discriminator_label_ids, tf.float32)) / (1e-10 + tf.reduce_sum(tf.cast(input_mask, tf.float32)))
+	discriminator_lm_accuracy_original = tf.reduce_sum(discriminator_lm_accuracy * tf.cast(equal_label_ids, tf.float32)) / (1e-10 + tf.reduce_sum(tf.cast(equal_label_ids, tf.float32)))
 	discriminator_lm_accuracy_diff = tf.reduce_sum(discriminator_lm_accuracy * tf.cast(discriminator_label_ids, tf.float32)) / (1e-10 + tf.reduce_sum(tf.cast(discriminator_label_ids, tf.float32)))
 	discriminator_lm_accuracy = tf.reduce_sum(discriminator_lm_accuracy * tf.cast(input_mask, tf.float32)) / (1e-10 + tf.reduce_sum(tf.cast(input_mask, tf.float32)))
 
