@@ -59,7 +59,7 @@ def get_train_op(generator_dict, discriminator_dict, optimizer_fn, opt_config,
 			gen_disc_loss = discriminator_dict['loss']
 			tf.logging.info("****** using all disc loss for updating generator *******")
 
-		generator_loss = kargs.get('gen_loss', 1.0)*generator_dict['loss'] - kargs.get('dis_loss', 1.0) * gen_disc_loss
+		generator_loss = kargs.get('gen_loss', 1.0)*generator_dict['loss'] - kargs.get('dis_loss', 10.0) * gen_disc_loss
 		discriminator_loss = kargs.get('dis_loss', 1.0) * discriminator_dict['loss']
 		loss_dict = dict(zip(['generator', 'discriminator'], [generator_loss, discriminator_loss]))
 		tvars_dict = dict(zip(['generator', 'discriminator'], [generator_dict['tvars'], discriminator_dict['tvars']]))
