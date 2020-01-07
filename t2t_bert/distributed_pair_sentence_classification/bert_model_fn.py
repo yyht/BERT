@@ -14,6 +14,31 @@ from metric import tf_metrics
 from optimizer import distributed_optimizer as optimizer
 from model_io import model_io
 
+def correlation(x, y):
+	x = x - tf.reduce_mean(x, axis=-1, keepdims=True)
+	y = y - tf.reduce_mean(y, axis=-1, keepdims=True)
+	x = tf.nn.l2_normalize(x, -1)
+	y = tf.nn.l2_normalize(y, -1)
+	return -tf.reduce_sum(x*y, axis=-1) # higher the better
+
+def kd(x, y):
+	x_prob = tf.nn.softmax(x)
+	print(x_prob.get_shape(), y.get_shape(), tf.reduce_sum(x_prob * y, axis=-1).get_shape())
+	return -tf.reduce_sum(x_prob * y, axis=-1) # higher the better
+
+def mse(x, y):
+	x = x - tf.reduce_mean(x, axis=-1, keepdims=True)
+	y = y - tf.reduce_mean(y, axis=-1, keepdims=True)
+	return tf.reduce_sum((x-y)**2, axis=-1) # lower the better
+
+def kd_distance(x, y, dist_type):
+	if dist_type == "person":
+		return correlation(x,y)
+	elif dist_type == "kd":
+		return kd(x, y)
+	elif dist_type == "mse":
+		return mse(x, y)
+
 def model_fn_builder(
 					model_config,
 					num_labels,
@@ -75,6 +100,26 @@ def model_fn_builder(
 								num_labels, label_ids,
 								dropout_prob, ratio_weight=None)
 
+		if mode == tf.estimator.ModeKeys.TRAIN:
+			print(kargs.get("temperature", 0.5), kargs.get("distillation_ratio", 0.5), "==distillation hyparameter==")
+
+			# anneal_fn = anneal_strategy.AnnealStrategy(kargs.get("anneal_config", {}))
+
+			# get teacher logits
+			teacher_logit = tf.log(features["label_probs"]+1e-10)/kargs.get("temperature", 2.0) # log_softmax logits
+			student_logit = tf.nn.log_softmax(logits /kargs.get("temperature", 2.0)) # log_softmax logits
+
+			distillation_loss = kd_distance(teacher_logit, student_logit, kargs.get("distillation_distance", "kd")) 
+			distillation_loss *= features["distillation_ratio"]
+			distillation_loss = tf.reduce_sum(distillation_loss) / (1e-10+tf.reduce_sum(features["distillation_ratio"]))
+
+			label_loss = tf.reduce_sum(per_example_loss * features["label_ratio"]) / (1e-10+tf.reduce_sum(features["label_ratio"]))
+		
+			print("==distillation loss ratio==", kargs.get("distillation_ratio", 0.9)*tf.pow(kargs.get("temperature", 2.0), 2))
+
+			# loss = label_loss + kargs.get("distillation_ratio", 0.9)*tf.pow(kargs.get("temperature", 2.0), 2)*distillation_loss
+			loss = (1-kargs.get("distillation_ratio", 0.9))*label_loss + tf.pow(kargs.get("temperature", 2.0), 2)*kargs.get("distillation_ratio", 0.9) * distillation_loss
+
 		model_io_fn = model_io.ModelIO(model_io_config)
 
 		params_size = model_io_fn.count_params(model_config.scope)
@@ -135,19 +180,26 @@ def model_fn_builder(
 		elif mode == tf.estimator.ModeKeys.PREDICT:
 			print(logits.get_shape(), "===logits shape===")
 			pred_label = tf.argmax(logits, axis=-1, output_type=tf.int32)
+
+			print(logits.get_shape(), "===logits shape===")
+			pred_label = tf.argmax(logits, axis=-1, output_type=tf.int32)
+			prob = tf.nn.softmax(logits)
+			max_prob = tf.reduce_max(prob, axis=-1)
 			
 			
 			estimator_spec = tf.estimator.EstimatorSpec(
 									mode=mode,
 									predictions={
 												'pred_label':pred_label,
-												"max_prob":max_prob
+												"max_prob":max_prob,
+												"prob":prob
 									},
 									export_outputs={
 										"output":tf.estimator.export.PredictOutput(
 													{
 														'pred_label':pred_label,
-														"max_prob":max_prob
+														"max_prob":max_prob,
+														"prob":prob
 													}
 												)
 									}

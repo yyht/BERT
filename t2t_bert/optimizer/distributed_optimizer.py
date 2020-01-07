@@ -307,20 +307,13 @@ class Optimizer(object):
 			optimizer_dict[key] = opt
 
 		for key in loss_dict:
-			opt = self.optimizer_op(learning_rate, **kargs)
-			if kargs.get("use_tpu", 0) == 1:
-				tf.logging.info("***** Using tpu cross shard optimizer *****")
-				opt = tf.contrib.tpu.CrossShardOptimizer(opt)
-			optimizer_list.apend(opt)
-
-		for key in loss_dict:
 			loss = loss_dict[key]
 			tvars = tvars_dict[key]
 			optimizer = optimizer_dict[key]
-			grads = self.grad_clip_fn(loss, tvars, **kargs)
+			grads_and_vars = self.grad_clip_fn(optimizer, loss, tvars, **kargs)
 			with tf.variable_scope(key+"/"+"optimizer", reuse=tf.AUTO_REUSE):
 				train_op = optimizer.apply_gradients(
-						zip(grads, tvars))
+						grads_and_vars)
 			opt_list.append(train_op)
 
 		with tf.control_dependencies(opt_list):
@@ -361,12 +354,14 @@ class Optimizer(object):
 			loop_steps = loop_step_dict[key]
 			optimizer = optimizer_dict[key]
 
-			grads = self.grad_clip_fn(loss, tvars, **kargs)
+			print(key, "====apply gradients====")
+
+			grads_and_vars = self.grad_clip_fn(optimizer, loss, tvars, **kargs)
 			for i in range(loop_steps):
 				with tf.control_dependencies([prev_op]):
 					with tf.variable_scope(key+"/"+"optimizer", reuse=tf.AUTO_REUSE):
 						prev_op = optimizer.apply_gradients(
-							zip(grads, tvars))
+							grads_and_vars)
 		with tf.control_dependencies([prev_op]):
 			train_op = self.global_step.assign_add(1)
 

@@ -336,6 +336,17 @@ flags.DEFINE_string(
 	"if apply distillation"
 	)
 
+flags.DEFINE_string(
+	"gen_disc_type", "all_disc",
+	"if apply distillation"
+	)
+
+
+flags.DEFINE_string(
+	"train_op_type", "joint",
+	"if apply distillation"
+	)
+
 def main(_):
 
 	print(FLAGS)
@@ -376,7 +387,7 @@ def main(_):
 	run_config = tf.estimator.RunConfig(
 					  keep_checkpoint_max=10,
 					  # model_dir=checkpoint_dir,
-					  train_distribute=distribution, # tf 1.8
+					  # train_distribute=distribution, # tf 1.8
 					  # distribute=distribution,     # tf 1.4
 					  session_config=sess_config,
 					  save_checkpoints_secs=None,
@@ -432,7 +443,9 @@ def main(_):
 			gumbel_anneal=FLAGS.gumbel_anneal,
 			annealed_mask_prob=FLAGS.annealed_mask_prob,
 			joint_train=FLAGS.joint_train,
-			optimization_type=FLAGS.optimization_type)
+			optimization_type=FLAGS.optimization_type,
+			gen_disc_type=FLAGS.gen_disc_type,
+			train_op_type=FLAGS.train_op_type)
 	else:
 		train_eval_api.monitored_estimator(
 			FLAGS=FLAGS,

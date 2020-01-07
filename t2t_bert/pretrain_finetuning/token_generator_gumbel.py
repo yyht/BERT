@@ -137,7 +137,7 @@ def token_generator_gumbel(config, input_tensor,
 												1,
 												activation=tf.nn.softplus,
 												) + 1.0
-                                annealed_temp = 1./ annealed_temp
+				annealed_temp = 1./ annealed_temp
 				annealed_temp = tf.reshape(annealed_temp, [batch_size * seq_length, 1])
 			if config.get('gen_sample', 1) > 1:
 				tf.logging.info("****** apply auto-scale temperature for multi-sampling *******")
@@ -310,7 +310,7 @@ def token_generator_gumbel_normal(config, input_tensor,
 												1,
 												activation=tf.nn.softplus,
 												) + 1.0
-                                annealed_temp = 1./ annealed_temp
+				annealed_temp = 1./ annealed_temp
 				annealed_temp = tf.reshape(annealed_temp, [batch_size * seq_length, 1])
 			if config.get('gen_sample', 1) > 1:
 				tf.logging.info("****** apply auto-scale temperature for multi-sampling *******")

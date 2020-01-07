@@ -59,8 +59,14 @@ def get_train_op(generator_dict, discriminator_dict, optimizer_fn, opt_config,
 			gen_disc_loss = discriminator_dict['loss']
 			tf.logging.info("****** using all disc loss for updating generator *******")
 
-		generator_loss = kargs.get('gen_loss', 1.0)*generator_dict['loss'] - kargs.get('dis_loss', 1.0) * gen_disc_loss
+		generator_loss = kargs.get('gen_loss', 1.0)*generator_dict['loss'] - kargs.get('dis_loss', 0.1) * gen_disc_loss
 		discriminator_loss = kargs.get('dis_loss', 1.0) * discriminator_dict['loss']
+		
+		if kargs.get('use_tpu', 0) == 0:
+			tf.logging.info("====logging discriminator loss ====")
+			tf.summary.scalar('generator_loss_adv', 
+								generator_loss)
+
 		loss_dict = dict(zip(['generator', 'discriminator'], [generator_loss, discriminator_loss]))
 		tvars_dict = dict(zip(['generator', 'discriminator'], [generator_dict['tvars'], discriminator_dict['tvars']]))
 		init_lr_dict = dict(zip(['generator', 'discriminator'], [generator_config['init_lr'], discriminator_config['init_lr']]))
@@ -100,6 +106,7 @@ def classifier_model_fn_builder(
 
 		train_op_type = kargs.get('train_op_type', 'joint')
 		gen_disc_type = kargs.get('gen_disc_type', 'all_disc')
+		print(train_op_type, "===train op type===", gen_disc_type, "===generator loss type===")
 		if kargs.get('optimization_type', 'grl') == 'grl':
 			generator_fn = generator(model_config_dict['generator'],
 						num_labels_dict['generator'],
@@ -262,7 +269,7 @@ def classifier_model_fn_builder(
 
 			train_op = get_train_op(generator_dict, discriminator_dict, optimizer_fn, opt_config,
 						model_config_dict['generator'], model_config_dict['discriminator'],
-						use_tpu=1, train_op_type=train_op_type, gen_disc_type=gen_disc_type)
+						use_tpu=use_tpu, train_op_type=train_op_type, gen_disc_type=gen_disc_type)
 			
 			# update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 			# with tf.control_dependencies(update_ops):

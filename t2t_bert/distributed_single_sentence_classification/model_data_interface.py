@@ -262,6 +262,10 @@ def data_interface_server(FLAGS):
 			receiver_tensors["input_char_ids_a"] = tf.placeholder(tf.int32, [None, FLAGS.char_limit, FLAGS.max_length], name='input_char_ids_a')
 				
 		if FLAGS.task_type == "pair_sentence_classification":
+			receiver_tensors = {
+				"input_ids_a":tf.placeholder(tf.int32, [None, FLAGS.max_length], name='input_ids_a'),
+				"label_ids":tf.placeholder(tf.int32, [None], name='label_ids')
+			}
 			receiver_tensors["input_ids_b"] = tf.placeholder(tf.int32, [None, FLAGS.max_length], name='input_ids_b')
 			if FLAGS.with_char == "char":
 				receiver_tensors["input_char_ids_b"] = tf.placeholder(tf.int32, [None, FLAGS.char_limit, FLAGS.max_length], name='input_char_ids_b')
