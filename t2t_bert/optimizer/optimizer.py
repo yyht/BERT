@@ -200,13 +200,6 @@ class Optimizer(object):
 			optimizer_dict[key] = opt
 
 		for key in loss_dict:
-			opt = self.optimizer_op(learning_rate, **kargs)
-			if kargs.get("use_tpu", 0) == 1:
-				tf.logging.info("***** Using tpu cross shard optimizer *****")
-				opt = tf.contrib.tpu.CrossShardOptimizer(opt)
-			optimizer_list.apend(opt)
-
-		for key in loss_dict:
 			loss = loss_dict[key]
 			tvars = tvars_dict[key]
 			optimizer = optimizer_dict[key]

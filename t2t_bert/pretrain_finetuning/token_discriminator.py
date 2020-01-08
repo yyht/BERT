@@ -116,7 +116,7 @@ def classifier(config, seq_output,
 	not_equal_loss_output = not_equal_loss / (1e-10 + tf.reduce_sum(tf.cast(not_equal_label_ids, tf.float32)))
 
 	loss = (equal_loss + not_equal_loss) / (1e-10 + tf.reduce_sum(tf.cast(loss_mask, tf.float32)))
-
+        # loss = equal_loss_output + not_equal_loss_output * 0.1
 	tf.logging.info("====discriminator classifier use_tpu %s ====", str(kargs.get('use_tpu', True)))
 	if not kargs.get('use_tpu', True):
 		tf.logging.info("====logging discriminator loss ====")
@@ -160,6 +160,14 @@ def modified_loss(per_example_loss, logits, input_ids,
 	not_equal_loss = tf.reduce_sum(not_equal_per_example_loss) # not equal:1, equal:0
 	not_equal_loss_all = not_equal_loss / (1e-10 + tf.reduce_sum(tf.cast(input_mask, tf.float32)))
 	not_equal_loss_self = not_equal_loss / (1e-10 + tf.reduce_sum(tf.cast(not_equal_label_ids, tf.float32)))
+
+	if not kargs.get('use_tpu', True):
+		tf.logging.info("====logging discriminator loss ====")
+		tf.summary.scalar('equal_loss_self', 
+							equal_loss_self)
+
+		tf.summary.scalar('not_equal_loss_self', 
+							not_equal_loss_self)
 
 	return [equal_per_example_loss, equal_loss_all, equal_loss_self,
 			not_equal_per_example_loss, not_equal_loss_all, not_equal_loss_self]

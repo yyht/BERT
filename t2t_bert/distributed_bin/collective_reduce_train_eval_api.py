@@ -344,6 +344,16 @@ flags.DEFINE_string(
 	"if apply distillation"
 	)
 
+flags.DEFINE_string(
+	"gen_disc_type", "all_disc",
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
+	"train_op_type", "joint",
+	"if apply distillation"
+	)
+
 def make_distributed_info_without_evaluator():
 	worker_hosts = FLAGS.worker_hosts.split(",")
 	if len(worker_hosts) > 1:
