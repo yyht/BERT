@@ -116,7 +116,7 @@ def classifier(config, seq_output,
 	not_equal_loss_output = not_equal_loss / (1e-10 + tf.reduce_sum(tf.cast(not_equal_label_ids, tf.float32)))
 
 	loss = (equal_loss + not_equal_loss) / (1e-10 + tf.reduce_sum(tf.cast(loss_mask, tf.float32)))
-
+	# loss = equal_loss_output + not_equal_loss_output * 0.1
 	tf.logging.info("====discriminator classifier use_tpu %s ====", str(kargs.get('use_tpu', True)))
 	if not kargs.get('use_tpu', True):
 		tf.logging.info("====logging discriminator loss ====")
@@ -133,6 +133,63 @@ def classifier(config, seq_output,
 							loss - (equal_loss+not_equal_loss)/(1e-10 + tf.reduce_sum(tf.cast(input_mask, tf.float32))))
 
 	return (loss, logits, per_example_loss)
+
+def global_feature_discriminator(config, input_tensor, labels, reuse=None, **kargs):
+	"""Get loss and log probs for the next sentence prediction."""
+	# Simple binary classification. Note that 0 is "next sentence" and 1 is
+	# "random sentence". This weight matrix is not used after pre-training.
+
+	scope = kargs.get('scope', None)
+	if scope:
+		scope = scope + '/' + 'cls/seq_relationship'
+	else:
+		scope = 'cls/seq_relationship'
+	tf.logging.info("**** nsp scope **** %s", str(scope))
+
+	# with tf.variable_scope("cls/seq_relationship", reuse=reuse):
+	with tf.variable_scope(scope, reuse=reuse):
+		output_weights = tf.get_variable(
+				"output_weights",
+				shape=[2, config.hidden_size],
+				initializer=bert_modules.create_initializer(config.initializer_range))
+		output_bias = tf.get_variable(
+				"output_bias", shape=[2], initializer=tf.zeros_initializer())
+
+		logits = tf.matmul(input_tensor, output_weights, transpose_b=True)
+		logits = tf.nn.bias_add(logits, output_bias)
+		log_probs = tf.nn.log_softmax(logits, axis=-1)
+		labels = tf.reshape(labels, [-1])
+		one_hot_labels = tf.one_hot(labels, depth=2, dtype=tf.float32)
+		per_example_loss = -tf.reduce_sum(one_hot_labels * log_probs, axis=-1)
+		loss = tf.reduce_mean(per_example_loss)
+		return (loss, per_example_loss, log_probs)
+
+def global_gan_loss(config, true_model_dict, true_features_dict,
+					fake_model_dict, fake_features_dict):
+
+	true_rep = true_model_dict['model'].get_pooled_output()
+	fake_rep = fake_model_dict['model'].get_pooled_output()
+
+	input_shape_list = bert_utils.get_shape_list(fake_rep, expected_rank=[2,3])
+	batch_size = input_shape_list[0]
+
+	true_labels = tf.zeros(batch_size)
+	fake_labels = tf.ones(batch_size)
+
+	(true_loss, true_per_example_loss, true_log_probs) = global_feature_discriminator(config, 
+														true_rep, true_labels, 
+														reuse=tf.AUTO_REUSE)
+
+	(fake_loss, fake_per_example_loss, fake_log_probs) = global_feature_discriminator(config, 
+														fake_rep, fake_labels, 
+														reuse=tf.AUTO_REUSE)
+
+	loss = (true_loss + fake_loss) / 2
+	per_example_loss = (true_per_example_loss + fake_per_example_loss) / 2
+
+	return (loss, per_example_loss, true_loss, fake_loss,
+			true_per_example_loss, fake_per_example_loss, 
+			true_log_probs, fake_log_probs)
 
 def modified_loss(per_example_loss, logits, input_ids, 
 				sampled_ids, input_mask, **kargs):
