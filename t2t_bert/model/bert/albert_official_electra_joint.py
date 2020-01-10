@@ -39,6 +39,8 @@ class Albert(object):
 		with tf.variable_scope(self.config.get("scope", "bert"), reuse=reuse):
 			with tf.variable_scope("embeddings"):
 				# Perform embedding lookup on the word ids.
+
+				input_shape = albert_utils_official.get_shape_list(input_ids, expected_rank=[2,3])
 				if len(input_shape) == 3:
 					tf.logging.info("****** 3D embedding matmul *******")
 					(self.embedding_output_word, self.embedding_table) = albert_modules_official.gumbel_embedding_lookup(
