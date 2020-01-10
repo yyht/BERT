@@ -1,7 +1,8 @@
 import tensorflow as tf
 
 def data_interface(FLAGS):
-	if FLAGS.model_type in ["bert","bert_small", "albert", "electra_gumbel_encoder", "albert_official"]:
+	if FLAGS.model_type in ["bert","bert_small", "albert", "electra_gumbel_encoder", 
+						"albert_official", ""]:
 		if FLAGS.task_type == "single_sentence_classification":
 			name_to_features = {
 					"input_ids":
