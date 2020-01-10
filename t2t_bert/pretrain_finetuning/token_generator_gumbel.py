@@ -42,7 +42,7 @@ def gumbel_softmax(logits, temperature, samples=1):
 		logits = tf.expand_dims(logits, -1)
 	y = logits + sample_gumbel(input_shape_list, samples)
 	return [tf.exp(tf.nn.log_softmax(y / temperature, axis=1)), 
-			logits]
+			y]
 
 def token_generator_gumbel(config, input_tensor,
 					output_weights, 
@@ -156,12 +156,12 @@ def token_generator_gumbel(config, input_tensor,
 		# armax(logits+gumbel_samples) to sample a categoritical distribution
 		if kargs.get('sampled_prob_id', True):
 			tf.logging.info("****** apply categorical sampled id of original logits *******")
-			sampled_id = tf.one_hot(tf.argmax(sampled_logprob, axis=1), 
+			sampled_hard_id = tf.one_hot(tf.argmax(sampled_logprob, axis=1), 
 									config.vocab_size,
 									axis=1) # sampled multiminal id
 		else:
 			tf.logging.info("****** apply gumbel-softmax logprob for logits *******")
-			sampled_id = tf.one_hot(tf.argmax(sampled_logprob_temp, axis=1), 
+			sampled_hard_id = tf.one_hot(tf.argmax(sampled_logprob_temp, axis=1), 
 									config.vocab_size,
 									axis=1) # sampled multiminal id
 
@@ -171,12 +171,13 @@ def token_generator_gumbel(config, input_tensor,
 			sampled_logprob_temp_1 = flip_gradient(sampled_logprob_temp)
 		else:
 			tf.logging.info("****** not apply gradient flipping *******")
+			sampled_logprob_temp_1 = sampled_logprob_temp
 		if kargs.get("straight_through", True):
 			tf.logging.info("****** apply straight_through_estimator *******")
-			sampled_id = tf.stop_gradient(sampled_id-sampled_logprob_temp) + (sampled_logprob_temp_1)
+			sampled_id = tf.stop_gradient(sampled_hard_id-sampled_logprob_temp) + (sampled_logprob_temp_1)
 		else:
 			tf.logging.info("****** apply gumbel-softmax probs *******")
-			sampled_id = tf.identity(sampled_logprob_temp_1)
+			sampled_id = sampled_logprob_temp_1
 
 		sampled_binary_mask = kargs.get('sampled_binary_mask', None)
 		if sampled_binary_mask is not None:
@@ -190,6 +191,7 @@ def token_generator_gumbel(config, input_tensor,
 		label_diff_ids = tf.cast(label_diff_ids, tf.float32)
 
 		label_diff_ids = tf.expand_dims(label_diff_ids, axis=[-1]) # batch x seq x 1
+		input_ori_ids_1 = input_ori_ids
 		input_ori_ids = tf.one_hot(input_ori_ids, config.vocab_size) # batch x seq x vocab
 		input_ori_ids = tf.cast(input_ori_ids, tf.float32)
 
@@ -199,10 +201,10 @@ def token_generator_gumbel(config, input_tensor,
 				tf.logging.info("****** only mask sample *******")
 				label_diff_ids = tf.cast(label_diff_ids, tf.float32)
 				sampled_input_id = (label_diff_ids) * tf.cast(sampled_input_id, tf.float32) + (1 - label_diff_ids) * tf.cast(input_ori_ids, tf.float32)
-			else:
-				unk_mask = tf.cast(tf.math.equal(input_ori_ids, 100), tf.float32) # not replace unk
-				cls_mask =  tf.cast(tf.math.equal(input_ori_ids, 101), tf.float32) # not replace cls
-				sep_mask = tf.cast(tf.math.equal(input_ori_ids, 102), tf.float32) # not replace sep
+			elif kargs.get('mask_method', 'only_mask') == 'all_mask':
+				unk_mask = tf.cast(tf.math.equal(input_ori_ids_1, 100), tf.float32) # not replace unk
+				cls_mask =  tf.cast(tf.math.equal(input_ori_ids_1, 101), tf.float32) # not replace cls
+				sep_mask = tf.cast(tf.math.equal(input_ori_ids_1, 102), tf.float32) # not replace sep
 				unsampled_mask = (1 - (unk_mask + cls_mask + sep_mask))*tf.cast(input_mask, tf.float32)
 				unsampled_mask = tf.expand_dims(unsampled_mask, axis=[-1]) # batch x seq x 1
 				tf.logging.info("****** all mask sample *******")
@@ -342,19 +344,19 @@ def token_generator_gumbel_normal(config, input_tensor,
 		# armax(logits+gumbel_samples) to sample a categoritical distribution
 		if kargs.get('sampled_prob_id', True):
 			tf.logging.info("****** apply categorical sampled id of original logits *******")
-			sampled_id = tf.one_hot(tf.argmax(sampled_logprob, axis=1), 
+			sampled_hard_id = tf.one_hot(tf.argmax(sampled_logprob, axis=1), 
 									config.vocab_size,
 									axis=1) # sampled multiminal id
 		else:
 			tf.logging.info("****** apply gumbel-softmax logprob for logits *******")
-			sampled_id = tf.one_hot(tf.argmax(sampled_logprob_temp, axis=1), 
+			sampled_hard_id = tf.one_hot(tf.argmax(sampled_logprob_temp, axis=1), 
 									config.vocab_size,
 									axis=1) # sampled multiminal id
 
 		# straight-through gumbel softmax estimator
 		if kargs.get("straight_through", True):
 			tf.logging.info("****** apply straight_through_estimator without grl *******")
-			sampled_id = tf.stop_gradient(sampled_id-sampled_logprob_temp) + (sampled_logprob_temp)
+			sampled_id = tf.stop_gradient(sampled_hard_id-sampled_logprob_temp) + (sampled_logprob_temp)
 		else:
 			tf.logging.info("****** apply gumbel-softmax probs without grl *******")
 			sampled_id = flip_gradient(sampled_logprob_temp)

@@ -74,6 +74,7 @@ def get_train_op(generator_dict, discriminator_dict, optimizer_fn, opt_config,
 							str(dis_loss_ratio), str(gen_loss_ratio), str(gen_dis_loss_ratio))
 			tf.logging.info("****** using not equal and equal loss for updating generator *******")
 			gen_disc_loss =  discriminator_dict['not_equal_loss_self'] - discriminator_dict['equal_loss_self']
+
 		elif kargs.get('gen_disc_type', 'all_disc') == 'not_equal_disc_loss_all':
 			gen_dis_loss_ratio = kargs.get('gen_dis_loss_ratio', 50.0)
 			gen_loss_ratio = kargs.get('gen_loss_ratio', 1.0)
@@ -144,6 +145,9 @@ def classifier_model_fn_builder(
 			train_op_type = 'joint'
 		elif kargs.get('optimization_type', 'grl') == 'minmax':
 			if_flip_grad = False
+		else:
+			if_flip_grad = True
+			train_op_type = 'joint'
 		generator_fn = generator(model_config_dict['generator'],
 					num_labels_dict['generator'],
 					init_checkpoint_dict['generator'],

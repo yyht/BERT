@@ -5,15 +5,17 @@ import re
 try:
 	from .discriminator_gumbel import model_fn_builder as discriminator
 	from .generator_gumbel import model_fn_builder as generator
-	from .token_discriminator import discriminator_metric_train, discriminator_metric_eval
+	from .token_discriminator import discriminator_metric_train, discriminator_metric_eval, discriminator_metric_global_train
 	from .token_generator import generator_metric_fn_train, generator_metric_fn_eval
 	from .generator_gumbel_normal import model_fn_builder as generator_normal
+	from .token_discriminator import global_gan_loss
 except:
 	from discriminator_gumbel import model_fn_builder as discriminator
 	from generator_gumbel import model_fn_builder as generator
 	from generator_gumbel_normal import model_fn_builder as generator_normal
-	from token_discriminator import discriminator_metric_train, discriminator_metric_eval
+	from token_discriminator import discriminator_metric_train, discriminator_metric_eval, discriminator_metric_global_train
 	from token_generator import generator_metric_fn_train, generator_metric_fn_eval
+	from token_discriminator import global_gan_loss
 
 import tensorflow as tf
 import numpy as np
@@ -33,7 +35,7 @@ def get_train_op(generator_dict, discriminator_dict, optimizer_fn, opt_config,
 	if kargs.get('train_op_type', 'joint') == 'joint':
 		tf.logging.info("***** original joint train op *****")
 		tvars = []
-		dis_loss_ratio = kargs.get('dis_loss_ratio', 50.0)
+		dis_loss_ratio = kargs.get('dis_loss_ratio', 1.0)
 		gen_loss_ratio = kargs.get('gen_loss_ratio', 1.0)
 		tf.logging.info("***** dis loss ratio: %s, gen loss ratio: %s *****", str(dis_loss_ratio), str(gen_loss_ratio))
 		tvars.extend(discriminator_dict['tvars'])
@@ -140,55 +142,26 @@ def classifier_model_fn_builder(
 		gen_disc_type = kargs.get('gen_disc_type', 'all_disc')
 		print(train_op_type, "===train op type===", gen_disc_type, "===generator loss type===")
 		if kargs.get('optimization_type', 'grl') == 'grl':
-			generator_fn = generator(model_config_dict['generator'],
-						num_labels_dict['generator'],
-						init_checkpoint_dict['generator'],
-						model_reuse=None,
-						load_pretrained=load_pretrained_dict['generator'],
-						model_io_config=model_io_config,
-						opt_config=opt_config,
-						exclude_scope=exclude_scope_dict.get('generator', ""),
-						not_storage_params=not_storage_params_dict.get('generator', []),
-						target=target_dict['generator'],
-						**kargs)
+			if_flip_grad = True
 			train_op_type = 'joint'
 		elif kargs.get('optimization_type', 'grl') == 'minmax':
-			generator_fn = generator_normal(model_config_dict['generator'],
-						num_labels_dict['generator'],
-						init_checkpoint_dict['generator'],
-						model_reuse=None,
-						load_pretrained=load_pretrained_dict['generator'],
-						model_io_config=model_io_config,
-						opt_config=opt_config,
-						exclude_scope=exclude_scope_dict.get('generator', ""),
-						not_storage_params=not_storage_params_dict.get('generator', []),
-						target=target_dict['generator'],
-						**kargs)
-		else:
-			generator_fn = generator(model_config_dict['generator'],
-						num_labels_dict['generator'],
-						init_checkpoint_dict['generator'],
-						model_reuse=None,
-						load_pretrained=load_pretrained_dict['generator'],
-						model_io_config=model_io_config,
-						opt_config=opt_config,
-						exclude_scope=exclude_scope_dict.get('generator', ""),
-						not_storage_params=not_storage_params_dict.get('generator', []),
-						target=target_dict['generator'],
-						**kargs)
+			if_flip_grad = False
+		generator_fn = generator(model_config_dict['generator'],
+					num_labels_dict['generator'],
+					init_checkpoint_dict['generator'],
+					model_reuse=None,
+					load_pretrained=load_pretrained_dict['generator'],
+					model_io_config=model_io_config,
+					opt_config=opt_config,
+					exclude_scope=exclude_scope_dict.get('generator', ""),
+					not_storage_params=not_storage_params_dict.get('generator', []),
+					target=target_dict['generator'],
+					if_flip_grad=if_flip_grad,
+					**kargs)
+		
 		tf.logging.info("****** train_op_type:%s *******", train_op_type)
 		tf.logging.info("****** optimization_type:%s *******", kargs.get('optimization_type', 'grl'))
 		generator_dict = generator_fn(features, labels, mode, params)
-
-		# for key in generator_dict:
-		# 	if isinstance(generator_dict[key], list):
-		# 		for item in generator_dict[key]:
-		# 			print(key, item.graph, '=====generator graph=====')
-		# 	else:
-		# 		try:
-		# 			print(key, generator_dict[key].graph, '=====generator graph=====')
-		# 		except:
-		# 			print(key, type(generator_dict[key]), '=====generator graph=====')
 
 		discriminator_fn = discriminator(model_config_dict['discriminator'],
 					num_labels_dict['discriminator'],
@@ -202,7 +175,6 @@ def classifier_model_fn_builder(
 					target=target_dict['discriminator'],
 					**kargs)
 
-
 		tf.logging.info("****** true sampled_ids of discriminator *******")
 		true_distriminator_features = {}
 		true_distriminator_features['input_ids'] = generator_dict['sampled_input_ids']
@@ -215,37 +187,41 @@ def classifier_model_fn_builder(
 		true_distriminator_dict = discriminator_fn(true_distriminator_features, labels, 
 													mode, params)
 
-		discriminator_features = {}
+		fake_discriminator_features = {}
 		if kargs.get('minmax_mode', 'corrupted') == 'corrupted':
 			tf.logging.info("****** gumbel 3-D sampled_ids *******")
 		elif kargs.get('minmax_mode', 'corrupted') == 'masked':
-			discriminator_features['ori_sampled_ids'] = generator_dict['output_ids']
+			fake_discriminator_features['ori_sampled_ids'] = generator_dict['output_ids']
 			tf.logging.info("****** conditioanl sampled_ids *******")
-		discriminator_features['input_ids'] = generator_dict['sampled_ids']
-		discriminator_features['input_mask'] = generator_dict['sampled_input_mask']
-		discriminator_features['segment_ids'] = generator_dict['sampled_segment_ids']
-		discriminator_features['input_ori_ids'] = generator_dict['sampled_input_ids']
-		discriminator_features['next_sentence_labels'] = features['next_sentence_labels']
-		discriminator_features['ori_input_ids'] = generator_dict['sampled_ids']
+		fake_discriminator_features['input_ids'] = generator_dict['sampled_ids']
+		fake_discriminator_features['input_mask'] = generator_dict['sampled_input_mask']
+		fake_discriminator_features['segment_ids'] = generator_dict['sampled_segment_ids']
+		fake_discriminator_features['input_ori_ids'] = generator_dict['sampled_input_ids']
+		fake_discriminator_features['next_sentence_labels'] = features['next_sentence_labels']
+		fake_discriminator_features['ori_input_ids'] = generator_dict['sampled_ids']
 		
-		discriminator_dict = discriminator_fn(discriminator_features, labels, mode, params)
+		fake_discriminator_dict = discriminator_fn(fake_discriminator_features, labels, mode, params)
 
-		gan_loss = nce_loss_fn(true_distriminator_dict, 	
-													true_distriminator_features,
-													fake_discriminator_dict, 
-													fake_discriminator_features)
+		use_tpu = 1 if kargs.get('use_tpu', False) else 0
 
-		# for key in discriminator_dict:
-		# 	if isinstance(discriminator_dict[key], list):
-		# 		for item in discriminator_dict[key]:
-		# 			print(key, item.graph, '=====discriminator graph=====')
-		# 	else:
-		# 		try:
-		# 			print(key, discriminator_dict[key].graph, '=====discriminator graph=====')
-		# 		except:
-		# 			print(key, type(discriminator_dict[key]), '=====discriminator graph=====')
+		output_dict = global_gan_loss(model_config_dict['discriminator'],
+									true_distriminator_dict, 	
+									true_distriminator_features,
+									fake_discriminator_dict, 
+									fake_discriminator_features,
+									use_tpu=use_tpu)
+
+		discriminator_dict = {}
+		discriminator_dict['loss'] = output_dict['loss'] + 0.0 * fake_discriminator_dict['loss']
+		discriminator_dict['tvars'] = fake_discriminator_dict['tvars']
+		discriminator_dict['per_example_loss'] = fake_discriminator_dict['per_example_loss']
+		discriminator_dict['logits'] = fake_discriminator_dict['logits']
 
 		model_io_fn = model_io.ModelIO(model_io_config)
+
+		seq_global_vars = model_io_fn.get_params("cls/seq_global", 
+									not_storage_params=[])
+		discriminator_dict['tvars'].extend(seq_global_vars)
 
 		tvars = []
 
@@ -258,8 +234,6 @@ def classifier_model_fn_builder(
 			tvars.extend(generator_dict['tvars'])
 			loss += generator_dict['loss']
 		tvars = list(set(tvars))
-
-		# print(loss.graph, '===total graph===')
 
 		# logging_hook = tf.train.LoggingTensorHook({ 
 		# 				"generator_loss" : tf.get_collection('generator_loss'),
@@ -302,6 +276,10 @@ def classifier_model_fn_builder(
 							generator_dict['sampled_input_ids'], 
 							generator_dict['sampled_ids'],
 							generator_dict['sampled_input_mask'])
+				global_metric_dict = discriminator_metric_global_train(output_dict)
+
+				for key in global_metric_dict:
+					tf.summary.scalar(key, global_metric_dict[key])
 
 				for key in metric_dict:
 					tf.summary.scalar(key, metric_dict[key])

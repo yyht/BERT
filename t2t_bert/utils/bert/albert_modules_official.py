@@ -195,6 +195,45 @@ def embedding_lookup(input_ids,
 											input_shape[0:-1] + [input_shape[-1] * embedding_size])
 	return (output, embedding_table)
 
+def gumbel_embedding_lookup(input_ids,
+										 vocab_size,
+										 embedding_size=128,
+										 initializer_range=0.02,
+										 word_embedding_name="word_embeddings",
+										 use_one_hot_embeddings=False):
+	"""Looks up words embeddings for id tensor.
+
+	Args:
+		input_ids: int32 Tensor of shape [batch_size, seq_length] containing word
+			ids.
+		vocab_size: int. Size of the embedding vocabulary.
+		embedding_size: int. Width of the word embeddings.
+		initializer_range: float. Embedding initialization range.
+		word_embedding_name: string. Name of the embedding table.
+		use_one_hot_embeddings: bool. If True, use one-hot method for word
+			embeddings. If False, use `tf.nn.embedding_lookup()`. One hot is better
+			for TPUs.
+
+	Returns:
+		float Tensor of shape [batch_size, seq_length, embedding_size].
+	"""
+	# This function assumes that the input is of shape [batch_size, seq_length,
+	# num_inputs].
+	#
+	# If the input is a 2D tensor of shape [batch_size, seq_length], we
+	# reshape to [batch_size, seq_length, 1].
+
+	input_shape = albert_utils_official.get_shape_list(input_ids, expected_rank=[3])
+
+	embedding_table = tf.get_variable(
+			name=word_embedding_name,
+			shape=[vocab_size, embedding_size],
+			initializer=create_initializer(initializer_range))
+		
+	output = tf.einsum("abc,cd->abd", tf.cast(input_ids, tf.float32), embedding_table)
+	
+	return (output, embedding_table)
+
 
 def embedding_postprocessor(input_tensor,
 														use_token_type=False,
@@ -415,7 +454,7 @@ def dot_product_attention(q, k, v, bias, dropout_rate=0.0):
 		Tensor with shape [..., length_q, depth_v].
 	"""
 	logits = tf.matmul(q, k, transpose_b=True)  # [..., length_q, length_kv]
-	logits = tf.multiply(logits, 1.0 / math.sqrt(float(get_shape_list(q)[-1])))
+	logits = tf.multiply(logits, 1.0 / math.sqrt(float(albert_utils_official.get_shape_list(q)[-1])))
 	if bias is not None:
 		# `attention_mask` = [B, T]
 		from_shape = albert_utils_official.get_shape_list(q)
@@ -587,6 +626,7 @@ def attention_ffn_block(layer_input,
 					None,
 					name="dense")
 			attention_output = dropout(attention_output, hidden_dropout_prob)
+			attention_scores = attention_output
 	attention_output = layer_norm(attention_output + layer_input)
 	with tf.variable_scope("ffn_1"):
 		with tf.variable_scope("intermediate"):
@@ -607,7 +647,7 @@ def attention_ffn_block(layer_input,
 						name="dense")
 			ffn_output = dropout(ffn_output, hidden_dropout_prob)
 	ffn_output = layer_norm(ffn_output + attention_output)
-	return ffn_output
+	return ffn_output, attention_scores
 
 
 def transformer_model(input_tensor,
@@ -663,10 +703,11 @@ def transformer_model(input_tensor,
 				"heads (%d)" % (hidden_size, num_attention_heads))
 
 	attention_head_size = hidden_size // num_attention_heads
-	input_shape = albert_utils_official.assertget_shape_list(input_tensor, expected_rank=3)
+	input_shape = albert_utils_official.get_shape_list(input_tensor, expected_rank=3)
 	input_width = input_shape[2]
 
 	all_layer_outputs = []
+	all_attention_scores = []
 	if input_width != hidden_size:
 		prev_output = dense_layer_2d(
 				input_tensor, hidden_size, create_initializer(initializer_range),
@@ -681,16 +722,17 @@ def transformer_model(input_tensor,
 					layer_output = prev_output
 					for inner_group_idx in range(inner_group_num):
 						with tf.variable_scope("inner_group_%d" % inner_group_idx):
-							layer_output = attention_ffn_block(
+							[layer_output, attention_scores] = attention_ffn_block(
 									layer_output, hidden_size, attention_mask,
 									num_attention_heads, attention_head_size,
 									attention_probs_dropout_prob, intermediate_size,
 									intermediate_act_fn, initializer_range, hidden_dropout_prob)
 							prev_output = layer_output
 							all_layer_outputs.append(layer_output)
+							all_attention_scores.append(attention_scores)
 	if do_return_all_layers:
-		return all_layer_outputs
+		return all_layer_outputs, all_attention_scores
 	else:
-		return all_layer_outputs[-1]
+		return all_layer_outputs, all_attention_scores
 
 

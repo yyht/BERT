@@ -106,7 +106,7 @@ def random_input_ids_generation(config,
 										temperature=0.1,
 										samples=config.get('gen_sample', 1))
 
-	sample_vocab_ids = tf.argmax(sampled_logprob_temp, axis=1) # batch x seq
+	sample_vocab_ids = tf.argmax(sampled_logprob, axis=1) # batch x seq
 
 	# sample_vocab_ids = tf.multinomial(flatten_vocab_sample_logits, 
 	# 							num_samples=config.get('gen_sample', 1), 

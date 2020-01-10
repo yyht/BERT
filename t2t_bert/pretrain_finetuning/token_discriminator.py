@@ -123,6 +123,9 @@ def classifier(config, seq_output,
 		tf.summary.scalar('mask_based_loss', 
 							loss)
 
+		loss = per_example_loss * tf.cast(loss_mask, tf.float32)
+		loss = tf.reduce_sum(loss) / (1e-10 + tf.reduce_sum(tf.cast(loss_mask, tf.float32)))
+
 		tf.summary.scalar('equal_loss', 
 							equal_loss/(1e-10 + tf.reduce_sum(tf.cast(input_mask, tf.float32))))
 
@@ -141,9 +144,9 @@ def global_feature_discriminator(config, input_tensor, labels, reuse=None, **kar
 
 	scope = kargs.get('scope', None)
 	if scope:
-		scope = scope + '/' + 'cls/seq_relationship'
+		scope = scope + '/' + 'cls/seq_global'
 	else:
-		scope = 'cls/seq_relationship'
+		scope = 'cls/seq_global'
 	tf.logging.info("**** nsp scope **** %s", str(scope))
 
 	# with tf.variable_scope("cls/seq_relationship", reuse=reuse):
@@ -151,7 +154,7 @@ def global_feature_discriminator(config, input_tensor, labels, reuse=None, **kar
 		output_weights = tf.get_variable(
 				"output_weights",
 				shape=[2, config.hidden_size],
-				initializer=bert_modules.create_initializer(config.initializer_range))
+				initializer=albert_modules.create_initializer(config.initializer_range))
 		output_bias = tf.get_variable(
 				"output_bias", shape=[2], initializer=tf.zeros_initializer())
 
@@ -165,7 +168,7 @@ def global_feature_discriminator(config, input_tensor, labels, reuse=None, **kar
 		return (loss, per_example_loss, log_probs)
 
 def global_gan_loss(config, true_model_dict, true_features_dict,
-					fake_model_dict, fake_features_dict):
+					fake_model_dict, fake_features_dict, **kargs):
 
 	true_rep = true_model_dict['model'].get_pooled_output()
 	fake_rep = fake_model_dict['model'].get_pooled_output()
@@ -173,8 +176,8 @@ def global_gan_loss(config, true_model_dict, true_features_dict,
 	input_shape_list = bert_utils.get_shape_list(fake_rep, expected_rank=[2,3])
 	batch_size = input_shape_list[0]
 
-	true_labels = tf.zeros(batch_size)
-	fake_labels = tf.ones(batch_size)
+	true_labels = tf.cast(tf.zeros(batch_size), tf.int32)
+	fake_labels = tf.cast(tf.ones(batch_size), tf.int32)
 
 	(true_loss, true_per_example_loss, true_log_probs) = global_feature_discriminator(config, 
 														true_rep, true_labels, 
@@ -187,9 +190,29 @@ def global_gan_loss(config, true_model_dict, true_features_dict,
 	loss = (true_loss + fake_loss) / 2
 	per_example_loss = (true_per_example_loss + fake_per_example_loss) / 2
 
-	return (loss, per_example_loss, true_loss, fake_loss,
-			true_per_example_loss, fake_per_example_loss, 
-			true_log_probs, fake_log_probs)
+	output_dict = {
+		"loss":loss,
+		"per_example_loss":per_example_loss,
+		"true_loss":true_loss,
+		"fake_loss":fake_loss,
+		"true_per_example_loss":true_per_example_loss,
+		"fake_per_example_loss":fake_per_example_loss,
+		"true_log_probs":true_log_probs,
+		"fake_log_probs":fake_log_probs
+	}
+
+	if not kargs.get('use_tpu', True):
+		tf.logging.info("====logging discriminator global loss ====")
+		tf.summary.scalar('adv_loss', 
+							loss)
+
+		tf.summary.scalar('true_loss', 
+							true_loss)
+
+		tf.summary.scalar('fake_loss', 
+							fake_loss)
+
+	return output_dict
 
 def modified_loss(per_example_loss, logits, input_ids, 
 				sampled_ids, input_mask, **kargs):
@@ -280,6 +303,29 @@ def discriminator_metric_train(per_example_loss, logits, input_ids, sampled_ids,
 		"discriminator_lm_accuracy_diff":discriminator_lm_accuracy_diff,
 		"discriminator_lm_accuracy_original":discriminator_lm_accuracy_original,
 		}
+
+def discriminator_metric_global_train(input_dict):
+	true_log_probs = input_dict['true_log_probs']
+	fake_log_probs = input_dict['fake_log_probs']
+
+	input_shape_list = bert_utils.get_shape_list(true_log_probs, expected_rank=[2])
+	batch_size = input_shape_list[0]
+
+	true_labels = tf.cast(tf.zeros(batch_size), tf.int32)
+	fake_labels = tf.cast(tf.ones(batch_size), tf.int32)
+
+	pred_true_label = tf.argmax(true_log_probs, axis=-1)
+	pred_fake_label = tf.argmax(fake_log_probs, axis=-1)
+
+	true_accuracy = tf.equal(tf.cast(pred_true_label, tf.int32), tf.cast(true_labels, tf.int32))
+	fake_accuracy = tf.equal(tf.cast(pred_fake_label, tf.int32), tf.cast(fake_labels, tf.int32))
+
+	return {
+		"true_accuracy":tf.reduce_mean(tf.cast(true_accuracy, tf.float32)),
+		"fake_accuracy":tf.reduce_mean(tf.cast(fake_accuracy, tf.float32)),
+
+	}
+	
 
 def discriminator_metric_eval(per_example_loss, logits, input_ids, sampled_ids,
 					input_mask):

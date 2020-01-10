@@ -36,7 +36,7 @@ pai -name tensorflow1120
 	-DjobName='bert_qqp'
 	-Dtags='bert'
 	-DmaxHungTimeBeforeGCInSeconds=0
-	-DhyperParameters='file:///Users/xuhaotian/Desktop/my_work/BERT/t2t_bert/distributed_single_sentence_classification/albert_tiny_xnli'
+	-DhyperParameters='file:///Users/xuhaotian/Desktop/my_work/BERT/t2t_bert/distributed_single_sentence_classification/albert_official_base_lcqmc'
 	-Dbuckets='oss://alg-misc/BERT/?role_arn=acs:ram::1265628042679515:role/yuefeng2&host=cn-hangzhou.oss-internal.aliyun-inc.com';
 "
 echo "${pai_command}"
