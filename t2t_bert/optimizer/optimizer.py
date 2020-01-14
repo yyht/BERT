@@ -181,7 +181,7 @@ class Optimizer(object):
 	def get_group_train_op(self, loss_dict, tvars_dict, init_lr_dict,
 							optimizer_type_dict,
 							num_train_steps, **kargs):
-		opt_dict = []
+		opt_list = []
 		optimizer_dict = {}
 
 		for key in loss_dict:

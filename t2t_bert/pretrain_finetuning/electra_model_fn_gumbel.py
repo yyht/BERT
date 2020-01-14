@@ -33,7 +33,7 @@ def get_train_op(generator_dict, discriminator_dict, optimizer_fn, opt_config,
 	if kargs.get('train_op_type', 'joint') == 'joint':
 		tf.logging.info("***** original joint train op *****")
 		tvars = []
-		dis_loss_ratio = kargs.get('dis_loss_ratio', 50.0)
+		dis_loss_ratio = kargs.get('dis_loss_ratio', 10.0)
 		gen_loss_ratio = kargs.get('gen_loss_ratio', 1.0)
 		tf.logging.info("***** dis loss ratio: %s, gen loss ratio: %s *****", str(dis_loss_ratio), str(gen_loss_ratio))
 		tvars.extend(discriminator_dict['tvars'])
@@ -52,9 +52,9 @@ def get_train_op(generator_dict, discriminator_dict, optimizer_fn, opt_config,
 	elif kargs.get('train_op_type', 'joint') in ['alternate', 'group']:
 		if kargs.get('gen_disc_type', 'all_disc') == 'all_disc':
 			gen_disc_loss = discriminator_dict['loss']
-			gen_dis_loss_ratio = kargs.get('gen_dis_loss_ratio', 50.0)
+			gen_dis_loss_ratio = kargs.get('gen_dis_loss_ratio', 10.0)
 			gen_loss_ratio = kargs.get('gen_loss_ratio', 1.0)
-			dis_loss_ratio = kargs.get('dis_loss_ratio', 50.0)
+			dis_loss_ratio = kargs.get('dis_loss_ratio', 10.0)
 			tf.logging.info("***** dis loss ratio: %s, gen loss ratio: %s, gen-dis loss ratio: %s *****", 
 							str(dis_loss_ratio), str(gen_loss_ratio), str(gen_dis_loss_ratio))
 			tf.logging.info("****** using all disc loss for updating generator *******")
@@ -62,43 +62,60 @@ def get_train_op(generator_dict, discriminator_dict, optimizer_fn, opt_config,
 			gen_disc_loss = discriminator_dict['not_equal_loss_self']
 			gen_dis_loss_ratio = kargs.get('gen_dis_loss_ratio', 0.1)
 			gen_loss_ratio = kargs.get('gen_loss_ratio', 1.0)
-			dis_loss_ratio = kargs.get('dis_loss_ratio', 50.0)
+			dis_loss_ratio = kargs.get('dis_loss_ratio', 10.0)
 			tf.logging.info("***** dis loss ratio: %s, gen loss ratio: %s, gen-dis loss ratio: %s *****", 
 							str(dis_loss_ratio), str(gen_loss_ratio), str(gen_dis_loss_ratio))
-			tf.logging.info("****** using not equal loss for updating generator *******")
+			tf.logging.info("****** using not equal loss self for updating generator *******")
 		elif kargs.get('gen_disc_type', 'all_disc') == 'equal_not_equal_disc_loss':
 			gen_dis_loss_ratio = kargs.get('gen_dis_loss_ratio', 0.1)
 			gen_loss_ratio = kargs.get('gen_loss_ratio', 1.0)
-			dis_loss_ratio = kargs.get('dis_loss_ratio', 50.0)
+			dis_loss_ratio = kargs.get('dis_loss_ratio', 10.0)
 			tf.logging.info("***** dis loss ratio: %s, gen loss ratio: %s, gen-dis loss ratio: %s *****", 
 							str(dis_loss_ratio), str(gen_loss_ratio), str(gen_dis_loss_ratio))
-			tf.logging.info("****** using not equal and equal loss for updating generator *******")
+			tf.logging.info("****** using not equal and equal loss self for updating generator *******")
 			gen_disc_loss =  discriminator_dict['not_equal_loss_self'] - discriminator_dict['equal_loss_self']
-
-		elif kargs.get('gen_disc_type', 'all_disc') == 'not_equal_disc_loss_all':
-			gen_dis_loss_ratio = kargs.get('gen_dis_loss_ratio', 50.0)
+		elif kargs.get('gen_disc_type', 'all_disc') == 'equal_not_equal_disc_loss_all':
+			gen_dis_loss_ratio = kargs.get('gen_dis_loss_ratio', 10.0)
 			gen_loss_ratio = kargs.get('gen_loss_ratio', 1.0)
-			dis_loss_ratio = kargs.get('dis_loss_ratio', 50.0)
+			dis_loss_ratio = kargs.get('dis_loss_ratio', 10.0)
 			tf.logging.info("***** dis loss ratio: %s, gen loss ratio: %s, gen-dis loss ratio: %s *****", 
 							str(dis_loss_ratio), str(gen_loss_ratio), str(gen_dis_loss_ratio))
-			tf.logging.info("****** using not equal and equal loss for updating generator *******")
+			tf.logging.info("****** using not equal and equal loss all for updating generator *******")
+			gen_disc_loss =  discriminator_dict['not_equal_loss_all'] - discriminator_dict['equal_loss_all']
+		
+		elif kargs.get('gen_disc_type', 'all_disc') == 'not_equal_disc_loss_all':
+			gen_dis_loss_ratio = kargs.get('gen_dis_loss_ratio', 10.0)
+			gen_loss_ratio = kargs.get('gen_loss_ratio', 1.0)
+			dis_loss_ratio = kargs.get('dis_loss_ratio', 10.0)
+			tf.logging.info("***** dis loss ratio: %s, gen loss ratio: %s, gen-dis loss ratio: %s *****", 
+							str(dis_loss_ratio), str(gen_loss_ratio), str(gen_dis_loss_ratio))
+			tf.logging.info("****** using not equal all for updating generator *******")
 			gen_disc_loss =  discriminator_dict['not_equal_loss_all']
 		else:
-			gen_dis_loss_ratio = kargs.get('gen_dis_loss_ratio', 50.0)
+			gen_dis_loss_ratio = kargs.get('gen_dis_loss_ratio', 10.0)
 			gen_loss_ratio = kargs.get('gen_loss_ratio', 1.0)
-			dis_loss_ratio = kargs.get('dis_loss_ratio', 50.0)
+			dis_loss_ratio = kargs.get('dis_loss_ratio', 10.0)
 			tf.logging.info("***** dis loss ratio: %s, gen loss ratio: %s, gen-dis loss ratio: %s *****", 
 							str(dis_loss_ratio), str(gen_loss_ratio), str(gen_dis_loss_ratio))
 			gen_disc_loss = discriminator_dict['loss']
 			tf.logging.info("****** using all disc loss for updating generator *******")
 
-		generator_loss = gen_loss_ratio * generator_dict['loss'] - dis_loss_ratio * gen_disc_loss
+		generator_loss = gen_loss_ratio * generator_dict['loss'] - gen_dis_loss_ratio * gen_disc_loss
 		discriminator_loss = dis_loss_ratio * discriminator_dict['loss']
 		
 		if kargs.get('use_tpu', 0) == 0:
 			tf.logging.info("====logging discriminator loss ====")
 			tf.summary.scalar('generator_loss_adv', 
 								generator_loss)
+			tf.summary.scalar('gen_dis_loss_ratio', 
+								gen_dis_loss_ratio)
+			tf.summary.scalar('gen_loss_ratio', 
+								gen_loss_ratio)
+			tf.summary.scalar('dis_loss_ratio', 
+								dis_loss_ratio)
+
+			optimizer_fn.gradient_norm_summary(generator_dict['loss'], generator_dict['tvars'], debug_grad_name="generator_grad_norm")
+			optimizer_fn.gradient_norm_summary(gen_disc_loss, generator_dict['tvars'], debug_grad_name="discriminator_of_generator_grad_norm")
 
 		loss_dict = OrderedDict(zip(['generator', 'discriminator'], [generator_loss, discriminator_loss]))
 		tvars_dict = OrderedDict(zip(['generator', 'discriminator'], [generator_dict['tvars'], discriminator_dict['tvars']]))
@@ -159,6 +176,7 @@ def classifier_model_fn_builder(
 					not_storage_params=not_storage_params_dict.get('generator', []),
 					target=target_dict['generator'],
 					if_flip_grad=if_flip_grad,
+					mask_method='only_mask',
 					**kargs)
 			# train_op_type = 'joint'
 		# elif kargs.get('optimization_type', 'grl') == 'minmax':
@@ -209,14 +227,16 @@ def classifier_model_fn_builder(
 					exclude_scope=exclude_scope_dict.get('discriminator', ""),
 					not_storage_params=not_storage_params_dict.get('discriminator', []),
 					target=target_dict['discriminator'],
+					loss='cross_entropy',
 					**kargs)
 
 		discriminator_features = {}
-		if kargs.get('minmax_mode', 'corrupted') == 'corrupted':
+		if kargs.get('minmax_mode', 'masked') == 'corrupted':
 			tf.logging.info("****** gumbel 3-D sampled_ids *******")
-		elif kargs.get('minmax_mode', 'corrupted') == 'masked':
+		elif kargs.get('minmax_mode', 'masked') == 'masked':
 			discriminator_features['ori_sampled_ids'] = generator_dict['output_ids']
-			tf.logging.info("****** conditioanl sampled_ids *******")
+			discriminator_features['sampled_binary_mask'] = generator_dict['sampled_binary_mask']
+			tf.logging.info("****** conditional sampled_ids *******")
 		discriminator_features['input_ids'] = generator_dict['sampled_ids']
 		discriminator_features['input_mask'] = generator_dict['sampled_input_mask']
 		discriminator_features['segment_ids'] = generator_dict['sampled_segment_ids']

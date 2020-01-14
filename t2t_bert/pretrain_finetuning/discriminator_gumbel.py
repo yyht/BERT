@@ -84,7 +84,9 @@ def model_fn_builder(
 									2,
 									dropout_prob,
 									ori_sampled_ids=features.get('ori_sampled_ids', None),
-									use_tpu=kargs.get('use_tpu', True))
+									use_tpu=kargs.get('use_tpu', True),
+									sampled_binary_mask=features.get('sampled_binary_mask', None),
+									loss=kargs.get('loss', 'cross_entropy'))
 
 		[equal_per_example_loss, 
 		equal_loss_all, 
@@ -95,7 +97,9 @@ def model_fn_builder(
 											logits, 
 											features['input_ori_ids'], 
 											features['ori_input_ids'], 
-											features['input_mask'], **kargs)
+											features['input_mask'],
+											sampled_binary_mask=features.get('sampled_binary_mask', None),
+											**kargs)
 	
 		loss = disc_loss + 0.0 * nsp_loss
 

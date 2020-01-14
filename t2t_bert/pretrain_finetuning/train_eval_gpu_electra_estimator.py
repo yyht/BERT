@@ -57,6 +57,7 @@ def train_eval_fn(FLAGS,
 	init_lr = FLAGS.init_lr
 
 	distillation_config = Bunch(json.load(tf.gfile.Open(FLAGS.multi_task_config)))
+	print(FLAGS.multi_task_config, "====config path====")
 
 	if FLAGS.use_tpu:
 		warmup_ratio = config.get('warmup', 0.1)

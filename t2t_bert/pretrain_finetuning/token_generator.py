@@ -126,6 +126,124 @@ def random_input_ids_generation(config,
 	return [tf.cast(output_input_ids, tf.int32), 
 				output_sampled_binary_mask]
 
+def random_input_ids_generation_v1(config,
+							input_ori_ids,
+							input_mask,
+							**kargs):
+
+	mask_id = kargs.get('mask_id', 103)
+	valid_vocab = kargs.get('valid_vocab', 105)
+
+	input_ori_ids = tf.cast(input_ori_ids, tf.int32)
+	input_mask = tf.cast(input_mask, tf.int32)
+
+	unk_mask = tf.cast(tf.math.equal(input_ori_ids, 100), tf.float32) # not replace unk
+	cls_mask =  tf.cast(tf.math.equal(input_ori_ids, 101), tf.float32) # not replace cls
+	sep_mask = tf.cast(tf.math.equal(input_ori_ids, 102), tf.float32) # not replace sep
+
+	none_replace_mask =  unk_mask + cls_mask + sep_mask
+
+	input_shape_list = bert_utils.get_shape_list(input_ori_ids, expected_rank=2)
+	batch_size = input_shape_list[0]
+	seq_length = input_shape_list[1]
+
+	if kargs.get('annealed_mask_prob', False):
+		mask_probability = 1 - tf.train.polynomial_decay(0.95,
+														tf.train.get_or_create_global_step(),
+														kargs.get("num_train_steps", 10000)*0.1,
+														end_learning_rate=0.85,
+														power=1.0,
+														cycle=False)
+		tf.logging.info("**** apply annealed_mask_prob **** ")
+	else:
+		mask_probability = 0.15
+		tf.logging.info("**** apply fixed_mask_prob %s **** ", str(mask_probability))
+
+	# must_have_one = tf.cast(tf.expand_dims(tf.eye(seq_length)[4], axis=[0]), tf.int32) # batch x seq_length
+	# must_have_one = must_have_one * input_mask * (1 - tf.cast(none_replace_mask, tf.int32))
+	sample_probs = tf.ones_like(input_ori_ids) * input_mask * (1 - tf.cast(none_replace_mask, tf.int32))
+	sample_probs = mask_probability * tf.cast(sample_probs, tf.float32) #+ 0.8 * tf.cast(must_have_one, tf.float32) # mask 15% token
+
+	noise_dist = tf.distributions.Bernoulli(probs=sample_probs, dtype=tf.float32)
+	sampled_binary_mask = noise_dist.sample()
+	sampled_binary_mask = tf.cast(sampled_binary_mask, tf.float32)
+
+	# mask_binary_probs = 0.8 * sampled_binary_mask # use 80% [mask] for masked token
+	# mask_noise_dist = tf.distributions.Bernoulli(probs=mask_binary_probs, dtype=tf.float32)
+	# sampled_mask_binary_mask = mask_noise_dist.sample()
+	# sampled_mask_binary_mask = tf.cast(sampled_mask_binary_mask, tf.float32)
+
+	# replace_binary_probs = 0.5 * (sampled_binary_mask - sampled_mask_binary_mask) # use 10% [mask] to replace token
+	# replace_noise_dist = tf.distributions.Bernoulli(probs=replace_binary_probs, dtype=tf.float32)
+	# sampled_replace_binary_mask = replace_noise_dist.sample()
+	# sampled_replace_binary_mask = tf.cast(sampled_replace_binary_mask, tf.float32)
+
+	# ori_binary_probs = 1.0 * (sampled_binary_mask - sampled_mask_binary_mask - sampled_replace_binary_mask)
+	# ori_noise_dist = tf.distributions.Bernoulli(probs=ori_binary_probs, dtype=tf.float32)
+	# sampled_ori_binary_mask = ori_noise_dist.sample()
+	# sampled_ori_binary_mask = tf.cast(sampled_ori_binary_mask, tf.float32)
+
+	replace_binary_probs = 0.01 * (sampled_binary_mask) # use 10% [mask] to replace token
+	replace_noise_dist = tf.distributions.Bernoulli(probs=replace_binary_probs, dtype=tf.float32)
+	sampled_replace_binary_mask = replace_noise_dist.sample()
+	sampled_replace_binary_mask = tf.cast(sampled_replace_binary_mask, tf.float32)
+
+	ori_binary_probs = 0.50 * (sampled_binary_mask - sampled_replace_binary_mask)
+	ori_noise_dist = tf.distributions.Bernoulli(probs=ori_binary_probs, dtype=tf.float32)
+	sampled_ori_binary_mask = ori_noise_dist.sample()
+	sampled_ori_binary_mask = tf.cast(sampled_ori_binary_mask, tf.float32)
+
+	# mask_binary_probs = 0.85 * (sampled_binary_mask - sampled_replace_binary_mask - sampled_ori_binary_mask) # use 80% [mask] for masked token
+	# mask_noise_dist = tf.distributions.Bernoulli(probs=mask_binary_probs, dtype=tf.float32)
+	# sampled_mask_binary_mask = mask_noise_dist.sample()
+	# sampled_mask_binary_mask = tf.cast(sampled_mask_binary_mask, tf.float32)
+
+	sampled_mask_binary_mask = (sampled_binary_mask - sampled_replace_binary_mask - sampled_ori_binary_mask)
+	sampled_mask_binary_mask = tf.cast(sampled_mask_binary_mask, tf.float32)
+	
+	# sampled_replace_binary_mask *=  (1 - tf.cast(none_replace_mask, tf.float32)) 
+	# sampled_replace_binary_mask *= tf.cast(input_mask, tf.float32)
+
+	# sampled_mask_binary_mask *=  (1 - tf.cast(none_replace_mask, tf.float32)) 
+	# sampled_mask_binary_mask *= tf.cast(input_mask, tf.float32)
+	
+	# sampled_ori_binary_mask *=  (1 - tf.cast(none_replace_mask, tf.float32)) 
+	# sampled_ori_binary_mask *= tf.cast(input_mask, tf.float32)
+
+	vocab_sample_logits = tf.random.uniform(
+							[batch_size, seq_length, config.vocab_size],
+							minval=0.0,
+							maxval=1.0,
+							dtype=tf.float32)
+
+	vocab_sample_logits = tf.nn.log_softmax(vocab_sample_logits)
+	flatten_vocab_sample_logits = tf.reshape(vocab_sample_logits, 
+											[batch_size*seq_length, -1])
+
+	sampled_logprob_temp, sampled_logprob = gumbel_softmax(flatten_vocab_sample_logits, 
+										temperature=0.1,
+										samples=config.get('gen_sample', 1))
+
+	sample_vocab_ids = tf.argmax(sampled_logprob, axis=1) # batch x seq
+
+	# sample_vocab_ids = tf.multinomial(flatten_vocab_sample_logits, 
+	# 							num_samples=config.get('gen_sample', 1), 
+	# 							output_dtype=tf.int32)
+
+	sample_vocab_ids = tf.reshape(sample_vocab_ids, [batch_size, seq_length])
+	sample_vocab_ids = tf.cast(sample_vocab_ids, tf.float32)
+	input_ori_ids = tf.cast(input_ori_ids, tf.float32)
+
+	output_input_ids = mask_id * tf.cast(sampled_mask_binary_mask, tf.float32) * tf.ones_like(input_ori_ids)
+	output_input_ids += sample_vocab_ids * tf.cast(sampled_replace_binary_mask, tf.float32)
+	output_input_ids += (1 - tf.cast(sampled_mask_binary_mask + sampled_replace_binary_mask, tf.float32)) * input_ori_ids
+	output_sampled_binary_mask = sampled_mask_binary_mask + sampled_replace_binary_mask + sampled_ori_binary_mask
+
+	output_sampled_binary_mask = tf.cast(output_sampled_binary_mask, tf.int32)
+
+	return [tf.cast(output_input_ids, tf.int32), 
+				output_sampled_binary_mask]
+
 def top_k_logits(logits, k):
 	if k == 0:
 		# no truncation

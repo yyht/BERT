@@ -7,6 +7,26 @@ from utils.bert import bert_modules, albert_modules
 import tensorflow as tf
 from tensorflow.python.framework import ops
 
+def inverse_exp_decay(max_step, min_value=0.01, step=None):
+	"""Inverse-decay exponentially from min_value to 1.0 reached at max_step."""
+	inv_base = tf.exp(tf.log(min_value) / float(max_step))
+	if step is None:
+		step = tf.train.get_or_create_global_step()
+	if step is None:
+		return 1.0
+	step = tf.cast(step, tf.float32)
+	return inv_base**tf.maximum(float(max_step) - step, 0.0)
+
+def inverse_lin_decay(max_step, min_value=0.01, step=None):
+	"""Inverse-decay linearly from min_value to 1.0 reached at max_step."""
+	if step is None:
+		step = tf.train.get_or_create_global_step()
+	if step is None:
+		return 1.0
+	step = tf.cast(step, tf.float32)
+	progress = tf.minimum(step / float(max_step), 1.0)
+	return progress * (1.0 - min_value) + min_value
+
 class FlipGradientBuilder(object):
 	def __init__(self):
 		self.num_calls = 0
@@ -32,15 +52,19 @@ def sample_gumbel(shape, samples=1, eps=1e-20):
 		sample_shape = shape + [samples]
 	else:
 		sample_shape = shape
-	U = tf.random_uniform(sample_shape, minval=0, maxval=1)
-	return -tf.log(-tf.log(U + eps) + eps)
+	U = tf.random_uniform(shape, minval=0.00001, maxval=0.99998)
+	# return -tf.log(-tf.log(U + eps) + eps)
+	return -tf.log(-tf.log(U))
 
-def gumbel_softmax(logits, temperature, samples=1): 
+def gumbel_softmax(logits, temperature, gumbel_samples=None, samples=1): 
 	""" Draw a sample from the Gumbel-Softmax distribution"""
 	input_shape_list = bert_utils.get_shape_list(logits, expected_rank=2)
 	if samples > 1:
 		logits = tf.expand_dims(logits, -1)
-	y = logits + sample_gumbel(input_shape_list, samples)
+	if gumbel_samples is None:
+		y = logits + sample_gumbel(input_shape_list, samples)
+	else:
+		y = logits + gumbel_samples
 	return [tf.exp(tf.nn.log_softmax(y / temperature, axis=1)), 
 			y]
 
@@ -129,6 +153,7 @@ def token_generator_gumbel(config, input_tensor,
 													end_learning_rate=0.1,
 													power=1.0,
 													cycle=False)
+			gumbel_samples = None
 		elif kargs.get('gumbel_anneal', "anneal") == 'softplus':
 			tf.logging.info("****** apply auto-scale temperature *******")
 			# batch x seq x dim
@@ -139,22 +164,46 @@ def token_generator_gumbel(config, input_tensor,
 												) + 1.0
 				annealed_temp = 1./ annealed_temp
 				annealed_temp = tf.reshape(annealed_temp, [batch_size * seq_length, 1])
+			if not kargs.get('use_tpu', True):
+				tf.summary.scalar('softplus temperature', 
+							tf.reduce_mean(annealed_temp))
 			if config.get('gen_sample', 1) > 1:
 				tf.logging.info("****** apply auto-scale temperature for multi-sampling *******")
 				annealed_temp = tf.expand_dims(annealed_temp, -1)
+			gumbel_samples = None
+		elif kargs.get('gumbel_anneal', 'vqvae') == 'vqvae':
+			temperature_warmup_steps = kargs.get("num_train_steps", 10000) * 0.1
+			tf.logging.info("****** apply t2t gumbel-softmax temperature annealing method with warm up steps %s ******* ",
+							str(kargs.get("num_train_steps", 10000) * 0.1))
+			steps = temperature_warmup_steps
+			gumbel_samples = sample_gumbel(bert_utils.get_shape_list(flat_logits_tempered, expected_rank=2),
+											samples=config.get('gen_sample', 1))
+			gumbel_samples *= inverse_exp_decay(steps // 5) * 0.5
+			annealed_temp_decay = 1.2 - inverse_lin_decay(steps) # minimum temperature is set 0.2
+			annealed_temp = tf.cond(
+					  tf.less(tf.random_uniform([]), 0.9), lambda: annealed_temp_decay,
+					  lambda: tf.random_uniform([], minval=0.5, maxval=1.0)) # 10% step for 
+			tf.logging.info("****** apply t2t gumbel-softmax temperature annealing method ******* ")
+			if not kargs.get('use_tpu', True):
+				tf.summary.scalar('t2t_vqvae_stgs temperature', 
+							annealed_temp)
+				tf.summary.scalar('t2t_vqvae_stgs temperature decay', 
+							annealed_temp_decay)
 		else:
 			annealed_temp = 1.0
+			gumbel_samples = None
 			tf.logging.info("****** not apply annealed tenperature with fixed temp ******* %s", str(annealed_temp))
 
 		# [batch x seq] x config.vocab_size x config.get('gen_sample', 1)
 		sampled_logprob_temp, sampled_logprob = gumbel_softmax(flat_logits_tempered, 
 										temperature=annealed_temp,
+										gumbel_samples=gumbel_samples,
 										samples=config.get('gen_sample', 1))
 
 		# argmax on config.vocab_size which is always axis=1
 		# [batch x seq] x config.vocab_size x config.get('gen_sample', 1)
 		# armax(logits+gumbel_samples) to sample a categoritical distribution
-		if kargs.get('sampled_prob_id', True):
+		if kargs.get('sampled_prob_id', False):
 			tf.logging.info("****** apply categorical sampled id of original logits *******")
 			sampled_hard_id = tf.one_hot(tf.argmax(sampled_logprob, axis=1), 
 									config.vocab_size,

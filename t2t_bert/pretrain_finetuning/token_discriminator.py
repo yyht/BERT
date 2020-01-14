@@ -62,37 +62,49 @@ def classifier(config, seq_output,
 		tmp_sampled_ids = tf.cast(tmp_sampled_ids, tf.int32)
 		tf.logging.info("****** normal 2-D sampled_ids *******")
 
-	ori_sampled_ids = kargs.get('ori_sampled_ids', None)
-	if ori_sampled_ids is not None:
-		input_shape_list = bert_utils.get_shape_list(ori_sampled_ids, expected_rank=[2,3])
-		if len(input_shape_list) == 3:
-			tmp_ori_sampled_ids = tf.argmax(ori_sampled_ids, axis=-1) # batch x seq x vocab
-			tmp_ori_sampled_ids = tf.cast(tmp_sampled_ori_ids, tf.int32)
-			tf.logging.info("****** gumbel 3-D sampled_ids *******")
-		elif len(input_shape_list) == 2:
-			tmp_ori_sampled_ids = tf.cast(ori_sampled_ids, tf.int32)
-			tf.logging.info("****** normal 2-D sampled_ids *******")
+	sampled_binary_mask = kargs.get('sampled_binary_mask', None)
 
-		masked_not_equal_mask = tf.cast(tf.not_equal(input_ids, tmp_ori_sampled_ids), tf.int32)
-		masked_not_equal_mask *= tf.cast(input_mask, tf.int32)
-	else:
-		masked_not_equal_mask = None
-	if masked_not_equal_mask is not None:
+	if sampled_binary_mask is not None:
 		tf.logging.info("****** loss mask using masked token mask for masked tokens *******")
-		loss_mask = masked_not_equal_mask
+		loss_mask = sampled_binary_mask
 	else:
 		tf.logging.info("****** loss mask using input_mask for all tokens *******")
 		loss_mask = input_mask
+
+	# ori_sampled_ids = kargs.get('ori_sampled_ids', None)
+	# if ori_sampled_ids is not None:
+	# 	input_shape_list = bert_utils.get_shape_list(ori_sampled_ids, expected_rank=[2,3])
+	# 	if len(input_shape_list) == 3:
+	# 		tmp_ori_sampled_ids = tf.argmax(ori_sampled_ids, axis=-1) # batch x seq x vocab
+	# 		tmp_ori_sampled_ids = tf.cast(tmp_sampled_ori_ids, tf.int32)
+	# 		tf.logging.info("****** gumbel 3-D sampled_ids *******")
+	# 	elif len(input_shape_list) == 2:
+	# 		tmp_ori_sampled_ids = tf.cast(ori_sampled_ids, tf.int32)
+	# 		tf.logging.info("****** normal 2-D sampled_ids *******")
+
+	# 	masked_not_equal_mask = tf.cast(tf.not_equal(input_ids, tmp_ori_sampled_ids), tf.int32)
+	# 	masked_not_equal_mask *= tf.cast(input_mask, tf.int32)
+	# else:
+	# 	masked_not_equal_mask = None
+
+	# if masked_not_equal_mask is not None:
+	# 	tf.logging.info("****** loss mask using masked token mask for masked tokens *******")
+	# 	loss_mask = masked_not_equal_mask
+	# else:
+	# 	tf.logging.info("****** loss mask using input_mask for all tokens *******")
+	# 	loss_mask = input_mask
 
 	# original:0, replace:1
 	not_equal_label_ids = tf.cast(tf.not_equal(input_ids, tmp_sampled_ids), tf.int32)
 	not_equal_label_ids *= tf.cast(input_mask, tf.int32)
 
 	if kargs.get('loss', 'cross_entropy') == 'cross_entropy':
+		tf.logging.info("====logging discriminator loss using cross entropy ====")
 		per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
 													logits=logits,
 													labels=tf.stop_gradient(not_equal_label_ids))
 	elif kargs.get('loss', 'cross_entropy') == 'focal_loss':
+		tf.logging.info("====logging discriminator loss using focal loss ====")
 		input_shape_list = bert_utils.get_shape_list(input_ids, expected_rank=2)
 		batch_size = input_shape_list[0]
 		seq_length = input_shape_list[1]
@@ -127,13 +139,13 @@ def classifier(config, seq_output,
 		loss = tf.reduce_sum(loss) / (1e-10 + tf.reduce_sum(tf.cast(loss_mask, tf.float32)))
 
 		tf.summary.scalar('equal_loss', 
-							equal_loss/(1e-10 + tf.reduce_sum(tf.cast(input_mask, tf.float32))))
+							equal_loss/(1e-10 + tf.reduce_sum(tf.cast(loss_mask, tf.float32))))
 
 		tf.summary.scalar('not_equal_loss', 
-							not_equal_loss/(1e-10 + tf.reduce_sum(tf.cast(input_mask, tf.float32))))
+							not_equal_loss/(1e-10 + tf.reduce_sum(tf.cast(loss_mask, tf.float32))))
 
 		tf.summary.scalar('loss_decomposition', 
-							loss - (equal_loss+not_equal_loss)/(1e-10 + tf.reduce_sum(tf.cast(input_mask, tf.float32))))
+							loss - (equal_loss+not_equal_loss)/(1e-10 + tf.reduce_sum(tf.cast(loss_mask, tf.float32))))
 
 	return (loss, logits, per_example_loss)
 
@@ -227,10 +239,19 @@ def modified_loss(per_example_loss, logits, input_ids,
 		tmp_sampled_ids = tf.cast(tmp_sampled_ids, tf.int32)
 		tf.logging.info("****** normal 2-D sampled_ids *******")
 
-	not_equal_label_ids = tf.cast(tf.not_equal(input_ids, tmp_sampled_ids), tf.int32)
-	not_equal_label_ids *= tf.cast(input_mask, tf.int32)
+	sampled_binary_mask = kargs.get('sampled_binary_mask', None)
 
-	equal_label_ids = (1 - tf.cast(not_equal_label_ids, tf.float32)) * tf.cast(input_mask, tf.float32)
+	if sampled_binary_mask is not None:
+		tf.logging.info("****** loss mask using masked token mask for masked tokens *******")
+		loss_mask = sampled_binary_mask
+	else:
+		tf.logging.info("****** loss mask using input_mask for all tokens *******")
+		loss_mask = input_mask
+
+	not_equal_label_ids = tf.cast(tf.not_equal(input_ids, tmp_sampled_ids), tf.int32)
+	not_equal_label_ids *= tf.cast(loss_mask, tf.int32)
+
+	equal_label_ids = (1 - tf.cast(not_equal_label_ids, tf.float32)) * tf.cast(loss_mask, tf.float32)
 	equal_per_example_loss = per_example_loss * equal_label_ids
 	equal_loss = tf.reduce_sum(equal_per_example_loss)
 	equal_loss_all = equal_loss / (1e-10 + tf.reduce_sum(tf.cast(input_mask, tf.float32)))
@@ -238,7 +259,7 @@ def modified_loss(per_example_loss, logits, input_ids,
 
 	not_equal_per_example_loss = per_example_loss * tf.cast(not_equal_label_ids, tf.float32)
 	not_equal_loss = tf.reduce_sum(not_equal_per_example_loss) # not equal:1, equal:0
-	not_equal_loss_all = not_equal_loss / (1e-10 + tf.reduce_sum(tf.cast(input_mask, tf.float32)))
+	not_equal_loss_all = not_equal_loss / (1e-10 + tf.reduce_sum(tf.cast(loss_mask, tf.float32)))
 	not_equal_loss_self = not_equal_loss / (1e-10 + tf.reduce_sum(tf.cast(not_equal_label_ids, tf.float32)))
 
 	if not kargs.get('use_tpu', True):
@@ -248,6 +269,13 @@ def modified_loss(per_example_loss, logits, input_ids,
 
 		tf.summary.scalar('not_equal_loss_self', 
 							not_equal_loss_self)
+
+		tf.summary.scalar('not_equal_num', 
+							tf.reduce_sum(not_equal_label_ids))
+		tf.summary.scalar('valid_loss_num', 
+							tf.reduce_sum(loss_mask))
+		tf.summary.scalar('equal_num', 
+							tf.reduce_sum(equal_label_ids))
 
 	return [equal_per_example_loss, equal_loss_all, equal_loss_self,
 			not_equal_per_example_loss, not_equal_loss_all, not_equal_loss_self]

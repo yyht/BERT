@@ -145,7 +145,7 @@ def model_fn_builder(
 									features['input_mask'],	
 									embedding_projection=model.get_embedding_projection_table(),
 									scope=generator_scope_prefix,
-									mask_method='only_mask',
+									# mask_method='only_mask',
 									**kargs)
 
 		if model_config.get('gen_sample', 1) == 1:

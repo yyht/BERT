@@ -105,6 +105,7 @@ class Optimizer(object):
 
 	def grad_clip_fn(self, opt, loss, tvars, **kargs):
 		gpu_count = self.config.get('gpu_count', 1)
+		grad_name = kargs.get('grad_name', "grad_norm")
 		if self.config.get("opt_type", "pai_soar") == "pai_soar":
 			loss_fn = opt.compute_loss(loss, loss_scale=self.config.get("loss_scale", 1))
 			grads_and_vars = opt.compute_gradients(loss_fn, colocate_gradients_with_ops=True)
@@ -120,12 +121,12 @@ class Optimizer(object):
 			grads = [grad/gpu_count for grad, _ in grads_and_vars] # allreduce from sum to mean
 			grad_clip = self.config.get("grad_clip", "global_norm")
 			use_norm = tf.global_norm(grads)
-			tf.summary.scalar('total_grad_norm', use_norm)
+			tf.summary.scalar(grad_name+'/total_grad_norm', use_norm)
 			for grad, var in grads_and_vars:
 				var_grad_norm = tf.global_norm([grad])
-				tf.summary.scalar(var.name, var_grad_norm)
-				tf.summary.histogram(var.name, var)
-				tf.summary.histogram("grad/"+var.name, grad)
+				tf.summary.scalar(grad_name+"/"+var.name, var_grad_norm)
+				# tf.summary.histogram(var.name, var)
+				# tf.summary.histogram("grad/"+var.name, grad)
 
 			tf.logging.info(" gradient clip method {}".format(grad_clip))
 			
@@ -138,7 +139,7 @@ class Optimizer(object):
 										clip_norm=clip_norm,
 										use_norm=use_norm*tf.sqrt(gpu_count*1.0))
 
-					tf.summary.scalar('grad_scale', use_norm*tf.sqrt(gpu_count*1.0))
+					tf.summary.scalar(grad_name+'/grad_scale', use_norm*tf.sqrt(gpu_count*1.0))
 				else:
 					[scale_grads, _] = tf.clip_by_global_norm(grads, 
 										clip_norm=clip_norm)
@@ -288,7 +289,7 @@ class Optimizer(object):
 	def get_group_train_op(self, loss_dict, tvars_dict, init_lr_dict,
 							optimizer_type_dict,
 							num_train_steps, **kargs):
-		opt_dict = []
+		opt_list = []
 		optimizer_dict = {}
 
 		for key in loss_dict:
@@ -310,7 +311,7 @@ class Optimizer(object):
 			loss = loss_dict[key]
 			tvars = tvars_dict[key]
 			optimizer = optimizer_dict[key]
-			grads_and_vars = self.grad_clip_fn(optimizer, loss, tvars, **kargs)
+			grads_and_vars = self.grad_clip_fn(optimizer, loss, tvars, grad_name=key, **kargs)
 			with tf.variable_scope(key+"/"+"optimizer", reuse=tf.AUTO_REUSE):
 				train_op = optimizer.apply_gradients(
 						grads_and_vars)
@@ -319,6 +320,32 @@ class Optimizer(object):
 		with tf.control_dependencies(opt_list):
 			train_op = self.global_step.assign_add(1)
 		return train_op
+
+	def gradient_norm_summary(self, loss, tvars, **kargs):
+		local_opt = tf.train.AdamOptimizer(0.01,
+										beta1=self.config.get("beta_1", 0.9),
+										beta2=self.config.get("beta_2", 0.999),
+										epsilon=self.config.get("epsilon", 1e-6))
+
+		grads_and_vars = local_opt.compute_gradients(loss, tvars)
+		debug_grad_name = kargs.get('debug_grad_name', 'original')
+		local_grads = []
+		local_vars = []
+
+		for grad, var in grads_and_vars:
+			if grad is not None:
+				local_grads.append(grad)
+				local_vars.append(var)
+				continue
+			else:
+				print(var.name, "=====none grad======")
+
+		grad_clip = self.config.get("grad_clip", "global_norm")
+		use_norm = tf.global_norm(local_grads)
+		tf.summary.scalar(debug_grad_name+'/total_grad_norm', use_norm)
+		for grad, var in zip(local_grads, local_vars):
+			var_grad_norm = tf.global_norm([grad])
+			tf.summary.scalar(debug_grad_name+"/"+var.name, var_grad_norm)
 
 	def get_alternate_train_op(self, loss_dict, tvars_dict, init_lr_dict,
 								optimizer_type_dict,
@@ -356,7 +383,8 @@ class Optimizer(object):
 
 			print(key, "====apply gradients====")
 
-			grads_and_vars = self.grad_clip_fn(optimizer, loss, tvars, **kargs)
+			grads_and_vars = self.grad_clip_fn(optimizer, loss, tvars, grad_name=key,
+												**kargs)
 			for i in range(loop_steps):
 				with tf.control_dependencies([prev_op]):
 					with tf.variable_scope(key+"/"+"optimizer", reuse=tf.AUTO_REUSE):
