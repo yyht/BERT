@@ -154,7 +154,7 @@ def token_generator_gumbel(config, input_tensor,
 		# argmax on config.vocab_size which is always axis=1
 		# [batch x seq] x config.vocab_size x config.get('gen_sample', 1)
 		# armax(logits+gumbel_samples) to sample a categoritical distribution
-		if kargs.get('sampled_prob_id', True):
+		if kargs.get('sampled_prob_id', False):
 			tf.logging.info("****** apply categorical sampled id of original logits *******")
 			sampled_hard_id = tf.one_hot(tf.argmax(sampled_logprob, axis=1), 
 									config.vocab_size,

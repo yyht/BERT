@@ -253,7 +253,7 @@ flags.DEFINE_bool("do_train", False, "Whether to run training.")
 
 flags.DEFINE_bool("do_eval", False, "Whether to run eval on the dev set.")
 
-flags.DEFINE_integer("save_checkpoints_steps", 1000,
+flags.DEFINE_integer("save_checkpoints_steps", 10000,
 					 "How often to save the model checkpoint.")
 
 flags.DEFINE_integer("iterations_per_loop", 1000,
@@ -374,7 +374,7 @@ def main(_):
 
 	is_per_host = tf.contrib.tpu.InputPipelineConfig.PER_HOST_V2
 	run_config = tf.contrib.tpu.RunConfig(
-	  keep_checkpoint_max=20, # 10
+	  keep_checkpoint_max=100, # 10
 	  cluster=tpu_cluster_resolver,
 	  master=FLAGS.master,
 	  model_dir=checkpoint_dir,
