@@ -169,7 +169,7 @@ def classifier_model_fn_builder(
 		elif mask_method == 'all_mask':
 			tf.logging.info("****** generator token generation mask type:%s with all token *******", mask_method)
 		else:
-			mask_method == 'only_mask'
+			mask_method = 'only_mask'
 			tf.logging.info("****** generator token generation mask type:%s with only masked token *******", mask_method)
 
 		if kargs.get('optimization_type', 'grl') == 'grl':
