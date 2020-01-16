@@ -192,7 +192,7 @@
 		"target":"",
 		"not_storage_params":[],
 		"exclude_scope":"generator",
-		"load_pretrained":"yes",
+		"load_pretrained":"",
 		"num_labels":2,
 		"init_checkpoint":"bert_pretrain/open_domain/pretrain_single_random_hard_gan/bert_tiny_with_single_random_generator_adam_decay_15/model.ckpt-214000",
 		"max_length":128,

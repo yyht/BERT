@@ -347,6 +347,16 @@ flags.DEFINE_string(
 	"if apply distillation"
 	)
 
+flags.DEFINE_string(
+	"mask_method", "only_mask",
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
+	"minmax_mode", "corrupted",
+	"if apply distillation"
+	)
+
 def main(_):
 
 	print(FLAGS)
@@ -445,7 +455,9 @@ def main(_):
 			joint_train=FLAGS.joint_train,
 			optimization_type=FLAGS.optimization_type,
 			gen_disc_type=FLAGS.gen_disc_type,
-			train_op_type=FLAGS.train_op_type)
+			train_op_type=FLAGS.train_op_type,
+			mask_method=FLAGS.mask_method,
+			minmax_mode=FLAGS.minmax_mode)
 	else:
 		train_eval_api.monitored_estimator(
 			FLAGS=FLAGS,

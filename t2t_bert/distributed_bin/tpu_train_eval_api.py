@@ -345,6 +345,16 @@ flags.DEFINE_string(
 	"if apply distillation"
 	)
 
+flags.DEFINE_string(
+	"mask_method", "only_mask",
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
+	"minmax_mode", "corrupted",
+	"if apply distillation"
+	)
+
 
 def main(_):
 
@@ -420,7 +430,9 @@ def main(_):
 			gumbel_anneal=FLAGS.gumbel_anneal,
 			# exclude_scope=FLAGS.exclude_scope,
 			annealed_mask_prob=FLAGS.annealed_mask_prob,
-			gen_disc_type=FLAGS.gen_disc_type)
+			gen_disc_type=FLAGS.gen_disc_type,
+			mask_method=FLAGS.mask_method,
+			minmax_mode=FLAGS.minmax_mode)
 
 
 if __name__ == "__main__":
