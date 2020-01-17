@@ -33,7 +33,7 @@ def get_train_op(generator_dict, discriminator_dict, optimizer_fn, opt_config,
 	if kargs.get('train_op_type', 'joint') == 'joint':
 		tf.logging.info("***** original joint train op *****")
 		tvars = []
-		dis_loss_ratio = kargs.get('dis_loss_ratio', 10.0)
+		dis_loss_ratio = kargs.get('dis_loss_ratio', 1.0)
 		gen_loss_ratio = kargs.get('gen_loss_ratio', 1.0)
 		tf.logging.info("***** dis loss ratio: %s, gen loss ratio: %s *****", str(dis_loss_ratio), str(gen_loss_ratio))
 		tvars.extend(discriminator_dict['tvars'])
@@ -49,6 +49,12 @@ def get_train_op(generator_dict, discriminator_dict, optimizer_fn, opt_config,
 							opt_config.init_lr, 
 							opt_config.num_train_steps,
 							**kargs)
+
+		if kargs.get('use_tpu', 0) == 0:
+			optimizer_fn.gradient_norm_summary(generator_dict['loss'], generator_dict['tvars'], debug_grad_name="generator_grad_norm")
+			optimizer_fn.gradient_norm_summary(discriminator_dict['loss'], generator_dict['tvars'], debug_grad_name="discriminator_of_generator_grad_norm")
+			optimizer_fn.gradient_norm_summary(discriminator_dict['loss'], discriminator_dict['tvars'], debug_grad_name="discriminator_grad_norm")
+
 	elif kargs.get('train_op_type', 'joint') in ['alternate', 'group']:
 		if kargs.get('gen_disc_type', 'all_disc') == 'all_disc':
 			gen_disc_loss = discriminator_dict['loss']
@@ -84,9 +90,9 @@ def get_train_op(generator_dict, discriminator_dict, optimizer_fn, opt_config,
 			gen_disc_loss =  discriminator_dict['not_equal_loss_all'] - discriminator_dict['equal_loss_all']
 		
 		elif kargs.get('gen_disc_type', 'all_disc') == 'not_equal_disc_loss_all':
-			gen_dis_loss_ratio = kargs.get('gen_dis_loss_ratio', 10.0)
+			gen_dis_loss_ratio = kargs.get('gen_dis_loss_ratio', 1.0)
 			gen_loss_ratio = kargs.get('gen_loss_ratio', 1.0)
-			dis_loss_ratio = kargs.get('dis_loss_ratio', 10.0)
+			dis_loss_ratio = kargs.get('dis_loss_ratio', 1.0)
 			tf.logging.info("***** dis loss ratio: %s, gen loss ratio: %s, gen-dis loss ratio: %s *****", 
 							str(dis_loss_ratio), str(gen_loss_ratio), str(gen_dis_loss_ratio))
 			tf.logging.info("****** using not equal all for updating generator *******")
@@ -156,7 +162,16 @@ def classifier_model_fn_builder(
 
 		train_op_type = kargs.get('train_op_type', 'joint')
 		gen_disc_type = kargs.get('gen_disc_type', 'all_disc')
+		mask_method = kargs.get('mask_method', 'only_mask')
 		print(train_op_type, "===train op type===", gen_disc_type, "===generator loss type===")
+		if mask_method == 'only_mask':
+			tf.logging.info("****** generator token generation mask type:%s with only masked token *******", mask_method)
+		elif mask_method == 'all_mask':
+			tf.logging.info("****** generator token generation mask type:%s with all token *******", mask_method)
+		else:
+			mask_method = 'only_mask'
+			tf.logging.info("****** generator token generation mask type:%s with only masked token *******", mask_method)
+
 		if kargs.get('optimization_type', 'grl') == 'grl':
 			if_flip_grad = True
 			train_op_type = 'joint'
@@ -176,7 +191,7 @@ def classifier_model_fn_builder(
 					not_storage_params=not_storage_params_dict.get('generator', []),
 					target=target_dict['generator'],
 					if_flip_grad=if_flip_grad,
-					mask_method='only_mask',
+					# mask_method='only_mask',
 					**kargs)
 			# train_op_type = 'joint'
 		# elif kargs.get('optimization_type', 'grl') == 'minmax':
@@ -231,9 +246,12 @@ def classifier_model_fn_builder(
 					**kargs)
 
 		discriminator_features = {}
-		if kargs.get('minmax_mode', 'masked') == 'corrupted':
+		# minmax_mode in ['masked', 'corrupted']
+		minmax_mode = kargs.get('minmax_mode', 'corrupted')
+		tf.logging.info("****** minmax mode for discriminator: %s *******", minmax_mode)
+		if minmax_mode == 'corrupted':
 			tf.logging.info("****** gumbel 3-D sampled_ids *******")
-		elif kargs.get('minmax_mode', 'masked') == 'masked':
+		elif minmax_mode == 'masked':
 			discriminator_features['ori_sampled_ids'] = generator_dict['output_ids']
 			discriminator_features['sampled_binary_mask'] = generator_dict['sampled_binary_mask']
 			tf.logging.info("****** conditional sampled_ids *******")
