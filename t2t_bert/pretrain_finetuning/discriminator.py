@@ -9,7 +9,7 @@ try:
 except:
 	from distributed_single_sentence_classification.model_interface import model_zoo
 
-from pretrain_finetuning.token_discriminator import classifier
+from pretrain_finetuning.token_discriminator import classifier, modified_loss
 from model_io import model_io
 
 def model_fn_builder(
@@ -60,9 +60,23 @@ def model_fn_builder(
 									features['input_mask'],
 									2,
 									dropout_prob,
-									use_tpu=kargs.get('use_tpu', True))
+									use_tpu=kargs.get('use_tpu', True),
+									sampled_binary_mask=features.get('sampled_binary_mask', None))
 									# ,
 									# loss='focal_loss')
+
+		[equal_per_example_loss, 
+		equal_loss_all, 
+		equal_loss_self,
+		not_equal_per_example_loss, 
+		not_equal_loss_all, 
+		not_equal_loss_self] = modified_loss(per_example_loss, 
+											logits, 
+											features['input_ori_ids'], 
+											features['input_ids'], 
+											features['input_mask'],
+											sampled_binary_mask=features.get('sampled_binary_mask', None),
+											**kargs)
 
 		loss += 0.0 * nsp_loss
 
@@ -86,7 +100,8 @@ def model_fn_builder(
 			scaffold_fn = model_io_fn.load_pretrained(tvars, 
 											init_checkpoint,
 											exclude_scope=exclude_scope,
-											use_tpu=use_tpu)
+											use_tpu=use_tpu,
+											restore_var_name=model_config.get('restore_var_name', []))
 		else:
 			scaffold_fn = None
 		
@@ -95,7 +110,13 @@ def model_fn_builder(
 					"logits":logits,
 					"tvars":tvars,
 					"model":model,
-					"per_example_loss":per_example_loss
+					"per_example_loss":per_example_loss,
+					"equal_per_example_loss":equal_per_example_loss,
+					"equal_loss_all":equal_loss_all,
+					"equal_loss_self":equal_loss_self,
+					"not_equal_per_example_loss":not_equal_per_example_loss,
+					"not_equal_loss_all":not_equal_loss_all,
+					"not_equal_loss_self":not_equal_loss_self
 				}
 		return return_dict
 	return model_fn

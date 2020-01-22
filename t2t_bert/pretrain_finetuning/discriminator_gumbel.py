@@ -123,7 +123,8 @@ def model_fn_builder(
 			scaffold_fn = model_io_fn.load_pretrained(tvars, 
 											init_checkpoint,
 											exclude_scope=exclude_scope,
-											use_tpu=use_tpu)
+											use_tpu=use_tpu,
+											restore_var_name=model_config.get('restore_var_name', []))
 		else:
 			scaffold_fn = None
 		

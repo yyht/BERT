@@ -19,13 +19,28 @@ class Bert(object):
 									**kargs):
 
 		reuse = kargs["reuse"]
-		with tf.variable_scope(self.config.get("scope", "bert"), reuse=reuse):
+
+		if self.config.get("embedding", "none_factorized") == "none_factorized":
+			projection_width = self.config.hidden_size
+			tf.logging.info("==not using embedding factorized==")
+		else:
+			projection_width = self.config.get('embedding_size', self.config.hidden_size)
+			tf.logging.info("==using embedding factorized: embedding size: %s==", str(projection_width))
+
+		if self.config.get('embedding_scope', None):
+			embedding_scope = self.config['embedding_scope']
+			tf.logging.info("==using embedding scope of original model_config.embedding_scope: %s==", embedding_scope)
+		else:
+			embedding_scope = self.config.get("scope", "bert")
+			tf.logging.info("==using embedding scope of original model_config.scope: %s==", embedding_scope)
+
+		with tf.variable_scope(embedding_scope, reuse=reuse):
 			with tf.variable_scope("embeddings"):
 				# Perform embedding lookup on the word ids.
 				(self.embedding_output_word, self.embedding_table) = bert_modules.embedding_lookup(
 						input_ids=input_ids,
 						vocab_size=self.config.vocab_size,
-						embedding_size=self.config.hidden_size,
+						embedding_size=projection_width,
 						initializer_range=self.config.initializer_range,
 						word_embedding_name="word_embeddings",
 						use_one_hot_embeddings=self.config.use_one_hot_embeddings)

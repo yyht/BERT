@@ -138,10 +138,12 @@ def get_assigment_map_from_checkpoint(tvars, init_checkpoint, **kargs):
 		name_to_variable[name] = var
 
 	init_vars = tf.train.list_variables(init_checkpoint)
+	init_vars_name_list = []
 
 	assignment_map = collections.OrderedDict()
 	for x in init_vars:
 		(name, var) = (x[0], x[1])
+		init_vars_name_list.append(name)
 		if len(exclude_scope) >= 1:
 			assignment_name = remove_exclude_scope(name, exclude_scope)
 		else:
@@ -156,6 +158,18 @@ def get_assigment_map_from_checkpoint(tvars, init_checkpoint, **kargs):
 		assignment_map[name] = assignment_name
 		initialized_variable_names[assignment_name] = 1
 		initialized_variable_names[assignment_name + ":0"] = 1
+
+	flag = 1
+
+	for name in name_to_variable:
+		if name not in initialized_variable_names and name in init_vars_name_list:
+			assignment_map[name] = name
+			initialized_variable_names[name] = 1
+			initialized_variable_names[name + ":0"] = 1
+			flag = 0
+			tf.logging.info("***** restore: %s from checkpoint ******", name)
+	if flag == 1:
+		tf.logging.info("***** no need extra restoring variables from checkpoint ******")
 
 	return (assignment_map, initialized_variable_names)
 

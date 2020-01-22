@@ -33,7 +33,7 @@ def get_train_op(generator_dict, discriminator_dict, optimizer_fn, opt_config,
 	if kargs.get('train_op_type', 'joint') == 'joint':
 		tf.logging.info("***** original joint train op *****")
 		tvars = []
-		dis_loss_ratio = kargs.get('dis_loss_ratio', 1.0)
+		dis_loss_ratio = kargs.get('dis_loss_ratio', 10.0)
 		gen_loss_ratio = kargs.get('gen_loss_ratio', 1.0)
 		tf.logging.info("***** dis loss ratio: %s, gen loss ratio: %s *****", str(dis_loss_ratio), str(gen_loss_ratio))
 		tvars.extend(discriminator_dict['tvars'])
@@ -302,7 +302,8 @@ def classifier_model_fn_builder(
 					tmp = {
 							"tvars":generator_dict['tvars'],
 							"init_checkpoint":init_checkpoint_dict['generator'],
-							"exclude_scope":exclude_scope_dict[key]
+							"exclude_scope":exclude_scope_dict[key],
+							"restore_var_name":model_config_dict['generator'].get('restore_var_name', [])
 					}
 					if kargs.get("sharing_mode", "none") != "none":
 						tmp['exclude_scope'] = ''
@@ -311,7 +312,8 @@ def classifier_model_fn_builder(
 					tmp = {
 						"tvars":discriminator_dict['tvars'],
 						"init_checkpoint":init_checkpoint_dict['discriminator'],
-						"exclude_scope":exclude_scope_dict[key]
+						"exclude_scope":exclude_scope_dict[key],
+						"restore_var_name":model_config_dict['discriminator'].get('restore_var_name', [])
 					}
 					var_checkpoint_dict_list.append(tmp)
 

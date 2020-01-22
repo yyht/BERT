@@ -91,10 +91,17 @@ def token_generator_igr(config, input_tensor,
 		else:
 			input_tensor = input_tensor
 
-		if config.get("embedding", "factorized") == "factorized":
+		# if config.get("embedding", "factorized") == "factorized":
+		# 	projection_width = config.hidden_size
+		# else:
+		# 	projection_width = config.embedding_size
+
+		if config.get("embedding", "none_factorized") == "none_factorized":
 			projection_width = config.hidden_size
+			tf.logging.info("==not using embedding factorized==")
 		else:
-			projection_width = config.embedding_size
+			projection_width = config.get('embedding_size', config.hidden_size)
+			tf.logging.info("==using embedding factorized: embedding size: %s==", str(projection_width))
 
 		with tf.variable_scope("transform"):
 			input_tensor = tf.layers.dense(
@@ -252,10 +259,17 @@ def token_generator_gumbel_normal(config, input_tensor,
 		else:
 			input_tensor = input_tensor
 
-		if config.get("embedding", "factorized") == "factorized":
+		# if config.get("embedding", "factorized") == "factorized":
+		# 	projection_width = config.hidden_size
+		# else:
+		# 	projection_width = config.embedding_size
+
+		if config.get("embedding", "none_factorized") == "none_factorized":
 			projection_width = config.hidden_size
+			tf.logging.info("==not using embedding factorized==")
 		else:
-			projection_width = config.embedding_size
+			projection_width = config.get('embedding_size', config.hidden_size)
+			tf.logging.info("==using embedding factorized: embedding size: %s==", str(projection_width))
 
 		with tf.variable_scope("transform"):
 			input_tensor = tf.layers.dense(

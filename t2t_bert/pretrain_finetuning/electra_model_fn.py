@@ -22,6 +22,35 @@ from model_io import model_io
 import tensorflow as tf
 from metric import tf_metrics
 
+def get_train_op(generator_dict, discriminator_dict, optimizer_fn, opt_config,
+				generator_config, discriminator_config,
+				**kargs):
+	tf.logging.info("***** original joint train op *****")
+	tvars = []
+	dis_loss_ratio = kargs.get('dis_loss_ratio', 10.0)
+	gen_loss_ratio = kargs.get('gen_loss_ratio', 1.0)
+	tf.logging.info("***** dis loss ratio: %s, gen loss ratio: %s *****", str(dis_loss_ratio), str(gen_loss_ratio))
+	tvars.extend(discriminator_dict['tvars'])
+	loss = dis_loss_ratio * discriminator_dict['loss']
+	if kargs.get('joint_train', '1') == '1':
+		tf.logging.info("****** joint generator and discriminator training *******")
+		tvars.extend(generator_dict['tvars'])
+		loss += gen_loss_ratio*generator_dict['loss']
+	tvars = list(set(tvars))
+	update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+	with tf.control_dependencies(update_ops):
+		train_op = optimizer_fn.get_train_op(loss, list(set(tvars)),
+						opt_config.init_lr, 
+						opt_config.num_train_steps,
+						**kargs)
+
+	if kargs.get('use_tpu', 0) == 0:
+		optimizer_fn.gradient_norm_summary(generator_dict['loss'], generator_dict['tvars'], debug_grad_name="generator_grad_norm")
+		optimizer_fn.gradient_norm_summary(discriminator_dict['loss'], generator_dict['tvars'], debug_grad_name="discriminator_of_generator_grad_norm")
+		optimizer_fn.gradient_norm_summary(discriminator_dict['loss'], discriminator_dict['tvars'], debug_grad_name="discriminator_grad_norm")
+
+	return train_op
+
 def classifier_model_fn_builder(
 						model_config_dict,
 						num_labels_dict,
@@ -35,6 +64,10 @@ def classifier_model_fn_builder(
 						**kargs):
 	
 	def model_fn(features, labels, mode, params):
+
+		train_op_type = kargs.get('train_op_type', 'joint')
+		gen_disc_type = kargs.get('gen_disc_type', 'all_disc')
+		mask_method = kargs.get('mask_method', 'corrupted')
 
 		generator_fn = generator(model_config_dict['generator'],
 					num_labels_dict['generator'],
@@ -62,6 +95,13 @@ def classifier_model_fn_builder(
 					**kargs)
 
 		discriminator_features = {}
+		minmax_mode = kargs.get('minmax_mode', 'corrupted')
+		tf.logging.info("****** minmax mode for discriminator: %s *******", minmax_mode)
+		if minmax_mode == 'corrupted':
+			tf.logging.info("****** gumbel 3-D sampled_ids *******")
+		elif minmax_mode == 'masked':
+			discriminator_features['sampled_binary_mask'] = generator_dict['sampled_binary_mask']
+			tf.logging.info("****** conditional sampled_ids *******")
 		discriminator_features['input_ids'] = generator_dict['sampled_ids']
 		discriminator_features['input_mask'] = generator_dict['sampled_input_mask']
 		discriminator_features['segment_ids'] = generator_dict['sampled_segment_ids']
@@ -72,16 +112,10 @@ def classifier_model_fn_builder(
 		model_io_fn = model_io.ModelIO(model_io_config)
 
 		tvars = []
-		loss = 10 * discriminator_dict['loss']
-		# for var in discriminator_dict['tvars']:
-		#	if re.search('word_embeddings', var.name):
-		#		continue
-		#	else:
-		#		tvars.append(var)
-
+		loss = discriminator_dict['loss']
 		tvars.extend(discriminator_dict['tvars'])
 
-		if kargs.get('joint_train', '0') == '1':
+		if kargs.get('joint_train', '1') == '1':
 			tf.logging.info("****** joint generator and discriminator training *******")
 			tvars.extend(generator_dict['tvars'])
 			loss += generator_dict['loss']
@@ -92,9 +126,10 @@ def classifier_model_fn_builder(
 			if load_pretrained_dict[key] == "yes":
 				if key == 'generator':
 					tmp = {
-						"tvars":generator_dict['tvars'],
-						"init_checkpoint":init_checkpoint_dict['generator'],
-						"exclude_scope":exclude_scope_dict[key]
+							"tvars":generator_dict['tvars'],
+							"init_checkpoint":init_checkpoint_dict['generator'],
+							"exclude_scope":exclude_scope_dict[key],
+							"restore_var_name":model_config_dict['generator'].get('restore_var_name', [])
 					}
 					if kargs.get("sharing_mode", "none") != "none":
 						tmp['exclude_scope'] = ''
@@ -103,7 +138,8 @@ def classifier_model_fn_builder(
 					tmp = {
 						"tvars":discriminator_dict['tvars'],
 						"init_checkpoint":init_checkpoint_dict['discriminator'],
-						"exclude_scope":exclude_scope_dict[key]
+						"exclude_scope":exclude_scope_dict[key],
+						"restore_var_name":model_config_dict['discriminator'].get('restore_var_name', [])
 					}
 					var_checkpoint_dict_list.append(tmp)
 
@@ -117,7 +153,7 @@ def classifier_model_fn_builder(
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
 
-			if kargs.get('summary_debug', False):
+			if not kargs.get('use_tpu', False):
 				metric_dict = discriminator_metric_train(discriminator_dict['per_example_loss'],
 								discriminator_dict['logits'], 
 							generator_dict['sampled_input_ids'], 
@@ -126,6 +162,8 @@ def classifier_model_fn_builder(
 
 				for key in metric_dict:
 					tf.summary.scalar(key, metric_dict[key])
+				tf.summary.scalar("generator_loss", generator_dict['loss'])
+				tf.summary.scalar("discriminator_loss", discriminator_dict['loss'])
 	
 			if kargs.get('use_tpu', False):
 				optimizer_fn = optimizer.Optimizer(opt_config)
@@ -135,13 +173,17 @@ def classifier_model_fn_builder(
 				use_tpu = 0
 
 			model_io_fn.print_params(tvars, string=", trainable params")
+
+			train_op = get_train_op(generator_dict, discriminator_dict, optimizer_fn, opt_config,
+						model_config_dict['generator'], model_config_dict['discriminator'],
+						use_tpu=use_tpu, train_op_type=train_op_type, gen_disc_type=gen_disc_type)
 			
-			update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-			with tf.control_dependencies(update_ops):
-				train_op = optimizer_fn.get_train_op(loss, list(set(tvars)),
-								opt_config.init_lr, 
-								opt_config.num_train_steps,
-								use_tpu=use_tpu)
+			# update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+			# with tf.control_dependencies(update_ops):
+			# 	train_op = optimizer_fn.get_train_op(loss, list(set(tvars)),
+			# 					opt_config.init_lr, 
+			# 					opt_config.num_train_steps,
+			# 					use_tpu=use_tpu)
 
 			if kargs.get('use_tpu', False):
 				estimator_spec = tf.contrib.tpu.TPUEstimatorSpec(

@@ -154,6 +154,40 @@ def embedding_lookup(input_ids,
 											input_shape[0:-1] + [input_shape[-1] * embedding_size])
 	return (output, embedding_table)
 
+def dense_layer_2d(input_tensor,
+									 output_size,
+									 initializer,
+									 activation,
+									 num_attention_heads=1,
+									 name=None):
+	"""A dense layer with 2D kernel.
+	Args:
+		input_tensor: Float tensor with rank 3.
+		output_size: The size of output dimension.
+		initializer: Kernel initializer.
+		activation: Activation function.
+		num_attention_heads: number of attention head in attention layer.
+		name: The name scope of this layer.
+	Returns:
+		float logits Tensor.
+	"""
+	del num_attention_heads  # unused
+	input_shape = bert_utils.get_shape_list(input_tensor)
+	hidden_size = input_shape[2]
+	with tf.variable_scope(name):
+		w = tf.get_variable(
+				name="kernel",
+				shape=[hidden_size, output_size],
+				initializer=initializer)
+		b = tf.get_variable(
+				name="bias", shape=[output_size], initializer=tf.zeros_initializer)
+		ret = tf.einsum("BFH,HO->BFO", input_tensor, w)
+		ret += b
+	if activation is not None:
+		return activation(ret)
+	else:
+		return ret
+
 def gumbel_embedding_lookup(input_ids,
 										 vocab_size,
 										 embedding_size=128,
@@ -721,9 +755,16 @@ def transformer_efficient_model(input_tensor,
 
 	# The Transformer performs sum residuals on all layers so the input needs
 	# to be the same as the hidden size.
+	# if input_width != hidden_size:
+	# 	raise ValueError("The width of the input tensor (%d) != hidden size (%d)" %
+	# 									 (input_width, hidden_size))
+
 	if input_width != hidden_size:
-		raise ValueError("The width of the input tensor (%d) != hidden size (%d)" %
-										 (input_width, hidden_size))
+		input_tensor = dense_layer_2d(
+		input_tensor, hidden_size, create_initializer(initializer_range),
+		None, name="embedding_hidden_mapping_in")
+
+		tf.logging.info("==apply embedding linear projection==")
 
 	# We keep the representation as a 2D tensor to avoid re-shaping it back and
 	# forth from a 3D tensor to a 2D tensor. Re-shapes are normally free on
@@ -866,9 +907,16 @@ def transformer_model(input_tensor,
 
 	# The Transformer performs sum residuals on all layers so the input needs
 	# to be the same as the hidden size.
+	# if input_width != hidden_size:
+	# 	raise ValueError("The width of the input tensor (%d) != hidden size (%d)" %
+	# 									 (input_width, hidden_size))
+
 	if input_width != hidden_size:
-		raise ValueError("The width of the input tensor (%d) != hidden size (%d)" %
-										 (input_width, hidden_size))
+		input_tensor = dense_layer_2d(
+		input_tensor, hidden_size, create_initializer(initializer_range),
+		None, name="embedding_hidden_mapping_in")
+
+		tf.logging.info("==apply embedding linear projection==")
 
 	# We keep the representation as a 2D tensor to avoid re-shaping it back and
 	# forth from a 3D tensor to a 2D tensor. Re-shapes are normally free on

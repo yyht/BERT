@@ -112,16 +112,19 @@ def get_params(scope, **kargs):
 
 def init_pretrained(assignment_map, initialized_variable_names,
 										tvars, init_checkpoint, **kargs):
-	tf.train.init_from_checkpoint(init_checkpoint, assignment_map)
-	for var in tvars:
-		init_string = ""
-		init_checkpoint_string = ""
-		if var.name in initialized_variable_names:
-			init_string = ", *INIT_FROM_CKPT*"
-			init_checkpoint_string = init_checkpoint
-		
-		tf.logging.info(" name = %s, shape = %s%s, from checkpoint = %s", 
-						var.name, var.shape, init_string, init_checkpoint_string)
+	if len(assignment_map) >= 1:
+		tf.train.init_from_checkpoint(init_checkpoint, assignment_map)
+		for var in tvars:
+			init_string = ""
+			init_checkpoint_string = ""
+			if var.name in initialized_variable_names:
+				init_string = ", *INIT_FROM_CKPT*"
+				init_checkpoint_string = init_checkpoint
+			
+			tf.logging.info(" name = %s, shape = %s%s, from checkpoint = %s", 
+							var.name, var.shape, init_string, init_checkpoint_string)
+	else:
+		tf.logging.info(" **** no need for checkpoint initialization **** ")
 
 def get_actual_scope(name, exclude_scope):
 	return "/".join([exclude_scope, name])
@@ -133,6 +136,10 @@ def get_assigment_map_from_checkpoint(tvars, init_checkpoint, **kargs):
 
 	exclude_scope = kargs.get("exclude_scope", "")
 
+	restore_var_name = kargs.get("restore_var_name", [])
+	for name in restore_var_name:
+		tf.logging.info("== restore variable name from checkpoint: %s ==", name)
+
 	name_to_variable = collections.OrderedDict()
 	for var in tvars:
 		name = var.name
@@ -143,9 +150,11 @@ def get_assigment_map_from_checkpoint(tvars, init_checkpoint, **kargs):
 
 	init_vars = tf.train.list_variables(init_checkpoint)
 
+	init_vars_name_list = []
 	assignment_map = collections.OrderedDict()
 	for x in init_vars:
 		(name, var) = (x[0], x[1])
+		init_vars_name_list.append(name)
 		if len(exclude_scope) >= 1:
 			assignment_name = get_actual_scope(name, exclude_scope)
 		else:
@@ -153,9 +162,29 @@ def get_assigment_map_from_checkpoint(tvars, init_checkpoint, **kargs):
 
 		if assignment_name not in name_to_variable:
 			continue
+		else:
+			if np.prod(var) != np.prod(name_to_variable[assignment_name].shape):
+				continue
+
+		if len(restore_var_name) >= 1:
+			if name not in restore_var_name:
+				continue
+
 		assignment_map[name] = assignment_name
 		initialized_variable_names[assignment_name] = 1
 		initialized_variable_names[assignment_name + ":0"] = 1
+
+	for name in name_to_variable:
+		if name not in initialized_variable_names and name in init_vars_name_list:
+			if len(restore_var_name):
+				if name in restore_var_name:
+					assignment_map[name] = name
+					initialized_variable_names[name] = 1
+					initialized_variable_names[name + ":0"] = 1
+			else:
+				assignment_map[name] = name
+				initialized_variable_names[name] = 1
+				initialized_variable_names[name + ":0"] = 1
 
 	return (assignment_map, initialized_variable_names)
 

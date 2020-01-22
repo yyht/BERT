@@ -174,7 +174,20 @@ def model_fn_builder(
 			nsp_pretrain_vars = model_io_fn.get_params("cls/seq_relationship",
 										not_storage_params=not_storage_params)
 
+		# embedding_tvars = model_io_fn.get_params(model_config.get('embedding_scope', 'bert')+"/embeddings", 
+		# 							not_storage_params=not_storage_params)
+
+		# pretrained_tvars.extend(lm_pretrain_tvars)
+		# pretrained_tvars.extend(embedding_tvars)
+		# tvars = pretrained_tvars
+
+		if model_config.get('embedding_scope', None) is not None:
+			embedding_tvars = model_io_fn.get_params(model_config.get('embedding_scope', 'bert')+"/embeddings", 
+									not_storage_params=not_storage_params)
+			pretrained_tvars.extend(embedding_tvars)
+
 		pretrained_tvars.extend(lm_pretrain_tvars)
+		pretrained_tvars.extend(nsp_pretrain_vars)
 		tvars = pretrained_tvars
 
 		print('==generator parameters==', tvars)
@@ -184,7 +197,8 @@ def model_fn_builder(
 			scaffold_fn = model_io_fn.load_pretrained(tvars, 
 											init_checkpoint,
 											exclude_scope=exclude_scope,
-											use_tpu=use_tpu)
+											use_tpu=use_tpu,
+											restore_var_name=model_config.get('restore_var_name', []))
 		else:
 			scaffold_fn = None
 
