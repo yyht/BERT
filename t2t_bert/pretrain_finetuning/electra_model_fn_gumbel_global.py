@@ -261,7 +261,8 @@ def classifier_model_fn_builder(
 					tmp = {
 							"tvars":generator_dict['tvars'],
 							"init_checkpoint":init_checkpoint_dict['generator'],
-							"exclude_scope":exclude_scope_dict[key]
+							"exclude_scope":exclude_scope_dict[key],
+							"restore_var_name":model_config_dict['generator'].get('restore_var_name', [])
 					}
 					if kargs.get("sharing_mode", "none") != "none":
 						tmp['exclude_scope'] = ''
@@ -270,7 +271,8 @@ def classifier_model_fn_builder(
 					tmp = {
 						"tvars":discriminator_dict['tvars'],
 						"init_checkpoint":init_checkpoint_dict['discriminator'],
-						"exclude_scope":exclude_scope_dict[key]
+						"exclude_scope":exclude_scope_dict[key],
+						"restore_var_name":model_config_dict['discriminator'].get('restore_var_name', [])
 					}
 					var_checkpoint_dict_list.append(tmp)
 

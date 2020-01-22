@@ -99,7 +99,7 @@ class ModelIO(object):
 		[assignment_map, 
 		initialized_variable_names] = model_io_utils.get_assigment_map_from_checkpoint(
 															tvars, 
-															init_checkpoint, 
+															init_checkpoint,
 															**kargs)
 
 		scaffold_fn = None
@@ -128,11 +128,13 @@ class ModelIO(object):
 				tvars = item['tvars']
 				init_checkpoint = item['init_checkpoint']
 				exclude_scope = item['exclude_scope']
+				restore_var_name = item.get('restore_var_name', [])
 				[assignment_map, 
 				initialized_variable_names] = model_io_utils.get_assigment_map_from_checkpoint(
 																	tvars, 
 																	init_checkpoint, 
-																	exclude_scope=exclude_scope)
+																	exclude_scope=exclude_scope,
+																	restore_var_name=restore_var_name)
 				model_io_utils.init_pretrained(assignment_map, 
 											initialized_variable_names,
 											tvars, init_checkpoint, **kargs)
@@ -147,6 +149,7 @@ class ModelIO(object):
 				return tf.train.Scaffold()
 			scaffold_fn = tpu_scaffold
 		return scaffold_fn
+
 
 
 

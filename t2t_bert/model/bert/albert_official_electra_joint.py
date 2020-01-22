@@ -36,7 +36,14 @@ class Albert(object):
 		if token_type_ids is None:
 			token_type_ids = tf.zeros(shape=[batch_size, seq_length], dtype=tf.int32)
 
-		with tf.variable_scope(self.config.get("scope", "bert"), reuse=reuse):
+		if self.config.get('embedding_scope', None):
+			embedding_scope = self.config['embedding_scope']
+			tf.logging.info("==using embedding scope of original model_config.embedding_scope: %s==", embedding_scope)
+		else:
+			embedding_scope = self.config.get("scope", "bert")
+			tf.logging.info("==using embedding scope of original model_config.scope: %s==", embedding_scope)
+
+		with tf.variable_scope(embedding_scope, reuse=reuse):
 			with tf.variable_scope("embeddings"):
 				# Perform embedding lookup on the word ids.
 

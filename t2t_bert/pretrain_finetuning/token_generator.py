@@ -294,10 +294,17 @@ def token_generator(config, input_tensor,
 		else:
 			input_tensor = input_tensor
 
-		if config.get("embedding", "factorized") == "factorized":
+		# if config.get("embedding", "factorized") == "factorized":
+		# 	projection_width = config.hidden_size
+		# else:
+		# 	projection_width = config.embedding_size
+
+		if config.get("embedding", "none_factorized") == "none_factorized":
 			projection_width = config.hidden_size
+			tf.logging.info("==not using embedding factorized==")
 		else:
-			projection_width = config.embedding_size
+			projection_width = config.get('embedding_size', config.hidden_size)
+			tf.logging.info("==using embedding factorized: embedding size: %s==", str(projection_width))
 
 		with tf.variable_scope("transform"):
 			input_tensor = tf.layers.dense(
@@ -360,7 +367,7 @@ def token_generator(config, input_tensor,
 						)
 		label_diff_ids = tf.cast(label_diff_ids, tf.float32)
 		print(label_diff_ids, "===label diff ids===")
-		if kargs.get('summary_debug', False):
+		if not kargs.get('use_tpu', True):
 			tf.summary.scalar('label_diff_ids', 
 							tf.reduce_sum(label_diff_ids*tf.cast(input_mask, tf.float32))/tf.reduce_sum(tf.cast(input_mask, tf.float32)))
 		
@@ -371,6 +378,14 @@ def token_generator(config, input_tensor,
 				label_diff_ids = tf.cast(label_diff_ids, tf.float32)
 				sampled_input_id = (label_diff_ids) * tf.cast(sampled_input_id, tf.float32) + (1 - label_diff_ids) * tf.cast(input_ori_ids, tf.float32)
 				sampled_input_id = tf.cast(sampled_input_id, tf.int32)
+			elif kargs.get('mask_method', 'only_mask') == 'all_mask':
+				unk_mask = tf.cast(tf.math.equal(input_ori_ids_1, 100), tf.float32) # not replace unk
+				cls_mask =  tf.cast(tf.math.equal(input_ori_ids_1, 101), tf.float32) # not replace cls
+				sep_mask = tf.cast(tf.math.equal(input_ori_ids_1, 102), tf.float32) # not replace sep
+				unsampled_mask = (1 - (unk_mask + cls_mask + sep_mask))*tf.cast(input_mask, tf.float32)
+				unsampled_mask = tf.expand_dims(unsampled_mask, axis=[-1]) # batch x seq x 1
+				tf.logging.info("****** all mask sample *******")
+				sampled_input_id = unsampled_mask * tf.cast(sampled_input_id, tf.float32) + (1 - unsampled_mask) * tf.cast(input_ori_ids, tf.float32)
 		else:
 			sampled_input_id = tf.reshape(samples, [batch_size, seq_length, config.get('gen_sample', 1)])
 			if kargs.get('mask_method', 'only_mask') == 'only_mask':

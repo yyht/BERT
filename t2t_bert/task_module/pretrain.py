@@ -28,6 +28,18 @@ def get_masked_lm_output(config, input_tensor, output_weights, positions,
 
 	tf.logging.info("**** mlm scope **** %s", str(scope))
 
+	# if config.get("embedding", "factorized") == "factorized":
+	# 	projection_width = config.hidden_size
+	# else:
+	# 	projection_width = config.embedding_size
+
+	if config.get("embedding", "none_factorized") == "none_factorized":
+		projection_width = config.hidden_size
+		tf.logging.info("==not using embedding factorized==")
+	else:
+		projection_width = config.get('embedding_size', config.hidden_size)
+		tf.logging.info("==using embedding factorized: embedding size: %s==", str(projection_width))
+
 	input_tensor = bert_utils.gather_indexes(input_tensor, positions)
 	"""
 	flatten masked lm ids with positions
@@ -39,7 +51,7 @@ def get_masked_lm_output(config, input_tensor, output_weights, positions,
 		with tf.variable_scope("transform"):
 			input_tensor = tf.layers.dense(
 					input_tensor,
-					units=config.hidden_size,
+					units=projection_width,
 					activation=bert_modules.get_activation(config.hidden_act),
 					kernel_initializer=bert_modules.create_initializer(
 							config.initializer_range))
@@ -138,10 +150,17 @@ def seq_mask_masked_lm_output(config, input_tensor, output_weights,
 		else:
 			input_tensor = input_tensor
 
-		if config.get("embedding", "factorized") == "factorized":
+		# if config.get("embedding", "factorized") == "factorized":
+		# 	projection_width = config.hidden_size
+		# else:
+		# 	projection_width = config.embedding_size
+
+		if config.get("embedding", "none_factorized") == "none_factorized":
 			projection_width = config.hidden_size
+			tf.logging.info("==not using embedding factorized==")
 		else:
-			projection_width = config.embedding_size
+			projection_width = config.get('embedding_size', config.hidden_size)
+			tf.logging.info("==using embedding factorized: embedding size: %s==", str(projection_width))
 
 		with tf.variable_scope("transform"):
 			input_tensor = tf.layers.dense(
@@ -190,7 +209,6 @@ def seq_mask_masked_lm_output(config, input_tensor, output_weights,
 		loss = tf.reduce_sum(per_example_loss) / (1e-10 + tf.reduce_sum(sampled_binary_mask))
 
 		return (loss, per_example_loss, logits, sampled_binary_mask)
-
 
 
 
