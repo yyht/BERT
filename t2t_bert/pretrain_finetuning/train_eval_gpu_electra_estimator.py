@@ -30,6 +30,12 @@ try:
 except:
 	from electra_model_fn_gumbel_global import classifier_model_fn_builder as classifier_model_fn_builder_gumbel_global
 
+try:
+	from .electra_model_fn_fce import classifier_model_fn_builder as classifier_model_fn_builder_fce
+except:
+	from electra_model_fn_fce import classifier_model_fn_builder as classifier_model_fn_builder_fce
+
+
 import numpy as np
 import tensorflow as tf
 from bunch import Bunch
@@ -206,6 +212,9 @@ def train_eval_fn(FLAGS,
 	elif kargs.get('electra_mode', 'global_adv') == 'gumbel_global':
 		tf.logging.info("***** electra mode ***** gumbel generator and discriminator joint training of global rep")
 		model_fn_builder = classifier_model_fn_builder_gumbel_global
+	elif kargs.get("electra_mode", "electra_fce") == "electra_fce":
+		tf.logging.info("***** electra mode ***** optimial discriminator with big and small generator")
+		model_fn_builder = classifier_model_fn_builder_fce
 	else:
 		model_fn_builder = classifier_model_fn_builder
 

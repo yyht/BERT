@@ -1,0 +1,7 @@
+{
+  "n_embd":768,
+  "n_head": 6,
+  "n_layer": 6,
+  "n_vocab": 21128,
+  "n_ctx":128
+}

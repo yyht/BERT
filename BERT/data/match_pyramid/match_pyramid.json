@@ -1,0 +1,134 @@
+{
+    "max_length": 500,
+    "char_limit": 10,
+    "scope":"MatchPyramid",
+    "model_name":"matchpyramid",
+    "num_classes":2,
+
+    "with_char": false,
+    "char_emb_dim": 20,
+    "char_lstm_dim": 40,
+
+    "batch_size": 32,
+    "max_epochs": 100,
+    "dropout_rate": 0.2,
+    "learning_rate": 5e-4,
+    "optimizer": "adam",
+    "lambda_l2": 0.0,
+    "grad_clipper": 10.0,
+
+    "context_layer_num": 1,
+    "context_lstm_dim": 100,
+
+    "slstm_layer_num": 5,
+
+    "rnn":"lstm",
+    "random_initialize":false,
+    "step":5,
+    "slstm_hidden_size":300,
+
+    "highway_layer_num": 1,
+    "with_highway": true,
+    "with_match_highway": true,
+    "with_aggregation_highway": true,
+
+    "use_cudnn": false,
+
+    "with_moving_average": 0.999,
+
+    "loss":"entropy",
+
+    "alpha":0.5,
+    "gamma":2.0,
+    "name":"entropy",
+
+    "scale":30,
+    "margin":0.35,
+
+    "weight_decay":1e-5,
+
+    "num_heads":8,
+    "with_self_attention":false,
+    "with_multi_head_interaction":false,
+
+    "apply_elmo":false,
+    "elmo_pca":false,
+
+    "augmentation_init_permutation": -0.5,
+    "augmentation_min_permutation": 0.01,
+    "augmentation_permutation_decay_steps": 2000,
+    "augmentation_permutation_decay_rate": 0.975,
+
+    "augmentation_init_dropout": -0.5,
+    "augmentation_min_dropout": 0.01,
+    "augmentation_dropout_decay_steps": 2000,
+    "augmentation_dropout_decay_rate": 0.975,
+
+    "use_features": false,
+
+    "embedding_mask_zero": true,
+    "max_seq_len_word": 500,
+    "max_seq_len_char": 8,
+
+    "optimizer_type": "adam",
+    "init_lr": 0.001,
+    "beta1": 0.9,
+    "beta2": 0.999,
+    "decay_steps": 200000,
+    "decay_rate": 0.95,
+    "schedule_decay": 0.004,
+    "random_seed": 2018,
+
+    "encode_method": "textcnn",
+    "attend_method": ["ave", "max", "min", "self-scalar-attention"],
+    "attention_dim": 64,
+    "attention_num_heads": 1,
+
+    "cnn_num_layers": 1,
+    "cnn_num_filters": 128,
+    "cnn_filter_sizes": [1, 2, 3],
+    "cnn_timedistributed": false,
+    "cnn_activation": "relu",
+    "cnn_gated_conv": true,
+    "cnn_residual": true,
+    "compress_emb":true,
+    "compress_highway_dim":128,
+    "highway":"conv_highway",
+
+    "rnn_num_units": 100,
+    "rnn_cell_type": "gru",
+    "rnn_num_layers": 1,
+
+    "fc_type": "fc",
+    "fc_hidden_units": [256, 128],
+    "fc_dropouts": [0.3, 0.3],
+
+    "similarity_aggregation": false,
+
+    "mp_num_filters": [8, 16],
+    "mp_filter_sizes": [5, 3],
+    "mp_activation": "relu",
+    "mp_dynamic_pooling": true,
+    "mp_pool_sizes": [3, 3],
+
+    "bcnn_num_layers": 2,
+    "bcnn_num_filters": 16,
+    "bcnn_filter_size": 3,
+    "bcnn_activation": "tanh", 
+    "bcnn_match_score_type": "cosine",
+
+    "bcnn_mp_att_pooling": false,
+    "bcnn_mp_num_filters": [8, 16],
+    "bcnn_mp_filter_sizes": [5, 3],
+    "bcnn_mp_activation": "relu",
+    "bcnn_mp_dynamic_pooling": false,
+    "bcnn_mp_pool_sizes_word": [6, 3],
+    "bcnn_mp_pool_sizes_char": [10, 5],
+
+    "final_dropout": 0.3,
+    "granularity":"word",
+
+    "MISSING_INDEX_WORD":1,
+    "MISSING_INDEX_CHAR":1
+
+}
