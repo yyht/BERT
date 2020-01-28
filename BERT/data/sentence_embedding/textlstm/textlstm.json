@@ -1,0 +1,62 @@
+{
+    "max_length": 100,
+    "char_limit": 10,
+    "scope":"ESIM",
+    "num_classes":100000,
+
+    "with_char": false,
+    "char_embedding":"conv",
+    "char_emb_dim": 20,
+    "char_lstm_dim": 40,
+
+    "batch_size": 64,
+    "max_epochs": 100,
+    "dropout_rate": 0.2,
+    "learning_rate": 1e-3,
+    "optimizer": "adam",
+    "lambda_l2": 0.0,
+    "grad_clipper": 10.0,
+
+    "context_layer_num": 1,
+    "context_lstm_dim": 100,
+
+    "slstm_layer_num": 5,
+
+    "rnn":"lstm",
+    "random_initialize":false,
+    "step":5,
+    "slstm_hidden_size":300,
+    "weight_decay":1e-5,
+
+    "highway_layer_num": 1,
+    "with_highway": true,
+    "with_match_highway": true,
+    "with_aggregation_highway": true,
+
+    "use_cudnn": true,
+    "with_center_loss":"center_loss",
+
+    "with_moving_average": 0.999,
+
+    "loss":"focal_loss",
+
+    "alpha":0.5,
+    "gamma":2.0,
+    "name":"focal_loss_multi_v1",
+    "center_gamma":0.001,
+
+    "with_word_drop":false,
+    "word_drop_rate":0.7,
+
+    "scale":30,
+    "margin":0.35,
+
+    "l2_normalization":false,
+
+    "elmo_pca":false,
+    "with_target":false,
+    "multi_head":false,
+    "with_idf":false,
+
+    "output_folder_name":"esim_multi_head_no_cudnn"
+}

@@ -179,6 +179,106 @@ def global_feature_discriminator(config, input_tensor, labels, reuse=None, **kar
 		loss = tf.reduce_mean(per_example_loss)
 		return (loss, per_example_loss, log_probs)
 
+def optimal_discriminator(config, true_model_dict, true_features_dict,
+						fake_model_dict, fake_features_dict, **kargs):
+
+	alpha = (1-0.15)/0.15
+
+	sampled_ids = fake_features_dict['input_ids']
+	input_shape_list = bert_utils.get_shape_list(fake_features_dict["input_ori_ids"], 
+													expected_rank=[2,3])
+	batch_size = input_shape_list[0]
+	seq_length = input_shape_list[1]
+
+	true_logits = tf.exp(tf.nn.log_softmax(tf.reshape(true_model_dict['masked_lm_log_probs'], [-1, config.vocab_size])))
+	fake_logits = tf.exp(tf.nn.log_softmax(tf.reshape(fake_model_dict['masked_lm_log_probs'], [-1, config.vocab_size])))
+
+	labels = tf.reshape(sampled_ids, [-1, 1]) # [batch x seq, 1]
+	batch_idxs = tf.range(0, tf.shape(labels)[0])
+	batch_idxs = tf.expand_dims(batch_idxs, 1)
+
+	idxs = tf.concat([batch_idxs, labels], 1)
+	y_true_pred = tf.gather_nd(true_logits, idxs)
+	y_fake_pred = tf.gather_nd(fake_logits, idxs)
+
+	disc_probs = (y_true_pred * (alpha+y_fake_pred)+1e-10) / ((y_fake_pred+alpha*y_true_pred+1e-10))  # batch x seq
+	disc_probs = tf.expand_dims(disc_probs, axis=-1) # [batch x seq, 1]
+	neg_probs = 1 - disc_probs + 1e-10
+	logits = tf.log(tf.concat([disc_probs, neg_probs], axis=-1)+1e-10)
+
+	logits = tf.reshape(logits, [batch_size, seq_length, -1])
+	
+	input_ids = tf.cast(fake_features_dict['input_ori_ids'], tf.int32)
+	unk_mask = tf.cast(tf.equal(input_ids, 100), tf.float32) # not replace unk
+	cls_mask =  tf.cast(tf.equal(input_ids, 101), tf.float32) # not replace cls
+	sep_mask = tf.cast(tf.equal(input_ids, 102), tf.float32) # not replace sep
+
+	none_replace_mask =  unk_mask + cls_mask + sep_mask
+
+	input_mask = fake_features_dict['input_mask']
+	input_mask = tf.cast(input_mask, tf.int32)
+	input_mask *= tf.cast(1 - none_replace_mask, tf.int32) # cls, unk, sep are not considered as replace or original
+
+	input_shape_list = bert_utils.get_shape_list(sampled_ids, expected_rank=[2,3])
+	if len(input_shape_list) == 3:
+		tmp_sampled_ids = tf.argmax(sampled_ids, axis=-1) # batch x seq x vocab
+		tmp_sampled_ids = tf.cast(tmp_sampled_ids, tf.int32)
+		tf.logging.info("****** gumbel 3-D sampled_ids *******")
+	elif len(input_shape_list) == 2:
+		tmp_sampled_ids = sampled_ids
+		tmp_sampled_ids = tf.cast(tmp_sampled_ids, tf.int32)
+
+	sampled_binary_mask = kargs.get('sampled_binary_mask', None)
+
+	if sampled_binary_mask is not None:
+		tf.logging.info("****** loss mask using masked token mask for masked tokens *******")
+		loss_mask = sampled_binary_mask
+	else:
+		tf.logging.info("****** loss mask using input_mask for all tokens *******")
+		loss_mask = input_mask
+
+	not_equal_label_ids = tf.cast(tf.not_equal(input_ids, tmp_sampled_ids), tf.int32)
+	not_equal_label_ids *= tf.cast(loss_mask, tf.int32)
+
+	print(logits.get_shape(), "===disc logits shape==", not_equal_label_ids.get_shape(), "==label ids shape==")
+
+	per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+													logits=logits,
+													labels=tf.stop_gradient(not_equal_label_ids))
+
+	equal_label_ids = (1 - tf.cast(not_equal_label_ids, tf.float32)) * tf.cast(loss_mask, tf.float32)
+	equal_per_example_loss = per_example_loss * equal_label_ids
+	equal_loss = tf.reduce_sum(equal_per_example_loss)
+	equal_loss_all = equal_loss / (1e-10 + tf.reduce_sum(tf.cast(loss_mask, tf.float32)))
+	equal_loss_output = equal_loss / (1e-10 + tf.reduce_sum(equal_label_ids))
+
+	not_equal_per_example_loss = per_example_loss * tf.cast(not_equal_label_ids, tf.float32)
+	not_equal_loss = tf.reduce_sum(not_equal_per_example_loss) # not equal:1, equal:0
+	not_equal_loss_all = not_equal_loss / (1e-10 + tf.reduce_sum(tf.cast(loss_mask, tf.float32)))
+	not_equal_loss_output = not_equal_loss / (1e-10 + tf.reduce_sum(tf.cast(not_equal_label_ids, tf.float32)))
+
+	loss = (equal_loss + not_equal_loss) / (1e-10 + tf.reduce_sum(tf.cast(loss_mask, tf.float32)))
+	# loss = equal_loss_output + not_equal_loss_output * 0.1
+	tf.logging.info("====discriminator classifier use_tpu %s ====", str(kargs.get('use_tpu', True)))
+	if not kargs.get('use_tpu', True):
+		tf.logging.info("====logging discriminator loss ====")
+		tf.summary.scalar('mask_based_loss', 
+							loss)
+
+		loss = per_example_loss * tf.cast(loss_mask, tf.float32)
+		loss = tf.reduce_sum(loss) / (1e-10 + tf.reduce_sum(tf.cast(loss_mask, tf.float32)))
+
+		tf.summary.scalar('equal_loss', 
+							equal_loss/(1e-10 + tf.reduce_sum(tf.cast(loss_mask, tf.float32))))
+
+		tf.summary.scalar('not_equal_loss', 
+							not_equal_loss/(1e-10 + tf.reduce_sum(tf.cast(loss_mask, tf.float32))))
+
+		tf.summary.scalar('loss_decomposition', 
+							loss - (equal_loss+not_equal_loss)/(1e-10 + tf.reduce_sum(tf.cast(loss_mask, tf.float32))))
+
+	return (loss, logits, per_example_loss)
+
 def global_gan_loss(config, true_model_dict, true_features_dict,
 					fake_model_dict, fake_features_dict, **kargs):
 

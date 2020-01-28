@@ -1,0 +1,15 @@
+max_length=128
+train_file=politics/data/train_tf_records
+dev_file=politics/data/test_tf_records
+config_file=./data/chinese_L-12_H-768_A-12/bert_config.json
+init_checkpoint=chinese_L-12_H-768_A-12/bert_model.ckpt
+vocab_file=./data/chinese_L-12_H-768_A-12/vocab.txt
+label_id=./data/politics/label_dict.json
+opt_type=ps
+eval_size=10000
+train_size=1402171
+num_classes=2
+epoch=2
+model_output=politics/pai_ps_model
+is_debug=1
+run_type=sess

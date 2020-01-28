@@ -1,0 +1,1 @@
+sh ./BERT/t2t_bert/distributed_multitask/all_reduce.sh ~/Desktop/my_work/odps_clt_release_64_seccontent/bin/odpscmd ./BERT ~/Desktop/my_work/BERT.zip

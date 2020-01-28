@@ -1,0 +1,25 @@
+python ./t2t_bert/distributed_data_prepare/bert_distillation_data_prepare.py \
+	--buckets /data/xuht \
+	--train_file quora_sentence_pair/train.json \
+	--dev_file quora_sentence_pair/dev.json \
+	--test_file quora_sentence_pair/dev.json \
+	--train_result_file quora_sentence_pair/data/distillation_bpe/train_tfrecords \
+	--dev_result_file quora_sentence_pair/data/distillation_bpe/dev_tfrecords\
+	--test_result_file quora_sentence_pair/data/distillation_bpe/test_tfrecords\
+	--supervised_distillation_file quora_sentence_pair/data/distillation/distillation_info/train_distillation.info \
+	--unsupervised_distillation_file quora_sentence_pair/data/distillation/distillation_info/dev_distillation.info \
+	--vocab_file uncased_L-12_H-768_A-12/vocab.txt \
+	--label_id /data/xuht/quora_sentence_pair/data/label_dict.json \
+	--lower_case True \
+	--max_length 64 \
+	--if_rule "no_rule" \
+	--rule_word_dict /data/xuht/porn/rule/rule/phrases.json \
+	--rule_word_path /data/xuht/porn/rule/rule/mined_porn_domain_adaptation_v2.txt \
+	--rule_label_dict /data/xuht/porn/rule/rule/rule_label_dict.json \
+	--with_char "no" \
+	--char_len 5 \
+	--predefined_vocab_size 50000 \
+	--corpus_vocab_path quora_sentence_pair/data/distillation_bpe/char_id.txt \
+	--data_type "lcqmc" \
+	--if_add_unlabeled_distillation "no" \
+	--tokenizer_type "full_bpe"
