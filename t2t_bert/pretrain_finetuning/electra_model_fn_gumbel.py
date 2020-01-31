@@ -33,8 +33,8 @@ def get_train_op(generator_dict, discriminator_dict, optimizer_fn, opt_config,
 	if kargs.get('train_op_type', 'joint') == 'joint':
 		tf.logging.info("***** original joint train op *****")
 		tvars = []
-		dis_loss_ratio = kargs.get('dis_loss_ratio', 10.0)
-		gen_loss_ratio = kargs.get('gen_loss_ratio', 0.0)
+		dis_loss_ratio = kargs.get('dis_loss_ratio', 0.1)
+		gen_loss_ratio = kargs.get('gen_loss_ratio', 1.0)
 		tf.logging.info("***** dis loss ratio: %s, gen loss ratio: %s *****", str(dis_loss_ratio), str(gen_loss_ratio))
 		tvars.extend(discriminator_dict['tvars'])
 		loss = dis_loss_ratio * discriminator_dict['loss']
@@ -88,11 +88,11 @@ def get_train_op(generator_dict, discriminator_dict, optimizer_fn, opt_config,
 							str(dis_loss_ratio), str(gen_loss_ratio), str(gen_dis_loss_ratio))
 			tf.logging.info("****** using not equal and equal loss all for updating generator *******")
 			gen_disc_loss =  discriminator_dict['not_equal_loss_all'] - discriminator_dict['equal_loss_all']
-		
+		      
 		elif kargs.get('gen_disc_type', 'all_disc') == 'not_equal_disc_loss_all':
-			gen_dis_loss_ratio = kargs.get('gen_dis_loss_ratio', 10.0)
+			gen_dis_loss_ratio = kargs.get('gen_dis_loss_ratio', 50.0)
 			gen_loss_ratio = kargs.get('gen_loss_ratio', 1.0)
-			dis_loss_ratio = kargs.get('dis_loss_ratio', 10.0)
+			dis_loss_ratio = kargs.get('dis_loss_ratio', 50.0)
 			tf.logging.info("***** dis loss ratio: %s, gen loss ratio: %s, gen-dis loss ratio: %s *****", 
 							str(dis_loss_ratio), str(gen_loss_ratio), str(gen_dis_loss_ratio))
 			tf.logging.info("****** using not equal all for updating generator *******")
@@ -130,6 +130,8 @@ def get_train_op(generator_dict, discriminator_dict, optimizer_fn, opt_config,
 
 			optimizer_fn.gradient_norm_summary(generator_dict['loss'], generator_dict['tvars'], debug_grad_name="generator_grad_norm")
 			optimizer_fn.gradient_norm_summary(gen_disc_loss, generator_dict['tvars'], debug_grad_name="discriminator_of_generator_grad_norm")
+			optimizer_fn.gradient_norm_summary(gen_disc_loss, discriminator_dict['input_ids'], debug_grad_name="discriminator_of_generator_samples")
+			optimizer_fn.gradient_norm_summary(discriminator_dict['input_ids'], generator_dict['tvars'], debug_grad_name="generator_samples_of generator")
 
 		loss_dict = OrderedDict(zip(['generator', 'discriminator'], [generator_loss, discriminator_loss]))
 		tvars_dict = OrderedDict(zip(['generator', 'discriminator'], [generator_dict['tvars'], discriminator_dict['tvars']]))
@@ -271,6 +273,7 @@ def classifier_model_fn_builder(
 		discriminator_features['ori_input_ids'] = generator_dict['sampled_ids']
 		
 		discriminator_dict = discriminator_fn(discriminator_features, labels, mode, params)
+		discriminator_dict['input_ids'] = generator_dict['sampled_ids']
 
 		# for key in discriminator_dict:
 		# 	if isinstance(discriminator_dict[key], list):

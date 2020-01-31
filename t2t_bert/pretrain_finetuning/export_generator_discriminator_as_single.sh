@@ -62,19 +62,19 @@
 python ./t2t_bert/pretrain_finetuning/export_checkpoints.py \
 	--buckets '/data/xuht' \
 	--config_path './data/electra_share_embedding/discriminator/bert_config_tiny_large_embed.json' \
-	--checkpoint_path 'electra/joint/electra_bert_tiny_gen_bert_tiny_dis_joint_no_sharing_pretrained_embedding/model.ckpt-1070000' \
+	--checkpoint_path 'electra/grl/electra_bert_tiny_gen_bert_tiny_dis_joint_gumbel_no_sharing_pretrained_embedding/model.ckpt-1070000' \
 	--model_type 'bert' \
 	--electra 'discriminator' \
 	--model_scope 'bert' \
 	--exclude_scope '' \
-	--export_path 'electra/joint/electra_bert_tiny_gen_bert_tiny_dis_joint_no_sharing_pretrained_embedding/discriminator/discriminator.ckpt-1070000'
+	--export_path 'electra/grl/electra_bert_tiny_gen_bert_tiny_dis_joint_gumbel_no_sharing_pretrained_embedding/discriminator/discriminator.ckpt-1070000'
 
-python ./t2t_bert/pretrain_finetuning/export_checkpoints.py \
-	--buckets '/data/xuht' \
-	--config_path './data/electra_share_embedding/discriminator/bert_config_tiny_large_embed.json' \
-	--checkpoint_path 'electra/joint/electra_bert_tiny_gen_bert_tiny_dis_joint_no_sharing_pretrained_embedding/model.ckpt-1070000' \
-	--model_type 'bert' \
-	--electra 'generator' \
-	--model_scope 'bert' \
-	--exclude_scope 'generator' \
-	--export_path 'electra/joint/electra_bert_tiny_gen_bert_tiny_dis_joint_no_sharing_pretrained_embedding/generator/generator.ckpt-1070000'
+# python ./t2t_bert/pretrain_finetuning/export_checkpoints.py \
+# 	--buckets '/data/xuht' \
+# 	--config_path './data/electra_share_embedding/generator/bert_config_tiny_large_embed.json' \
+# 	--checkpoint_path 'electra/grl/electra_bert_tiny_gen_bert_tiny_dis_joint_gumbel_no_sharing_pretrained_embedding/model.ckpt-1070000' \
+# 	--model_type 'bert' \
+# 	--electra 'generator' \
+# 	--model_scope 'bert' \
+# 	--exclude_scope 'generator' \
+# 	--export_path 'electra/grl/electra_bert_tiny_gen_bert_tiny_dis_joint_gumbel_no_sharing_pretrained_embedding/generator/generator.ckpt-1070000'

@@ -46,6 +46,14 @@ class FlipGradientBuilder(object):
 	
 flip_gradient = FlipGradientBuilder()
 
+@tf.custom_gradient
+def gumbel_softmax_grad(x):
+	y = tf.exp(tf.nn.log_softmax(x, axis=1))
+	def grad(dy):
+		print("===gumbel-softmax gradient===")
+		return dy * tf.stop_gradient(y) * tf.gradients(tf.log(y+1e-20), x)[0]
+	return y, grad
+
 def sample_gumbel(shape, samples=1, eps=1e-20): 
 	"""Sample from Gumbel(0, 1)"""
 	if samples > 1:
@@ -66,6 +74,18 @@ def gumbel_softmax(logits, temperature, gumbel_samples=None, samples=1):
 	else:
 		y = logits + gumbel_samples
 	return [tf.exp(tf.nn.log_softmax(y / temperature, axis=1)), 
+			y]
+
+def gumbel_softmax_custom_grad(logits, temperature, gumbel_samples=None, samples=1): 
+	""" Draw a sample from the Gumbel-Softmax distribution"""
+	input_shape_list = bert_utils.get_shape_list(logits, expected_rank=2)
+	if samples > 1:
+		logits = tf.expand_dims(logits, -1)
+	if gumbel_samples is None:
+		y = logits + sample_gumbel(input_shape_list, samples)
+	else:
+		y = logits + gumbel_samples
+	return [gumbel_softmax_grad(y / temperature), 
 			y]
 
 def token_generator_gumbel(config, input_tensor,
@@ -188,8 +208,8 @@ def token_generator_gumbel(config, input_tensor,
 			gumbel_samples *= inverse_exp_decay(steps // 5) * 0.5
 			annealed_temp_decay = 1.2 - inverse_lin_decay(steps) # minimum temperature is set 0.2
 			annealed_temp = tf.cond(
-					  tf.less(tf.random_uniform([]), 0.9), lambda: annealed_temp_decay,
-					  lambda: tf.random_uniform([], minval=0.5, maxval=1.0)) # 10% step for 
+						tf.less(tf.random_uniform([]), 0.9), lambda: annealed_temp_decay,
+						lambda: tf.random_uniform([], minval=0.5, maxval=1.0)) # 10% step for 
 			tf.logging.info("****** apply t2t gumbel-softmax temperature annealing method ******* ")
 			if not kargs.get('use_tpu', True):
 				tf.summary.scalar('t2t_vqvae_stgs temperature', 
@@ -202,10 +222,18 @@ def token_generator_gumbel(config, input_tensor,
 			tf.logging.info("****** not apply annealed tenperature with fixed temp ******* %s", str(annealed_temp))
 
 		# [batch x seq] x config.vocab_size x config.get('gen_sample', 1)
-		sampled_logprob_temp, sampled_logprob = gumbel_softmax(flat_logits_tempered, 
+		if kargs.get('stable_gradient', True):
+			sampled_logprob_temp, sampled_logprob = gumbel_softmax(flat_logits_tempered, 
 										temperature=annealed_temp,
 										gumbel_samples=gumbel_samples,
 										samples=config.get('gen_sample', 1))
+			tf.logging.info("****** apply normal derivate for gradient calculation *******")
+		else:
+			sampled_logprob_temp, sampled_logprob = gumbel_softmax_custom_grad(flat_logits_tempered, 
+										temperature=annealed_temp,
+										gumbel_samples=gumbel_samples,
+										samples=config.get('gen_sample', 1))
+			tf.logging.info("****** apply log deriviate for stable gradient calculation *******")
 
 		# argmax on config.vocab_size which is always axis=1
 		# [batch x seq] x config.vocab_size x config.get('gen_sample', 1)
