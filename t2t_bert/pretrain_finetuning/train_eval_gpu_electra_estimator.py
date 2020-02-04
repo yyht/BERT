@@ -189,7 +189,7 @@ def train_eval_fn(FLAGS,
 	for task_type in FLAGS.multi_task_type.split(","):
 		print("==task type==", task_type)
 		model_config_dict[task_type] = model_config_parser(Bunch(distillation_config[task_type]))
-                model_config_dict[task_type].update(distillation_config[task_type])
+		model_config_dict[task_type].update(distillation_config[task_type])
 		print(task_type, distillation_config[task_type], '=====task model config======')
 		num_labels_dict[task_type] = distillation_config[task_type]["num_labels"]
 		init_checkpoint_dict[task_type] = os.path.join(FLAGS.buckets, distillation_config[task_type]["init_checkpoint"])

@@ -1,9 +1,0 @@
-python data_processor.py \
-	--train_file "/data/xuht/lazada/20190107/train.txt" \
-	--test_file "/data/xuht/lazada/20190107/test.txt" \
-	--train_result_file "/data/xuht/lazada/20190107/train_tf_records" \
-	--test_result_file  "/data/xuht/lazada/20190107/test_tf_records" \
-	--vocab_file "/data/xuht/multi_cased_L-12_H-768_A-12/vocab.txt" \
-	--label_id "/data/xuht/lazada/label_dict.json" \
-	--lower_case False \
-	--max_length 128 \

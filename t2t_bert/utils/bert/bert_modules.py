@@ -236,7 +236,8 @@ def embedding_postprocessor(input_tensor,
 														position_embedding_name="position_embeddings",
 														initializer_range=0.02,
 														max_position_embeddings=512,
-														dropout_prob=0.1):
+														dropout_prob=0.1,
+														token_type_ratio=1.0):
 	"""Performs various post-processing on a word embedding tensor.
 
 	Args:
@@ -291,7 +292,7 @@ def embedding_postprocessor(input_tensor,
 		token_type_embeddings = tf.matmul(one_hot_ids, token_type_table)
 		token_type_embeddings = tf.reshape(token_type_embeddings,
 																			 [batch_size, seq_length, width])
-		output += token_type_embeddings
+		output += token_type_ratio * token_type_embeddings
 
 	if use_position_embeddings:
 		full_position_embeddings = tf.get_variable(
