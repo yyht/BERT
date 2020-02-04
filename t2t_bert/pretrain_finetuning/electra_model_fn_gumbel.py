@@ -90,9 +90,9 @@ def get_train_op(generator_dict, discriminator_dict, optimizer_fn, opt_config,
 			gen_disc_loss =  discriminator_dict['not_equal_loss_all'] - discriminator_dict['equal_loss_all']
 		      
 		elif kargs.get('gen_disc_type', 'all_disc') == 'not_equal_disc_loss_all':
-			gen_dis_loss_ratio = kargs.get('gen_dis_loss_ratio', 50.0)
+			gen_dis_loss_ratio = kargs.get('gen_dis_loss_ratio', 1.0)
 			gen_loss_ratio = kargs.get('gen_loss_ratio', 1.0)
-			dis_loss_ratio = kargs.get('dis_loss_ratio', 50.0)
+			dis_loss_ratio = kargs.get('dis_loss_ratio', 1.0)
 			tf.logging.info("***** dis loss ratio: %s, gen loss ratio: %s, gen-dis loss ratio: %s *****", 
 							str(dis_loss_ratio), str(gen_loss_ratio), str(gen_dis_loss_ratio))
 			tf.logging.info("****** using not equal all for updating generator *******")
@@ -201,6 +201,7 @@ def classifier_model_fn_builder(
 					not_storage_params=not_storage_params_dict.get('generator', []),
 					target=target_dict['generator'],
 					if_flip_grad=if_flip_grad,
+					resample_discriminator=False,
 					# mask_method='only_mask',
 					**kargs)
 			# train_op_type = 'joint'

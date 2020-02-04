@@ -1,9 +1,0 @@
-python data_processor.py \
-	--train_file "/data/xuht/politics/train.txt" \
-	--test_file "/data/xuht/politics/test.txt" \
-	--train_result_file "/data/xuht/politics/train_tf_records" \
-	--test_result_file  "/data/xuht/politics/test_tf_records" \
-	--vocab_file "/data/xuht/chinese_L-12_H-768_A-12/vocab.txt" \
-	--label_id "/data/xuht/politics/label_dict.json" \
-	--lower_case True \
-	--max_length 128 \

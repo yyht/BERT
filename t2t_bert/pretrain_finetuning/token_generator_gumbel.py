@@ -54,6 +54,9 @@ def gumbel_softmax_grad(x):
 		return dy * tf.stop_gradient(y) * tf.gradients(tf.log(y+1e-20), x)[0]
 	return y, grad
 
+def gumbel_logsoftmax_grad(x):
+	return tf.nn.log_softmax(x, axis=1)
+
 def sample_gumbel(shape, samples=1, eps=1e-20): 
 	"""Sample from Gumbel(0, 1)"""
 	if samples > 1:
@@ -85,7 +88,7 @@ def gumbel_softmax_custom_grad(logits, temperature, gumbel_samples=None, samples
 		y = logits + sample_gumbel(input_shape_list, samples)
 	else:
 		y = logits + gumbel_samples
-	return [gumbel_softmax_grad(y / temperature), 
+	return [gumbel_logsoftmax_grad(y / temperature), 
 			y]
 
 def token_generator_gumbel(config, input_tensor,
@@ -174,13 +177,17 @@ def token_generator_gumbel(config, input_tensor,
 		num_train_steps = kargs.get('num_train_steps', None)
 		if num_train_steps and kargs.get('gumbel_anneal', "anneal") == 'anneal':
 			tf.logging.info("****** apply annealed temperature ******* %s", str(num_train_steps))
+			temperature_warmup_steps = int(num_train_steps) * 0.1
 			annealed_temp = tf.train.polynomial_decay(config.get('gumbel_temperature', 1.0),
 													tf.train.get_or_create_global_step(),
-													kargs.get("num_train_steps", 10000),
+													temperature_warmup_steps,
 													end_learning_rate=0.1,
 													power=1.0,
 													cycle=False)
 			gumbel_samples = None
+			if not kargs.get('use_tpu', True):
+				tf.summary.scalar('annealed_temp', 
+							annealed_temp)
 		elif kargs.get('gumbel_anneal', "anneal") == 'softplus':
 			tf.logging.info("****** apply auto-scale temperature *******")
 			# batch x seq x dim
@@ -217,7 +224,7 @@ def token_generator_gumbel(config, input_tensor,
 				tf.summary.scalar('t2t_vqvae_stgs temperature decay', 
 							annealed_temp_decay)
 		else:
-			annealed_temp = 1.0
+			annealed_temp = 0.2
 			gumbel_samples = None
 			tf.logging.info("****** not apply annealed tenperature with fixed temp ******* %s", str(annealed_temp))
 
@@ -256,7 +263,7 @@ def token_generator_gumbel(config, input_tensor,
 		else:
 			tf.logging.info("****** not apply gradient flipping *******")
 			sampled_logprob_temp_1 = sampled_logprob_temp
-		if kargs.get("straight_through", True):
+		if kargs.get("straight_through", False):
 			tf.logging.info("****** apply straight_through_estimator *******")
 			sampled_id = tf.stop_gradient(sampled_hard_id-sampled_logprob_temp) + (sampled_logprob_temp_1)
 		else:

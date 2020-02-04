@@ -1,1 +1,0 @@
-python my_create_pretrain_data.py --input_file /data/xuht/guangfa/bert/finicial_new.txt --word_piece_model /data/xuht/guangfa/finical_unigram.model --output_file /data/xuht/guangfa/bert/pretrain_finicial_new.tfrecords --vocab_file /data/xuht/guangfa/finical_unigram.vocab

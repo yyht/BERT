@@ -56,6 +56,9 @@ def model_fn_builder(
 				sampled_binary_mask] = random_input_ids_generation(model_config,
 											features['input_ori_ids'],
 											features['input_mask'],
+											mask_probability=0.2,
+											replace_probability=0.1,
+											original_probability=0.1,
 											**kargs)
 				features['input_ids'] = tf.identity(output_ids)
 				tf.logging.info("****** do random generator *******")
@@ -137,16 +140,44 @@ def model_fn_builder(
 		print(model_config.lm_ratio, '==mlm lm_ratio==')
 		loss = model_config.lm_ratio * masked_lm_loss + 0.0 * nsp_loss
 
+		if kargs.get("resample_discriminator", False):
+			input_ori_ids = features['input_ori_ids']
+
+			[output_ids, 
+			sampled_binary_mask] = random_input_ids_generation(model_config,
+										features['input_ori_ids'],
+										features['input_mask'],
+										mask_probability=0.5,
+										replace_probability=0.1,
+										original_probability=0.1)
+
+			resample_features = {}
+			for key in features:
+				resample_features[key] = features[key]
+
+			resample_features['input_ids'] = tf.identity(output_ids)
+			model_resample = model_api(model_config, resample_features, labels,
+							mode, target, reuse=tf.AUTO_REUSE,
+							**kargs)
+
+			gumbel_model = model_resample
+			gumbel_features = resample_features
+			tf.logging.info("**** apply discriminator resample **** ")
+		else:
+			gumbel_model = model
+			gumbel_features = features
+			tf.logging.info("**** not apply discriminator resample **** ")
+
 		sampled_ids = token_generator_gumbel(model_config, 
-									model.get_sequence_output(), 
-									model.get_embedding_table(), 
-									features['input_ids'], 
-									features['input_ori_ids'],
-									features['input_mask'],	
-									embedding_projection=model.get_embedding_projection_table(),
-									scope=generator_scope_prefix,
-									# mask_method='only_mask',
-									**kargs)
+										gumbel_model.get_sequence_output(), 
+										gumbel_model.get_embedding_table(), 
+										gumbel_features['input_ids'], 
+										gumbel_features['input_ori_ids'],
+										gumbel_features['input_mask'],	
+										embedding_projection=gumbel_model.get_embedding_projection_table(),
+										scope=generator_scope_prefix,
+										# mask_method='only_mask',
+										**kargs)
 
 		if model_config.get('gen_sample', 1) == 1:
 			input_ids = features['input_ori_ids']

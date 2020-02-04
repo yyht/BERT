@@ -70,7 +70,8 @@ class Albert(object):
 						position_embedding_name="position_embeddings",
 						initializer_range=self.config.initializer_range,
 						max_position_embeddings=self.config.max_position_embeddings,
-						dropout_prob=hidden_dropout_prob)
+						dropout_prob=hidden_dropout_prob,
+						token_type_ratio=self.config.get("token_type_ratio", 1.0))
 
 	def build_encoder(self, input_ids, input_mask, 
 									hidden_dropout_prob, 

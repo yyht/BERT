@@ -16,6 +16,7 @@ def random_input_ids_generation(config,
 	mask_id = kargs.get('mask_id', 103)
 	valid_vocab = kargs.get('valid_vocab', 105)
 
+
 	input_ori_ids = tf.cast(input_ori_ids, tf.int32)
 	input_mask = tf.cast(input_mask, tf.int32)
 
@@ -24,6 +25,10 @@ def random_input_ids_generation(config,
 	sep_mask = tf.cast(tf.math.equal(input_ori_ids, 102), tf.float32) # not replace sep
 
 	none_replace_mask =  unk_mask + cls_mask + sep_mask
+
+	mask_probability = kargs.get("mask_probability", 0.15)
+	replace_probability = kargs.get("replace_probability", 0.1)
+	original_probability = kargs.get("original_probability", 0.1)
 
 	input_shape_list = bert_utils.get_shape_list(input_ori_ids, expected_rank=2)
 	batch_size = input_shape_list[0]
@@ -38,8 +43,11 @@ def random_input_ids_generation(config,
 														cycle=False)
 		tf.logging.info("**** apply annealed_mask_prob **** ")
 	else:
-		mask_probability = 0.15
+		mask_probability = mask_probability
 		tf.logging.info("**** apply fixed_mask_prob %s **** ", str(mask_probability))
+
+	tf.logging.info("**** apply replace_probability %s **** ", str(replace_probability))
+	tf.logging.info("**** apply original_probability %s **** ", str(original_probability))
 
 	# must_have_one = tf.cast(tf.expand_dims(tf.eye(seq_length)[4], axis=[0]), tf.int32) # batch x seq_length
 	# must_have_one = must_have_one * input_mask * (1 - tf.cast(none_replace_mask, tf.int32))
@@ -65,12 +73,12 @@ def random_input_ids_generation(config,
 	# sampled_ori_binary_mask = ori_noise_dist.sample()
 	# sampled_ori_binary_mask = tf.cast(sampled_ori_binary_mask, tf.float32)
 
-	replace_binary_probs = 0.10 * (sampled_binary_mask) # use 10% [mask] to replace token
+	replace_binary_probs = replace_probability * (sampled_binary_mask) # use 10% [mask] to replace token
 	replace_noise_dist = tf.distributions.Bernoulli(probs=replace_binary_probs, dtype=tf.float32)
 	sampled_replace_binary_mask = replace_noise_dist.sample()
 	sampled_replace_binary_mask = tf.cast(sampled_replace_binary_mask, tf.float32)
 
-	ori_binary_probs = 0.10 * (sampled_binary_mask - sampled_replace_binary_mask)
+	ori_binary_probs = original_probability * (sampled_binary_mask - sampled_replace_binary_mask)
 	ori_noise_dist = tf.distributions.Bernoulli(probs=ori_binary_probs, dtype=tf.float32)
 	sampled_ori_binary_mask = ori_noise_dist.sample()
 	sampled_ori_binary_mask = tf.cast(sampled_ori_binary_mask, tf.float32)
@@ -95,7 +103,7 @@ def random_input_ids_generation(config,
 	vocab_sample_logits = tf.random.uniform(
 							[batch_size, seq_length, config.vocab_size],
 							minval=0.0,
-							maxval=1.0,
+							maxval=10.0,
 							dtype=tf.float32)
 
 	vocab_sample_logits = tf.nn.log_softmax(vocab_sample_logits)
@@ -183,12 +191,12 @@ def random_input_ids_generation_v1(config,
 	# sampled_ori_binary_mask = ori_noise_dist.sample()
 	# sampled_ori_binary_mask = tf.cast(sampled_ori_binary_mask, tf.float32)
 
-	replace_binary_probs = 0.01 * (sampled_binary_mask) # use 10% [mask] to replace token
+	replace_binary_probs = 0.1 * (sampled_binary_mask) # use 10% [mask] to replace token
 	replace_noise_dist = tf.distributions.Bernoulli(probs=replace_binary_probs, dtype=tf.float32)
 	sampled_replace_binary_mask = replace_noise_dist.sample()
 	sampled_replace_binary_mask = tf.cast(sampled_replace_binary_mask, tf.float32)
 
-	ori_binary_probs = 0.50 * (sampled_binary_mask - sampled_replace_binary_mask)
+	ori_binary_probs = 0.1 * (sampled_binary_mask - sampled_replace_binary_mask)
 	ori_noise_dist = tf.distributions.Bernoulli(probs=ori_binary_probs, dtype=tf.float32)
 	sampled_ori_binary_mask = ori_noise_dist.sample()
 	sampled_ori_binary_mask = tf.cast(sampled_ori_binary_mask, tf.float32)
