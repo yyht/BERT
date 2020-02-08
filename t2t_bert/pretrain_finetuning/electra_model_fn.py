@@ -224,7 +224,8 @@ def classifier_model_fn_builder(
 							logits, 
 							input_ori_ids, 
 							input_ids,
-							input_mask)
+							input_mask,
+							use_tpu=use_tpu)
 					generator_metric.update(discriminator_metric)
 					return generator_metric
 
@@ -259,7 +260,8 @@ def classifier_model_fn_builder(
 								discriminator_dict['logits'], 
 								generator_dict['sampled_input_ids'], 
 								generator_dict['sampled_ids'],
-								generator_dict['sampled_input_mask'])
+								generator_dict['sampled_input_mask'],
+								use_tpu=use_tpu)
 				tpu_eval_metrics = (discriminator_metric_eval, [
 											discriminator_dict['per_example_loss'],
 											discriminator_dict['logits'], 

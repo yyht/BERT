@@ -48,7 +48,7 @@ def model_fn_builder(
 		model_api = model_zoo(model_config)
 
 		if kargs.get('random_generator', '1') == '1':
-			if mode in [tf.estimator.ModeKeys.TRAIN, tf.estimator.ModeKeys.EVAL]:
+			if mode in [tf.estimator.ModeKeys.TRAIN, tf.estimator.ModeKeys.TRAIN]:
 				input_ori_ids = features['input_ori_ids']
 
 				[output_ids, 
