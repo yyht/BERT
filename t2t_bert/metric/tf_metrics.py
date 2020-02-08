@@ -1,6 +1,7 @@
 import numpy as np
 import tensorflow as tf
-from tensorflow.python.ops.metrics_impl import _streaming_confusion_matrix
+# from tensorflow.python.ops.metrics_impl import _streaming_confusion_matrix
+from metric.metrics_impl_utils import _streaming_confusion_matrix
 
 def precision(labels, predictions, num_classes, pos_indices=None,
               weights=None, average='micro'):
