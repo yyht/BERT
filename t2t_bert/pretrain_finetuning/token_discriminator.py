@@ -456,12 +456,13 @@ def discriminator_metric_global_train(input_dict):
 	
 
 def discriminator_metric_eval(per_example_loss, logits, input_ids, sampled_ids,
-					input_mask):
+					input_mask, **kargs):
 	# original:0, replace:1
 	discriminator_label_ids = tf.not_equal(
 		tf.cast(input_ids, tf.int32),
 		tf.cast(sampled_ids, tf.int32)
 	)
+	discriminator_label_ids = tf.cast(discriminator_label_ids, tf.int32)
 
 	unk_mask = tf.cast(tf.math.equal(input_ids, 100), tf.float32) # not replace unk
 	cls_mask =  tf.cast(tf.math.equal(input_ids, 101), tf.float32) # not replace cls
@@ -490,22 +491,45 @@ def discriminator_metric_eval(per_example_loss, logits, input_ids, sampled_ids,
 		values=discriminator_per_example_loss, 
 		weights=discriminator_mask)
 
-	discriminator_recall = tf.compat.v1.metrics.recall(discriminator_label_ids, 
-						discriminator_lm_predictions,
-						weights=discriminator_mask)
-
-	discriminator_precision = tf.compat.v1.metrics.precision(discriminator_label_ids, 
-						discriminator_lm_predictions,
-						weights=discriminator_mask)
-
-	# discriminator_f1 = 2*(discriminator_recall * discriminator_precision) / ( discriminator_recall + discriminator_precision)
-
-
-	return {
-		"discriminator_accuracy":discriminator_accuracy,
-		"discriminator_loss":discriminator_mean_loss,
-		"discriminator_recall":discriminator_recall,
-		"discriminator_precision":discriminator_precision,
+	output_dict = {
+			"discriminator_accuracy":discriminator_accuracy,
+			"discriminator_loss":discriminator_mean_loss
 	}
+
+	# recall, precision, f1 needs one-hot encoding
+	if not kargs.get('use_tpu', True):
+		discriminator_f1 = tf_metrics.f1(
+										tf.one_hot(discriminator_label_ids, 2), 
+										tf.one_hot(discriminator_lm_predictions, 2), 
+										2, 
+										weights=discriminator_mask, 
+										average="macro")
+		discriminator_precison = tf_metrics.precision(
+										tf.one_hot(discriminator_label_ids, 2), 
+										tf.one_hot(discriminator_lm_predictions, 2), 
+										2, 
+										weights=discriminator_mask, 
+										average='macro')
+		discriminator_recall = tf_metrics.recall(
+										tf.one_hot(discriminator_label_ids, 2), 
+										tf.one_hot(discriminator_lm_predictions, 2), 
+										2, 
+										weights=discriminator_mask, average='macro')
+		output_dict['discriminator_f1'] = discriminator_f1
+		output_dict['discriminator_precison'] = discriminator_precison
+		output_dict['discriminator_recall'] = discriminator_recall
+	else:
+		discriminator_recall = tf.compat.v1.metrics.recall(
+										tf.one_hot(discriminator_label_ids, 2), 
+										tf.one_hot(discriminator_lm_predictions, 2),
+										weights=discriminator_mask)
+
+		discriminator_precision = tf.compat.v1.metrics.precision(
+										tf.one_hot(discriminator_label_ids, 2), 
+										tf.one_hot(discriminator_lm_predictions, 2),
+										weights=discriminator_mask)
+		output_dict['discriminator_precison'] = discriminator_precison
+		output_dict['discriminator_recall'] = discriminator_recall
+	return output_dict
 
 	

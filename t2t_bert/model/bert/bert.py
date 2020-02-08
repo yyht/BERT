@@ -51,6 +51,7 @@ class Bert(object):
 
 				# Add positional embeddings and token type embeddings, then layer
 				# normalize and perform dropout.
+				tf.logging.info("==using segment type embedding ratio: %s==", str(self.config.get("token_type_ratio", 1.0)))
 				self.embedding_output = bert_modules.embedding_postprocessor(
 						input_tensor=self.embedding_output_word,
 						use_token_type=True,
