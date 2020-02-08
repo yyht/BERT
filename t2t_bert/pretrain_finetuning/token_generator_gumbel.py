@@ -223,6 +223,24 @@ def token_generator_gumbel(config, input_tensor,
 							annealed_temp)
 				tf.summary.scalar('t2t_vqvae_stgs temperature decay', 
 							annealed_temp_decay)
+		elif kargs.get('gumbel_anneal', 'vqvae_v1') == 'vqvae_v1':
+			temperature_warmup_steps = kargs.get("num_train_steps", 10000) * 0.1
+			tf.logging.info("****** apply t2t gumbel-softmax temperature annealing method with warm up steps %s ******* ",
+							str(kargs.get("num_train_steps", 10000) * 0.1))
+			steps = temperature_warmup_steps
+			gumbel_samples = sample_gumbel(bert_utils.get_shape_list(flat_logits_tempered, expected_rank=2),
+											samples=config.get('gen_sample', 1))
+			gumbel_samples *= inverse_exp_decay(steps // 5) * 0.5
+			annealed_temp_decay = 1.2 - inverse_lin_decay(steps) # minimum temperature is set 0.2
+			annealed_temp = tf.cond(
+						tf.less(tf.random_uniform([]), 0.9), lambda: annealed_temp_decay,
+						lambda: tf.random_uniform([], minval=0.5, maxval=1.0)) # 10% step for 
+			tf.logging.info("****** apply t2t gumbel-softmax temperature annealing method ******* ")
+			if not kargs.get('use_tpu', True):
+				tf.summary.scalar('t2t_vqvae_stgs temperature', 
+							annealed_temp)
+				tf.summary.scalar('t2t_vqvae_stgs temperature decay', 
+							annealed_temp_decay)
 		else:
 			annealed_temp = 0.2
 			gumbel_samples = None

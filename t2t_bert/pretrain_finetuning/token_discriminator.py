@@ -535,6 +535,55 @@ def discriminator_metric_eval(per_example_loss, logits, input_ids, sampled_ids,
 										2, 
 										weights=discriminator_mask, 
 										average="macro")
+		discriminator_f1_original = tf_metrics.f1(
+										discriminator_label_ids,
+										discriminator_lm_predictions,
+										2, 
+										weights=discriminator_mask,
+										pos_indices=[0],
+										average="macro")
+		discriminator_f1_replaced = tf_metrics.f1(
+										discriminator_label_ids,
+										discriminator_lm_predictions,
+										2, 
+										weights=discriminator_mask,
+										pos_indices=[1],
+										average="macro")
+		discriminator_precision_original = tf_metrics.precision(
+										discriminator_label_ids,
+										discriminator_lm_predictions,
+										2, 
+										weights=discriminator_mask,
+										pos_indices=[0],
+										average="macro")
+		discriminator_precision_replaced = tf_metrics.precision(
+										discriminator_label_ids,
+										discriminator_lm_predictions,
+										2, 
+										weights=discriminator_mask,
+										pos_indices=[1],
+										average="macro")
+		discriminator_recall_original = tf_metrics.recall(
+										discriminator_label_ids,
+										discriminator_lm_predictions,
+										2, 
+										weights=discriminator_mask,
+										pos_indices=[0],
+										average="macro")
+		discriminator_recall_replaced = tf_metrics.recall(
+										discriminator_label_ids,
+										discriminator_lm_predictions,
+										2, 
+										weights=discriminator_mask,
+										pos_indices=[1],
+										average="macro")
+
+		output_dict['discriminator_f1_original'] = discriminator_f1_original
+		output_dict['discriminator_f1_replaced'] = discriminator_f1_replaced
+		output_dict['discriminator_precision_original'] = discriminator_precision_original
+		output_dict['discriminator_precision_replaced'] = discriminator_precision_replaced
+		output_dict['discriminator_recall_original'] = discriminator_recall_original
+		output_dict['discriminator_recall_replaced'] = discriminator_recall_replaced
 		output_dict['discriminator_f1'] = discriminator_f1
 		output_dict['discriminator_precison'] = discriminator_precison
 		output_dict['discriminator_recall'] = discriminator_recall
