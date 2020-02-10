@@ -390,6 +390,7 @@ class Optimizer(object):
 					with tf.variable_scope(key+"/"+"optimizer", reuse=tf.AUTO_REUSE):
 						prev_op = optimizer.apply_gradients(
 							grads_and_vars)
+						tf.logging.info("***** model: %s, step: %s *****", key, str(i))
 		with tf.control_dependencies([prev_op]):
 			train_op = self.global_step.assign_add(1)
 

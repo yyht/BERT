@@ -58,9 +58,9 @@ def get_train_op(generator_dict, discriminator_dict, optimizer_fn, opt_config,
 	elif kargs.get('train_op_type', 'joint') in ['alternate', 'group']:
 		if kargs.get('gen_disc_type', 'all_disc') == 'all_disc':
 			gen_disc_loss = discriminator_dict['loss']
-			gen_dis_loss_ratio = kargs.get('gen_dis_loss_ratio', 10.0)
+			gen_dis_loss_ratio = kargs.get('gen_dis_loss_ratio', 1.0)
 			gen_loss_ratio = kargs.get('gen_loss_ratio', 1.0)
-			dis_loss_ratio = kargs.get('dis_loss_ratio', 10.0)
+			dis_loss_ratio = kargs.get('dis_loss_ratio', 1.0)
 			tf.logging.info("***** dis loss ratio: %s, gen loss ratio: %s, gen-dis loss ratio: %s *****", 
 							str(dis_loss_ratio), str(gen_loss_ratio), str(gen_dis_loss_ratio))
 			tf.logging.info("****** using all disc loss for updating generator *******")
@@ -106,9 +106,9 @@ def get_train_op(generator_dict, discriminator_dict, optimizer_fn, opt_config,
 			tf.logging.info("****** using equal all for updating generator *******")
 			gen_disc_loss =  discriminator_dict['equal_loss_all']
 		else:
-			gen_dis_loss_ratio = kargs.get('gen_dis_loss_ratio', 10.0)
+			gen_dis_loss_ratio = kargs.get('gen_dis_loss_ratio', 1.0)
 			gen_loss_ratio = kargs.get('gen_loss_ratio', 1.0)
-			dis_loss_ratio = kargs.get('dis_loss_ratio', 10.0)
+			dis_loss_ratio = kargs.get('dis_loss_ratio', 1.0)
 			tf.logging.info("***** dis loss ratio: %s, gen loss ratio: %s, gen-dis loss ratio: %s *****", 
 							str(dis_loss_ratio), str(gen_loss_ratio), str(gen_dis_loss_ratio))
 			gen_disc_loss = discriminator_dict['loss']
@@ -137,6 +137,7 @@ def get_train_op(generator_dict, discriminator_dict, optimizer_fn, opt_config,
 		tvars_dict = OrderedDict(zip(['generator', 'discriminator'], [generator_dict['tvars'], discriminator_dict['tvars']]))
 		init_lr_dict = OrderedDict(zip(['generator', 'discriminator'], [generator_config['init_lr'], discriminator_config['init_lr']]))
 		optimizer_type_dict = OrderedDict(zip(['generator', 'discriminator'], [generator_config['optimizer_type'], discriminator_config['optimizer_type']]))
+		loop_step_dict = OrderedDict(zip(['generator', 'discriminator'], [generator_config.get("steps", 1), discriminator_config.get('steps', 1)]))
 		print(loss_dict, '===loss dict=====')
 		if kargs.get('train_op_type', 'joint') == 'alternate':
 			tf.logging.info("***** alternate train op for minmax *****")
@@ -152,6 +153,7 @@ def get_train_op(generator_dict, discriminator_dict, optimizer_fn, opt_config,
 									init_lr_dict,
 									optimizer_type_dict,
 									opt_config.num_train_steps,
+									loop_step_dict=loop_step_dict,
 									**kargs)
 	return train_op
 
@@ -253,7 +255,7 @@ def classifier_model_fn_builder(
 					exclude_scope=exclude_scope_dict.get('discriminator', ""),
 					not_storage_params=not_storage_params_dict.get('discriminator', []),
 					target=target_dict['discriminator'],
-					loss='cross_entropy',
+					loss='cross_entropy', # cross_entropy
 					**kargs)
 
 		discriminator_features = {}

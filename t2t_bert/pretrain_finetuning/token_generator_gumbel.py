@@ -17,6 +17,14 @@ def inverse_exp_decay(max_step, min_value=0.01, step=None):
 	step = tf.cast(step, tf.float32)
 	return inv_base**tf.maximum(float(max_step) - step, 0.0)
 
+def inverse_temp_exp_decay(max_step, max_inv_temp, step=None):
+	if step is None:
+		step = tf.train.get_or_create_global_step()
+	if step is None:
+		return 1.0
+	step = tf.cast(step, tf.float32)
+	return 1.0 / tf.pow(float(max_inv_temp), tf.minimum(step / float(max_step), 1.0))
+
 def inverse_lin_decay(max_step, min_value=0.01, step=None):
 	"""Inverse-decay linearly from min_value to 1.0 reached at max_step."""
 	if step is None:
@@ -168,7 +176,8 @@ def token_generator_gumbel(config, input_tensor,
 		input_shape_list = bert_utils.get_shape_list(logits, expected_rank=3)
 		width = input_shape_list[2]
 
-		logits_tempered = tf.nn.log_softmax(logits, axis=-1)
+		# it seems no need for logits to be normalized
+		logits_tempered = logits #tf.nn.log_softmax(logits, axis=-1)
 
 		# width=config.vocab_size
 		flat_logits_tempered = tf.reshape(logits_tempered,
@@ -181,7 +190,7 @@ def token_generator_gumbel(config, input_tensor,
 			annealed_temp = tf.train.polynomial_decay(config.get('gumbel_temperature', 1.0),
 													tf.train.get_or_create_global_step(),
 													temperature_warmup_steps,
-													end_learning_rate=0.1,
+													end_learning_rate=0.01,
 													power=1.0,
 													cycle=False)
 			gumbel_samples = None
@@ -213,7 +222,7 @@ def token_generator_gumbel(config, input_tensor,
 			gumbel_samples = sample_gumbel(bert_utils.get_shape_list(flat_logits_tempered, expected_rank=2),
 											samples=config.get('gen_sample', 1))
 			gumbel_samples *= inverse_exp_decay(steps // 5) * 0.5
-			annealed_temp_decay = 1.2 - inverse_lin_decay(steps) # minimum temperature is set 0.2
+			annealed_temp_decay = 1.01 - inverse_lin_decay(steps) # minimum temperature is set 0.2
 			annealed_temp = tf.cond(
 						tf.less(tf.random_uniform([]), 0.9), lambda: annealed_temp_decay,
 						lambda: tf.random_uniform([], minval=0.5, maxval=1.0)) # 10% step for 
@@ -230,21 +239,45 @@ def token_generator_gumbel(config, input_tensor,
 			steps = temperature_warmup_steps
 			gumbel_samples = sample_gumbel(bert_utils.get_shape_list(flat_logits_tempered, expected_rank=2),
 											samples=config.get('gen_sample', 1))
-			gumbel_samples *= inverse_exp_decay(steps // 5) * 0.5
-			annealed_temp_decay = 1.2 - inverse_lin_decay(steps) # minimum temperature is set 0.2
-			annealed_temp = tf.cond(
-						tf.less(tf.random_uniform([]), 0.9), lambda: annealed_temp_decay,
-						lambda: tf.random_uniform([], minval=0.5, maxval=1.0)) # 10% step for 
-			tf.logging.info("****** apply t2t gumbel-softmax temperature annealing method ******* ")
+			# gumbel_samples *= inverse_exp_decay(steps)
+			annealed_temp_decay = 1.01 - inverse_exp_decay(kargs.get("num_train_steps", 10000)) # minimum temperature is set 0.2
+			annealed_temp = annealed_temp_decay
+			# annealed_temp = tf.cond(
+			# 			tf.less(tf.random_uniform([]), 0.95), lambda: annealed_temp_decay,
+			# 			lambda: tf.random_uniform([], minval=0.5, maxval=1.0)) # 10% step for 
+			tf.logging.info("****** apply sel-gan gumbel-softmax temperature annealing method ******* ")
+			if not kargs.get('use_tpu', True):
+				tf.summary.scalar('t2t_vqvae_stgs temperature', 
+							annealed_temp)
+				tf.summary.scalar('t2t_vqvae_stgs temperature decay', 
+							annealed_temp_decay)
+		elif kargs.get('gumbel_anneal', 'vqvae_v2') == 'vqvae_v2':
+			temperature_warmup_steps = kargs.get("num_train_steps", 10000) * 0.1
+			tf.logging.info("****** apply t2t gumbel-softmax temperature annealing method with warm up steps %s ******* ",
+							str(kargs.get("num_train_steps", 10000) * 0.1))
+			steps = temperature_warmup_steps
+			gumbel_samples = sample_gumbel(bert_utils.get_shape_list(flat_logits_tempered, expected_rank=2),
+											samples=config.get('gen_sample', 1))
+			# gumbel_samples *= inverse_exp_decay(steps)
+			annealed_temp_decay = inverse_temp_exp_decay(kargs.get("num_train_steps", 10000), kargs.get("max_temp", 100))
+			annealed_temp = annealed_temp_decay
+			# annealed_temp = tf.cond(
+			# 			tf.less(tf.random_uniform([]), 0.95), lambda: annealed_temp_decay,
+			# 			lambda: tf.random_uniform([], minval=0.5, maxval=1.0)) # 10% step for 
+			tf.logging.info("****** apply sel-gan-v2 gumbel-softmax temperature annealing method ******* ")
+			tf.logging.info("****** apply sel-gan-v2 gumbel-softmax num_train_steps:%s annealing method, temp:%s ******* ", str(kargs.get("num_train_steps", 10000)), str(kargs.get("max_temp", 100)))
 			if not kargs.get('use_tpu', True):
 				tf.summary.scalar('t2t_vqvae_stgs temperature', 
 							annealed_temp)
 				tf.summary.scalar('t2t_vqvae_stgs temperature decay', 
 							annealed_temp_decay)
 		else:
-			annealed_temp = 0.2
+			annealed_temp = 0.01
 			gumbel_samples = None
 			tf.logging.info("****** not apply annealed tenperature with fixed temp ******* %s", str(annealed_temp))
+			if not kargs.get('use_tpu', True):
+				tf.summary.scalar('gumbel_temperature', 
+							annealed_temp)
 
 		# [batch x seq] x config.vocab_size x config.get('gen_sample', 1)
 		if kargs.get('stable_gradient', True):
@@ -338,6 +371,20 @@ def token_generator_gumbel(config, input_tensor,
 			sampled_not_equal = 1 - tf.reduce_sum(sampled_not_equal) / (1e-10 + tf.reduce_sum(tf.cast(label_diff_ids, tf.float32)))
 			tf.summary.scalar('generator_sample_acc', 
 							sampled_not_equal)
+
+			sampled_hard_id = tf.one_hot(tf.argmax(sampled_logprob_temp, axis=1), 
+									config.vocab_size,
+									axis=1) # sampled multiminal id
+			sampled_hard_id = tf.cast(sampled_hard_id, tf.float32)
+			sampled_hard_id = tf.reshape(sampled_hard_id, [batch_size, seq_length, config.vocab_size])
+			label_diff_ids_my = tf.cast(label_diff_ids, tf.float32)
+			sampled_soft_id = tf.reshape(sampled_id, [batch_size, seq_length, config.vocab_size])
+			sampled_hard_id *= label_diff_ids_my
+			sampled_soft_id *= label_diff_ids_my
+
+			hard_soft_bias = tf.reduce_sum(tf.sqrt(tf.reduce_sum(tf.pow(sampled_hard_id - sampled_soft_id, 2), axis=-1))) / (1e-10+tf.reduce_sum(tf.cast(label_diff_ids_my, tf.float32)))
+			tf.summary.scalar('soft_hard_bias', 
+							hard_soft_bias)
 
 		return sampled_input_id
 
