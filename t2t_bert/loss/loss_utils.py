@@ -65,15 +65,13 @@ def label_smoothing(inputs, epsilon=0.1):
 	V = inputs.get_shape().as_list()[-1] # number of channels
 	return ((1-epsilon) * inputs) + (epsilon / V)
 
-def ce_label_smoothing(config, logits, labels):
-	gamma = config.get("gamma", 2.0)
+def ce_label_smoothing(config, logits, labels, num_classes, epsilon=0.1):
 
-	log_probs = tf.nn.log_softmax(logits, axis=-1)
+	log_probs = tf.nn.log_softmax(logits, axis=-1) # batch x seq x 2
 
-	labels = tf.reshape(labels, [-1])
-	one_hot_labels = tf.one_hot(labels, depth=2, dtype=tf.float32)
+	one_hot_labels = tf.one_hot(labels, depth=num_classes, dtype=tf.float32) # batch x seq x 2
 
-	smoothed_label = label_smoothing(one_hot_labels)
+	smoothed_label = label_smoothing(one_hot_labels, epsilon)
 	per_example_loss = -tf.reduce_sum(smoothed_label * log_probs, axis=-1)
 	
 	return per_example_loss

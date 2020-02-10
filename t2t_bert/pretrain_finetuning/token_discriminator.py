@@ -4,6 +4,39 @@ from loss import loss_utils
 from utils.bert import albert_modules
 from metric import tf_metrics
 
+def label_smoothing(inputs, epsilon=0.1):
+	'''Applies label smoothing. See 5.4 and https://arxiv.org/abs/1512.00567.
+	inputs: 3d tensor. [N, T, V], where V is the number of vocabulary.
+	epsilon: Smoothing rate.
+	
+	For example,
+	
+	```
+	import tensorflow as tf
+	inputs = tf.convert_to_tensor([[[0, 0, 1], 
+	   [0, 1, 0],
+	   [1, 0, 0]],
+	  [[1, 0, 0],
+	   [1, 0, 0],
+	   [0, 1, 0]]], tf.float32)
+	   
+	outputs = label_smoothing(inputs)
+	
+	with tf.Session() as sess:
+		print(sess.run([outputs]))
+	
+	>>
+	[array([[[ 0.03333334,  0.03333334,  0.93333334],
+		[ 0.03333334,  0.93333334,  0.03333334],
+		[ 0.93333334,  0.03333334,  0.03333334]],
+	   [[ 0.93333334,  0.03333334,  0.03333334],
+		[ 0.93333334,  0.03333334,  0.03333334],
+		[ 0.03333334,  0.93333334,  0.03333334]]], dtype=float32)]   
+	```    
+	'''
+	V = tf.cast(tf.shape(inputs)[-1], tf.float32) # number of channels
+	return ((1-epsilon) * inputs) + (epsilon / V)
+
 
 def classifier(config, seq_output,
 						input_ids,
@@ -112,6 +145,9 @@ def classifier(config, seq_output,
 		logits_ = tf.reshape(logits, [batch_size*seq_length, -1])
 		per_example_loss, _ = loss_utils.focal_loss_binary_v2(config, logits_, not_equal_label_ids_)
 		per_example_loss = tf.reshape(per_example_loss, [batch_size, seq_length])
+	elif kargs.get('loss', 'cross_entropy') == 'cross_entropy_label_smoothing':
+		tf.logging.info("====logging discriminator loss using cross entropy with label smoothing ====")
+		per_example_loss = loss_utils.ce_label_smoothing(config, logits, not_equal_label_ids, 2, epsilon=0.1)
 
 	# loss = per_example_loss * tf.cast(loss_mask, tf.float32)
 	# loss = tf.reduce_sum(loss) / (1e-10 + tf.reduce_sum(tf.cast(loss_mask, tf.float32)))
@@ -516,9 +552,57 @@ def discriminator_metric_eval(per_example_loss, logits, input_ids, sampled_ids,
 										2, 
 										weights=discriminator_mask, 
 										average='macro')
+		discriminator_f1_original = tf_metrics.f1(
+										discriminator_label_ids,
+										discriminator_lm_predictions,
+										2, 
+										weights=discriminator_mask,
+										pos_indices=[0],
+										average="macro")
+		discriminator_f1_replaced = tf_metrics.f1(
+										discriminator_label_ids,
+										discriminator_lm_predictions,
+										2, 
+										weights=discriminator_mask,
+										pos_indices=[1],
+										average="macro")
+		discriminator_precision_original = tf_metrics.precision(
+										discriminator_label_ids,
+										discriminator_lm_predictions,
+										2, 
+										weights=discriminator_mask,
+										pos_indices=[0],
+										average="macro")
+		discriminator_precision_replaced = tf_metrics.precision(
+										discriminator_label_ids,
+										discriminator_lm_predictions,
+										2, 
+										weights=discriminator_mask,
+										pos_indices=[1],
+										average="macro")
+		discriminator_recall_original = tf_metrics.recall(
+										discriminator_label_ids,
+										discriminator_lm_predictions,
+										2, 
+										weights=discriminator_mask,
+										pos_indices=[0],
+										average="macro")
+		discriminator_recall_replaced = tf_metrics.recall(
+										discriminator_label_ids,
+										discriminator_lm_predictions,
+										2, 
+										weights=discriminator_mask,
+										pos_indices=[1],
+										average="macro")
 		output_dict['discriminator_f1'] = discriminator_f1
 		output_dict['discriminator_precison'] = discriminator_precison
 		output_dict['discriminator_recall'] = discriminator_recall
+		output_dict['discriminator_f1_original'] = discriminator_f1_original
+		output_dict['discriminator_f1_replaced'] = discriminator_f1_replaced
+		output_dict['discriminator_precision_original'] = discriminator_precision_original
+		output_dict['discriminator_precision_replaced'] = discriminator_precision_replaced
+		output_dict['discriminator_recall_original'] = discriminator_recall_original
+		output_dict['discriminator_recall_replaced'] = discriminator_recall_replaced
 	else:
 		discriminator_recall = tf.compat.v1.metrics.recall(
 										tf.one_hot(discriminator_label_ids, 2), 
