@@ -75,7 +75,7 @@ def sample_gumbel(shape, samples=1, eps=1e-20):
 	# return -tf.log(-tf.log(U + eps) + eps)
 	return -tf.log(-tf.log(U))
 
-def gumbel_softmax(logits, temperature, gumbel_samples=None, samples=1): 
+def gumbel_softmax(logits, temperature, gumbel_samples=None, samples=1, greedy=False): 
 	""" Draw a sample from the Gumbel-Softmax distribution"""
 	input_shape_list = bert_utils.get_shape_list(logits, expected_rank=2)
 	if samples > 1:
@@ -84,8 +84,14 @@ def gumbel_softmax(logits, temperature, gumbel_samples=None, samples=1):
 		y = logits + sample_gumbel(input_shape_list, samples)
 	else:
 		y = logits + gumbel_samples
-	return [tf.exp(tf.nn.log_softmax(y / temperature, axis=1)), 
-			y]
+	if greedy:
+		tf.logging.info("==apply greedy based sampling and discrete relax==")
+		return [tf.exp(tf.nn.log_softmax(logits / temperature, axis=1)),
+				logits]
+	else:
+		tf.logging.info("==apply sampling based sampling and discrete relax==")
+		return [tf.exp(tf.nn.log_softmax(y / temperature, axis=1)), 
+				y]
 
 def gumbel_softmax_custom_grad(logits, temperature, gumbel_samples=None, samples=1): 
 	""" Draw a sample from the Gumbel-Softmax distribution"""
@@ -284,7 +290,8 @@ def token_generator_gumbel(config, input_tensor,
 			sampled_logprob_temp, sampled_logprob = gumbel_softmax(flat_logits_tempered, 
 										temperature=annealed_temp,
 										gumbel_samples=gumbel_samples,
-										samples=config.get('gen_sample', 1))
+										samples=config.get('gen_sample', 1),
+										greedy=kargs.get("greedy", True))
 			tf.logging.info("****** apply normal derivate for gradient calculation *******")
 		else:
 			sampled_logprob_temp, sampled_logprob = gumbel_softmax_custom_grad(flat_logits_tempered, 

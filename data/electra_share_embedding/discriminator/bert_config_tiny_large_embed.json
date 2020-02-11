@@ -19,5 +19,5 @@
   "embedding_size": 768,
   "restore_var_name": ["bert/embeddings/word_embeddings"],
   "embedding":"factorized",
-  "token_type_ratio":1.0
+  "token_type_ratio":0.0
 }
