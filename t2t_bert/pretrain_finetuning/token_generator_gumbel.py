@@ -318,7 +318,7 @@ def token_generator_gumbel(config, input_tensor,
 										temperature=annealed_temp,
 										gumbel_samples=gumbel_samples,
 										samples=config.get('gen_sample', 1),
-										greedy=kargs.get("greedy", False))
+										greedy=kargs.get("greedy", True))
 			tf.logging.info("****** apply normal derivate for gradient calculation *******")
 		else:
 			sampled_logprob_temp, sampled_logprob = gumbel_softmax_custom_grad(flat_logits_tempered, 
@@ -348,7 +348,7 @@ def token_generator_gumbel(config, input_tensor,
 		else:
 			tf.logging.info("****** not apply gradient flipping *******")
 			sampled_logprob_temp_1 = sampled_logprob_temp
-		if kargs.get("straight_through", True):
+		if kargs.get("straight_through", False):
 			tf.logging.info("****** apply straight_through_estimator *******")
 			sampled_id = tf.stop_gradient(sampled_hard_id-sampled_logprob_temp) + (sampled_logprob_temp_1)
 		else:
