@@ -75,20 +75,47 @@ def sample_gumbel(shape, samples=1, eps=1e-20):
 	# return -tf.log(-tf.log(U + eps) + eps)
 	return -tf.log(-tf.log(U))
 
+def reorder(updates, sd_indices, argsort_axis=1):
+	"""
+	updates: [N, M]
+	"""
+	def prepare_fd(fd_indices, sd_dims):
+		fd_indices = tf.expand_dims(fd_indices, 1)
+		fd_indices = tf.tile(fd_indices, [1, sd_dims])
+		return fd_indices
+
+	# define the updates
+	sd_dims = tf.shape(updates)[1]
+	fd_indices_range = tf.range(0, limit=tf.shape(updates)[0])
+
+	# define the indices
+	indices1 = tf.stack((prepare_fd(fd_indices_range, sd_dims), sd_indices), axis=2)
+	shape = tf.shape(updates)
+	scatter1 = tf.scatter_nd(indices1, updates, shape)
+	return scatter1
+
 def gumbel_softmax(logits, temperature, gumbel_samples=None, samples=1, greedy=False): 
 	""" Draw a sample from the Gumbel-Softmax distribution"""
 	input_shape_list = bert_utils.get_shape_list(logits, expected_rank=2)
 	if samples > 1:
 		logits = tf.expand_dims(logits, -1)
 	if gumbel_samples is None:
-		y = logits + sample_gumbel(input_shape_list, samples)
-	else:
-		y = logits + gumbel_samples
+		gumbel_samples = sample_gumbel(input_shape_list, samples)
 	if greedy:
 		tf.logging.info("==apply greedy based sampling and discrete relax==")
-		return [tf.exp(tf.nn.log_softmax(logits / temperature, axis=1)),
-				logits]
+		if int(tf.__version__.split(".")[1]) < 15:
+			logits_index = tf.contrib.framework.argsort(logits, axis=1)
+			gumbel_samples_sorted = tf.contrib.framework.sort(gumbel_samples, axis=1)
+		else:
+			logits_index = tf.argsort(logits, axis=1)
+			gumbel_samples_sorted = tf.sort(gumbel_samples, axis=1)
+		
+		gumbel_samples_sorted = reorder(gumbel_samples_sorted, logits_index)
+		y = logits + gumbel_samples_sorted
+		return [tf.exp(tf.nn.log_softmax(y / temperature, axis=1)),
+				y]
 	else:
+		y = logits + gumbel_samples
 		tf.logging.info("==apply sampling based sampling and discrete relax==")
 		return [tf.exp(tf.nn.log_softmax(y / temperature, axis=1)), 
 				y]
