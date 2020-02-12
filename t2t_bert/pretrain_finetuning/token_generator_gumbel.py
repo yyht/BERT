@@ -94,6 +94,33 @@ def reorder(updates, sd_indices, argsort_axis=1):
 	scatter1 = tf.scatter_nd(indices1, updates, shape)
 	return scatter1
 
+def reorder_approximate(ref, updates):
+	"""
+	only reorder max elements
+	"""
+	def prepare_fd(fd_indices, sd_dims):
+		fd_indices = tf.expand_dims(fd_indices, 1)
+		fd_indices = tf.tile(fd_indices, [1, sd_dims])
+		return tf.cast(fd_indices, tf.int64)
+
+	fd_indices_range = tf.range(0, limit=tf.shape(ref)[0])
+	ref_indices = tf.cast(tf.expand_dims(tf.argmax(ref, axis=-1), axis=-1), tf.int64)
+	ref_mask = tf.cast(tf.not_equal(ref, tf.reduce_max(ref, axis=-1, keepdims=True)), tf.float32)
+
+	updates_max = tf.expand_dims(tf.reduce_max(updates, axis=-1), axis=-1)
+	sd_dims = tf.shape(ref_indices)[1]
+	
+	updates_mask = tf.cast(tf.not_equal(updates, tf.reduce_max(updates, axis=-1, keepdims=True)), tf.float32)
+#     updates_indices = tf.cast(tf.expand_dims(tf.argmax(updates, axis=-1), axis=-1), tf.int64)
+	
+	indices = tf.stack((prepare_fd(fd_indices_range, sd_dims), ref_indices), axis=2)
+
+	updates_ref = tf.gather_nd(updates, indices)
+	
+	updates = (1-ref_mask) * updates_max + (1-updates_mask) * updates_ref + (ref_mask+updates_mask-1) * updates
+
+	return updates
+
 def gumbel_softmax(logits, temperature, gumbel_samples=None, samples=1, greedy=False): 
 	""" Draw a sample from the Gumbel-Softmax distribution"""
 	input_shape_list = bert_utils.get_shape_list(logits, expected_rank=2)
@@ -103,15 +130,20 @@ def gumbel_softmax(logits, temperature, gumbel_samples=None, samples=1, greedy=F
 		gumbel_samples = sample_gumbel(input_shape_list, samples)
 	if greedy:
 		tf.logging.info("==apply greedy based sampling and discrete relax==")
-		if int(tf.__version__.split(".")[1]) < 15:
-			logits_index = tf.contrib.framework.argsort(logits, axis=1)
-			gumbel_samples_sorted = tf.contrib.framework.sort(gumbel_samples, axis=1)
-		else:
-			logits_index = tf.argsort(logits, axis=1)
-			gumbel_samples_sorted = tf.sort(gumbel_samples, axis=1)
-		
-		gumbel_samples_sorted = reorder(gumbel_samples_sorted, logits_index)
-		y = logits + gumbel_samples_sorted
+		# if int(tf.__version__.split(".")[1]) < 15:
+		# 	if not use_tpu:
+		# 		logits_index = tf.contrib.framework.argsort(logits, axis=1)
+		# 		gumbel_samples_sorted = tf.contrib.framework.sort(gumbel_samples, axis=1)
+		# 		gumbel_samples_sorted = reorder(gumbel_samples_sorted, logits_index)
+		# 	else:
+
+		# else:
+		# 	logits_index = tf.argsort(logits, axis=1)
+		# 	gumbel_samples_sorted = tf.sort(gumbel_samples, axis=1)
+		# 	gumbel_samples_sorted = reorder(gumbel_samples_sorted, logits_index)
+
+		gumbel_samples = reorder_approximate(logits, gumbel_samples)
+		y = logits + gumbel_samples
 		return [tf.exp(tf.nn.log_softmax(y / temperature, axis=1)),
 				y]
 	else:
@@ -348,7 +380,7 @@ def token_generator_gumbel(config, input_tensor,
 		else:
 			tf.logging.info("****** not apply gradient flipping *******")
 			sampled_logprob_temp_1 = sampled_logprob_temp
-		if kargs.get("straight_through", False):
+		if kargs.get("straight_through", True):
 			tf.logging.info("****** apply straight_through_estimator *******")
 			sampled_id = tf.stop_gradient(sampled_hard_id-sampled_logprob_temp) + (sampled_logprob_temp_1)
 		else:
