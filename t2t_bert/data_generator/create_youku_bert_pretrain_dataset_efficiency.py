@@ -216,6 +216,61 @@ def write_single_sintance_to_example_files(writer, instance, tokenizer, max_seq_
 			tf.logging.info(
 					"%s: %s" % (feature_name, " ".join([str(x) for x in values])))
 
+def write_supervised_single_sintance_to_example_files(writer, instance, tokenizer, max_seq_length,
+									max_predictions_per_seq, output_file, inst_index):
+	input_ids = tokenizer.convert_tokens_to_ids(instance.original_tokens)
+	# input_ori_ids = tokenizer.convert_tokens_to_ids(instance.original_tokens)
+	input_mask = [1] * len(input_ids)
+	segment_ids = list(instance.segment_ids)
+
+	token_lens = len(input_ids)
+
+	input_ids = tokenizer.padding(input_ids, max_seq_length, 0)
+	input_mask = tokenizer.padding(input_mask, max_seq_length, 0)
+	segment_ids = tokenizer.padding(segment_ids, max_seq_length, 0)
+	input_ori_ids = tokenizer.padding(input_ori_ids, max_seq_length, 0)
+
+	# masked_lm_positions = list(instance.masked_lm_positions)
+	# masked_lm_ids = tokenizer.convert_tokens_to_ids(instance.masked_lm_labels)
+	# masked_lm_weights = [1.0] * len(masked_lm_ids)
+
+	# masked_lm_positions = tokenizer.padding(masked_lm_positions, max_predictions_per_seq,
+	# 												0)
+	# masked_lm_ids = tokenizer.padding(masked_lm_ids, max_predictions_per_seq,
+	# 											0)
+	# masked_lm_weights = tokenizer.padding(masked_lm_weights, max_predictions_per_seq,
+	# 											0.0)
+
+	next_sentence_label = 1 if instance.is_random_next else 0
+	features = collections.OrderedDict()
+	features["input_ids"] = create_int_feature(input_ids)
+	# features["input_ori_ids"] = create_int_feature(input_ori_ids)
+	features["input_mask"] = create_int_feature(input_mask)
+	features["segment_ids"] = create_int_feature(segment_ids)
+	# features["masked_lm_positions"] = create_int_feature(masked_lm_positions)
+	# features["masked_lm_ids"] = create_int_feature(masked_lm_ids)
+	# features["masked_lm_weights"] = create_float_feature(masked_lm_weights)
+	features["label_ids"] = create_int_feature([next_sentence_label])
+
+	tf_example = tf.train.Example(features=tf.train.Features(feature=features))
+
+	writer.write(tf_example.SerializeToString())
+
+	if inst_index < 10:
+		tf.logging.info("*** Example ***")
+		tf.logging.info("tokens: %s" % " ".join(
+				[x for x in instance.tokens]))
+
+		for feature_name in features.keys():
+			feature = features[feature_name]
+			values = []
+			if feature.int64_list.value:
+				values = feature.int64_list.value
+			elif feature.float_list.value:
+				values = feature.float_list.value
+			tf.logging.info(
+					"%s: %s" % (feature_name, " ".join([str(x) for x in values])))
+
 def create_int_feature(values):
 	feature = tf.train.Feature(int64_list=tf.train.Int64List(value=list(values)))
 	return feature

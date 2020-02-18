@@ -207,7 +207,7 @@ def build_model(sess):
 					2,
 					init_checkpoint=None,
 					model_reuse=None,
-					load_pretrained=True,
+					load_pretrained="no",
 					model_io_config=Bunch({"fix_lm":False}),
 					opt_config={},
 					exclude_scope="",

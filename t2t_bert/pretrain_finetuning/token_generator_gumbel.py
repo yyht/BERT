@@ -121,6 +121,20 @@ def reorder_approximate(ref, updates):
 
 	return updates
 
+def softargmax(logits, temperature=0.01):
+	# [batch x seq, vocab, n_sample]
+	input_shape_list = bert_utils.get_shape_list(logits, expected_rank=[2,3]) 
+	logits_range = tf.range(input_shape_list[1], dtype=tf.float32)
+	logits_range = tf.expand_dims(logits_range, 0) # [1, vocab]
+	if len(input_shape_list) == 3:
+		logits_range = tf.expand_dims(logits_range, -1) # [1, vocab, 1]
+
+	# [batch x seq, vocab]
+	probs = tf.exp(tf.nn.log_softmax(logits/temperature))
+	soft_pos = tf.reduce_sum(probs * logits_range, axis=1, keepdims=True)
+
+	return soft_pos
+
 def gumbel_softmax(logits, temperature, gumbel_samples=None, samples=1, greedy=False): 
 	""" Draw a sample from the Gumbel-Softmax distribution"""
 	input_shape_list = bert_utils.get_shape_list(logits, expected_rank=2)
@@ -350,7 +364,7 @@ def token_generator_gumbel(config, input_tensor,
 										temperature=annealed_temp,
 										gumbel_samples=gumbel_samples,
 										samples=config.get('gen_sample', 1),
-										greedy=kargs.get("greedy", True))
+										greedy=kargs.get("greedy", False))
 			tf.logging.info("****** apply normal derivate for gradient calculation *******")
 		else:
 			sampled_logprob_temp, sampled_logprob = gumbel_softmax_custom_grad(flat_logits_tempered, 
@@ -380,7 +394,7 @@ def token_generator_gumbel(config, input_tensor,
 		else:
 			tf.logging.info("****** not apply gradient flipping *******")
 			sampled_logprob_temp_1 = sampled_logprob_temp
-		if kargs.get("straight_through", True):
+		if kargs.get("straight_through", False):
 			tf.logging.info("****** apply straight_through_estimator *******")
 			sampled_id = tf.stop_gradient(sampled_hard_id-sampled_logprob_temp) + (sampled_logprob_temp_1)
 		else:
@@ -415,8 +429,10 @@ def token_generator_gumbel(config, input_tensor,
 				sep_mask = tf.cast(tf.math.equal(input_ori_ids_1, 102), tf.float32) # not replace sep
 				unsampled_mask = (1 - (unk_mask + cls_mask + sep_mask))*tf.cast(input_mask, tf.float32)
 				unsampled_mask = tf.expand_dims(unsampled_mask, axis=[-1]) # batch x seq x 1
+				ori_input_mask = tf.expand_dims(input_mask, axis=[-1]) # batch x seq x 1
+
 				tf.logging.info("****** all mask sample *******")
-				sampled_input_id = unsampled_mask * tf.cast(sampled_input_id, tf.float32) + (1 - unsampled_mask) * tf.cast(input_ori_ids, tf.float32)
+				sampled_input_id = unsampled_mask * tf.cast(sampled_input_id, tf.float32) + (1 - unsampled_mask) * tf.cast(ori_input_mask, tf.float32) * tf.cast(input_ori_ids, tf.float32)
 		else:
 			sampled_input_id = tf.reshape(samples, [batch_size, seq_length, config.vocab_size, config.get('gen_sample', 1)])
 			label_diff_ids = tf.expand_dims(label_diff_ids, axis=-1) # batch x seq x 1
@@ -433,17 +449,34 @@ def token_generator_gumbel(config, input_tensor,
 				tf.cast(tf.argmax(sampled_input_id, axis=2), tf.int32),
 				tf.cast(tf.argmax(input_ori_ids, axis=2), tf.int32)
 			)
+			sampled_equal_id = tf.equal(
+				tf.cast(tf.argmax(sampled_input_id, axis=2), tf.int32),
+				tf.cast(tf.argmax(input_ori_ids, axis=2), tf.int32)
+			)
+
 			sampled_not_equal = tf.cast(sampled_not_equal_id, tf.float32) * tf.cast(input_mask, tf.float32)
-			sampled_not_equal = 1 - tf.reduce_sum(sampled_not_equal) / (1e-10 + tf.reduce_sum(tf.cast(label_diff_ids, tf.float32)))
+			
+			if kargs.get('mask_method', 'only_mask') == 'only_mask':
+				sampled_not_equal = 1 - tf.reduce_sum(sampled_not_equal) / (1e-10 + tf.reduce_sum(tf.cast(label_diff_ids, tf.float32)))
+				label_diff_ids_my = tf.cast(label_diff_ids, tf.float32)
+			elif kargs.get('mask_method', 'only_mask') == 'all_mask':
+				sampled_equal = tf.cast(sampled_equal_id, tf.float32) * tf.cast(tf.squeeze(unsampled_mask, axis=-1), tf.float32)
+				tf.summary.scalar('generator_equal_sample_acc', 
+							tf.reduce_sum(sampled_equal))
+				label_diff_ids_my = tf.cast(unsampled_mask, tf.float32)
+				sampled_not_equal = 1 - tf.reduce_sum(sampled_not_equal) / (1e-10 + tf.reduce_sum(tf.cast(unsampled_mask, tf.float32)))
+				sampled_equal = tf.reduce_sum(sampled_equal) / (1e-10 + tf.reduce_sum(tf.cast(unsampled_mask, tf.float32)))
 			tf.summary.scalar('generator_sample_acc', 
 							sampled_not_equal)
-
+			tf.summary.scalar("generator_valid_token", 
+							tf.reduce_sum(input_mask))
+			
 			sampled_hard_id = tf.one_hot(tf.argmax(sampled_logprob_temp, axis=1), 
 									config.vocab_size,
 									axis=1) # sampled multiminal id
 			sampled_hard_id = tf.cast(sampled_hard_id, tf.float32)
 			sampled_hard_id = tf.reshape(sampled_hard_id, [batch_size, seq_length, config.vocab_size])
-			label_diff_ids_my = tf.cast(label_diff_ids, tf.float32)
+			
 			sampled_soft_id = tf.reshape(sampled_id, [batch_size, seq_length, config.vocab_size])
 			sampled_hard_id *= label_diff_ids_my
 			sampled_soft_id *= label_diff_ids_my

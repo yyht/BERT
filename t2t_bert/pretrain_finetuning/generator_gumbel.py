@@ -11,6 +11,7 @@ except:
 
 from pretrain_finetuning.token_generator import random_input_ids_generation
 from pretrain_finetuning.token_generator_gumbel import token_generator_gumbel
+from pretrain_finetuning.token_generator_hmm import hmm_input_ids_generation, ngram_prob
 
 from utils.bert import bert_utils
 from model_io import model_io
@@ -44,6 +45,11 @@ def model_fn_builder(
 		exclude_scope = ''
 		tf.logging.info("****** generator parameter sharing with discriminator *******")
 
+	ngram = kargs.get("ngram", 10)
+	mask_prob = kargs.get("mask_prob", 0.2)
+	tf.logging.info("****** dynamic ngram: %s, mask_prob: %s *******", str(ngram), str(mask_prob))	
+	tran_prob, hmm_tran_prob = ngram_prob(ngram, mask_prob)
+
 	def model_fn(features, labels, mode, params):
 
 		model_api = model_zoo(model_config)
@@ -52,15 +58,27 @@ def model_fn_builder(
 			if mode in [tf.estimator.ModeKeys.TRAIN, tf.estimator.ModeKeys.EVAL]:
 				input_ori_ids = features['input_ori_ids']
 
+				# [output_ids, 
+				# sampled_binary_mask] = random_input_ids_generation(model_config,
+				# 							features['input_ori_ids'],
+				# 							features['input_mask'],
+				# 							mask_probability=0.2,
+				# 							replace_probability=0.1,
+				# 							original_probability=0.1,
+				# 							**kargs)
+
 				[output_ids, 
-				sampled_binary_mask] = random_input_ids_generation(model_config,
+				sampled_binary_mask] = hmm_input_ids_generation(model_config,
 											features['input_ori_ids'],
 											features['input_mask'],
+											tf.cast(tf.constant(hmm_tran_prob), tf.float32),
 											mask_probability=0.2,
 											replace_probability=0.1,
 											original_probability=0.1,
 											**kargs)
+
 				features['input_ids'] = tf.identity(output_ids)
+
 				tf.logging.info("****** do random generator *******")
 			else:
 				sampled_binary_mask = None
