@@ -104,11 +104,13 @@ def random_uniform_mask(batch_size, seq_len, mask_probability):
 	uniform_mask = tf.cast(uniform_mask, tf.int32)
 	return uniform_mask
 
-def mask_method(batch_size, seq_len, hmm_tran_prob, mask_probability):
+def mask_method(batch_size, seq_len, hmm_tran_prob, **kargs):
+	mask_probability = kargs.get("mask_probability", 0.2)
+	span_ratio = kargs.get("span_ratio", 1.0)
 	state, span_mask = dynamic_span_mask_v1(batch_size, seq_length, hmm_tran_prob)
 	uniform_mask = random_uniform_mask(batch_size, seq_len, mask_probability)
 	random_mask = tf.cond(
-						tf.less(tf.random_uniform([]), 0.95), 
+						tf.less(tf.random_uniform([]), span_ratio), 
 						lambda: span_mask,
 						lambda: uniform_mask) # 5% step for uniform mask
 	return random_mask
@@ -142,7 +144,7 @@ def hmm_input_ids_generation(config,
 	tf.logging.info("**** apply original_probability %s **** ", str(original_probability))
 
 	# state, sampled_binary_mask = dynamic_span_mask_v1(batch_size, seq_length, hmm_tran_prob)
-	sampled_binary_mask = mask_method(batch_size, seq_len, hmm_tran_prob, mask_probability)
+	sampled_binary_mask = mask_method(batch_size, seq_len, hmm_tran_prob, **kargs)
 
 	sampled_binary_mask = input_mask * (1 - tf.cast(none_replace_mask, tf.int32)) * sampled_binary_mask
 	sampled_binary_mask = tf.cast(sampled_binary_mask, tf.float32)
