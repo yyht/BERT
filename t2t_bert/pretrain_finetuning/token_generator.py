@@ -358,7 +358,7 @@ def token_generator(config, input_tensor,
 		sampled_logprob_temp, sampled_logprob = gumbel_softmax(flat_logits_tempered, 
 										temperature=1.0,
 										samples=config.get('gen_sample', 1),
-										greedy=kargs.get("greedy", True))
+										greedy=kargs.get("greedy", False))
 
 		samples = tf.argmax(sampled_logprob, axis=1) # batch x seq
 

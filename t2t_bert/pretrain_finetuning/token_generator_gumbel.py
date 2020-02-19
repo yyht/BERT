@@ -394,7 +394,7 @@ def token_generator_gumbel(config, input_tensor,
 		else:
 			tf.logging.info("****** not apply gradient flipping *******")
 			sampled_logprob_temp_1 = sampled_logprob_temp
-		if kargs.get("straight_through", False):
+		if kargs.get("straight_through", True):
 			tf.logging.info("****** apply straight_through_estimator *******")
 			sampled_id = tf.stop_gradient(sampled_hard_id-sampled_logprob_temp) + (sampled_logprob_temp_1)
 		else:
