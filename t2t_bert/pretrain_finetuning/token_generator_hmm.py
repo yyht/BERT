@@ -191,6 +191,7 @@ def mask_method(batch_size, seq_len, hmm_tran_prob_list, **kargs):
 	gather_index = tf.concat([batch_idx, span_mask_idx], axis=-1)
 	mixed_random_mask = tf.gather_nd(span_mask_matrix, gather_index)
 	print(mixed_random_mask.get_shape(), "==mix random mask shape==")
+	tf.logging.info("==applying hmm, unigram, ngram mixture mask sampling==")
 	return mixed_random_mask
 
 def hmm_input_ids_generation(config,
