@@ -74,12 +74,12 @@ def dynamic_span_mask_v1(batch_size, seq_len, hmm_tran_prob):
 	print(batch_size, seq_len)
 	def hmm_recurrence(i, cur_state, state):
 		current_prob = tf.gather_nd(hmm_tran_prob, cur_state)
-				print("===prob shape==", current_prob.get_shape())
+		print("===prob shape==", current_prob.get_shape())
 		next_state = tf.multinomial(tf.log(current_prob+1e-10), 
 									num_samples=1, 
 									output_dtype=tf.int32)
 		state = tf.concat([state, next_state], axis=-1)
-				print("state shape==", state.get_shape())
+		print("state shape==", state.get_shape())
 				
 #         state = state.write(i, next_state)  # indices, [batch_size]
 		return i+1, next_state, state
