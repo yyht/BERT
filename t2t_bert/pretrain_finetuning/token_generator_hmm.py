@@ -70,14 +70,17 @@ def dynamic_span_mask_v1(batch_size, seq_len, hmm_tran_prob):
 	init_state = tf.multinomial(tf.log(init_state_prob)+1e-10,
 							num_samples=1,
 							output_dtype=tf.int32) # batch x 1
-
+        
 	print(batch_size, seq_len)
 	def hmm_recurrence(i, cur_state, state):
 		current_prob = tf.gather_nd(hmm_tran_prob, cur_state)
+                print("===prob shape==", current_prob.get_shape())
 		next_state = tf.multinomial(tf.log(current_prob+1e-10), 
 									num_samples=1, 
 									output_dtype=tf.int32)
 		state = tf.concat([state, next_state], axis=-1)
+                print("state shape==", state.get_shape())
+                
 #         state = state.write(i, next_state)  # indices, [batch_size]
 		return i+1, next_state, state
 
@@ -85,7 +88,8 @@ def dynamic_span_mask_v1(batch_size, seq_len, hmm_tran_prob):
 			cond=lambda i, _1, _2: i < seq_len,
 			body=hmm_recurrence,
 			loop_vars=(1, init_state, state),
-			shape_invariants=(tf.TensorShape(None), tf.TensorShape([None,1]), tf.TensorShape([None, None]))
+                        parallel_iterations=1,
+			shape_invariants=(tf.TensorShape(None), tf.TensorShape([None,None]), tf.TensorShape([None, None]))
 			)
 	span_mask = tf.cast(tf.not_equal(state, 0), tf.int32)
 	return state, span_mask
@@ -132,6 +136,7 @@ def mask_method(batch_size, seq_len, hmm_tran_prob_list, **kargs):
 	print(hmm_tran_prob_list)
 	for i, hmm_tran_prob in enumerate(hmm_tran_prob_list):
 		state, span_mask = dynamic_span_mask_v1(batch_size, seq_len, hmm_tran_prob)
+        #        state, span_mask = static_span_mask(batch_size, seq_len, hmm_tran_prob)
 		print(span_mask.get_shape(), i)
 		span_mask_matrix.append(span_mask)
 	uniform_mask = random_uniform_mask(batch_size, seq_len, mask_probability)
@@ -181,7 +186,7 @@ def hmm_input_ids_generation(config,
 	input_shape_list = bert_utils.get_shape_list(input_mask, expected_rank=2)
 	batch_size = input_shape_list[0]
 	seq_length = input_shape_list[1]
-
+        
 	tf.logging.info("**** apply fixed_mask_prob %s **** ", str(mask_probability))
 	tf.logging.info("**** apply replace_probability %s **** ", str(replace_probability))
 	tf.logging.info("**** apply original_probability %s **** ", str(original_probability))
