@@ -20,6 +20,7 @@ import tensorflow as tf
 from metric import tf_metrics
 
 from pretrain_finetuning.token_generator import token_generator, random_input_ids_generation
+from pretrain_finetuning.token_generator_hmm import hmm_input_ids_generation, ngram_prob
 
 def train_metric_fn(masked_lm_example_loss, masked_lm_log_probs, 
 					masked_lm_ids,
@@ -88,6 +89,24 @@ def classifier_model_fn_builder(
 	model_config.num_train_steps = opt_config.num_train_steps
 	# opt_config.init_lr /= 2
 
+	ngram_list = kargs.get("ngram", [10, 3])
+	mask_prob_list = kargs.get("mask_prob", [0.2, 0.2])
+	ngram_ratio = kargs.get("ngram_ratio", [8, 1])
+	uniform_ratio = kargs.get("uniform_ratio", 0.1)
+	tf.logging.info("****** dynamic ngram: %s, mask_prob: %s, mask_prior: %s, uniform_ratio: %s *******", 
+			str(ngram_list), str(mask_prob_list), str(ngram_ratio), str(uniform_ratio))	
+	tran_prob_list, hmm_tran_prob_list = [], []
+	for ngram_sub, mask_prob_sub in zip(ngram_list, mask_prob_list):
+		tran_prob, hmm_tran_prob = ngram_prob(ngram_sub, mask_prob_sub)
+		tran_prob_list.append(tran_prob)
+		hmm_tran_prob_list.append(hmm_tran_prob)
+	mask_prior = []
+	for ratio in ngram_ratio:
+		actual_ratio = (1 - uniform_ratio) / sum(ngram_ratio) * ratio
+		mask_prior.append(actual_ratio)
+	mask_prior.append(uniform_ratio)
+	mask_prior = np.array(mask_prior).astype(np.float32)
+
 	def model_fn(features, labels, mode, params):
 
 		model_api = model_zoo(model_config)
@@ -95,11 +114,22 @@ def classifier_model_fn_builder(
 		input_ori_ids = features.get('input_ori_ids', None)
 		if mode == tf.estimator.ModeKeys.TRAIN:
 			if input_ori_ids is not None:
+				# [output_ids, 
+				# sampled_binary_mask] = random_input_ids_generation(
+				# 							model_config, 
+				# 							input_ori_ids,
+				# 							features['input_mask'],
+				# 							**kargs)
+
 				[output_ids, 
-				sampled_binary_mask] = random_input_ids_generation(
-											model_config, 
-											input_ori_ids,
+				sampled_binary_mask] = hmm_input_ids_generation(model_config,
+											features['input_ori_ids'],
 											features['input_mask'],
+											[tf.cast(tf.constant(hmm_tran_prob), tf.float32) for hmm_tran_prob in hmm_tran_prob_list],
+											mask_probability=0.2,
+											replace_probability=0.1,
+											original_probability=0.1,
+											mask_prior=tf.cast(tf.constant(mask_prior), tf.float32),
 											**kargs)
 
 				features['input_ids'] = output_ids
