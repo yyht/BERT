@@ -58,8 +58,19 @@ def ngram_prob(ngram, mask_prob):
 # 	print("==span mask shape==", span_mask.get_shape())
 # 	return state, span_mask
 
-def dynamic_span_mask_v1(batch_size, seq_len, hmm_tran_prob, start_index=0):
+def dynamic_span_mask_v1(batch_size, seq_len, hmm_tran_prob):
 	state = tf.zeros((batch_size, 1), dtype=tf.int32)
+	tran_size = bert_utils.get_shape_list(hmm_tran_prob, expected_rank=[2])
+	init_state_prob = tf.random_uniform([batch_size, tran_size[0]],
+							minval=0.0,
+							maxval=10.0,
+							dtype=tf.float32)
+	valid_init_state_mask = tf.expand_dims(tf.cast(tf.not_equal(hmm_tran_prob, 0)[:,0], tf.float32), axis=0)
+	init_state_prob *= valid_init_state_mask
+	init_state = tf.multinomial(tf.log(init_state_prob)+1e-10,
+							num_samples=1,
+							output_dtype=tf.int32) # batch x 1
+
 	print(batch_size, seq_len)
 	def hmm_recurrence(i, cur_state, state):
 		current_prob = tf.gather_nd(hmm_tran_prob, cur_state)
@@ -73,16 +84,25 @@ def dynamic_span_mask_v1(batch_size, seq_len, hmm_tran_prob, start_index=0):
 	_, _, state = tf.while_loop(
 			cond=lambda i, _1, _2: i < seq_len,
 			body=hmm_recurrence,
-			loop_vars=(1, tf.cast(start_index*tf.ones((batch_size,1)), dtype=tf.int32), 
-					   state),
+			loop_vars=(1, init_state, state),
 			shape_invariants=(tf.TensorShape(None), tf.TensorShape([None,1]), tf.TensorShape([None, None]))
 			)
 	span_mask = tf.cast(tf.not_equal(state, 0), tf.int32)
 	return state, span_mask
 
-def static_span_mask(batch_size, seq_len, hmm_tran_prob, start_index=0):
+def static_span_mask(batch_size, seq_len, hmm_tran_prob):
 	state_seq = []
-	cur_state = tf.cast(start_index*tf.ones((batch_size, 1)), dtype=tf.int32)
+	tran_size = bert_utils.get_shape_list(hmm_tran_prob, expected_rank=[2])
+	valid_init_state_mask = tf.expand_dims(tf.cast(tf.not_equal(hmm_tran_prob, 0)[:,0], tf.float32), axis=0)
+	init_state_prob = tf.random_uniform([batch_size, tran_size[0]],
+							minval=0.0,
+							maxval=10.0,
+							dtype=tf.float32)
+	init_state_prob *= valid_init_state_mask
+	cur_state = tf.multinomial(tf.log(init_state_prob)+1e-10,
+							num_samples=1,
+							output_dtype=tf.int32) # batch x 1
+	# cur_state = tf.cast(start_index*tf.ones((batch_size, 1)), dtype=tf.int32)
 	def hmm_recurrence(i, cur_state):
 		current_prob = tf.gather_nd(hmm_tran_prob, cur_state)
 		next_state = tf.multinomial(tf.log(current_prob+1e-10), 
@@ -111,13 +131,13 @@ def mask_method(batch_size, seq_len, hmm_tran_prob_list, **kargs):
 	span_mask_matrix = []
 	print(hmm_tran_prob_list)
 	for i, hmm_tran_prob in enumerate(hmm_tran_prob_list):
-		state, span_mask = dynamic_span_mask_v1(batch_size, seq_len, hmm_tran_prob, start_index=2)
+		state, span_mask = dynamic_span_mask_v1(batch_size, seq_len, hmm_tran_prob)
 		print(span_mask.get_shape(), i)
 		span_mask_matrix.append(span_mask)
 	uniform_mask = random_uniform_mask(batch_size, seq_len, mask_probability)
 	span_mask_matrix.append(uniform_mask)
 
-	span_mask_matrix = tf.stack(span_mask_matrix, axis=0) # [len(hmm_tran_prob_list), batch, seq]
+	span_mask_matrix = tf.stack(span_mask_matrix, axis=1) # [batch, len(hmm_tran_prob_list), seq]
 	print(span_mask_matrix.get_shape(), "=====")
 	if mask_prior is not None:
 		mask_prob = tf.tile(tf.expand_dims(mask_prior, 0), [batch_size, 1])
@@ -166,7 +186,7 @@ def hmm_input_ids_generation(config,
 	tf.logging.info("**** apply replace_probability %s **** ", str(replace_probability))
 	tf.logging.info("**** apply original_probability %s **** ", str(original_probability))
 
-	# state, sampled_binary_mask = dynamic_span_mask_v1(batch_size, seq_length, hmm_tran_prob)
+	# state, sampled_binary_mask = dynamic_span_mask_v1(batch_size, seq_length, hmm_tran_prob_list[0])
 	sampled_binary_mask = mask_method(batch_size, seq_length, hmm_tran_prob_list, **kargs)
 
 	sampled_binary_mask = input_mask * (1 - tf.cast(none_replace_mask, tf.int32)) * sampled_binary_mask
