@@ -53,8 +53,8 @@ pai -name tensorflow1120
 	-Dtags='bert'
 	-DmaxHungTimeBeforeGCInSeconds=0
 	-DentryFile='./BERT/t2t_bert/distributed_bin/collective_reduce_train_eval_api.py' 
-	-Dcluster='{\"worker\":{\"count\":12, \"gpu\":400}}'
-	-DhyperParameters='file:///Users/xuhaotian/Desktop/my_work/BERT/t2t_bert/pretrain_finetuning/open_domain_albert_tiny'
+	-Dcluster='{\"worker\":{\"count\":2, \"gpu\":200}}'
+	-DhyperParameters='file:///Users/xuhaotian/Desktop/my_work/BERT/t2t_bert/pretrain_finetuning/youku_title_comment_pretrain'
 	-Dbuckets='oss://alg-misc/BERT/?role_arn=acs:ram::1265628042679515:role/yuefeng2&host=cn-hangzhou.oss-internal.aliyun-inc.com';
 "
 echo "${pai_command}"

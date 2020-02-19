@@ -28,6 +28,7 @@ alternate/share_embedding/corrupted_ce_0.2_soft_constant_unnormalized_logits_2g1
 group/corrupted_ce_0.2_soft_constant_unnormalized_new_greedy_stgs
 group/corrupted_ce_0.2_soft_constant_unnormalized_fix_greedy_gs
 
+group/corrupted_ce_0.2_soft_constant_unnormalized_fix_sample_stgs
 
 tpu:
 /home/htxu91/log/group/soft/constant_0.01/electra_bert_tiny_gen_bert_tiny_dis_joint_gumbel_no_sharing_pretrained_embedding/log.info
@@ -38,3 +39,14 @@ tpu:
 
 /home/htxu91/log/group/st/constant_0.01/electra_bert_tiny_gen_bert_tiny_dis_joint_gumbel_no_sharing_pretrained_embedding/log.info
 /home/htxu91/log/group/st/constant_0.01_greedy/electra_bert_tiny_gen_bert_tiny_dis_joint_gumbel_no_sharing_pretrained_embedding/log.info
+
+
+relgan:
+relgan/all_mask_unnormalized_constant_0.01   standard
+relgan/all_mask_unnormalized_soft_constant_0.01_JS_test
+relgan/all_mask_unnormalized_soft_constant_0.01_js  js-divergence
+relgan/all_mask_unnormalized_soft_constant_0.01_RSGAN rsgan
+relgan/all_mask_unnormalized_soft_constant_0.01_JS_test_span_mask
+
+pretrain_single_random_gan_youku/model/estimator/bert_tiny/
+

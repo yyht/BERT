@@ -35,6 +35,11 @@ try:
 except:
 	from electra_model_fn_fce import classifier_model_fn_builder as classifier_model_fn_builder_fce
 
+try:
+	from .electra_model_fn_gumbel_relgan import classifier_model_fn_builder as classifier_model_fn_builder_relgan
+except:
+	from electra_model_fn_gumbel_relgan import classifier_model_fn_builder as classifier_model_fn_builder_relgan
+
 
 import numpy as np
 import tensorflow as tf
@@ -215,6 +220,9 @@ def train_eval_fn(FLAGS,
 	elif kargs.get("electra_mode", "electra_fce") == "electra_fce":
 		tf.logging.info("***** electra mode ***** optimial discriminator with big and small generator")
 		model_fn_builder = classifier_model_fn_builder_fce
+	elif kargs.get("electra_mode", "electra_fce") == "electra_relgan":
+		tf.logging.info("***** electra mode ***** relgan with global adversarial training")
+		model_fn_builder = classifier_model_fn_builder_relgan
 	else:
 		model_fn_builder = classifier_model_fn_builder
 

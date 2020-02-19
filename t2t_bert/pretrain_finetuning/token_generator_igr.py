@@ -166,7 +166,7 @@ def token_generator_igr(config, input_tensor,
 					tf.logging.info("****** apply auto-scale temperature for multi-sampling *******")
 					annealed_temp = tf.expand_dims(annealed_temp, -1)
 		else:
-			annealed_temp = 1.0
+			annealed_temp = 0.01
 			tf.logging.info("****** not apply annealed tenperature with fixed temp ******* %s", str(annealed_temp))
 			
 		# [batch x seq] x config.vocab_size x config.get('gen_sample', 1)

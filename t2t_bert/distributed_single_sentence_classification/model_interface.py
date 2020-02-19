@@ -100,7 +100,7 @@ def model_config_parser(FLAGS):
 		config.rule_type_size = 2
 		config.lm_ratio = 1.0
 		config.max_length = FLAGS.max_length
-		config.nsp_ratio = 0.0
+		config.nsp_ratio = 1.0
 		config.max_predictions_per_seq = FLAGS.max_predictions_per_seq
 		if FLAGS.task_type in ["pair_sentence_classification"]:
 			config.classifier = FLAGS.classifier
