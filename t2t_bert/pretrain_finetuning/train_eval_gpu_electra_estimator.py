@@ -238,7 +238,6 @@ def train_eval_fn(FLAGS,
 				use_tpu=FLAGS.use_tpu,
 				graph=None,
 				num_train_steps=num_train_steps,
-				batch_size=FLAGS.batch_size,
 				**kargs)
 
 	if FLAGS.use_tpu:
