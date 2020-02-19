@@ -61,6 +61,7 @@ def model_fn_builder(
 		actual_ratio = (1 - uniform_ratio) / sum(ngram_ratio) * ratio
 		mask_prior.append(actual_ratio)
 	mask_prior.append(uniform_ratio)
+	tf.logging.info("****** mask prior: %s *******", str(mask_prior))
 	mask_prior = np.array(mask_prior).astype(np.float32)
 
 	def model_fn(features, labels, mode, params):
