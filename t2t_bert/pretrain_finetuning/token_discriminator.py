@@ -541,8 +541,8 @@ def discriminator_metric_eval(per_example_loss, logits, input_ids, sampled_ids,
 										weights=discriminator_mask, 
 										average="macro")
 		discriminator_precison = tf_metrics.precision(
-										discriminator_label_ids,
-										discriminator_lm_predictions,
+										discriminator_label_ids, 
+										discriminator_lm_predictions, 
 										2, 
 										weights=discriminator_mask, 
 										average='macro')
@@ -613,6 +613,7 @@ def discriminator_metric_eval(per_example_loss, logits, input_ids, sampled_ids,
 										tf.one_hot(discriminator_label_ids, 2), 
 										tf.one_hot(discriminator_lm_predictions, 2),
 										weights=discriminator_mask)
+
 		discriminator_f1 = tf_metrics.f1(
 										discriminator_label_ids,
 										discriminator_lm_predictions,
