@@ -60,6 +60,7 @@ def model_fn_builder(
 		actual_ratio = (1 - uniform_ratio) / sum(ngram_ratio) * ratio
 		mask_prior.append(actual_ratio)
 	mask_prior.append(uniform_ratio)
+	tf.logging.info("****** mask prior: %s *******", str(mask_prior))
 	mask_prior = np.array(mask_prior).astype(np.float32)
 	
 	def model_fn(features, labels, mode, params):
@@ -168,13 +169,39 @@ def model_fn_builder(
 		print(model_config.lm_ratio, '==mlm lm_ratio==')
 		loss = model_config.lm_ratio * masked_lm_loss + 0.0 * nsp_loss
 
+		if kargs.get("resample_discriminator", False):
+			input_ori_ids = features['input_ori_ids']
+
+			[output_ids, 
+			sampled_binary_mask] = random_input_ids_generation(model_config,
+										features['input_ori_ids'],
+										features['input_mask'],
+										mask_probability=0.2,
+										replace_probability=0.1,
+										original_probability=0.1)
+
+			resample_features = {}
+			for key in features:
+				resample_features[key] = features[key]
+
+			resample_features['input_ids'] = tf.identity(output_ids)
+			model_resample = model_api(model_config, resample_features, labels,
+							mode, target, reuse=tf.AUTO_REUSE,
+							**kargs)
+
+			tf.logging.info("**** apply discriminator resample **** ")
+		else:
+			model_resample = model
+			resample_features = features
+			tf.logging.info("**** not apply discriminator resample **** ")
+
 		sampled_ids = token_generator(model_config, 
-									model.get_sequence_output(), 
-									model.get_embedding_table(), 
-									features['input_ids'], 
-									features['input_ori_ids'],
-									features['input_mask'],	
-									embedding_projection=model.get_embedding_projection_table(),
+									model_resample.get_sequence_output(), 
+									model_resample.get_embedding_table(), 
+									resample_features['input_ids'], 
+									resample_features['input_ori_ids'],
+									resample_features['input_mask'],	
+									embedding_projection=model_resample.get_embedding_projection_table(),
 									scope=generator_scope_prefix,
 									mask_method='only_mask',
 									use_tpu=kargs.get('use_tpu', True))

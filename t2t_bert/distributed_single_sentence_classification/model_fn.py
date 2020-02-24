@@ -121,28 +121,28 @@ def model_fn_builder(
 					return estimator_spec
 
 		elif mode == tf.estimator.ModeKeys.PREDICT:
-			if model_config.get('label_type', 'single_label') == 'single_label':
-				print(logits.get_shape(), "===logits shape===")
-				pred_label = tf.argmax(logits, axis=-1, output_type=tf.int32)
-				prob = tf.nn.softmax(logits)
-				max_prob = tf.reduce_max(prob, axis=-1)
+			# if model_config.get('label_type', 'single_label') == 'single_label':
+			# 	print(logits.get_shape(), "===logits shape===")
+			# 	pred_label = tf.argmax(logits, axis=-1, output_type=tf.int32)
+			# 	prob = tf.nn.softmax(logits)
+			# 	max_prob = tf.reduce_max(prob, axis=-1)
 				
-				estimator_spec = tf.estimator.EstimatorSpec(
-										mode=mode,
-										predictions={
-													'pred_label':pred_label,
-													"max_prob":max_prob
-										},
-										export_outputs={
-											"output":tf.estimator.export.PredictOutput(
-														{
-															'pred_label':pred_label,
-															"max_prob":max_prob
-														}
-													)
-										}
-							)
-			elif model_config.get('label_type', 'single_label') == 'multi_label':
+			# 	estimator_spec = tf.estimator.EstimatorSpec(
+			# 							mode=mode,
+			# 							predictions={
+			# 										'pred_label':pred_label,
+			# 										"max_prob":max_prob
+			# 							},
+			# 							export_outputs={
+			# 								"output":tf.estimator.export.PredictOutput(
+			# 											{
+			# 												'pred_label':pred_label,
+			# 												"max_prob":max_prob
+			# 											}
+			# 										)
+			# 							}
+			# 				)
+			if model_config.get('label_type', 'single_label') == 'multi_label':
 				prob = tf.nn.sigmoid(logits)
 				estimator_spec = tf.estimator.EstimatorSpec(
 										mode=mode,

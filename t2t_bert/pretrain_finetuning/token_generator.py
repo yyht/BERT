@@ -110,15 +110,15 @@ def random_input_ids_generation(config,
 	flatten_vocab_sample_logits = tf.reshape(vocab_sample_logits, 
 											[batch_size*seq_length, -1])
 
-	sampled_logprob_temp, sampled_logprob = gumbel_softmax(flatten_vocab_sample_logits, 
-										temperature=0.1,
-										samples=config.get('gen_sample', 1))
+	# sampled_logprob_temp, sampled_logprob = gumbel_softmax(flatten_vocab_sample_logits, 
+	# 									temperature=0.1,
+	# 									samples=config.get('gen_sample', 1))
 
-	sample_vocab_ids = tf.argmax(sampled_logprob, axis=1) # batch x seq
+	# sample_vocab_ids = tf.argmax(sampled_logprob, axis=1) # batch x seq
 
-	# sample_vocab_ids = tf.multinomial(flatten_vocab_sample_logits, 
-	# 							num_samples=config.get('gen_sample', 1), 
-	# 							output_dtype=tf.int32)
+	sample_vocab_ids = tf.multinomial(flatten_vocab_sample_logits, 
+								num_samples=config.get('gen_sample', 1), 
+								output_dtype=tf.int32)
 
 	sample_vocab_ids = tf.reshape(sample_vocab_ids, [batch_size, seq_length])
 	sample_vocab_ids = tf.cast(sample_vocab_ids, tf.float32)
