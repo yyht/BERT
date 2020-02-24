@@ -225,7 +225,83 @@ flags.DEFINE_string(
 	)
 
 flags.DEFINE_string(
+	"distillation_config", 'postln',
+	"if apply distillation"
+	)
+
+flags.DEFINE_bool(
+	"use_tpu", False,
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
+	"joint_train", "0",
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
+	"electra_mode", "solo_training",
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
+	"sharing_mode", "none",
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
+	"attention_type", "normal_attention",
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
+	"exclude_scope", "",
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
+	"ues_token_type", "yes",
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
 	"model_scope", "bert",
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
+	"gumbel_anneal", "anneal",
+	"if apply distillation"
+	)
+
+flags.DEFINE_bool(
+	"annealed_mask_prob", False,
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
+	"optimization_type", "grl",
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
+	"gen_disc_type", "all_disc",
+	"if apply distillation"
+	)
+
+
+flags.DEFINE_string(
+	"train_op_type", "joint",
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
+	"mask_method", "only_mask",
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
+	"minmax_mode", "corrupted",
 	"if apply distillation"
 	)
 

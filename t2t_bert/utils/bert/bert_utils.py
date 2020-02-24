@@ -121,6 +121,8 @@ def gather_indexes(sequence_tensor, positions):
 # 3. conditional generation
 def generate_seq2seq_mask(attention_mask, mask_sequence, seq_type, **kargs):
 	if seq_type == 'seq2seq':
+		attention_mask = tf.cast(attention_mask, tf.float32)
+		mask_sequence = tf.cast(mask_sequence, tf.float32)
 		if mask_sequence is not None:
 			seq_shape = get_shape_list(mask_sequence, expected_rank=2)
 			seq_len = seq_shape[1]
@@ -132,6 +134,7 @@ def generate_seq2seq_mask(attention_mask, mask_sequence, seq_type, **kargs):
 			# generate mask of batch x seq_len x seq_len
 			a_mask = tf.reshape(a_mask, (-1, seq_len, seq_len))
 			out_mask = attention_mask * a_mask
+			out_mask = tf.cast(out_mask, tf.float32)
 		else:
 			# ones = tf.ones_like(attention_mask[:1])
 			# mask = (tf.matrix_band_part(ones, -1, 0))
@@ -142,7 +145,7 @@ def generate_seq2seq_mask(attention_mask, mask_sequence, seq_type, **kargs):
 			mask = tf.matrix_band_part(ones, -1, 0)
 			out_mask = attention_mask * mask
 	else:
-		out_mask = attention_mask
+		out_mask = tf.cast(attention_mask, tf.float32)
 
 	return out_mask
 

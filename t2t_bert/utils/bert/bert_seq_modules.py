@@ -13,6 +13,7 @@ import numpy as np
 
 from utils.bert import bert_utils
 from utils.bert import layer_norm_utils
+from utils.bert import bert_modules
 
 def gelu(input_tensor):
 	"""Gaussian Error Linear Unit.
@@ -556,19 +557,31 @@ def attention_layer(from_tensor,
 			kernel_initializer=create_initializer(initializer_range))
 
 	# `query_layer` = [B, N, F, H]
-	query_layer = transpose_for_scores(query_layer, batch_size,
-																		 num_attention_heads, from_seq_length,
-																		 size_per_head)
+	query_layer = transpose_for_scores(query_layer, 
+									 batch_size,
+									 num_attention_heads, 
+									 from_seq_length,
+									 size_per_head)
 
 	# `key_layer` = [B, N, T, H]
-	key_layer = transpose_for_scores(key_layer, batch_size, num_attention_heads,
-																	 to_seq_length, size_per_head)
+	key_layer = transpose_for_scores(key_layer, 
+									batch_size, 
+									num_attention_heads,
+									to_seq_length, 
+									size_per_head)
 
-	present = tf.stack([key_layer, query_layer], axis=2) # multihead attention 
+	# `value_layer` = [B, N, T, H]
+	value_layer = transpose_for_scores(value_layer, 
+									batch_size, 
+									num_attention_heads,
+									to_seq_length, 
+									size_per_head)
+
+	present = tf.stack([key_layer, value_layer], axis=1) # multihead attention 
 	if past is not None:
-		pk, pv = tf.unstack(past, axis=2)
-		key_layer = tf.concat([pk, key_layer], axis=2)
-		query_layer = tf.concat([pv, query_layer], axis=2)
+		pk, pv = tf.unstack(past, axis=1)
+		key_layer = tf.concat([pk, key_layer], axis=-2)
+		value_layer = tf.concat([pv, value_layer], axis=-2)
 
 	# Take the dot product between "query" and "key" to get the raw
 	# attention scores.
@@ -599,13 +612,13 @@ def attention_layer(from_tensor,
 	# seem a bit unusual, but is taken from the original Transformer paper.
 	attention_probs = dropout(attention_probs, attention_probs_dropout_prob)
 
-	# `value_layer` = [B, T, N, H]
-	value_layer = tf.reshape(
-			value_layer,
-			[batch_size, to_seq_length, num_attention_heads, size_per_head])
+	# # `value_layer` = [B, T, N, H]
+	# value_layer = tf.reshape(
+	# 		value_layer,
+	# 		[batch_size, to_seq_length, num_attention_heads, size_per_head])
 
-	# `value_layer` = [B, N, T, H]
-	value_layer = tf.transpose(value_layer, [0, 2, 1, 3])
+	# # `value_layer` = [B, N, T, H]
+	# value_layer = tf.transpose(value_layer, [0, 2, 1, 3])
 
 	# `context_layer` = [B, N, F, H]
 	context_layer = tf.matmul(attention_probs, value_layer)
@@ -690,8 +703,11 @@ def transformer_model(input_tensor,
 	# The Transformer performs sum residuals on all layers so the input needs
 	# to be the same as the hidden size.
 	if input_width != hidden_size:
-		raise ValueError("The width of the input tensor (%d) != hidden size (%d)" %
-										 (input_width, hidden_size))
+		input_tensor = bert_modules.dense_layer_2d(
+		input_tensor, hidden_size, create_initializer(initializer_range),
+		None, name="embedding_hidden_mapping_in")
+
+		tf.logging.info("==apply embedding linear projection==")
 
 	# We keep the representation as a 2D tensor to avoid re-shaping it back and
 	# forth from a 3D tensor to a 2D tensor. Re-shapes are normally free on

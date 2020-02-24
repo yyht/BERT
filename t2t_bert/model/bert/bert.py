@@ -70,6 +70,13 @@ class Bert(object):
 									attention_probs_dropout_prob,
 									**kargs):
 		reuse = kargs["reuse"]
+		input_shape = bert_utils.get_shape_list(input_ids, expected_rank=[2,3])
+		batch_size = input_shape[0]
+		seq_length = input_shape[1]
+
+		if input_mask is None:
+			input_mask = tf.ones(shape=[batch_size, seq_length], dtype=tf.int32)
+
 		with tf.variable_scope(self.config.get("scope", "bert"), reuse=reuse):
 			with tf.variable_scope("encoder"):
 				# This converts a 2D mask of shape [batch_size, seq_length] to a 3D
@@ -77,6 +84,26 @@ class Bert(object):
 				# for the attention scores.
 				attention_mask = bert_modules.create_attention_mask_from_input_mask(
 						input_ids, input_mask)
+
+				seq_type = kargs.get('seq_type', "None")
+
+				if seq_type == "seq2seq":
+					if kargs.get("mask_type", "left2right") == "left2right":
+						mask_sequence = input_mask
+						tf.logging.info("==apply left2right LM model with casual mask==")
+					elif kargs.get("mask_type", "left2right") == "seq2seq":
+						token_type_ids = kargs.get("token_type_ids", None)
+						tf.logging.info("==apply left2right LM model with conditional casual mask==")
+						if token_type_ids is None:
+							token_type_ids = tf.zeros(shape=[batch_size, seq_length], dtype=tf.int32)
+							tf.logging.info("==conditional mask is set to 0 and degenerate to left2right LM model==")
+						mask_sequence = token_type_ids
+					attention_mask = bert_utils.generate_seq2seq_mask(attention_mask, 
+														mask_sequence,
+														seq_type,
+														**kargs)
+				else:
+					tf.logging.info("==apply bi-directional LM model with bi-directional mask==")
 
 				# Run the stacked transformer.
 				# `sequence_output` shape = [batch_size, seq_length, hidden_size].

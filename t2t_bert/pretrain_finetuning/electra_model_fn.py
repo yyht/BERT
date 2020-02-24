@@ -79,6 +79,7 @@ def classifier_model_fn_builder(
 					exclude_scope=exclude_scope_dict.get('generator', ""),
 					not_storage_params=not_storage_params_dict.get('generator', []),
 					target=target_dict['generator'],
+					resample_discriminator=False,
 					**kargs)
 		generator_dict = generator_fn(features, labels, mode, params)
 
