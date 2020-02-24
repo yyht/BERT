@@ -288,6 +288,9 @@ class Bert(object):
 						activation=tf.tanh,
 						kernel_initializer=bert_modules.create_initializer(self.config.initializer_range))
 	
+	def get_present(self):
+		return tf.stack(self.all_present, axis=1) # cache internal states
+	
 	def get_multihead_attention(self):
 		return self.all_attention_scores
 	
