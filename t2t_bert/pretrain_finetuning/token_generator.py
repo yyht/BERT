@@ -355,12 +355,17 @@ def token_generator(config, input_tensor,
 
 		# flat_logits_tempered_topk = top_k_logits(flat_logits_tempered, int(config.vocab_size/2))
 
-		sampled_logprob_temp, sampled_logprob = gumbel_softmax(flat_logits_tempered, 
+                if not kargs.get("greedy", True):
+		    sampled_logprob_temp, sampled_logprob = gumbel_softmax(flat_logits_tempered, 
 										temperature=1.0,
 										samples=config.get('gen_sample', 1),
 										greedy=kargs.get("greedy", False))
 
-		samples = tf.argmax(sampled_logprob, axis=1) # batch x seq
+	    	    samples = tf.argmax(sampled_logprob, axis=1) # batch x seq
+                    tf.logging.info("****** normal sample *******")
+                else:
+                    samples = tf.argmax(flat_logits_tempered, axis=-1)
+                    tf.logging.info("****** greedy sample *******")
 
 		# samples = tf.multinomial(flat_logits_tempered, 
 		# 						num_samples=config.get('gen_sample', 1), 

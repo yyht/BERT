@@ -27,7 +27,7 @@ def get_train_op(generator_dict, discriminator_dict, optimizer_fn, opt_config,
 				**kargs):
 	tf.logging.info("***** original joint train op *****")
 	tvars = []
-	dis_loss_ratio = kargs.get('dis_loss_ratio', 10.0)
+	dis_loss_ratio = kargs.get('dis_loss_ratio', 50.0)
 	gen_loss_ratio = kargs.get('gen_loss_ratio', 1.0)
 	tf.logging.info("***** dis loss ratio: %s, gen loss ratio: %s *****", str(dis_loss_ratio), str(gen_loss_ratio))
 	tvars.extend(discriminator_dict['tvars'])
