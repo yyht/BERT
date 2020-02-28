@@ -88,7 +88,8 @@ def dynamic_span_mask_v1(batch_size, seq_len, hmm_tran_prob):
 			cond=lambda i, _1, _2: i < seq_len,
 			body=hmm_recurrence,
 			loop_vars=(1, init_state, state),
-						parallel_iterations=1,
+			parallel_iterations=1,
+			back_prop=False,
 			shape_invariants=(tf.TensorShape(None), tf.TensorShape([None,None]), tf.TensorShape([None, None]))
 			)
 	span_mask = tf.cast(tf.not_equal(state, 0), tf.int32)
@@ -120,6 +121,7 @@ def dynamic_span_mask_v2(batch_size, seq_len, hmm_tran_prob):
 			cond=lambda i, _1, _2: i < seq_len,
 			body=hmm_recurrence,
 			loop_vars=(1, init_state, state),
+			back_prop=False,
 			)
 	span_mask = tf.cast(tf.not_equal(state, 0), tf.int32)
 	return state, span_mask

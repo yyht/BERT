@@ -231,14 +231,15 @@ def build_model(sess):
 		tf.logging.info("  name = %s, shape = %s%s", var.name, var.shape,
 										init_string)
 	tf.train.init_from_checkpoint(checkpoint_path, assignment_map)
-	init = tf.global_variables_initializer()
+	global_step = tf.train.get_or_create_global_step()
+	init = tf.group(tf.global_variables_initializer())
 	sess.run(init)
+	tvars.append(global_step)
 	return sess, tvars
 
 
 def main():
 	sess = tf.Session()
-	tf.train.get_or_create_global_step()
 	sess, my_vars = build_model(sess)
 	saver = tf.train.Saver(my_vars)
 	saver.save(sess, os.path.join(FLAGS.buckets, FLAGS.export_path))
