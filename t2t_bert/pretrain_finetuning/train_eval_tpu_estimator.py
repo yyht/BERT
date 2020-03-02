@@ -13,8 +13,10 @@ except:
 
 try:
 	from .classifier_fn_tpu_estimator import classifier_model_fn_builder
+	from .classifier_fn_tpu_bert_seq_estimator import classifier_model_fn_builder as classifier_seq_model_fn_builder
 except:
 	from classifier_fn_tpu_estimator import classifier_model_fn_builder
+	from classifier_fn_tpu_bert_seq_estimator import classifier_model_fn_builder as classifier_seq_model_fn_builder
 
 import numpy as np
 import tensorflow as tf
@@ -84,7 +86,7 @@ def train_eval_fn(FLAGS,
 									model_io_config=model_io_config,
 									opt_config=opt_config,
 									model_io_fn=model_io_fn,
-                                                                        # exclude_scope=kargs.get('exclude_scope', ""),
+                                    # exclude_scope=kargs.get('exclude_scope', ""),
 									not_storage_params=[],
 									target=kargs.get("input_target", ""),
 									num_train_steps=num_train_steps,

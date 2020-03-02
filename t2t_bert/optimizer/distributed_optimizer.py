@@ -162,7 +162,8 @@ class Optimizer(object):
 		opt_type = self.config.get("train_op", "adam_decay")
 		tf.logging.info(" optimization method {}".format(opt_type))
 		if opt_type not in ["adam_decay", "adam", "adam_weight_decay", 
-					"adam_weight_decay_exclude", "pai_soar_adam_decay", "lamb"]:
+					"adam_weight_decay_exclude", "pai_soar_adam_decay", "lamb",
+					"adafactor"]:
 			raise NotImplementedError()
 		if opt_type == "adam_decay":
 			print("==apply bert adam weight decay==")
@@ -171,7 +172,7 @@ class Optimizer(object):
 						weight_decay_rate=self.config.get("opt_decay_rate", 0.01),
 						beta_1=self.config.get("beta_1", 0.9),
 						beta_2=self.config.get("beta_2", 0.999),
-						epsilon=self.config.get("epsilon", 1e-8),
+						epsilon=self.config.get("epsilon", 1e-6),
 						exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"])
 		elif opt_type == "adam_weight_decay":
 			print("==apply original adam weight decay==")
@@ -180,7 +181,7 @@ class Optimizer(object):
 						learning_rate=learning_rate,
 						beta1=self.config.get("beta_1", 0.9),
 						beta2=self.config.get("beta_2", 0.999),
-						epsilon=self.config.get("epsilon", 1e-8))
+						epsilon=self.config.get("epsilon", 1e-6))
 		elif opt_type == "adam_weight_decay_exclude":
 			print("==apply adam weight decay==")
 			opt = adam_weight_decay_exclude_utils.AdamWOptimizer(
@@ -198,7 +199,7 @@ class Optimizer(object):
 						weight_decay_rate=self.config.get("opt_decay_rate", 0.01),
 						beta_1=self.config.get("beta_1", 0.9),
 						beta_2=self.config.get("beta_2", 0.999),
-						epsilon=self.config.get("epsilon", 1e-8),
+						epsilon=self.config.get("epsilon", 1e-6),
 						exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"])
 		elif opt_type == "adam":
 			print("==apply adam==")
@@ -224,6 +225,16 @@ class Optimizer(object):
 								 beta2=self.config.get("beta_2", 0.999),
 								 epsilon=self.config.get("epsilon", 1e-6)
 								)
+		elif opt_type == "adafactor":
+			print("=== apply adafactor ===")
+			opt =  optimizer_utils.AdaFactorOptimizer(
+								learning_rate=learning_rate,
+								weight_decay_rate=self.config.get("opt_decay_rate", 0.01),
+								beta_1=self.config.get("beta_1", 0.9),
+								beta_2=self.config.get("beta_2", 0.999),
+								epsilon=self.config.get("epsilon", 1e-6),
+								exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"])
+
 		if self.config.get("opt_ema", "no") == "yes":
 			print("==apply ema optimizer==")
 			opt = tf.contrib.opt.MovingAverageOptimizer(opt)
@@ -281,7 +292,7 @@ class Optimizer(object):
 		train_op = self.opt.apply_gradients(
 					grads_and_vars, global_step=self.global_step)
 		new_global_step = self.global_step + 1
-		if self.config.get("train_op", None) == "adam_decay":
+		if self.config.get("train_op", None) in ["adam_decay", "adafactor", "lamb"]:
 			train_op = tf.group(train_op, [self.global_step.assign(new_global_step)])
 		train_op = train_op
 		return train_op

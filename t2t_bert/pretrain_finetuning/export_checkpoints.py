@@ -37,6 +37,7 @@ flags = tf.flags
 import numpy as np
 from pretrain_finetuning.generator_exporter import model_fn_builder as generator_model_fn
 from pretrain_finetuning.discriminator_exporter import model_fn_builder as discriminator_model_fn
+from pretrain_finetuning.discriminator_relgan_exporter import model_fn_builder as discriminator_relgan_model_fn
 from bunch import Bunch
 import collections
 from model_io import model_io
@@ -204,6 +205,18 @@ def build_model(sess):
 					sharing_mode=FLAGS.sharing_mode)
 	elif FLAGS.electra == 'discriminator':
 		model_fn = discriminator_model_fn(bert_config,
+					2,
+					init_checkpoint=None,
+					model_reuse=None,
+					load_pretrained="no",
+					model_io_config=Bunch({"fix_lm":False}),
+					opt_config={},
+					exclude_scope="",
+					not_storage_params=[],
+					target="",
+					sharing_mode=FLAGS.sharing_mode)
+	elif FLAGS.electra == 'discriminator_relgan':
+		model_fn = discriminator_relgan_model_fn(bert_config,
 					2,
 					init_checkpoint=None,
 					model_reuse=None,

@@ -321,12 +321,16 @@ def bert_seq_decoder(model_config, features, labels,
 
 	if mode == tf.estimator.ModeKeys.TRAIN:
 		hidden_dropout_prob = model_config.hidden_dropout_prob
-		attention_probs_dropout_prob = model_config.attention_probs_dropout_prob
+		attention_probs_dropout_prob = 0.0
 		dropout_prob = model_config.dropout_prob
 	else:
 		hidden_dropout_prob = 0.0
 		attention_probs_dropout_prob = 0.0
 		dropout_prob = 0.0
+
+	tf.logging.info(" hidden_dropout_prob: %s ", str(hidden_dropout_prob))
+	tf.logging.info(" attention_probs_dropout_prob: %s ", str(hidden_dropout_prob))
+	tf.logging.info(" dropout_prob: %s ", str(dropout_prob))
 
 	model = bert_seq.Bert(model_config)
 	model.build_embedder(input_ids, 
@@ -342,8 +346,9 @@ def bert_seq_decoder(model_config, features, labels,
 						attention_type=kargs.get('attention_type', 'normal_attention'),
 						past=features.get("past", None),
 						token_type_ids=features.get("segment_ids", None),
-						**kargs)
-	model.build_output_logits(reuse=None)
+						seq_type=kargs.get("seq_type", "none"),
+						mask_type=kargs.get("mask_type", "none"))
+	model.build_output_logits(reuse=reuse)
 	# model.build_pooler(reuse=reuse)
 
 	return model

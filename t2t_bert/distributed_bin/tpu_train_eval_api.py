@@ -355,6 +355,16 @@ flags.DEFINE_string(
 	"if apply distillation"
 	)
 
+flags.DEFINE_string(
+	"seq_type", "none",
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
+	"mask_type", "none",
+	"if apply distillation"
+	)
+
 
 def main(_):
 
@@ -408,7 +418,9 @@ def main(_):
 			input_target=FLAGS.input_target,
 			attention_type=FLAGS.attention_type,
 			exclude_scope=FLAGS.exclude_scope,
-			annealed_mask_prob=FLAGS.annealed_mask_prob)
+			annealed_mask_prob=FLAGS.annealed_mask_prob,
+			seq_type=FLAGS.seq_type,
+			mask_type=FLAGS.mask_type)
 	elif FLAGS.mode == 'electra':
 		train_eval_gpu_electra_estimator.train_eval_fn(
 			FLAGS=FLAGS,
