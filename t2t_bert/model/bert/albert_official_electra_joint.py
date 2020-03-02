@@ -38,9 +38,11 @@ class Albert(object):
 
 		if self.config.get('embedding_scope', None):
 			embedding_scope = self.config['embedding_scope']
+			other_embedding_scope = self.config.get("scope", "bert")
 			tf.logging.info("==using embedding scope of original model_config.embedding_scope: %s==", embedding_scope)
 		else:
 			embedding_scope = self.config.get("scope", "bert")
+			other_embedding_scope = self.config.get("scope", "bert")
 			tf.logging.info("==using embedding scope of original model_config.scope: %s==", embedding_scope)
 
 		with tf.variable_scope(embedding_scope, reuse=reuse):
@@ -77,6 +79,9 @@ class Albert(object):
 				if kargs.get("perturbation", None):
 					self.embedding_output_word += kargs["perturbation"]
 					tf.logging.info(" add word pertubation for robust learning ")
+
+		with tf.variable_scope(other_embedding_scope, reuse=reuse):
+			with tf.variable_scope("embeddings"):
 
 				# Add positional embeddings and token type embeddings, then layer
 				# normalize and perform dropout.

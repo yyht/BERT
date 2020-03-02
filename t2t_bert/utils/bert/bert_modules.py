@@ -111,7 +111,8 @@ def embedding_lookup(input_ids,
 										 embedding_size=128,
 										 initializer_range=0.02,
 										 word_embedding_name="word_embeddings",
-										 use_one_hot_embeddings=False):
+										 use_one_hot_embeddings=False,
+										 embedding_table=None):
 	"""Looks up words embeddings for id tensor.
 
 	Args:

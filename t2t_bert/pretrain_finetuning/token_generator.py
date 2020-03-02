@@ -353,9 +353,8 @@ def token_generator(config, input_tensor,
 		flat_logits_tempered = tf.reshape(logits_tempered,
 									[batch_size * seq_length, width])
 
-		# flat_logits_tempered_topk = top_k_logits(flat_logits_tempered, int(config.vocab_size/2))
-
-                if not kargs.get("greedy", True):
+		# flat_logits_tempered_topk = top_k_logits(flat_logits_tempered, int(config.vocab_size/2
+                if not kargs.get("greedy", False):
 		    sampled_logprob_temp, sampled_logprob = gumbel_softmax(flat_logits_tempered, 
 										temperature=1.0,
 										samples=config.get('gen_sample', 1),

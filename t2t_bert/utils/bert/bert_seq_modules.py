@@ -411,6 +411,8 @@ def create_attention_mask_from_input_mask(from_tensor, to_mask):
 	to_mask = tf.cast(
 			tf.reshape(to_mask, [batch_size, 1, to_seq_length]), tf.float32)
 
+	print(to_mask.get_shape(), "====to mask shape===")
+
 	# We don't assume that `from_tensor` is a mask (although it could be). We
 	# don't actually care if we attend *from* padding tokens (only *to* padding)
 	# tokens so we create a tensor of all ones.
@@ -418,10 +420,11 @@ def create_attention_mask_from_input_mask(from_tensor, to_mask):
 	# `broadcast_ones` = [batch_size, from_seq_length, 1]
 	broadcast_ones = tf.ones(
 			shape=[batch_size, from_seq_length, 1], dtype=tf.float32)
+	print(broadcast_ones.get_shape(), "====broadcast_ones shape===")
 
 	# Here we broadcast along two dimensions to create the mask.
 	mask = broadcast_ones * to_mask
-
+	print(mask.get_shape(), "==mask shape==")
 	return mask
 
 
@@ -577,8 +580,10 @@ def attention_layer(from_tensor,
 									to_seq_length, 
 									size_per_head)
 
-	present = tf.stack([key_layer, value_layer], axis=1) # multihead attention 
+	# present: [B, 2, N, T, H]
+	present = tf.stack([key_layer, value_layer], axis=1) # multihead attention
 	if past is not None:
+		print("===present===shape===", past.get_shape()) 
 		pk, pv = tf.unstack(past, axis=1)
 		key_layer = tf.concat([pk, key_layer], axis=-2)
 		value_layer = tf.concat([pv, value_layer], axis=-2)
@@ -590,6 +595,7 @@ def attention_layer(from_tensor,
 	attention_scores = tf.multiply(attention_scores,
 																 1.0 / math.sqrt(float(size_per_head)))
 
+	print(attention_scores.get_shape(), "==attention_scores shape==")
 	if attention_mask is not None:
 		# `attention_mask` = [B, 1, F, T]
 		attention_mask = tf.expand_dims(attention_mask, axis=[1])
@@ -598,6 +604,7 @@ def attention_layer(from_tensor,
 		# masked positions, this operation will create a tensor which is 0.0 for
 		# positions we want to attend and -10000.0 for masked positions.
 		adder = (1.0 - tf.cast(attention_mask, tf.float32)) * -10000.0
+		print(attention_mask.get_shape(), "====attention_mask===shape===")
 
 		# Since we are adding it to the raw scores before the softmax, this is
 		# effectively the same as removing these entirely.
@@ -626,16 +633,22 @@ def attention_layer(from_tensor,
 	# `context_layer` = [B, F, N, H]
 	context_layer = tf.transpose(context_layer, [0, 2, 1, 3])
 
+	print(context_layer.get_shape(), "=====context_layer shape===")
+
+	atten_mask_shape = bert_utils.get_shape_list(attention_mask, expected_rank=[3,4])
+	actual_from_seq_length = atten_mask_shape[-2]
+
 	if do_return_2d_tensor:
 		# `context_layer` = [B*F, N*V]
 		context_layer = tf.reshape(
 				context_layer,
-				[batch_size * from_seq_length, num_attention_heads * size_per_head])
+				[batch_size * actual_from_seq_length, num_attention_heads * size_per_head])
+		print(context_layer.get_shape(), "=====context_layer shape===")
 	else:
 		# `context_layer` = [B, F, N*V]
 		context_layer = tf.reshape(
 				context_layer,
-				[batch_size, from_seq_length, num_attention_heads * size_per_head])
+				[batch_size, actual_from_seq_length, num_attention_heads * size_per_head])
 
 	return context_layer, present, attention_scores
 
@@ -719,7 +732,7 @@ def transformer_model(input_tensor,
 	all_present = []
 	all_attention_scores = []
 
-	pasts = tf.unstack(past, axis=2) if past is not None else [None] * num_hidden_layers
+	pasts = tf.unstack(past, axis=1) if past is not None else [None] * num_hidden_layers
 
 	for layer_idx in range(num_hidden_layers):
 		with tf.variable_scope("layer_%d" % layer_idx):

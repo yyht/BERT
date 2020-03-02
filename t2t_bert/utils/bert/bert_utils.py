@@ -122,8 +122,10 @@ def gather_indexes(sequence_tensor, positions):
 def generate_seq2seq_mask(attention_mask, mask_sequence, seq_type, **kargs):
 	if seq_type == 'seq2seq':
 		attention_mask = tf.cast(attention_mask, tf.float32)
-		mask_sequence = tf.cast(mask_sequence, tf.float32)
 		if mask_sequence is not None:
+			# could be applied to seq2seq such as summarization with bidirectional
+			# mask on document and casual mask for abstractive
+			mask_sequence = tf.cast(mask_sequence, tf.float32)
 			seq_shape = get_shape_list(mask_sequence, expected_rank=2)
 			seq_len = seq_shape[1]
 			ones = tf.ones((1, seq_len, seq_len))
@@ -135,15 +137,29 @@ def generate_seq2seq_mask(attention_mask, mask_sequence, seq_type, **kargs):
 			a_mask = tf.reshape(a_mask, (-1, seq_len, seq_len))
 			out_mask = attention_mask * a_mask
 			out_mask = tf.cast(out_mask, tf.float32)
+
+			# batch_size, from_length, to_length
+			attention_mask_shape = get_shape_list(attention_mask, expected_rank=[2,3])
+			print(attention_mask_shape, "====attention mask shape====")
+			from_length = attention_mask_shape[1]
+			out_mask = out_mask[:, seq_len-from_length:seq_len, :]
+			print("===out_mask shape==", out_mask.get_shape())
 		else:
+			# this will always create casual mask
+
 			# ones = tf.ones_like(attention_mask[:1])
 			# mask = (tf.matrix_band_part(ones, -1, 0))
 			# out_mask = attention_mask * mask
 			seq_shape = get_shape_list(attention_mask, expected_rank=(2,3))
+			from_length = seq_shape[1]
 			seq_len = seq_shape[1]
 			ones = tf.ones((1, seq_len, seq_len))
 			mask = tf.matrix_band_part(ones, -1, 0)
 			out_mask = attention_mask * mask
+			# batch_size, from_length, to_length
+			# from_length = attention_mask_shape[1]
+			# out_mask = out_mask[:, seq_len-from_length:seq_len, :]
+			print("===out_mask shape==", out_mask.get_shape())
 	else:
 		out_mask = tf.cast(attention_mask, tf.float32)
 

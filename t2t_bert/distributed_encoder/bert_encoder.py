@@ -1,5 +1,6 @@
 from model.bert import bert
 from model.bert import bert_rule
+from model.bert import bert_seq
 from model.bert import albert
 from model.bert import bert_electra_joint
 from model.bert import albert_official_electra_joint
@@ -298,6 +299,52 @@ def electra_gumbel_albert_official_encoder(model_config, features, labels,
 						reuse=reuse,
 						attention_type=kargs.get('attention_type', 'normal_attention'))
 	model.build_pooler(reuse=reuse)
+
+	return model
+
+def bert_seq_decoder(model_config, features, labels, 
+			mode, target, reuse=None, **kargs):
+
+	if target:
+		input_ids = features["input_ids_{}".format(target)]
+		input_mask = features["input_mask_{}".format(target)]
+		segment_ids = features["segment_ids_{}".format(target)]
+	else:
+		input_ids = features["input_ids"]
+		input_mask = features["input_mask"]
+		segment_ids = features["segment_ids"]
+	if kargs.get('ues_token_type', 'yes') == 'yes':
+		tf.logging.info(" using segment embedding with different types ")
+	else:
+		tf.logging.info(" using segment embedding with same types ")
+		segment_ids = tf.zeros_like(segment_ids)
+
+	if mode == tf.estimator.ModeKeys.TRAIN:
+		hidden_dropout_prob = model_config.hidden_dropout_prob
+		attention_probs_dropout_prob = model_config.attention_probs_dropout_prob
+		dropout_prob = model_config.dropout_prob
+	else:
+		hidden_dropout_prob = 0.0
+		attention_probs_dropout_prob = 0.0
+		dropout_prob = 0.0
+
+	model = bert_seq.Bert(model_config)
+	model.build_embedder(input_ids, 
+						segment_ids,
+						hidden_dropout_prob,
+						attention_probs_dropout_prob,
+						reuse=reuse)
+	model.build_encoder(input_ids,
+						input_mask,
+						hidden_dropout_prob, 
+						attention_probs_dropout_prob,
+						reuse=reuse,
+						attention_type=kargs.get('attention_type', 'normal_attention'),
+						past=features.get("past", None),
+						token_type_ids=features.get("segment_ids", None),
+						**kargs)
+	model.build_output_logits(reuse=None)
+	# model.build_pooler(reuse=reuse)
 
 	return model
 	

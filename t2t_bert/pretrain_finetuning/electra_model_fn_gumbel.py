@@ -33,7 +33,7 @@ def get_train_op(generator_dict, discriminator_dict, optimizer_fn, opt_config,
 	if kargs.get('train_op_type', 'joint') == 'joint':
 		tf.logging.info("***** original joint train op *****")
 		tvars = []
-		dis_loss_ratio = kargs.get('dis_loss_ratio', 0.1)
+		dis_loss_ratio = kargs.get('dis_loss_ratio', 1.0)
 		gen_loss_ratio = kargs.get('gen_loss_ratio', 1.0)
 		tf.logging.info("***** dis loss ratio: %s, gen loss ratio: %s *****", str(dis_loss_ratio), str(gen_loss_ratio))
 		tvars.extend(discriminator_dict['tvars'])
@@ -68,26 +68,26 @@ def get_train_op(generator_dict, discriminator_dict, optimizer_fn, opt_config,
 			gen_disc_loss = discriminator_dict['not_equal_loss_self']
 			gen_dis_loss_ratio = kargs.get('gen_dis_loss_ratio', 0.1)
 			gen_loss_ratio = kargs.get('gen_loss_ratio', 1.0)
-			dis_loss_ratio = kargs.get('dis_loss_ratio', 10.0)
+			dis_loss_ratio = kargs.get('dis_loss_ratio', 1.0)
 			tf.logging.info("***** dis loss ratio: %s, gen loss ratio: %s, gen-dis loss ratio: %s *****", 
 							str(dis_loss_ratio), str(gen_loss_ratio), str(gen_dis_loss_ratio))
 			tf.logging.info("****** using not equal loss self for updating generator *******")
 		elif kargs.get('gen_disc_type', 'all_disc') == 'equal_not_equal_disc_loss':
 			gen_dis_loss_ratio = kargs.get('gen_dis_loss_ratio', 0.1)
 			gen_loss_ratio = kargs.get('gen_loss_ratio', 1.0)
-			dis_loss_ratio = kargs.get('dis_loss_ratio', 10.0)
+			dis_loss_ratio = kargs.get('dis_loss_ratio', 1.0)
 			tf.logging.info("***** dis loss ratio: %s, gen loss ratio: %s, gen-dis loss ratio: %s *****", 
 							str(dis_loss_ratio), str(gen_loss_ratio), str(gen_dis_loss_ratio))
 			tf.logging.info("****** using not equal and equal loss self for updating generator *******")
 			gen_disc_loss =  discriminator_dict['not_equal_loss_self'] - discriminator_dict['equal_loss_self']
 		elif kargs.get('gen_disc_type', 'all_disc') == 'equal_not_equal_disc_loss_all':
-			gen_dis_loss_ratio = kargs.get('gen_dis_loss_ratio', 10.0)
+			gen_dis_loss_ratio = kargs.get('gen_dis_loss_ratio', 1.0)
 			gen_loss_ratio = kargs.get('gen_loss_ratio', 1.0)
-			dis_loss_ratio = kargs.get('dis_loss_ratio', 10.0)
+			dis_loss_ratio = kargs.get('dis_loss_ratio', 1.0)
 			tf.logging.info("***** dis loss ratio: %s, gen loss ratio: %s, gen-dis loss ratio: %s *****", 
 							str(dis_loss_ratio), str(gen_loss_ratio), str(gen_dis_loss_ratio))
 			tf.logging.info("****** using not equal and equal loss all for updating generator *******")
-			gen_disc_loss =  discriminator_dict['not_equal_loss_all'] - discriminator_dict['equal_loss_all']
+			gen_disc_loss =  discriminator_dict['not_equal_loss_all'] + discriminator_dict['equal_loss_all']
 		      
 		elif kargs.get('gen_disc_type', 'all_disc') == 'not_equal_disc_loss_all':
 			gen_dis_loss_ratio = kargs.get('gen_dis_loss_ratio', 1.0)
@@ -98,9 +98,9 @@ def get_train_op(generator_dict, discriminator_dict, optimizer_fn, opt_config,
 			tf.logging.info("****** using not equal all for updating generator *******")
 			gen_disc_loss =  discriminator_dict['not_equal_loss_all']
 		elif kargs.get('gen_disc_type', 'all_disc') == 'equal_disc_loss_all':
-			gen_dis_loss_ratio = kargs.get('gen_dis_loss_ratio', 10.0)
+			gen_dis_loss_ratio = kargs.get('gen_dis_loss_ratio', 1.0)
 			gen_loss_ratio = kargs.get('gen_loss_ratio', 1.0)
-			dis_loss_ratio = kargs.get('dis_loss_ratio', 10.0)
+			dis_loss_ratio = kargs.get('dis_loss_ratio', 1.0)
 			tf.logging.info("***** dis loss ratio: %s, gen loss ratio: %s, gen-dis loss ratio: %s *****", 
 							str(dis_loss_ratio), str(gen_loss_ratio), str(gen_dis_loss_ratio))
 			tf.logging.info("****** using equal all for updating generator *******")
