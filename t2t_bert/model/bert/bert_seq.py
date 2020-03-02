@@ -87,7 +87,7 @@ class Bert(object):
 				tf.logging.info("==using segment type embedding ratio: %s==", str(self.config.get("token_type_ratio", 1.0)))
 				self.embedding_output = bert_modules.embedding_postprocessor(
 						input_tensor=self.embedding_output_word,
-						use_token_type=True,
+						use_token_type=kargs.get('use_token_type', True),
 						token_type_ids=token_type_ids,
 						token_type_vocab_size=self.config.type_vocab_size,
 						token_type_embedding_name="token_type_embeddings",
@@ -116,7 +116,7 @@ class Bert(object):
 				# This converts a 2D mask of shape [batch_size, seq_length] to a 3D
 				# mask of shape [batch_size, seq_length, seq_length] which is used
 				# for the attention scores.
-				attention_mask = bert_seq_modules.create_attention_mask_from_input_mask(
+				self.bi_attention_mask = bert_seq_modules.create_attention_mask_from_input_mask(
 						input_ids, input_mask)
 
 				seq_type = kargs.get('seq_type', "None")
@@ -135,11 +135,12 @@ class Bert(object):
 						mask_sequence = token_type_ids
 					else:
 						mask_sequence = None
-					attention_mask = bert_utils.generate_seq2seq_mask(attention_mask, 
+					self.attention_mask = bert_utils.generate_seq2seq_mask(self.bi_attention_mask, 
 														mask_sequence,
 														seq_type)
 				else:
 					tf.logging.info("==apply bi-directional LM model with bi-directional mask==")
+					self.attention_mask = self.bi_attention_mask
 
 				# Run the stacked transformer.
 				# `sequence_output` shape = [batch_size, seq_length, hidden_size].
@@ -148,7 +149,7 @@ class Bert(object):
 				self.all_present,
 				self.all_attention_scores] = bert_seq_modules.transformer_model(
 						input_tensor=self.embedding_output,
-						attention_mask=attention_mask,
+						attention_mask=self.attention_mask,
 						hidden_size=self.config.hidden_size,
 						num_hidden_layers=self.config.num_hidden_layers,
 						num_attention_heads=self.config.num_attention_heads,
@@ -183,10 +184,13 @@ class Bert(object):
 		with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
 			if self.config.get('ln_type', 'postln') == 'preln':
 				input_tensor = bert_modules.layer_norm(self.sequence_output)
+				tf.logging.info("**** pre ln doing layer norm ****")
 			elif self.config.get('ln_type', 'postln') == 'postln':
 				input_tensor = self.sequence_output
+				tf.logging.info("**** post ln ****")
 			else:
 				input_tensor = self.sequence_output
+				tf.logging.info("**** post ln ****")
 
 			# if config.get("embedding", "factorized") == "factorized":
 			# 	projection_width = config.hidden_size
@@ -210,10 +214,13 @@ class Bert(object):
 
 				if self.config.get('ln_type', 'postln') == 'preln':
 					input_tensor = input_tensor
+					tf.logging.info("**** pre ln ****")
 				elif self.config.get('ln_type', 'postln') == 'postln':
 					input_tensor = bert_modules.layer_norm(input_tensor)
+					tf.logging.info("**** post ln doing layer norm ****")
 				else:
 					input_tensor = bert_modules.layer_norm(input_tensor)
+					tf.logging.info("**** post ln doing layer norm ****")
 
 			if embedding_projection is not None:
 				# batch x seq x hidden, embedding x hidden

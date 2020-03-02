@@ -357,6 +357,16 @@ flags.DEFINE_string(
 	"if apply distillation"
 	)
 
+flags.DEFINE_string(
+	"seq_type", "none",
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
+	"mask_type", "none",
+	"if apply distillation"
+	)
+
 def main(_):
 
 	print(FLAGS)
@@ -457,7 +467,8 @@ def main(_):
 			gen_disc_type=FLAGS.gen_disc_type,
 			train_op_type=FLAGS.train_op_type,
 			mask_method=FLAGS.mask_method,
-			minmax_mode=FLAGS.minmax_mode)
+			minmax_mode=FLAGS.minmax_mode,
+			use_tpu=FLAGS.use_tpu)
 	else:
 		train_eval_api.monitored_estimator(
 			FLAGS=FLAGS,
@@ -484,7 +495,10 @@ def main(_):
 			temperature=FLAGS.temperature,
 			distillation_ratio=FLAGS.distillation_ratio,
 			attention_type=FLAGS.attention_type,
-			ues_token_type=FLAGS.ues_token_type)
+			ues_token_type=FLAGS.ues_token_type,
+			seq_type=FLAGS.seq_type,
+			mask_type=FLAGS.mask_type,
+			use_tpu=FLAGS.use_tpu)
 
 if __name__ == "__main__":
 	tf.app.run()

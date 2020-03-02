@@ -1,5 +1,6 @@
 from distributed_encoder.bert_encoder import bert_encoder
 from distributed_encoder.bert_encoder import bert_rule_encoder
+from distributed_encoder.bert_encoder import bert_seq_decoder
 from distributed_encoder.gpt_encoder import gpt_encoder
 from distributed_encoder.bert_encoder import albert_encoder
 from distributed_encoder.bert_encoder import electra_gumbel_encoder
@@ -48,6 +49,8 @@ def model_zoo(model_config):
 		model_interface = albert_encoder_official
 	elif model_config.get("model_type", "electra_gumbel_albert_official_encoder") == "electra_gumbel_albert_official_encoder":
 		model_interface = electra_gumbel_albert_official_encoder
+	elif model_config.get("model_type", "bert_seq") == "bert_seq":
+		model_interface = bert_seq_decoder
 	return model_interface
 
 def model_config_parser(FLAGS):
@@ -55,7 +58,8 @@ def model_config_parser(FLAGS):
 	print(FLAGS.model_type)
 
 	if FLAGS.model_type in ["bert", "bert_rule", "albert", "electra_gumbel_encoder", 
-					"albert_official", "electra_gumbel_albert_official_encoder"]:
+					"albert_official", "electra_gumbel_albert_official_encoder",
+					"bert_seq"]:
 		config = json.load(open(FLAGS.config_file, "r"))
 		print(config, '==model config==')
 		config = Bunch(config)

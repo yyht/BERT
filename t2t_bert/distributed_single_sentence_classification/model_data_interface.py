@@ -2,7 +2,7 @@ import tensorflow as tf
 
 def data_interface(FLAGS):
 	if FLAGS.model_type in ["bert","bert_small", "albert", "electra_gumbel_encoder", 
-						"albert_official", ""]:
+						"albert_official", "bert_seq"]:
 		if FLAGS.task_type == "single_sentence_classification":
 			name_to_features = {
 					"input_ids":
@@ -48,6 +48,25 @@ def data_interface(FLAGS):
 				"next_sentence_labels":
 					tf.FixedLenFeature([], tf.int64),
 				}
+		elif FLAGS.task_type in ['bert_seq_lm']:
+			name_to_features = {
+				"input_ids":
+					tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+				"input_mask":
+					tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+				"segment_ids":
+					tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+				"input_ori_ids":
+					tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+				"masked_lm_positions":
+					tf.FixedLenFeature([FLAGS.max_predictions_per_seq], tf.int64),
+				"masked_lm_ids":
+					tf.FixedLenFeature([FLAGS.max_predictions_per_seq], tf.int64),
+				"masked_lm_weights":
+					tf.FixedLenFeature([FLAGS.max_predictions_per_seq], tf.float32),
+				"next_sentence_labels":
+					tf.FixedLenFeature([], tf.int64),
+			}
 		elif FLAGS.task_type in ['bert_chid']:
 			 name_to_features = {
 				"input_ids":

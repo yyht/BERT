@@ -354,6 +354,16 @@ flags.DEFINE_string(
 	"if apply distillation"
 	)
 
+flags.DEFINE_string(
+	"seq_type", "none",
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
+	"mask_type", "none",
+	"if apply distillation"
+	)
+
 def make_distributed_info_without_evaluator():
 	worker_hosts = FLAGS.worker_hosts.split(",")
 	if len(worker_hosts) > 1:
@@ -526,7 +536,8 @@ def main(_):
 			temperature=FLAGS.temperature,
 			distillation_ratio=FLAGS.distillation_ratio,
 			attention_type=FLAGS.attention_type,
-			ues_token_type=FLAGS.ues_token_type)
+			ues_token_type=FLAGS.ues_token_type,
+			use_tpu=FLAGS.use_tpu)
 
 if __name__ == "__main__":
 	tf.app.run()

@@ -107,7 +107,9 @@ class Optimizer(object):
 		if opt_type is None:
 			opt_type = self.config.get("train_op", "adam_decay")
 		tf.logging.info(" optimization method {}".format(opt_type))
-		if opt_type not in ["adam_decay", "adam", "lamb_v2", "lamb_v1", "radam"]:
+		if opt_type not in ["adam_decay", "adam", "lamb_v2", 
+								"lamb_v1", "radam",
+								"adafactor"]:
 			raise NotImplementedError()
 		if opt_type == "adam_decay":
 			opt = optimizer_utils.AdamWeightDecayOptimizer(
@@ -126,36 +128,45 @@ class Optimizer(object):
 			tf.logging.info("***** apply adam *****")
 		elif opt_type == "lamb_v2":
 			opt = optimizer_utils.LAMBOptimizer_v2(learning_rate,
-				               weight_decay_rate=self.config.get("opt_decay_rate", 0.01),
-				               beta_1=self.config.get("beta_1", 0.9),
-				               beta_2=self.config.get("beta_2", 0.999),
-				               epsilon=self.config.get("epsilon", 1e-6),
-				               exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"],
-				               exclude_from_layer_adaptation=None,
-				               name="LAMBOptimizer")
+							   weight_decay_rate=self.config.get("opt_decay_rate", 0.01),
+							   beta_1=self.config.get("beta_1", 0.9),
+							   beta_2=self.config.get("beta_2", 0.999),
+							   epsilon=self.config.get("epsilon", 1e-6),
+							   exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"],
+							   exclude_from_layer_adaptation=None,
+							   name="LAMBOptimizer")
 			tf.logging.info("***** apply lamb_v2 *****")
 		elif opt_type == "lamb_v1":
 			opt = optimizer_utils.LAMBOptimizer_v1(learning_rate,
-				               weight_decay_rate=self.config.get("opt_decay_rate", 0.01),
-				               beta_1=self.config.get("beta_1", 0.9),
-				               beta_2=self.config.get("beta_2", 0.999),
-				               epsilon=self.config.get("epsilon", 1e-6),
-				               exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"],
-				               name="LAMBOptimizer")
+							   weight_decay_rate=self.config.get("opt_decay_rate", 0.01),
+							   beta_1=self.config.get("beta_1", 0.9),
+							   beta_2=self.config.get("beta_2", 0.999),
+							   epsilon=self.config.get("epsilon", 1e-6),
+							   exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"],
+							   name="LAMBOptimizer")
 			tf.logging.info("***** apply lamb_v1 *****")
 		elif opt_type == 'radam':
 			opt = radam_utils.RAdamOptimizer(learning_rate=learning_rate,
-		                 beta1=self.config.get("beta_1", 0.9),
-		                 beta2=self.config.get("beta_2", 0.999),
-		                 epsilon=self.config.get("epsilon", 1e-6),
-		                 weight_decay=self.config.get("opt_decay_rate", 0.01),
-		                 amsgrad=False,
-		                 total_steps=config['num_train_steps'],
-		                 warmup_proportion=0.1,
-		                 min_lr=0.,
-		                 use_locking=False,
-		                 exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"])
+						 beta1=self.config.get("beta_1", 0.9),
+						 beta2=self.config.get("beta_2", 0.999),
+						 epsilon=self.config.get("epsilon", 1e-6),
+						 weight_decay=self.config.get("opt_decay_rate", 0.01),
+						 amsgrad=False,
+						 total_steps=config['num_train_steps'],
+						 warmup_proportion=0.1,
+						 min_lr=0.,
+						 use_locking=False,
+						 exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"])
 			tf.logging.info("***** apply radam *****")
+		elif opt_type == "adafactor":
+			tf.logging.info("***** apply adafactor *****")
+			opt =  optimizer_utils.AdaFactorOptimizer(
+								learning_rate=learning_rate,
+								weight_decay_rate=self.config.get("opt_decay_rate", 0.01),
+								beta_1=self.config.get("beta_1", 0.9),
+								beta_2=self.config.get("beta_2", 0.999),
+								epsilon=self.config.get("epsilon", 1e-6),
+								exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"])
 		return opt
 
 	def get_train_op(self, loss, tvars, init_lr, 
@@ -171,12 +182,15 @@ class Optimizer(object):
 			opt = tf.contrib.tpu.CrossShardOptimizer(opt)
 		train_op = opt.apply_gradients(
 					zip(grads, tvars), global_step=self.global_step)
-		if kargs.get('train_op', 'adam_decay') in ['adam_decay', 'lamb_v2', 'lamb_v1']:
+		if kargs.get('train_op', 'adam_decay') in ['adam_decay', 'lamb_v2', 'lamb_v1', 'adafactor']:
 			new_global_step = self.global_step + 1
 			train_op = tf.group(train_op, [self.global_step.assign(new_global_step)])
 			return train_op
 		else:
 			return train_op
+
+	def collect_common_vars(self, loss_dict, tvars_dict):
+		pass
 
 	def get_group_train_op(self, loss_dict, tvars_dict, init_lr_dict,
 							optimizer_type_dict,

@@ -14,6 +14,7 @@ try:
 	from distributed_gpt.model_fn import model_fn_builder as gpt_lm_builder_fn
 	from chid_nlpcc2019.model_fn import model_fn_builder as chid_model_fn_builder
 	from chid_nlpcc2019.model_fn_crf import model_fn_builder as chid_crf_model_fn_builder
+	from pretrain_finetuning.classifier_fn_tpu_bert_seq_estimator import classifier_model_fn_builder as bert_seq_model_fn_builder
 except:
 	from model_fn import model_fn_builder
 	from model_distillation_fn import model_fn_builder as model_distillation_builder_fn
@@ -30,6 +31,7 @@ except:
 	from distributed_gpt.model_fn import model_fn_builder as gpt_lm_builder_fn
 	from chid_nlpcc2019.model_fn import model_fn_builder as chid_model_fn_builder
 	from chid_nlpcc2019.model_fn_crf import model_fn_builder as chid_crf_model_fn_builder
+	from pretrain_finetuning.classifier_fn_tpu_bert_seq_estimator import classifier_model_fn_builder as bert_seq_model_fn_builder 
 
 def model_fn_interface(FLAGS):
 	print("==apply {} {} model fn builder==".format(FLAGS.task_type, FLAGS.distillation))
@@ -72,3 +74,5 @@ def model_fn_interface(FLAGS):
 		return chid_model_fn_builder
 	elif FLAGS.task_type in ['bert_chid_crf']:
 		return chid_crf_model_fn_builder
+	elif FLAGS.task_type in ['bert_seq_lm']:
+		return bert_seq_model_fn_builder
