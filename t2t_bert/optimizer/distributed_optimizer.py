@@ -407,4 +407,78 @@ class Optimizer(object):
 
 		return train_op
 
+	def get_adaptive_alternate_train_op(self, loss_dict, tvars_dict, init_lr_dict,
+								optimizer_type_dict,
+								num_train_steps, **kargs):
+
+		prev_op = tf.no_op()
+
+		loop_step_dict = kargs.get('loop_step_dict', None)
+		if not loop_step_dict:
+			loop_step_dict = {}
+			for key in loss_dict:
+				loop_step_dict[key] = 1
+
+		optimizer_dict = {}
+
+		for key in init_lr_dict:
+			init_lr = init_lr_dict[key]
+			optimizer_type = optimizer_type_dict[key]
+			if optimizer_type != 'radam':
+				learning_rate = self.lr_decay_fn(init_lr, num_train_steps, **kargs)
+				learning_rate = self.warm_up(learning_rate, init_lr, **kargs)
+
+			tf.logging.info("****** model:%s, optimizer: %s, learning_rate:%s", key, optimizer_type, str(init_lr))
+			opt = self.optimizer_op(learning_rate, train_op=optimizer_type, **kargs)
+
+			if kargs.get("use_tpu", 0) == 1:
+				tf.logging.info("***** Using tpu cross shard optimizer *****")
+				opt = tf.contrib.tpu.CrossShardOptimizer(opt)
+			optimizer_dict[key] = opt
+
+		fce_acc = kargs.get("fce_acc", None)
+
+		if fce_acc is None:
+			for key in loss_dict:
+				loss = loss_dict[key]
+				tvars = tvars_dict[key]
+				loop_steps = loop_step_dict[key]
+				optimizer = optimizer_dict[key]
+
+				grads = self.grad_clip_fn(loss, tvars, **kargs)
+				for i in range(loop_steps):
+					with tf.control_dependencies([prev_op]):
+						with tf.variable_scope(key+"/"+"optimizer", reuse=tf.AUTO_REUSE):
+							prev_op = optimizer.apply_gradients(
+								zip(grads, tvars))
+							tf.logging.info("***** model: %s, step: %s *****", key, str(i))
+		else:
+			prev_ebm_op = tf.no_op()
+			with tf.control_dependencies([prev_ebm_op]): 
+				with tf.control_dependencies([tf.less_equal(fce_acc, 0.5)]):
+					loss = loss_dict['ebm']
+					tvars = tvars_dict['ebm']
+					loop_steps = loop_step_dict['ebm']
+					optimizer = optimizer_dict['ebm']
+					with tf.variable_scope('ebm'+"/"+"optimizer", reuse=tf.AUTO_REUSE):
+						prev_ebm_op = optimizer.apply_gradients(
+									zip(grads, tvars))
+
+			prev_noise_op = tf.no_op()
+			with tf.control_dependencies([prev_noise_op]): 
+				with tf.control_dependencies([tf.greater(c, 0.5)]):
+					loss = loss_dict['noise']
+					tvars = tvars_dict['noise']
+					loop_steps = loop_step_dict['noise']
+					optimizer = optimizer_dict['noise']
+					with tf.variable_scope('noise'+"/"+"optimizer", reuse=tf.AUTO_REUSE):
+						prev_noise_op = optimizer.apply_gradients(
+									zip(grads, tvars))
+
+			prev_op = tf.group([prev_ebm_op, prev_noise_op])
+			
+		with tf.control_dependencies([prev_op]):
+			train_op = self.global_step.assign_add(1)
+		return train_op
+
 	

@@ -162,7 +162,9 @@ def embedding_postprocessor(input_tensor,
 														position_embedding_name="position_embeddings",
 														initializer_range=0.02,
 														max_position_embeddings=512,
-														dropout_prob=0.1):
+														dropout_prob=0.1,
+														token_type_ratio=1.0,
+														position_offset=0):
 	"""Performs various post-processing on a word embedding tensor.
 
 	Args:
@@ -217,7 +219,7 @@ def embedding_postprocessor(input_tensor,
 		token_type_embeddings = tf.matmul(one_hot_ids, token_type_table)
 		token_type_embeddings = tf.reshape(token_type_embeddings,
 																			 [batch_size, seq_length, width])
-		output += token_type_embeddings
+		output += token_type_embeddings * token_type_ratio
 
 	if use_position_embeddings:
 		full_position_embeddings = tf.get_variable(
@@ -234,11 +236,25 @@ def embedding_postprocessor(input_tensor,
 		# sequence has positions [0, 1, 2, ... seq_length-1], so we can just
 		# perform a slice.
 
-		if seq_length < max_position_embeddings:
-			position_embeddings = tf.slice(full_position_embeddings, [0, 0],
+		# if seq_length < max_position_embeddings:
+		# 	position_embeddings = tf.slice(full_position_embeddings, [0, 0],
+		# 																 [seq_length, -1])
+		# else:
+		# 	position_embeddings = full_position_embeddings
+
+		if position_offset == 0:
+			if seq_length < max_position_embeddings:
+				position_embeddings = tf.slice(full_position_embeddings, [0, 0],
 																		 [seq_length, -1])
+			else:
+				position_embeddings = full_position_embeddings
 		else:
-			position_embeddings = full_position_embeddings
+			# Tensorflow is too stupid to allow slicing
+			flat_pos_ids = (tf.range(seq_length, dtype=tf.int32) + position_offset)
+			one_hot_pos_ids = tf.one_hot(flat_pos_ids, depth=max_position_embeddings)
+
+			# [seq_length, full_position_embeddings], [full_position_embeddings, dim]
+			position_embeddings = tf.matmul(one_hot_pos_ids, full_position_embeddings)
 
 		# position_embeddings = tf.cond(tf.less(seq_length, max_position_embeddings), 
 		# 												lambda:tf.slice(full_position_embeddings, [0, 0],
@@ -345,6 +361,20 @@ def embedding_rule_type_postprocessor(input_tensor,
 		# for position [0, 1, 2, ..., max_position_embeddings-1], and the current
 		# sequence has positions [0, 1, 2, ... seq_length-1], so we can just
 		# perform a slice.
+
+		# if position_offset == 0:
+		# 	if seq_length < max_position_embeddings:
+		# 		position_embeddings = tf.slice(full_position_embeddings, [0, 0],
+		# 																 [seq_length, -1])
+		# 	else:
+		# 		position_embeddings = full_position_embeddings
+		# else:
+		# 	# Tensorflow is too stupid to allow slicing
+		# 	flat_pos_ids = (tf.range(seq_length, dtype=tf.int32) + position_offset)
+		# 	one_hot_pos_ids = tf.one_hot(flat_pos_ids, depth=max_position_embeddings)
+
+		# 	# [seq_length, full_position_embeddings], [full_position_embeddings, dim]
+		# 	position_embeddings = tf.matmul(one_hot_pos_ids, full_position_embeddings)
 
 		if seq_length < max_position_embeddings:
 			position_embeddings = tf.slice(full_position_embeddings, [0, 0],
@@ -583,7 +613,7 @@ def attention_layer(from_tensor,
 	# present: [B, 2, N, T, H]
 	present = tf.stack([key_layer, value_layer], axis=1) # multihead attention
 	if past is not None:
-		print("===present===shape===", past.get_shape()) 
+		# print("===present===shape===", past.get_shape()) 
 		pk, pv = tf.unstack(past, axis=1)
 		key_layer = tf.concat([pk, key_layer], axis=-2)
 		value_layer = tf.concat([pv, value_layer], axis=-2)
@@ -595,7 +625,7 @@ def attention_layer(from_tensor,
 	attention_scores = tf.multiply(attention_scores,
 																 1.0 / math.sqrt(float(size_per_head)))
 
-	print(attention_scores.get_shape(), "==attention_scores shape==")
+	# print(attention_scores.get_shape(), "==attention_scores shape==")
 	if attention_mask is not None:
 		# `attention_mask` = [B, 1, F, T]
 		attention_mask = tf.expand_dims(attention_mask, axis=[1])
@@ -604,7 +634,7 @@ def attention_layer(from_tensor,
 		# masked positions, this operation will create a tensor which is 0.0 for
 		# positions we want to attend and -10000.0 for masked positions.
 		adder = (1.0 - tf.cast(attention_mask, tf.float32)) * -10000.0
-		print(attention_mask.get_shape(), "====attention_mask===shape===")
+		# print(attention_mask.get_shape(), "====attention_mask===shape===")
 
 		# Since we are adding it to the raw scores before the softmax, this is
 		# effectively the same as removing these entirely.
@@ -633,22 +663,22 @@ def attention_layer(from_tensor,
 	# `context_layer` = [B, F, N, H]
 	context_layer = tf.transpose(context_layer, [0, 2, 1, 3])
 
-	print(context_layer.get_shape(), "=====context_layer shape===")
+	# print(context_layer.get_shape(), "=====context_layer shape===")
 
 	atten_mask_shape = bert_utils.get_shape_list(attention_mask, expected_rank=[3,4])
-	actual_from_seq_length = atten_mask_shape[-2]
+	# actual_from_seq_length = atten_mask_shape[-2]
 
 	if do_return_2d_tensor:
 		# `context_layer` = [B*F, N*V]
 		context_layer = tf.reshape(
 				context_layer,
-				[batch_size * actual_from_seq_length, num_attention_heads * size_per_head])
-		print(context_layer.get_shape(), "=====context_layer shape===")
+				[batch_size * from_seq_length, num_attention_heads * size_per_head])
+		# print(context_layer.get_shape(), "=====context_layer shape===")
 	else:
 		# `context_layer` = [B, F, N*V]
 		context_layer = tf.reshape(
 				context_layer,
-				[batch_size, actual_from_seq_length, num_attention_heads * size_per_head])
+				[batch_size, from_seq_length, num_attention_heads * size_per_head])
 
 	return context_layer, present, attention_scores
 
@@ -733,6 +763,8 @@ def transformer_model(input_tensor,
 	all_attention_scores = []
 
 	pasts = tf.unstack(past, axis=1) if past is not None else [None] * num_hidden_layers
+
+	print(past, "=====past=====")
 
 	for layer_idx in range(num_hidden_layers):
 		with tf.variable_scope("layer_%d" % layer_idx):

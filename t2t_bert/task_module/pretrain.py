@@ -210,6 +210,65 @@ def seq_mask_masked_lm_output(config, input_tensor, output_weights,
 
 		return (loss, per_example_loss, logits, sampled_binary_mask)
 
+def emb_score(config, input_tensor, output_weights,
+				input_mask, **kargs):
 
+	input_shape_list = bert_utils.get_shape_list(input_tensor, expected_rank=3)
+	batch_size = input_shape_list[0]
+	seq_length = input_shape_list[1]
+	hidden_dims = input_shape_list[2]
 
+	embedding_projection = kargs.get('embedding_projection', None)
+
+	scope = kargs.get('scope', None)
+	if scope:
+		scope = scope + '/' + 'ebm/projections'
+	else:
+		scope = 'ebm/projections'
+
+	tf.logging.info("**** mlm generator scope **** %s", str(scope))
+
+	# with tf.variable_scope("cls/predictions", reuse=tf.AUTO_REUSE):
+	with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
+		if config.get('ln_type', 'postln') == 'preln':
+			input_tensor = bert_modules.layer_norm(input_tensor)
+		elif config.get('ln_type', 'postln') == 'postln':
+			input_tensor = input_tensor
+		else:
+			input_tensor = input_tensor
+
+		normalized_constant = tf.get_variable(
+				"ebm_normalized_constant",
+				shape=[config.max_position_embeddings],
+				initializer=bert_modules.create_initializer(
+							config.initializer_range))
+
+		valid_seq_length = tf.cast(tf.reduce_sum(input_mask, axis=-1), tf.int32) # batch_size
+		onehot_length_ids = tf.one_hot(valid_seq_length, config.max_position_embeddings)
+		input_normalized_constant = tf.einsum("ab,b->a", tf.cast(onehot_length_ids, tf.float32), normalized_constant)
+
+		with tf.variable_scope("transform"):
+			f_input_mask = tf.cast(tf.expand_dims(input_mask, axis=-1), tf.float32)
+
+			if kargs.get("energy_pooling", "mean_pooling") == "mean_pooling":
+				tf.logging.info("==apply mean pooling to get hidden states projections==")
+				# for input token sequence: <start> a b c
+				# we only calculate energy on a,b,c which <start> can't contribute to final 
+				# energy function
+				pool_features = tf.reduce_sum(input_tensor*f_input_mask, axis=1) / (1e-10+tf.reduce_sum(f_input_mask, axis=1))
+
+			# batch_size x hidden_dims
+			emb_scalar = tf.layers.dense(
+					pool_features,
+					units=1,
+					activation=bert_modules.get_activation(config.hidden_act),
+					kernel_initializer=bert_modules.create_initializer(
+							config.initializer_range))
+
+			# original ebm log-likelihood:
+			# log(exp(-E(x))/Z) = -E(x) - log(Z)
+			# here we use bert encoder of pooled hidden states as energy function which need to minus when apply to 
+			# actual energy function
+			logits = -emb_scalar - input_normalized_constant
+	return logits
 

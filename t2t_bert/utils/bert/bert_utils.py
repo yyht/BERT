@@ -140,10 +140,10 @@ def generate_seq2seq_mask(attention_mask, mask_sequence, seq_type, **kargs):
 
 			# batch_size, from_length, to_length
 			attention_mask_shape = get_shape_list(attention_mask, expected_rank=[2,3])
-			print(attention_mask_shape, "====attention mask shape====")
+			# print(attention_mask_shape, "====attention mask shape====")
 			from_length = attention_mask_shape[1]
 			out_mask = out_mask[:, seq_len-from_length:seq_len, :]
-			print("===out_mask shape==", out_mask.get_shape())
+			# print("===out_mask shape==", out_mask.get_shape())
 		else:
 			# this will always create casual mask
 
@@ -159,7 +159,7 @@ def generate_seq2seq_mask(attention_mask, mask_sequence, seq_type, **kargs):
 			# batch_size, from_length, to_length
 			# from_length = attention_mask_shape[1]
 			# out_mask = out_mask[:, seq_len-from_length:seq_len, :]
-			print("===out_mask shape==", out_mask.get_shape())
+			# print("===out_mask shape==", out_mask.get_shape())
 	else:
 		out_mask = tf.cast(attention_mask, tf.float32)
 

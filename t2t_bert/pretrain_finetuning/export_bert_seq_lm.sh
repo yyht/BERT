@@ -1,0 +1,16 @@
+CUDA_VISIBLE_DEVICES="" python ./t2t_bert/pretrain_finetuning/export_api.py \
+ --buckets "/data/xuht" \
+ --config_file "/data/xuht/bert_as_gpt/bert_config_tiny.json" \
+ --model_dir "bert_as_gpt/export" \
+ --init_checkpoint "bert_as_gpt/model.ckpt-429685" \
+ --model_output "bert_as_gpt/model.ckpt-429685" \
+ --max_length 64 \
+ --export_dir "bert_as_gpt/export/infer_inputs_64" \
+ --num_classes 2 \
+ --input_target "" \
+ --model_scope "bert" \
+ --model_type "bert_seq" \
+ --task_type "bert_seq_lm"  \
+ --export_model_type "bert_seq_lm" \
+ --seq_type "seq2seq" \
+ --mask_type "left2right"

@@ -337,7 +337,8 @@ def bert_seq_decoder(model_config, features, labels,
 						segment_ids,
 						hidden_dropout_prob,
 						attention_probs_dropout_prob,
-						reuse=reuse)
+						reuse=reuse,
+						past=features.get("past", None))
 	model.build_encoder(input_ids,
 						input_mask,
 						hidden_dropout_prob, 
