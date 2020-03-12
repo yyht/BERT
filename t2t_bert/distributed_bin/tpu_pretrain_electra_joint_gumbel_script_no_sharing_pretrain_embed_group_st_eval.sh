@@ -27,7 +27,7 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--warmup "warmup" \
 	--decay "decay" \
 	--init_lr 2e-4 \
-	--tpu_name "albert2" \
+	--tpu_name "albert0" \
 	--num_tpu_cores 8 \
 	--mode 'electra' \
 	--multi_task_type "generator,discriminator" \
