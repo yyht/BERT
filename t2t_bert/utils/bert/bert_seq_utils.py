@@ -351,9 +351,9 @@ def sample_sequence(model_api,
 #                                      tf.cast(start_mask, tf.int32))
 	
 	start_mask = tf.one_hot(tf.range(0, context_shape[1]), actual_length)
-	samples += tf.einsum("ab,bc->ac", 
-									context, 
-									 tf.cast(start_mask, tf.int32))
+	samples += tf.cast(tf.einsum("ab,bc->ac", 
+									tf.cast(context, tf.float32), 
+									 tf.cast(start_mask, tf.float32)), tf.int32)
 	
 	logits = tf.cast(tf.zeros((batch_size, actual_length)), tf.float32)
 	
