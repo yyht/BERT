@@ -594,7 +594,7 @@ def sample_sequence(model_api,
 				],
 				back_prop=back_prop,
 				swap_memory=swap_memory,
-				maximum_iterations=seq_length
+				maximum_iterations=512
 			)
 			
 		elif estimator == "soft":
@@ -612,7 +612,7 @@ def sample_sequence(model_api,
 				],
 				back_prop=back_prop,
 				swap_memory=swap_memory,
-				maximum_iterations=seq_length
+				maximum_iterations=512
 			)
 
 		else:
@@ -629,7 +629,7 @@ def sample_sequence(model_api,
 				],
 				back_prop=back_prop,
 				swap_memory=swap_memory,
-				maximum_iterations=seq_length
+				maximum_iterations=512
 			)
 
 #         results = body(5, presents, context[:, -1], samples)
