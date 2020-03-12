@@ -368,6 +368,8 @@ flags.DEFINE_string(
 
 def main(_):
 
+	tf.enable_resource_variables()
+
 	init_checkpoint = os.path.join(FLAGS.buckets, FLAGS.init_checkpoint)
 	train_file = []
 	for file in FLAGS.train_file.split(","):
@@ -444,7 +446,9 @@ def main(_):
 			annealed_mask_prob=FLAGS.annealed_mask_prob,
 			gen_disc_type=FLAGS.gen_disc_type,
 			mask_method=FLAGS.mask_method,
-			minmax_mode=FLAGS.minmax_mode)
+			minmax_mode=FLAGS.minmax_mode,
+			seq_type=FLAGS.seq_type,
+			mask_type=FLAGS.mask_type)
 
 
 if __name__ == "__main__":

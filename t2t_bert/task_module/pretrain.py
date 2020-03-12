@@ -210,6 +210,149 @@ def seq_mask_masked_lm_output(config, input_tensor, output_weights,
 
 		return (loss, per_example_loss, logits, sampled_binary_mask)
 
+def emb_score(config, input_tensor, input_ids, 
+				output_weights,
+				input_mask, **kargs):
+
+	input_shape_list = bert_utils.get_shape_list(input_tensor, expected_rank=3)
+	batch_size = input_shape_list[0]
+	seq_length = input_shape_list[1]
+	hidden_dims = input_shape_list[2]
+
+	scope = kargs.get('scope', None)
+	if scope:
+		lm_scope = scope + '/' + 'cls/predictions'
+	else:
+		lm_scope = 'cls/predictions'
+
+	tf.logging.info("**** mlm generator scope **** %s", str(lm_scope))
+
+	# with tf.variable_scope("cls/predictions", reuse=tf.AUTO_REUSE):
+	with tf.variable_scope(lm_scope, reuse=tf.AUTO_REUSE):
+		if config.get('ln_type', 'postln') == 'preln':
+			input_tensor = bert_modules.layer_norm(input_tensor)
+		elif config.get('ln_type', 'postln') == 'postln':
+			input_tensor = input_tensor
+		else:
+			input_tensor = input_tensor
+
+		if config.get("embedding", "none_factorized") == "none_factorized":
+			projection_width = config.hidden_size
+			tf.logging.info("==not using embedding factorized==")
+		else:
+			projection_width = config.get('embedding_size', config.hidden_size)
+			tf.logging.info("==using embedding factorized: embedding size: %s==", str(projection_width))
+
+		with tf.variable_scope("transform"):
+			input_tensor = tf.layers.dense(
+					input_tensor,
+					units=projection_width,
+					activation=bert_modules.get_activation(config.hidden_act),
+					kernel_initializer=bert_modules.create_initializer(
+							config.initializer_range))
+
+			if config.get('ln_type', 'postln') == 'preln':
+				input_tensor = input_tensor
+			elif config.get('ln_type', 'postln') == 'postln':
+				input_tensor = bert_modules.layer_norm(input_tensor)
+			else:
+				input_tensor = bert_modules.layer_norm(input_tensor)
+
+	# with tf.variable_scope("cls/predictions", reuse=tf.AUTO_REUSE):
+	if scope:
+		ebm_scope = scope + '/' + 'ebm/predictions'
+	else:
+		ebm_scope = 'ebm/predictions'
+	
+	tf.logging.info("**** ebm generator scope **** %s", str(ebm_scope))
+
+	print(input_tensor.get_shape(), "==input_tensor shape==")
+
+	with tf.variable_scope(ebm_scope, reuse=tf.AUTO_REUSE):
+		# assume the whole model is self-normalization
+		normalized_constant = tf.get_variable(
+				"ebm_normalized_constant",
+				shape=[config.max_position_embeddings],
+				initializer=tf.zeros_initializer())
+
+		valid_seq_length = tf.cast(tf.reduce_sum(input_mask, axis=-1), tf.int32) # batch_size
+		onehot_length_ids = tf.one_hot(valid_seq_length, config.max_position_embeddings)
+		input_normalized_constant = tf.einsum("ab,b->a", tf.cast(onehot_length_ids, tf.float32), normalized_constant)
+
+		# f_input_mask = tf.cast(tf.expand_dims(input_mask, axis=-1), tf.float32)
+
+		if kargs.get("energy_pooling", "mi") == "mean_pooling":
+			tf.logging.info("==apply mean pooling to get hidden states projections==")
+			# for input token sequence: <start> a b c
+			# we only calculate energy on a,b,c which <start> can't contribute to final 
+			# energy function
+			# batch x dim
+			pool_features = tf.einsum("abc,ab->ac", input_tensor, tf.cast(input_mask, tf.float32))
+			# tf.reduce_sum(input_tensor*f_input_mask, axis=1) #/ (1e-10+tf.reduce_sum(f_input_mask, axis=1))
+
+			print(pool_features.get_shape(), "===pool_features shape===")
+		elif kargs.get("energy_pooling", "mi") == "mi":
+			tf.logging.info("==apply mi to get hidden states projections==")
+			logits = tf.einsum("abc,dc->abd", input_tensor, output_weights) # batch x seq x vocab
+
+			input_id_shape = bert_utils.get_shape_list(input_ids, [2,3])
+			if len(input_id_shape) == 2:
+				onehot_input_ids = tf.cast(tf.one_hot(tf.cast(input_ids, tf.int32), config.vocab_size), tf.float32) # batch x seq x vocab
+				input_ori_ids = tf.cast(onehot_input_ids, tf.float32)
+				print("==input ori ids shape== 2-dim", input_ori_ids.get_shape())
+			else:
+				input_ori_ids = tf.cast(input_ids, tf.float32)
+				print("==input ori ids shape== 3-dim", input_ori_ids.get_shape())
+
+			logits = tf.einsum("abd,abd->ab", logits, input_ori_ids)
+			print(logits.get_shape(), "==pooled logits shape==")
+			pool_features = tf.reduce_sum(logits*tf.cast(input_mask, tf.float32), axis=1) #/ (1e-10+tf.reduce_sum(f_input_mask, axis=1))
+			pool_features = tf.expand_dims(pool_features, axis=-1)
+			print(pool_features.get_shape(), "==pooled feature shape==")
+		# batch_size x hidden_dims
 
 
+		if kargs.get('transform', True):
+
+			with tf.variable_scope("transform"):
+				ebm_scalar = tf.layers.dense(
+						pool_features,
+						units=1,
+						use_bias=False,
+						activation=tf.nn.softplus # mask scalar to [0,inifite]
+						)
+				print("===ebm_scalar====", ebm_scalar.get_shape())
+
+				ebm_scalar = tf.squeeze(ebm_scalar, axis=-1)
+				print("===ebm_scalar====", ebm_scalar.get_shape())
+				# ebm_scalar /= (1e-10+tf.reduce_sum(tf.cast(input_mask, tf.float32), axis=-1))
+				
+				# if kargs.get("energy_pooling", "mi") == "mean_pooling":
+				
+				print("===ebm_scalar====", ebm_scalar.get_shape())
+				print("===input_normalized_constant====", input_normalized_constant.get_shape())
+
+		else:
+			ebm_scalar = tf.squeeze(pool_features, axis=-1)
+			# ebm_scalar /= (1e-10+tf.reduce_sum(tf.cast(input_mask, tf.float32), axis=-1))
+			print("===ebm_scalar====", ebm_scalar.get_shape())
+			print("===input_normalized_constant====", input_normalized_constant.get_shape())
+
+		if not kargs.get("prob_ln", False):
+			tf.logging.info("****** sum of plogprob as sentence probability *******")
+			# ebm_scalar /= (1e-10+tf.reduce_sum(tf.cast(input_mask, tf.float32), axis=-1))
+		else:
+			ebm_scalar /= (1e-10+tf.reduce_sum(tf.cast(input_mask, tf.float32), axis=-1))
+			tf.logging.info("****** sum of plogprob with length normalization as sentence probability *******")
+		print("===ebm_scalar====", ebm_scalar.get_shape())
+		print("===input_normalized_constant====", input_normalized_constant.get_shape())
+
+		# original ebm log-likelihood:
+		# log(exp(-E(x))/Z) = -E(x) - log(Z)
+		# here we use bert encoder of pooled hidden states as energy function which need to minus when apply to 
+		# actual energy function
+
+		logits = -ebm_scalar - input_normalized_constant - tf.log(1e-10+tf.reduce_sum(tf.cast(input_mask, tf.float32), axis=-1))
+		print("=ebm logits shape==", logits.get_shape())
+	return logits
 

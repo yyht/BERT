@@ -509,7 +509,8 @@ def main(_):
 			annealed_mask_prob=FLAGS.annealed_mask_prob,
 			joint_train=FLAGS.joint_train,
 			optimization_type=FLAGS.optimization_type,
-			use_tpu=FLAGS.use_tpu)
+			seq_type=FLAGS.seq_type,
+			mask_type=FLAGS.mask_type)
 	else:
 		train_eval_api.monitored_estimator(
 			FLAGS=FLAGS,
@@ -537,7 +538,8 @@ def main(_):
 			distillation_ratio=FLAGS.distillation_ratio,
 			attention_type=FLAGS.attention_type,
 			ues_token_type=FLAGS.ues_token_type,
-			use_tpu=FLAGS.use_tpu)
+			seq_type=FLAGS.seq_type,
+			mask_type=FLAGS.mask_type)
 
 if __name__ == "__main__":
 	tf.app.run()

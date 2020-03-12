@@ -39,17 +39,44 @@ class Bert(object):
 		with tf.variable_scope(embedding_scope, reuse=reuse):
 			with tf.variable_scope("embeddings"):
 				# Perform embedding lookup on the word ids.
-				(self.embedding_output_word, self.embedding_table) = bert_modules.embedding_lookup(
+				# (self.embedding_output_word, self.embedding_table) = bert_modules.embedding_lookup(
+				# 		input_ids=input_ids,
+				# 		vocab_size=self.config.vocab_size,
+				# 		embedding_size=projection_width,
+				# 		initializer_range=self.config.initializer_range,
+				# 		word_embedding_name="word_embeddings",
+				# 		use_one_hot_embeddings=self.config.use_one_hot_embeddings)
+
+				# if kargs.get("perturbation", None):
+				# 	self.embedding_output_word += kargs["perturbation"]
+				# 	tf.logging.info(" add word pertubation for robust learning ")
+
+				input_shape = bert_utils.get_shape_list(input_ids, expected_rank=[2,3])
+				if len(input_shape) == 3:
+					tf.logging.info("****** 3D embedding matmul *******")
+					(self.embedding_output_word, self.embedding_table) = bert_modules.gumbel_embedding_lookup(
+							input_ids=input_ids,
+							vocab_size=self.config.vocab_size,
+							embedding_size=projection_width,
+							initializer_range=self.config.initializer_range,
+							word_embedding_name="word_embeddings",
+							use_one_hot_embeddings=self.config.use_one_hot_embeddings)
+				elif len(input_shape) == 2:
+					(self.embedding_output_word, self.embedding_table) = bert_modules.embedding_lookup(
 						input_ids=input_ids,
 						vocab_size=self.config.vocab_size,
 						embedding_size=projection_width,
 						initializer_range=self.config.initializer_range,
 						word_embedding_name="word_embeddings",
 						use_one_hot_embeddings=self.config.use_one_hot_embeddings)
-
-				if kargs.get("perturbation", None):
-					self.embedding_output_word += kargs["perturbation"]
-					tf.logging.info(" add word pertubation for robust learning ")
+				else:
+					(self.embedding_output_word, self.embedding_table) = bert_modules.embedding_lookup(
+						input_ids=input_ids,
+						vocab_size=self.config.vocab_size,
+						embedding_size=projection_width,
+						initializer_range=self.config.initializer_range,
+						word_embedding_name="word_embeddings",
+						use_one_hot_embeddings=self.config.use_one_hot_embeddings)
 
 		with tf.variable_scope(other_embedding_scope, reuse=reuse):
 			with tf.variable_scope("embeddings"):

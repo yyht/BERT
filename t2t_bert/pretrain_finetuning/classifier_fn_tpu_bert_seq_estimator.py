@@ -14,6 +14,7 @@ import tensorflow as tf
 import numpy as np
 from optimizer import optimizer
 from model_io import model_io
+from utils.bert import bert_seq_utils
 
 from task_module import classifier
 from task_module import tsa_pretrain
@@ -62,9 +63,9 @@ def eval_metric(input_ids, predicted_logits, **kargs):
 	per_example_perplexity = tf.reduce_sum(input_id_logits * sequence_mask, axis=-1) # batch
 	per_example_perplexity /= tf.reduce_sum(sequence_mask, axis=-1) # batch
 
-	perplexity = tf.reduce_mean(tf.exp(per_example_perplexity))
+	perplexity = tf.exp(per_example_perplexity)
 
-	ppl_avg = tf.metrics.mean(values=per_example_perplexity)
+	ppl_avg = tf.metrics.mean(values=perplexity)
 	lm_token_accuracy = tf.metrics.accuracy(
 					labels=tf.cast(labels, tf.int32), 
 					predictions=tf.cast(tf.argmax(logits, axis=-1), tf.int32),
@@ -111,17 +112,18 @@ def classifier_model_fn_builder(
 		else:
 			scope = model_config.scope
 		
-		sequence_mask = tf.to_float(tf.not_equal(features['input_ori_ids'][:, 1:], 
-													kargs.get('[PAD]', 0)))
+		if mode == tf.estimator.ModeKeys.TRAIN:
+			sequence_mask = tf.to_float(tf.not_equal(features['input_ori_ids'][:, 1:], 
+														kargs.get('[PAD]', 0)))
 
-		# batch x seq_length
-		print(model.get_sequence_output_logits().get_shape(), "===logits shape===")
-		seq_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-					labels=features['input_ori_ids'][:, 1:], 
-					logits=model.get_sequence_output_logits()[:, :-1])
+			# batch x seq_length
+			print(model.get_sequence_output_logits().get_shape(), "===logits shape===")
+			seq_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+						labels=features['input_ori_ids'][:, 1:], 
+						logits=model.get_sequence_output_logits()[:, :-1])
 
-		per_example_loss = tf.reduce_sum(seq_loss*sequence_mask, axis=-1) / (tf.reduce_sum(sequence_mask, axis=-1)+1e-10)
-		loss = tf.reduce_mean(per_example_loss)
+			per_example_loss = tf.reduce_sum(seq_loss*sequence_mask, axis=-1) / (tf.reduce_sum(sequence_mask, axis=-1)+1e-10)
+			loss = tf.reduce_mean(per_example_loss)
 		
 		model_io_fn = model_io.ModelIO(model_io_config)
 
@@ -141,10 +143,8 @@ def classifier_model_fn_builder(
 											init_checkpoint,
 											exclude_scope=exclude_scope,
 											use_tpu=use_tpu)
-			tf.logging.info("***** using tpu *****")
 		else:
 			scaffold_fn = None
-			tf.logging.info("***** not using tpu *****")
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
 
@@ -214,6 +214,95 @@ def classifier_model_fn_builder(
 								eval_metric_ops=gpu_eval_metrics)
 
 			return estimator_spec
+
+		elif mode == tf.estimator.ModeKeys.PREDICT:
+			if kargs.get('predict_type', 'sample_sequence') == 'sample_sequence':
+				results = bert_seq_utils.sample_sequence(model_api,
+										model_config, 
+										mode, 
+										features,
+										target="", 
+										start_token=kargs.get("start_token_id", 101), 
+										batch_size=None, 
+										context=features.get("context", None), 
+										temperature=kargs.get("sample_temp", 1.0), 
+										n_samples=kargs.get("n_samples", 1),
+										top_k=0,
+										end_token=kargs.get("end_token_id", 102),
+										greedy_or_sample="greedy",
+										gumbel_temp=0.01,
+										estimator="stop_gradient",
+										back_prop=True,
+										swap_memory=True,
+										seq_type=kargs.get("seq_type", "seq2seq"),
+										mask_type=kargs.get("mask_type", "seq2seq"),
+                    					attention_type=kargs.get('attention_type', 'normal_attention')
+                    					)
+				# stop_gradient output:
+				# samples, mask_sequence, presents, logits, final
+				
+				sampled_token = results['samples']
+				sampled_token_logits = results['logits']
+				mask_sequence = results['mask_sequence']
+
+				estimator_spec = tf.estimator.EstimatorSpec(
+									mode=mode,
+									predictions={
+												'token':sampled_token,
+												"logits":sampled_token_logits,
+												"mask_sequence":mask_sequence
+									},
+									export_outputs={
+										"output":tf.estimator.export.PredictOutput(
+													{
+														'token':sampled_token,
+														"logits":sampled_token_logits,
+														"mask_sequence":mask_sequence
+													}
+												)
+									}
+						)
+
+				return estimator_spec
+
+			elif kargs.get('predict_type', 'sample_sequence') == 'infer_inputs':
+
+				sequence_mask = tf.to_float(tf.not_equal(features['input_ids'][:, 1:], 
+													kargs.get('[PAD]', 0)))
+				output_logits = model.get_sequence_output_logits()[:, :-1]
+				# output_logits = tf.nn.log_softmax(output_logits, axis=-1)
+
+				output_id_logits = tf.nn.sparse_softmax_cross_entropy_with_logits(
+										labels=features['input_ids'][:, 1:], 
+										logits=output_logits)
+
+				per_example_perplexity = tf.reduce_sum(output_id_logits * sequence_mask, 
+												axis=-1) # batch
+				per_example_perplexity /= tf.reduce_sum(sequence_mask, axis=-1) # batch
+
+				perplexity = tf.exp(per_example_perplexity)
+
+				estimator_spec = tf.estimator.EstimatorSpec(
+									mode=mode,
+									predictions={
+												'token':features['input_ids'][:, 1:],
+												"logits":output_id_logits,
+												'perplexity':perplexity,
+												"all_logits":output_logits
+									},
+									export_outputs={
+										"output":tf.estimator.export.PredictOutput(
+													{
+														'token':features['input_ids'][:,1:],
+														"logits":output_id_logits,
+														'perplexity':perplexity,
+														"all_logits":output_logits
+													}
+												)
+									}
+						)
+
+				return estimator_spec
 		else:
 			raise NotImplementedError()
 

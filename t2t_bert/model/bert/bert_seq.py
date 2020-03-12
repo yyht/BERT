@@ -16,6 +16,7 @@ class Bert(object):
 	def build_embedder(self, input_ids, token_type_ids, 
 									hidden_dropout_prob, 
 									attention_probs_dropout_prob,
+									past=None,
 									**kargs):
 
 		reuse = kargs["reuse"]
@@ -35,6 +36,13 @@ class Bert(object):
 			embedding_scope = self.config.get("scope", "bert")
 			other_embedding_scope = self.config.get("scope", "bert")
 			tf.logging.info("==using embedding scope of original model_config.scope: %s==", embedding_scope)
+
+		if past is None:
+			self.past_length = 0
+		else:
+			# batch_size_, num_layers_, two_, num_heads_, self.cache_length, features_
+			past_shape = bert_utils.get_shape_list(past, expected_rank=[6])
+			self.past_length = past_shape[-2]
 
 		with tf.variable_scope(embedding_scope, reuse=reuse):
 			with tf.variable_scope("embeddings"):
@@ -85,7 +93,7 @@ class Bert(object):
 				# Add positional embeddings and token type embeddings, then layer
 				# normalize and perform dropout.
 				tf.logging.info("==using segment type embedding ratio: %s==", str(self.config.get("token_type_ratio", 1.0)))
-				self.embedding_output = bert_modules.embedding_postprocessor(
+				self.embedding_output = bert_seq_modules.embedding_postprocessor(
 						input_tensor=self.embedding_output_word,
 						use_token_type=kargs.get('use_token_type', True),
 						token_type_ids=token_type_ids,
@@ -96,7 +104,8 @@ class Bert(object):
 						initializer_range=self.config.initializer_range,
 						max_position_embeddings=self.config.max_position_embeddings,
 						dropout_prob=hidden_dropout_prob,
-						token_type_ratio=self.config.get("token_type_ratio", 1.0))
+						token_type_ratio=self.config.get("token_type_ratio", 1.0),
+						position_offset=self.past_length)
 
 	def build_encoder(self, input_ids, input_mask, 
 									hidden_dropout_prob, 
@@ -300,4 +309,7 @@ class Bert(object):
 
 	def get_sequence_output_logits(self):
 		return self.logits
+
+	def get_attention_mask(self):
+		return self.attention_mask
 

@@ -29,6 +29,7 @@ print(sys.path)
 
 import tensorflow as tf
 from pretrain_finetuning import export_discriminator
+from pretrain_finetuning import export_bert_seq_lm
 
 import tensorflow as tf
 import json
@@ -310,6 +311,21 @@ flags.DEFINE_string(
 	"if apply distillation"
 	)
 
+flags.DEFINE_string(
+	"export_model_type", "bert",
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
+	"seq_type", "none",
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
+	"mask_type", "none",
+	"if apply distillation"
+	)
+
 def main(_):
 
 	print(FLAGS)
@@ -321,13 +337,26 @@ def main(_):
 
 	print(init_checkpoint, checkpoint_dir, export_dir)
 
-	export_discriminator.export_model(FLAGS,
-						init_checkpoint,
-						checkpoint_dir,
-						export_dir,
-						input_target=FLAGS.input_target,
-						export_type=FLAGS.export_type,
-						sharing_mode=FLAGS.sharing_mode)
+	if FLAGS.export_model_type in ["bert", "electra", "relgan"]:
+		export_discriminator.export_model(FLAGS,
+							init_checkpoint,
+							checkpoint_dir,
+							export_dir,
+							input_target=FLAGS.input_target,
+							export_type=FLAGS.export_type,
+							sharing_mode=FLAGS.sharing_mode)
+	elif  FLAGS.export_model_type in ["bert_seq_lm"]:
+		export_bert_seq_lm.export_model(FLAGS,
+							init_checkpoint,
+							checkpoint_dir,
+							export_dir,
+							input_target=FLAGS.input_target,
+							export_type=FLAGS.export_type,
+							sharing_mode=FLAGS.sharing_mode,
+							attention_type=FLAGS.attention_type,
+							seq_type=FLAGS.seq_type,
+							mask_type=FLAGS.mask_type,
+							predict_type="infer_inputs")
 
 if __name__ == "__main__":
 	tf.app.run()

@@ -8,10 +8,3 @@ jupyter
 networkx
 pyemd
 jieba
-fuzzywuzzy[speedup]
-requests
-numba
-sumy
-gensim
-fuzzywuzzy[speedup]
-elasticsearch

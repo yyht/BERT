@@ -5,8 +5,19 @@ from utils.bert import bert_utils
 def get_finised_pos(token_seq, finished_index, max_length): 
 	tmp_indices = tf.where(tf.equal(token_seq, int(finished_index)))
 	finished_pos = tf.segment_min(tmp_indices[:, 1], tmp_indices[:, 0])
-	sequence_mask = tf.sequence_mask(finished_pos, maxlen=max_length)
+	sequence_mask = tf.sequence_mask(finished_pos+1, maxlen=max_length)
 	return tf.cast(sequence_mask, tf.int32)
+
+def get_finised_pos_v1(token_seq, finished_index, max_length): 
+	seq_shape = bert_utils.get_shape_list(token_seq, expected_rank=[2,3])
+	match_indices = tf.where(                          # [[5, 5, 2, 5, 4],
+	tf.equal(finished_index, token_seq),                              #  [0, 5, 2, 3, 5],
+		x=tf.range(seq_shape[1]) * tf.ones_like(token_seq),  #  [5, 1, 5, 5, 5]]
+		y=(seq_shape[1])*tf.ones_like(token_seq))
+
+	finished_pos = tf.reduce_min(match_indices, axis=1)
+	sequence_mask = tf.sequence_mask(finished_pos+1, maxlen=max_length)
+	return sequence_mask
 
 def top_k_logits(logits, k):
 	if k == 0:
@@ -46,8 +57,9 @@ def gumbel_softmax(logits, temperature, gumbel_samples=None, samples=1):
 		gumbel_samples = sample_gumbel(input_shape_list, samples)
 
 	y = logits + gumbel_samples
+	# here we consider inverse-temp-annealing
 	tf.logging.info("==apply sampling based sampling and discrete relax==")
-	return [tf.exp(tf.nn.log_softmax(y / temperature, axis=1)), 
+	return [tf.exp(tf.nn.log_softmax(y * temperature, axis=1)), 
 			y]
 
 # def sample_sequence_v1(model_api,
@@ -267,6 +279,7 @@ def sample_sequence(model_api,
 				target="", 
 				start_token=101, 
 				batch_size=None, 
+				seq_length=None,
 				context=None, 
 				temperature=1, 
 				n_samples=1,
@@ -282,12 +295,29 @@ def sample_sequence(model_api,
 	input_shape = bert_utils.get_shape_list(features["input_ids"], expected_rank=[2,3])
 	batch_size = input_shape[0]
 	seq_length = input_shape[1]
-	if start_token is None:
-		assert context is not None, 'Specify exactly one of start_token and context!'
-	else:
-		assert context is None, 'Specify exactly one of start_token and context!'
+
+	print(seq_length, "=====seq length======")
+
+	print("=mask type=", kargs.get("seq_type", "seq2seq"), kargs.get("mask_type", "seq2seq"), "========")
+
+	if context is None:
+		assert start_token is not None, 'Specify exactly one of start_token and context!'
 		context = tf.fill([batch_size, 1], start_token)
+		context = tf.cast(context, tf.int32)
 		print(context.get_shape(), "===init context shape===")
+	else:
+		context = tf.cast(context, tf.int32)
+		context_shape = bert_utils.get_shape_list(context, expected_rank=[2])
+		batch_size = input_shape[0]
+
+	# if start_token is None:
+	# 	assert context is not None, 'Specify exactly one of start_token and context!'
+	# 	context = tf.cast(context, tf.int32)
+	# else:
+	# 	assert context is None, 'Specify exactly one of start_token and context!'
+	# 	context = tf.fill([batch_size, 1], start_token)
+	# 	context = tf.cast(context, tf.int32)
+	# 	print(context.get_shape(), "===init context shape===")
 		
 	context_shape = bert_utils.get_shape_list(context, expected_rank=[2])
 	actual_length = seq_length
@@ -349,7 +379,7 @@ def sample_sequence(model_api,
 		if segment_ids is None:
 			features['segment_ids'] = tf.cast(tf.zeros((token_shape[0], token_shape[1])), tf.int32)
 		else:
-			features['segment_ids'] = segment_ids
+			features['segment_ids'] = tf.cast(segment_ids, tf.int32)
 		if past is None:
 			features['input_mask'] = tf.cast(tf.ones((token_shape[0], token_shape[1])), tf.int32)
 			features['past'] = None
@@ -366,12 +396,13 @@ def sample_sequence(model_api,
 		next_presents = inference_model.get_present()
 		
 		next_presents_shape = bert_utils.get_shape_list(next_presents, expected_rank=[6])
+
 		print(presents.get_shape())
 		if next_presents_shape[-2] > 0:
 			print(next_presents_shape)
 			print(next_presents.get_shape(), "===next presents shape===")
 #             mask = tf.expand_dims(tf.one_hot(step, seq_length+1), axis=(0, 1, 2, 3, 5))
-			mask = tf.one_hot(tf.range(step, step+token_shape[1]), actual_length)
+			mask = tf.cast(tf.one_hot(tf.range(step, step+token_shape[1]), actual_length), tf.float32)
 #             tf.expand_dims(tf.one_hot(tf.range(step, step+token_shape[1]), seq_length+1), axis=0)
 #             mask = tf.expand_dims(mask, axis=1)
 #             mask = tf.expand_dims(mask, axis=2)
@@ -381,7 +412,7 @@ def sample_sequence(model_api,
 			
 			past = tf.einsum("abcdef,eg->abcdgf", next_presents, mask) + past
 			
-#             past = past + tf.cast(mask, tf.float32) * next_presents
+# #             past = past + tf.cast(mask, tf.float32) * next_presents
 	   
 		return {
 			'logits': logits,
@@ -395,20 +426,37 @@ def sample_sequence(model_api,
 		
 		print(context[:, :-1].get_shape())
 		init_context_shape = bert_utils.get_shape_list(context[:, :-1], expected_rank=[2,3])
+
+
+		# def no_op(presents):
+		# 	return {
+		# 		"presents":presents,
+		# 		"logits":tf.cast(tf.zeros((batch_size, actual_length)), tf.float32)
+		# 	}
+
+		# def set_context(presents):
+		# 	init_segment_ids = tf.cast(tf.zeros((init_context_shape[0], init_context_shape[1])), tf.int32)
+		# 	context_output = step(0, context[:, :-1], segment_ids=init_segment_ids, past=presents)
+		# 	return context_output
+
+		# context_output = tf.cond(tf.less_equal(init_context_shape[-1], 0),
+		# 		lambda : no_op(presents),
+		# 		lambda : set_context(presents))
+
 		init_segment_ids = tf.cast(tf.zeros((init_context_shape[0], init_context_shape[1])), tf.int32)
 		context_output = step(0, context[:, :-1], segment_ids=init_segment_ids, past=presents)
 		
 		def get_samples_logits(samples, logits):
 			batch_idxs = tf.range(0, tf.shape(samples)[0])
-			batch_idxs = tf.expand_dims(batch_idxs, 1)
-			samples = tf.expand_dims(samples, 1)
+			batch_idxs = tf.expand_dims(tf.cast(batch_idxs, tf.int32), 1)
+			samples = tf.expand_dims(tf.cast(samples, tf.int32), 1)
 
 			idxs = tf.concat([batch_idxs, samples], 1)
 			sample_logits = tf.gather_nd(logits, idxs)
 			return sample_logits
 
 		def body(i, past, prev, samples, segment_ids, logits):
-			print(prev.get_shape(), "==prev shape==")
+			print(prev.get_shape(), "==prev shape==", past.dtype, samples.dtype, segment_ids.dtype, i.dtype, logits.dtype)
 			next_outputs = step(i-1, prev[:, tf.newaxis], segment_ids=segment_ids, past=past)
 			next_logits = next_outputs['logits'][:, -1, :]  / tf.to_float(temperature)
 			next_logits = tf.nn.log_softmax(next_logits, axis=-1)
@@ -419,15 +467,17 @@ def sample_sequence(model_api,
 				next_samples = tf.argmax(next_logits, axis=-1)
 			else:
 				next_samples = tf.argmax(next_logits, axis=-1)
+			next_samples = tf.cast(next_samples, tf.int32)
 			print(next_samples.get_shape(), "==sample shape==")
 
-			print(tf.one_hot(i, seq_length+1).get_shape(), "====shhhhape===")
+			print(tf.one_hot(i, actual_length).get_shape(), "====shhhhape===")
 			sample_mask = tf.expand_dims(tf.one_hot(i, actual_length), axis=(0)) # [1, seq, 1]
 			print(sample_mask.get_shape(), "==sample mask shape==")
 			print(samples.get_shape(), "==samples shape==")
 			samples += tf.cast(sample_mask, tf.int32) * tf.cast(tf.expand_dims(next_samples, axis=-1), tf.int32)
 			
 			next_sample_logits = get_samples_logits(next_samples, next_logits)
+			print(next_sample_logits.get_shape(), "===next sampleslogis shape==")
 			logits += tf.cast(sample_mask, tf.float32) * tf.expand_dims(next_sample_logits, axis=-1)
 
 			return [i+1, 
@@ -493,9 +543,9 @@ def sample_sequence(model_api,
 			# gumbel sample
 			next_gumbel_probs, _ = gumbel_softmax(next_logits, gumbel_temp, gumbel_samples=None, samples=1)
 			next_samples = tf.cast(tf.argmax(next_gumbel_probs, axis=1), tf.int32)
-			next_samples_onehot = tf.one_hot(next_samples, 
-												   model_config.vocab_size,
-													axis=1) # sampled multiminal id
+			# next_samples_onehot = tf.one_hot(next_samples, 
+			# 									   model_config.vocab_size,
+			# 										axis=1) # sampled multiminal id
 
 			# straight-through token_matrix
 			# straight_through_onehot = tf.stop_gradient(next_samples_onehot-next_gumbel_probs)+next_gumbel_probs
@@ -520,10 +570,13 @@ def sample_sequence(model_api,
 					segment_ids,
 				   logits]
 		
-		init_i = bert_utils.get_shape_list(context[:, :-1], expected_rank=[2,3])[1] + 1
+		init_i = tf.cast(bert_utils.get_shape_list(context[:, :-1], expected_rank=[2,3])[1]+1, tf.int32)
+		print(init_i, "=====init========================")
 		if kargs.get("mask_type", "left2right") == 'left2right':
+			print("==apply zeros segment===")
 			left_segment_ids = tf.expand_dims(tf.cast(tf.zeros_like(context[:, -1]), tf.int32), axis=-1)
 		elif kargs.get("mask_type", "left2right") == 'seq2seq':
+			print("==apply ones segment===")
 			left_segment_ids = tf.expand_dims(tf.cast(tf.ones_like(context[:, -1]), tf.int32), axis=-1)
 
 		if estimator == "straight_through":
@@ -579,12 +632,27 @@ def sample_sequence(model_api,
 #         results = body(5, presents, context[:, -1], samples)
 #         samples = results[-1]
 #         print(samples)
-		mask_sequence = get_finised_pos(samples, end_token, actual_length)
-#         print(mask_sequence.get_shape())
-#         samples *= tf.cast(mask_sequence, tf.int32)
-#         logits *= tf.cast(mask_sequence, tf.float32)
+		mask_sequence = get_finised_pos_v1(samples, end_token, actual_length)
+		print(mask_sequence.get_shape(), "==mask shape==")
+		samples *= tf.cast(mask_sequence, tf.int32)
+		logits *= tf.cast(mask_sequence, tf.float32)
 		if estimator in ["straight_through", "soft"]:
 			gumbel_probs *= tf.expand_dims(tf.cast(mask_sequence, tf.float32), axis=-1)
-			return samples, gumbel_probs, presents, logits, final
+			return {
+				"samples":samples,
+				"mask_sequence":mask_sequence,
+				"gumbel_probs":gumbel_probs,
+				"presents":presents,
+				"logits":logits,
+				"final":final
+			}
+			# return samples, mask_sequence, gumbel_probs, presents, logits, final
 		else:
-			return samples, mask_sequence, presents, logits, final
+			return {
+				"samples":samples,
+				"mask_sequence":mask_sequence,
+				"presents":presents,
+				"logits":logits,
+				"final":final
+			}
+			# return samples, mask_sequence, presents, logits, final
