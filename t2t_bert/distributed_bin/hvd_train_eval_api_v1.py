@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 import sys,os
 
@@ -27,16 +28,25 @@ sys.path.extend([bert_path, t2t_bert_path])
 print(sys.path)
 
 import tensorflow as tf
-from pretrain_finetuning import train_eval_tpu_estimator
-from pretrain_finetuning import train_eval_gpu_electra_estimator
 
+from distributed_single_sentence_classification import train_eval
+from distributed_multitask import train_eval as multitask_train_eval
+from distributed_distillation import train_eval as distillation_train_eval
+from pretrain_finetuning import train_eval as pretrain_train_eval
+# from tensorflow.contrib.distribute.python import cross_tower_ops as cross_tower_ops_lib
+import horovod.tensorflow as hvd
+import tensorflow as tf
 
 flags = tf.flags
 
 FLAGS = flags.FLAGS
 
+os.environ['NCCL_LL_THRESHOLD'] = '0' # to avoid collective reduce hangs on
+os.environ['TF_ENABLE_WHILE_V2'] = '1'
+os.environ['TF_ENABLE_COND_V2'] = '1'
+
 # os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-# tf.logging.set_verbosity(tf.logging.ERROR)
+tf.logging.set_verbosity(tf.logging.INFO)
 
 flags.DEFINE_string("buckets", "", "oss buckets")
 
@@ -112,18 +122,28 @@ flags.DEFINE_string(
 	"run_type", "0",
 	"Input TF example files (can be a glob or comma separated).")
 
-flags.DEFINE_string(
-	"distribution_strategy", "ParameterServerStrategy",
-	"distribution strategy"
+flags.DEFINE_integer(
+	"num_gpus", 2, 
+	"the required num_gpus"
 	)
 
 flags.DEFINE_string(
-	"rule_model", "normal",
-	"distribution strategy"
+	"distribution_strategy", "MirroredStrategy", 
+	"the required num_gpus"
+	)
+
+flags.DEFINE_string(
+	"cross_tower_ops_type", "paisoar",
+	"the CollectiveAllReduceStrategy cross_tower_ops_type"
 	)
 
 flags.DEFINE_string(
 	"parse_type", "parse_single", 
+	"the required num_gpus"
+	)
+
+flags.DEFINE_string(
+	"rule_model", "normal", 
 	"the required num_gpus"
 	)
 
@@ -134,12 +154,7 @@ flags.DEFINE_string(
 
 
 flags.DEFINE_string(
-	"train_op", "adam_decay", 
-	"the required num_gpus"
-	)
-
-flags.DEFINE_integer(
-	"num_gpus", 4, 
+	"train_op", "adam_weight_decay_exclude", 
 	"the required num_gpus"
 	)
 
@@ -233,8 +248,23 @@ flags.DEFINE_string(
 	"if apply distillation"
 	)
 
+flags.DEFINE_string(
+	"task_invariant", "no",
+	"if apply distillation"
+	)
+
 flags.DEFINE_float(
 	"init_lr", 5e-5,
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
+	"multitask_balance_type", "data_balanced",
+	"if apply distillation"
+	)
+
+flags.DEFINE_integer(
+	"prefetch", 0,
 	"if apply distillation"
 	)
 
@@ -244,64 +274,22 @@ flags.DEFINE_integer(
 	)
 
 flags.DEFINE_string(
-			"ln_type", 'postln',
-				"if apply distillation"
-					)
+	"ln_type", 'postln',
+	"if apply distillation"
+	)
 
+flags.DEFINE_string(
+	"distillation_config", 'postln',
+	"if apply distillation"
+	)
 
-flags.DEFINE_bool("do_train", False, "Whether to run training.")
-
-flags.DEFINE_bool("do_eval", False, "Whether to run eval on the dev set.")
-
-flags.DEFINE_integer("save_checkpoints_steps", 10000,
-					 "How often to save the model checkpoint.")
-
-flags.DEFINE_integer("iterations_per_loop", 1000,
-					 "How many steps to make in each estimator call.")
-
-flags.DEFINE_bool("use_tpu", True, "Whether to use TPU or GPU/CPU.")
-
-tf.flags.DEFINE_string(
-	"tpu_name", None,
-	"The Cloud TPU to use for training. This should be either the name "
-	"used when creating the Cloud TPU, or a grpc://ip.address.of.tpu:8470 "
-	"url.")
-
-tf.flags.DEFINE_string(
-	"tpu_zone", None,
-	"[Optional] GCE zone where the Cloud TPU is located in. If not "
-	"specified, we will attempt to automatically detect the GCE project from "
-	"metadata.")
-
-tf.flags.DEFINE_string(
-	"gcp_project", None,
-	"[Optional] Project name for the Cloud TPU-enabled project. If not "
-	"specified, we will attempt to automatically detect the GCE project from "
-	"metadata.")
-
-tf.flags.DEFINE_string("master", None, "[Optional] TensorFlow master URL.")
-
-flags.DEFINE_integer(
-	"num_tpu_cores", 8,
-	"Only used if `use_tpu` is True. Total number of TPU cores to use.")
+flags.DEFINE_bool(
+	"use_tpu", False,
+	"if apply distillation"
+	)
 
 flags.DEFINE_string(
 	"joint_train", "0",
-	"if apply distillation"
-	)
-
-flags.DEFINE_string(
-	"optimization_type", "grl",
-	"if apply distillation"
-	)
-
-flags.DEFINE_string(
-	"train_op_type", "joint",
-	"if apply distillation"
-	)
-
-flags.DEFINE_string(
-	"random_generator", "1",
 	"if apply distillation"
 	)
 
@@ -321,17 +309,12 @@ flags.DEFINE_string(
 	)
 
 flags.DEFINE_string(
-	"gumbel_anneal", "anneal",
-	"if apply distillation"
-	)
-
-flags.DEFINE_string(
 	"exclude_scope", "",
 	"if apply distillation"
 	)
 
-flags.DEFINE_bool(
-	"annealed_mask_prob", False,
+flags.DEFINE_string(
+	"ues_token_type", "yes",
 	"if apply distillation"
 	)
 
@@ -341,7 +324,28 @@ flags.DEFINE_string(
 	)
 
 flags.DEFINE_string(
+	"gumbel_anneal", "anneal",
+	"if apply distillation"
+	)
+
+flags.DEFINE_bool(
+	"annealed_mask_prob", False,
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
+	"optimization_type", "grl",
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
 	"gen_disc_type", "all_disc",
+	"if apply distillation"
+	)
+
+
+flags.DEFINE_string(
+	"train_op_type", "joint",
 	"if apply distillation"
 	)
 
@@ -365,16 +369,20 @@ flags.DEFINE_string(
 	"if apply distillation"
 	)
 
-
 def main(_):
 
-	tf.enable_resource_variables()
+	print(FLAGS)
+	print(tf.__version__, "==tensorflow version==")
+
+	os.environ['NCCL_LL_THRESHOLD'] = "0"
 
 	init_checkpoint = os.path.join(FLAGS.buckets, FLAGS.init_checkpoint)
 	train_file = []
 	for file in FLAGS.train_file.split(","):
 		train_file_path = os.path.join(FLAGS.buckets, file)
 		train_file.append(train_file_path)
+	# train_file = os.path.join(FLAGS.buckets, FLAGS.train_file)
+	# dev_file = os.path.join(FLAGS.buckets, FLAGS.dev_file)
 
 	dev_file = []
 	for file in FLAGS.dev_file.split(","):
@@ -384,72 +392,120 @@ def main(_):
 
 	print(init_checkpoint, train_file, dev_file, checkpoint_dir)
 
-	tpu_cluster_resolver = None
-	if FLAGS.use_tpu and FLAGS.tpu_name:
-		tpu_cluster_resolver = tf.contrib.cluster_resolver.TPUClusterResolver( # TODO
-			tpu=FLAGS.tpu_name, zone=FLAGS.tpu_zone, project=FLAGS.gcp_project)
+	# if FLAGS.distribution_strategy == "MirroredStrategy":
+	# 	cross_tower_ops = cross_tower_ops_lib.AllReduceCrossTowerOps("nccl", 10, 0, 0)
+	# 	distribution = tf.contrib.distribute.MirroredStrategy(num_gpus=FLAGS.num_gpus, 
+	# 											cross_tower_ops=cross_tower_ops)
+	# 	worker_count = FLAGS.num_gpus
+	# else:
+	# 	cross_tower_ops = cross_tower_ops_lib.AllReduceCrossTowerOps("nccl", 10, 0, 0)
+	# 	distribution = tf.contrib.distribute.MirroredStrategy(num_gpus=FLAGS.num_gpus, 
+	# 											cross_tower_ops=cross_tower_ops)
+	# 	worker_count = FLAGS.num_gpus
 
-	print("###tpu_cluster_resolver:",tpu_cluster_resolver,";FLAGS.use_tpu:",FLAGS.use_tpu,";FLAGS.tpu_name:",FLAGS.tpu_name,";FLAGS.tpu_zone:",FLAGS.tpu_zone)
-	# ###tpu_cluster_resolver: <tensorflow.python.distribute.cluster_resolver.tpu_cluster_resolver.TPUClusterResolver object at 0x7f4b387b06a0> ;FLAGS.use_tpu: True ;FLAGS.tpu_name: grpc://10.240.1.83:8470
+	sess_config = tf.ConfigProto(allow_soft_placement=True,
+									log_device_placement=True)
 
-	tf.logging.info("****** tpu_name ******* %s", FLAGS.tpu_name)
+	run_config = tf.estimator.RunConfig(
+					  keep_checkpoint_max=10,
+					  # model_dir=checkpoint_dir,
+					  # train_distribute=distribution, # tf 1.8
+					  # distribute=distribution,     # tf 1.4
+					  session_config=sess_config,
+					  save_checkpoints_secs=None,
+					  save_checkpoints_steps=None,
+					  log_step_count_steps=100)
 
-	is_per_host = tf.contrib.tpu.InputPipelineConfig.PER_HOST_V2
-	run_config = tf.contrib.tpu.RunConfig(
-	  keep_checkpoint_max=100, # 10
-	  cluster=tpu_cluster_resolver,
-	  master=FLAGS.master,
-	  model_dir=checkpoint_dir,
-	  save_checkpoints_steps=FLAGS.save_checkpoints_steps,
-	  tpu_config=tf.contrib.tpu.TPUConfig(
-		  iterations_per_loop=FLAGS.iterations_per_loop,
-		  num_shards=FLAGS.num_tpu_cores,
-		  per_host_input_for_training=is_per_host))
-	print(FLAGS.do_train, "=====do train flag======")
+	task_index = run_config.task_id
+	is_chief = run_config.is_chief
 
-	if FLAGS.mode == 'pretrain':
-		train_eval_tpu_estimator.train_eval_fn(FLAGS=FLAGS,
-			init_checkpoint=init_checkpoint,
-			train_file=train_file,
-			dev_file=dev_file,
-			checkpoint_dir=checkpoint_dir,
-			run_config=run_config,
-			train_op=FLAGS.train_op,
-			decay=FLAGS.decay,
-			warmup=FLAGS.warmup,
-			input_target=FLAGS.input_target,
-			attention_type=FLAGS.attention_type,
-			exclude_scope=FLAGS.exclude_scope,
-			annealed_mask_prob=FLAGS.annealed_mask_prob,
-			seq_type=FLAGS.seq_type,
-			mask_type=FLAGS.mask_type)
-	elif FLAGS.mode == 'electra':
-		train_eval_gpu_electra_estimator.train_eval_fn(
+	print("==worker_count==", worker_count, "==local_rank==", task_index, "==is is_chief==", is_chief)
+	cluster = ""
+	target = ""
+
+	print(FLAGS)
+
+	if FLAGS.mode == "single_task":
+		train_eval_api = train_eval
+	elif FLAGS.mode == "multi_task":
+		train_eval_api = multitask_train_eval
+	elif FLAGS.mode == 'distillation':
+		train_eval_api = distillation_train_eval
+	elif FLAGS.mode == "electra":
+		train_eval_api = pretrain_train_eval
+
+	if FLAGS.mode == "electra":
+		train_eval_api.monitored_estimator(
 			FLAGS=FLAGS,
+			worker_count=worker_count, 
+			task_index=task_index, 
+			cluster=cluster, 
+			is_chief=is_chief, 
 			init_checkpoint=init_checkpoint,
 			train_file=train_file,
 			dev_file=dev_file,
 			checkpoint_dir=checkpoint_dir,
 			run_config=run_config,
+			distribution_strategy=FLAGS.distribution_strategy,
+			profiler=FLAGS.profiler,
+			parse_type=FLAGS.parse_type,
+			rule_model=FLAGS.rule_model,
 			train_op=FLAGS.train_op,
+			running_type=FLAGS.running_type,
 			decay=FLAGS.decay,
 			warmup=FLAGS.warmup,
 			input_target=FLAGS.input_target,
+			distillation=FLAGS.distillation,
+			temperature=FLAGS.temperature,
+			distillation_ratio=FLAGS.distillation_ratio,
 			electra_mode=FLAGS.electra_mode,
-			joint_train=FLAGS.joint_train,
 			sharing_mode=FLAGS.sharing_mode,
 			attention_type=FLAGS.attention_type,
-			optimization_type=FLAGS.optimization_type,
-			train_op_type=FLAGS.train_op_type,
+			ues_token_type=FLAGS.ues_token_type,
 			gumbel_anneal=FLAGS.gumbel_anneal,
-			# exclude_scope=FLAGS.exclude_scope,
 			annealed_mask_prob=FLAGS.annealed_mask_prob,
+			joint_train=FLAGS.joint_train,
+			optimization_type=FLAGS.optimization_type,
 			gen_disc_type=FLAGS.gen_disc_type,
+			train_op_type=FLAGS.train_op_type,
 			mask_method=FLAGS.mask_method,
 			minmax_mode=FLAGS.minmax_mode,
 			seq_type=FLAGS.seq_type,
 			mask_type=FLAGS.mask_type)
-
+			# use_tpu=FLAGS.use_tpu)
+	else:
+		train_eval_api.monitored_estimator(
+			FLAGS=FLAGS,
+			worker_count=worker_count, 
+			task_index=task_index, 
+			cluster=cluster, 
+			is_chief=is_chief, 
+			target=target,
+			init_checkpoint=init_checkpoint,
+			train_file=train_file,
+			dev_file=dev_file,
+			checkpoint_dir=checkpoint_dir,
+			run_config=run_config,
+			distribution_strategy=FLAGS.distribution_strategy,
+			profiler=FLAGS.profiler,
+			parse_type=FLAGS.parse_type,
+			rule_model=FLAGS.rule_model,
+			train_op=FLAGS.train_op,
+			running_type=FLAGS.running_type,
+			decay=FLAGS.decay,
+			warmup=FLAGS.warmup,
+			input_target=FLAGS.input_target,
+			distillation=FLAGS.distillation,
+			temperature=FLAGS.temperature,
+			distillation_ratio=FLAGS.distillation_ratio,
+			attention_type=FLAGS.attention_type,
+			ues_token_type=FLAGS.ues_token_type,
+			seq_type=FLAGS.seq_type,
+			mask_type=FLAGS.mask_type)
+			# use_tpu=FLAGS.use_tpu)
 
 if __name__ == "__main__":
-		tf.app.run()
+	tf.app.run()
+
+
+	

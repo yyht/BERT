@@ -17,7 +17,7 @@ pai -name tensorflow1120
 	-DgpuRequired=100
 	-Dtags='bert'
 	-DjobName='bert_mrc_pretrain'
-	-DhyperParameters='file:///Users/xuhaotian/Desktop/my_work/BERT/t2t_bert/offline_debug/porn_albert'
+	-DhyperParameters='file:///Users/xuhaotian/Desktop/my_work/BERT/t2t_bert/offline_debug/porn_2'
 	-Dbuckets='oss://alg-misc/BERT/?role_arn=acs:ram::1265628042679515:role/tianyi&host=cn-hangzhou.oss-internal.aliyun-inc.com';
 "
 echo "${pai_command}"

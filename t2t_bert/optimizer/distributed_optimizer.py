@@ -33,10 +33,10 @@ class Optimizer(object):
 		self.config = config
 
 		# self.global_step = tf.get_variable(
-		# 					"global_step",
-		# 					dtype=tf.int64,
-		# 					initializer=tf.constant(1, dtype=tf.int64),
-		# 					reuse=tf.AUTO_REUSE)
+		#                   "global_step",
+		#                   dtype=tf.int64,
+		#                   initializer=tf.constant(1, dtype=tf.int64),
+		#                   reuse=tf.AUTO_REUSE)
 
 		self.global_step = tf.train.get_or_create_global_step()
 
@@ -45,6 +45,61 @@ class Optimizer(object):
 		self.decay_global_step = tf.cond(cond_fn,
 									lambda:tf.constant(value=0, shape=[], dtype=tf.int64, name="initial_global_step"),
 									lambda:self.global_step-tf.constant(self.config.num_warmup_steps, dtype=tf.int64))
+
+	def private_global_step(self, global_step):
+		global_step = tf.cast(global_step, tf.int64)
+		cond_fn = tf.less(self.global_step, tf.constant(self.config.num_warmup_steps, dtype=tf.int64))
+
+		decay_global_step = tf.cond(cond_fn,
+									lambda:tf.constant(value=0, shape=[], dtype=tf.int64, name="initial_global_step"),
+									lambda:global_step-tf.constant(self.config.num_warmup_steps, dtype=tf.int64))
+
+		return decay_global_step
+
+	def private_lr_decay_fn(self, init_lr, num_train_steps,
+							global_step,
+							**kargs):
+		lr_decay = self.config.get("lr_decay", "polynomial_decay")
+		tf.logging.info(" lr decay method {}".format(lr_decay))
+		learning_rate = tf.constant(value=init_lr, shape=[], dtype=tf.float32, name="init_lr")
+		end_learning_rate = self.config.get("end_learning_rate", 0.0)
+
+		decay_global_step = self.private_global_step(global_step)
+
+		if lr_decay == "polynomial_decay":
+			learning_rate = tf.train.polynomial_decay(
+													init_lr,
+													decay_global_step,
+													num_train_steps-self.config.num_warmup_steps,
+													end_learning_rate=end_learning_rate,
+													power=1.0,
+													cycle=False)
+		elif lr_decay == "cosine_decay":
+			learning_rate = tf.train.cosin_decay(
+												learning_rate,
+												decay_global_step,
+												num_train_steps-self.config.num_warmup_steps,
+												alpha=0.0,
+												cycle=False)
+		elif lr_decay == "exponential_decay":
+			decay_rate = self.config.get("lr_decay_rate", 0.999)
+			learning_rate = tf.train.exponential_decay(
+													learning_rate,
+													decay_global_step,
+													num_train_steps-self.config.num_warmup_steps,
+													decay_rate=decay_rate,
+													staircase=False)
+		elif lr_decay == "natural_exp_decay":
+			decay_rate = self.config.get("lr_decay_rate", 0.999)
+			learning_rate = tf.train.natural_exp_decay(
+													learning_rate,
+													decay_global_step,
+													num_train_steps-self.config.num_warmup_steps,
+													decay_rate=decay_rate,
+													staircase=False)
+		else:
+			learning_rate = learning_rate
+		return learning_rate
 
 	def lr_decay_fn(self, init_lr, num_train_steps,
 					**kargs):
@@ -103,28 +158,47 @@ class Optimizer(object):
 				(1.0 - is_warmup) * learning_rate + is_warmup * warmup_learning_rate)
 		return learning_rate
 
+	def private_warm_up(self, learning_rate, init_lr, global_step, **kargs):
+		num_warmup_steps = self.config.num_warmup_steps
+		global_steps_int = tf.cast(global_step, tf.int32)
+		warmup_steps_int = tf.constant(num_warmup_steps, dtype=tf.int32)
+
+		global_steps_float = tf.cast(global_steps_int, tf.float32)
+		warmup_steps_float = tf.cast(warmup_steps_int, tf.float32)
+
+		warmup_percent_done = global_steps_float / warmup_steps_float
+		warmup_learning_rate = init_lr * warmup_percent_done
+
+		is_warmup = tf.cast(global_steps_int < warmup_steps_int, tf.float32)
+		learning_rate = (
+				(1.0 - is_warmup) * learning_rate + is_warmup * warmup_learning_rate)
+		return learning_rate
+
 	def grad_clip_fn(self, opt, loss, tvars, **kargs):
 		gpu_count = self.config.get('gpu_count', 1)
 		grad_name = kargs.get('grad_name', "grad_norm")
 		if self.config.get("opt_type", "pai_soar") == "pai_soar":
 			loss_fn = opt.compute_loss(loss, loss_scale=self.config.get("loss_scale", 1))
 			grads_and_vars = opt.compute_gradients(loss_fn, colocate_gradients_with_ops=True)
-		else:	
+		else:   
 			grads_and_vars = opt.compute_gradients(loss, tvars)
 
+			valid_vars = []
 			for grad, var in grads_and_vars:
 				if grad is not None:
-					continue
+					valid_vars.append(var)
 				else:
-					print(var.name, "=====none grad======")
+					print(var.name, "=====none grad======", grad_name)
 
-			grads = [grad/gpu_count for grad, _ in grads_and_vars] # allreduce from sum to mean
+			grads = [grad/gpu_count for grad, _ in grads_and_vars if grad is not None] # allreduce from sum to mean
+			# grads_and_vars = zip(valid_grads, valid_vars)
 			grad_clip = self.config.get("grad_clip", "global_norm")
 			use_norm = tf.global_norm(grads)
 			tf.summary.scalar(grad_name+'/total_grad_norm', use_norm)
 			for grad, var in grads_and_vars:
-				var_grad_norm = tf.global_norm([grad])
-				tf.summary.scalar(grad_name+"/"+var.name, var_grad_norm)
+				if grad is not None:
+					var_grad_norm = tf.global_norm([grad])
+					tf.summary.scalar(grad_name+"/"+var.name, var_grad_norm)
 				# tf.summary.histogram(var.name, var)
 				# tf.summary.histogram("grad/"+var.name, grad)
 
@@ -153,7 +227,7 @@ class Optimizer(object):
 			else:
 				scale_grads = grads
 			
-			grads_and_vars = zip(scale_grads, tvars)
+			grads_and_vars = zip(scale_grads, valid_vars)
 
 		return grads_and_vars
 
@@ -338,8 +412,12 @@ class Optimizer(object):
 										beta2=self.config.get("beta_2", 0.999),
 										epsilon=self.config.get("epsilon", 1e-6))
 
-		grads_and_vars = local_opt.compute_gradients(loss, tvars)
 		debug_grad_name = kargs.get('debug_grad_name', 'original')
+		# for var in tvars:
+		#   print(var, "=====debug_grad_name====", debug_grad_name)
+
+		grads_and_vars = local_opt.compute_gradients(loss, tvars)
+		
 		local_grads = []
 		local_vars = []
 
@@ -371,7 +449,10 @@ class Optimizer(object):
 
 		optimizer_dict = {}
 
-		for key in init_lr_dict:
+		alternate_order = kargs.get('alternate_order', list(loss_dict.keys()))
+		print("==alternate order==", alternate_order)
+
+		for key in alternate_order:
 			init_lr = init_lr_dict[key]
 			optimizer_type = optimizer_type_dict[key]
 			if optimizer_type != 'radam':
@@ -386,7 +467,7 @@ class Optimizer(object):
 				opt = tf.contrib.tpu.CrossShardOptimizer(opt)
 			optimizer_dict[key] = opt
 
-		for key in loss_dict:
+		for key in alternate_order:
 			loss = loss_dict[key]
 			tvars = tvars_dict[key]
 			loop_steps = loop_step_dict[key]
@@ -407,78 +488,238 @@ class Optimizer(object):
 
 		return train_op
 
-	def get_adaptive_alternate_train_op(self, loss_dict, tvars_dict, init_lr_dict,
-								optimizer_type_dict,
-								num_train_steps, **kargs):
+	# def get_adaptive_alternate_train_op(self, loss_dict, tvars_dict, init_lr_dict,
+	# 							optimizer_type_dict,
+	# 							num_train_steps, **kargs):
 
-		prev_op = tf.no_op()
+	# 	prev_op = tf.no_op()
 
-		loop_step_dict = kargs.get('loop_step_dict', None)
-		if not loop_step_dict:
-			loop_step_dict = {}
-			for key in loss_dict:
-				loop_step_dict[key] = 1
+	# 	loop_step_dict = kargs.get('loop_step_dict', None)
+	# 	if not loop_step_dict:
+	# 		loop_step_dict = {}
+	# 		for key in loss_dict:
+	# 			loop_step_dict[key] = 1
 
-		optimizer_dict = {}
+	# 	optimizer_dict = {}
 
-		for key in init_lr_dict:
-			init_lr = init_lr_dict[key]
-			optimizer_type = optimizer_type_dict[key]
-			if optimizer_type != 'radam':
-				learning_rate = self.lr_decay_fn(init_lr, num_train_steps, **kargs)
-				learning_rate = self.warm_up(learning_rate, init_lr, **kargs)
+	# 	global_step_dict = kargs.get('global_step_dict', None)
+	# 	fce_acc = kargs.get("fce_acc", None)
 
-			tf.logging.info("****** model:%s, optimizer: %s, learning_rate:%s", key, optimizer_type, str(init_lr))
-			opt = self.optimizer_op(learning_rate, train_op=optimizer_type, **kargs)
+	# 	# for key in init_lr_dict:
+	# 	# 	init_lr = init_lr_dict[key]
+	# 	# 	optimizer_type = optimizer_type_dict[key]
+	# 	# 	if optimizer_type != 'radam':
+	# 	# 		learning_rate = self.private_lr_decay_fn(init_lr, num_train_steps,
+	# 	# 												global_step_dict[key], **kargs)
+	# 	# 		learning_rate = self.private_warm_up(learning_rate, init_lr, 
+	# 	# 											global_step_dict[key], **kargs)
 
-			if kargs.get("use_tpu", 0) == 1:
-				tf.logging.info("***** Using tpu cross shard optimizer *****")
-				opt = tf.contrib.tpu.CrossShardOptimizer(opt)
-			optimizer_dict[key] = opt
+	# 	# 	tf.logging.info("****** model:%s, optimizer: %s, learning_rate:%s", key, optimizer_type, str(init_lr))
+	# 	# 	opt = self.optimizer_op(learning_rate, train_op=optimizer_type, **kargs)
 
-		fce_acc = kargs.get("fce_acc", None)
+	# 	# 	if kargs.get("use_tpu", 0) == 1:
+	# 	# 		tf.logging.info("***** Using tpu cross shard optimizer *****")
+	# 	# 		opt = tf.contrib.tpu.CrossShardOptimizer(opt)
+	# 	# 	optimizer_dict[key] = opt
 
-		if fce_acc is None:
-			for key in loss_dict:
-				loss = loss_dict[key]
-				tvars = tvars_dict[key]
-				loop_steps = loop_step_dict[key]
-				optimizer = optimizer_dict[key]
+	# 	switch_acc = tf.get_variable(
+	# 						"switch_acc",
+	# 						shape=[],
+	# 						initializer=tf.constant_initializer(0.0, dtype=tf.float32),
+	# 						trainable=False)
 
-				grads = self.grad_clip_fn(loss, tvars, **kargs)
-				for i in range(loop_steps):
-					with tf.control_dependencies([prev_op]):
-						with tf.variable_scope(key+"/"+"optimizer", reuse=tf.AUTO_REUSE):
-							prev_op = optimizer.apply_gradients(
-								zip(grads, tvars))
-							tf.logging.info("***** model: %s, step: %s *****", key, str(i))
-		else:
-			prev_ebm_op = tf.no_op()
-			with tf.control_dependencies([prev_ebm_op]): 
-				with tf.control_dependencies([tf.less_equal(fce_acc, 0.5)]):
-					loss = loss_dict['ebm']
-					tvars = tvars_dict['ebm']
-					loop_steps = loop_step_dict['ebm']
-					optimizer = optimizer_dict['ebm']
-					with tf.variable_scope('ebm'+"/"+"optimizer", reuse=tf.AUTO_REUSE):
-						prev_ebm_op = optimizer.apply_gradients(
-									zip(grads, tvars))
+	# 	postive_key = kargs.get("postive_key", "ebm")
+	# 	negative_key = kargs.get("negative_key", "noise")
 
-			prev_noise_op = tf.no_op()
-			with tf.control_dependencies([prev_noise_op]): 
-				with tf.control_dependencies([tf.greater(c, 0.5)]):
-					loss = loss_dict['noise']
-					tvars = tvars_dict['noise']
-					loop_steps = loop_step_dict['noise']
-					optimizer = optimizer_dict['noise']
-					with tf.variable_scope('noise'+"/"+"optimizer", reuse=tf.AUTO_REUSE):
-						prev_noise_op = optimizer.apply_gradients(
-									zip(grads, tvars))
+	# 	def get_train_op(optimizer, loss, tvars, grad_name):
+	# 		grads_and_vars = self.grad_clip_fn(optimizer, loss, tvars, grad_name=postive_key, **kargs)
+	# 		with tf.variable_scope(grad_name+"/"+"optimizer", reuse=tf.AUTO_REUSE):
+	# 			op = optimizer.apply_gradients(
+	# 								grads_and_vars)
+	# 		return op
+		
+	# 	def ebm_op():
+	# 		loop_steps = loop_step_dict[postive_key]
 
-			prev_op = tf.group([prev_ebm_op, prev_noise_op])
-			
-		with tf.control_dependencies([prev_op]):
-			train_op = self.global_step.assign_add(1)
-		return train_op
+	# 		init_lr = init_lr_dict[postive_key]
+	# 		optimizer_type = optimizer_type_dict[postive_key]
+	# 		if optimizer_type != 'radam':
+	# 			learning_rate = self.private_lr_decay_fn(init_lr, num_train_steps,
+	# 													global_step_dict[postive_key], **kargs)
+	# 			learning_rate = self.private_warm_up(learning_rate, init_lr, 
+	# 												global_step_dict[postive_key], **kargs)
+
+	# 		tf.logging.info("****** model:%s, optimizer: %s, learning_rate:%s", postive_key, optimizer_type, str(init_lr))
+	# 		opt = self.optimizer_op(learning_rate, train_op=optimizer_type, **kargs)
+
+	# 		if kargs.get("use_tpu", 0) == 1:
+	# 			tf.logging.info("***** Using tpu cross shard optimizer *****")
+	# 			opt = tf.contrib.tpu.CrossShardOptimizer(opt)
+
+	# 		update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+	# 		with tf.control_dependencies(update_ops):
+	# 			prev_ebm_op = tf.no_op()
+	# 			for i in range(loop_steps):
+	# 				with tf.control_dependencies([prev_ebm_op]):
+	# 					tvars = tvars_dict[postive_key]
+	# 					loop_steps = loop_step_dict[postive_key]
+	# 					loss = loss_dict[postive_key]
+	# 					prev_ebm_op = get_train_op(opt, loss, tvars, postive_key)
+	# 					tf.logging.info("***** model: %s, step: %s *****", postive_key, str(i))
+	# 			with tf.control_dependencies([prev_ebm_op]): 
+	# 				prev_ebm_op = global_step_dict[postive_key].assign_add(1)
+	# 		return prev_ebm_op
+
+	# 	def noise_op():
+	# 		loop_steps = loop_step_dict[negative_key]
+	# 		init_lr = init_lr_dict[negative_key]
+	# 		optimizer_type = optimizer_type_dict[negative_key]
+	# 		if optimizer_type != 'radam':
+	# 			learning_rate = self.private_lr_decay_fn(init_lr, num_train_steps,
+	# 													global_step_dict[negative_key], **kargs)
+	# 			learning_rate = self.private_warm_up(learning_rate, init_lr, 
+	# 												global_step_dict[negative_key], **kargs)
+
+	# 		tf.logging.info("****** model:%s, optimizer: %s, learning_rate:%s", negative_key, optimizer_type, str(init_lr))
+	# 		opt = self.optimizer_op(learning_rate, train_op=optimizer_type, **kargs)
+
+	# 		if kargs.get("use_tpu", 0) == 1:
+	# 			tf.logging.info("***** Using tpu cross shard optimizer *****")
+	# 			opt = tf.contrib.tpu.CrossShardOptimizer(opt)
+
+	# 		update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+	# 		with tf.control_dependencies(update_ops):
+	# 			prev_noise_op = tf.no_op()
+	# 			for i in range(loop_steps):
+	# 				with tf.control_dependencies([prev_noise_op]):
+	# 					loss = loss_dict[negative_key]
+	# 					tvars = tvars_dict[negative_key]
+	# 					loop_steps = loop_step_dict[negative_key]
+	# 					prev_noise_op = get_train_op(opt, loss, tvars, negative_key)
+	# 					tf.logging.info("***** model: %s, step: %s *****", negative_key, str(i))
+
+	# 			with tf.control_dependencies([prev_noise_op]): 
+	# 				prev_noise_op = global_step_dict[negative_key].assign_add(1)
+	# 		return prev_noise_op
+
+	# 	if kargs.get("use_tpu", 0) == 0:
+	# 		tf.summary.scalar(postive_key+'_global_step', 
+	# 							tf.reduce_sum(global_step_dict[postive_key]))
+	# 		tf.summary.scalar(negative_key+'_global_step', 
+	# 							tf.reduce_sum(global_step_dict[negative_key]))
+	# 		tf.summary.scalar('switch_acc', 
+	# 							tf.reduce_sum(switch_acc))
+
+	# 	prev_op = tf.cond(tf.equal(tf.mod(self.global_step, 5), 0),
+	# 					   ebm_op,
+	# 					   noise_op)
+
+	# 	train_op = tf.group(prev_op, self.global_step.assign_add(1), switch_acc.assign(fce_acc))
+
+	# 	return train_op
+
+	# def get_adaptive_alternate_train_op_v1(self, init_lr_dict,
+	# 							optimizer_type_dict,
+	# 							num_train_steps, 
+	# 							features, 
+	# 							labels, 
+	# 							mode, 
+	# 							params,
+	# 							model_cls,
+	# 							**kargs):
+
+	# 	prev_op = tf.no_op()
+
+	# 	loop_step_dict = kargs.get('loop_step_dict', None)
+	# 	if not loop_step_dict:
+	# 		loop_step_dict = {}
+	# 		for key in loss_dict:
+	# 			loop_step_dict[key] = 1
+
+	# 	optimizer_dict = {}
+
+	# 	global_step_dict = kargs.get('global_step_dict', None)
+	# 	fce_acc = kargs.get("fce_acc", None)
+
+	# 	for key in init_lr_dict:
+	# 		init_lr = init_lr_dict[key]
+	# 		optimizer_type = optimizer_type_dict[key]
+	# 		if optimizer_type != 'radam':
+	# 			learning_rate = self.private_lr_decay_fn(init_lr, num_train_steps,
+	# 													global_step_dict[key], **kargs)
+	# 			learning_rate = self.private_warm_up(learning_rate, init_lr, 
+	# 												global_step_dict[key], **kargs)
+
+	# 		tf.logging.info("****** model:%s, optimizer: %s, learning_rate:%s", key, optimizer_type, str(init_lr))
+	# 		opt = self.optimizer_op(learning_rate, train_op=optimizer_type, **kargs)
+
+	# 		if kargs.get("use_tpu", 0) == 1:
+	# 			tf.logging.info("***** Using tpu cross shard optimizer *****")
+	# 			opt = tf.contrib.tpu.CrossShardOptimizer(opt)
+	# 		optimizer_dict[key] = opt
+
+	# 	switch_acc = tf.get_variable(
+	# 						"switch_acc",
+	# 						shape=[],
+	# 						initializer=tf.constant_initializer(0.0, dtype=tf.float32),
+	# 						trainable=False)
+
+	# 	postive_key = kargs.get("postive_key", "ebm")
+	# 	negative_key = kargs.get("negative_key", "noise")
+
+	# 	def get_train_op(optimizer, loss, vars, grad_name):
+	# 		grads_and_vars = self.grad_clip_fn(optimizer, loss, tvars, grad_name=postive_key, **kargs)
+	# 		with tf.variable_scope(grad_name+"/"+"optimizer", reuse=tf.AUTO_REUSE):
+	# 			op = optimizer.apply_gradients(
+	# 								grads_and_vars)
+	# 		return op
+
+	# 	prev_ebm_op = tf.no_op()
+	# 	loop_steps = loop_step_dict[postive_key]
+	# 	for i in range(loop_steps):
+	# 		with tf.control_dependencies([prev_ebm_op]):
+	# 			model_cls.get_loss(features, labels, mode, params, if_summary=True, **kargs)
+	# 			loss = tf.identity(model_cls.ebm_loss)
+	# 			loop_steps = loop_step_dict[postive_key]
+	# 			optimizer = optimizer_dict[postive_key]
+				
+	# 			prev_ebm_op = get_train_op(optimizer, loss, model_cls.ebm_vars, postive_key)
+	# 			tf.logging.info("***** model: %s, step: %s *****", postive_key, str(i))
+
+	# 	with tf.control_dependencies([prev_ebm_op]): 
+	# 		prev_ebm_op = global_step_dict[postive_key].assign_add(1)
+
+	# 	prev_noise_op = tf.no_op()
+	# 	loop_steps = loop_step_dict[negative_key]
+	# 	for i in range(loop_steps):
+	# 		with tf.control_dependencies([prev_noise_op]):
+	# 			model_cls.get_loss(features, labels, mode, params, if_summary=False, **kargs)
+	# 			loss = tf.identity(model_cls.noise_loss)
+	# 			loop_steps = loop_step_dict[negative_key]
+	# 			optimizer = optimizer_dict[negative_key]
+	# 			prev_noise_op = get_train_op(optimizer, loss, model_cls.noise_vars, negative_key)
+	# 			tf.logging.info("***** model: %s, step: %s *****", negative_key, str(i))
+
+	# 	with tf.control_dependencies([prev_noise_op]): 
+	# 		prev_noise_op = global_step_dict[negative_key].assign_add(1)
+
+	# 	if kargs.get("use_tpu", 0) == 0:
+	# 		tf.summary.scalar(postive_key+'_global_step', 
+	# 							tf.reduce_sum(global_step_dict[postive_key]))
+	# 		tf.summary.scalar(negative_key+'_global_step', 
+	# 							tf.reduce_sum(global_step_dict[negative_key]))
+	# 		tf.summary.scalar('switch_acc', 
+	# 							tf.reduce_sum(switch_acc))
+
+	# 	prev_op = tf.cond(tf.less_equal(switch_acc, 0.5),
+	# 					   lambda: prev_ebm_op,
+	# 					   lambda: prev_noise_op)
+
+	# 	with tf.control_dependencies([prev_op]):
+	# 		train_op = tf.group(self.global_step.assign_add(1), switch_acc.assign(fce_acc))
+
+	# 	return train_op
+
+
 
 	

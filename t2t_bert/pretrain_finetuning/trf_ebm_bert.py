@@ -31,18 +31,18 @@ def model_fn_builder(
 					**kargs):
 
 	model_config = copy.deepcopy(model_config)
-	if kargs.get("sharing_mode", "none") == "none":
-		"""
-		'generator/' + model_config.scope
-		"""
-		model_config.scope = exclude_scope + '/' + model_config.scope
-		generator_scope_prefix = exclude_scope
-		exclude_scope = exclude_scope
-		tf.logging.info("****** generator parameter *******")
-	elif kargs.get("sharing_mode", "none") == "all_sharing":
-		generator_scope_prefix = None
-		exclude_scope = ''
-		tf.logging.info("****** generator parameter sharing with discriminator *******")
+	# if kargs.get("sharing_mode", "none") == "none":
+	# 	"""
+	# 	'generator/' + model_config.scope
+	# 	"""
+	# 	model_config.scope = exclude_scope + '/' + model_config.scope
+	# 	generator_scope_prefix = exclude_scope
+	# 	exclude_scope = exclude_scope
+	# 	tf.logging.info("****** generator parameter *******")
+	# elif kargs.get("sharing_mode", "none") == "all_sharing":
+	# 	generator_scope_prefix = None
+	# 	exclude_scope = ''
+	# 	tf.logging.info("****** generator parameter sharing with discriminator *******")
 
 	def model_fn(features, labels, mode, params):
 
@@ -62,32 +62,22 @@ def model_fn_builder(
 		else:
 			scope = model_config.scope
 		
-		
 		logits = pretrain.emb_score(model_config, 
 						model.get_sequence_output(), 
+						features['input_ids'],
 						model.get_embedding_table(),
-						features['input_mask'], **kargs):
+						features['input_mask'], **kargs)
 		
 		model_io_fn = model_io.ModelIO(model_io_config)
 
 		pretrained_tvars = model_io_fn.get_params(model_config.scope, 
 										not_storage_params=not_storage_params)
 
-		if generator_scope_prefix:
-			"""
-			"generator/cls/predictions"
-			"""
-			# lm_pretrain_tvars = model_io_fn.get_params(generator_scope_prefix+"/cls/predictions", 
-			# 							not_storage_params=not_storage_params)
+		lm_pretrain_tvars = model_io_fn.get_params("cls/predictions", 
+									not_storage_params=not_storage_params)
 
-			lm_pretrain_tvars = model_io_fn.get_params(generator_scope_prefix+"/ebm/projections", 
-										not_storage_params=not_storage_params)
-		else:
-			# lm_pretrain_tvars = model_io_fn.get_params("ebm/projections", 
-			# 							not_storage_params=not_storage_params)
-
-			lm_pretrain_tvars = model_io_fn.get_params("ebm/projections", 
-										not_storage_params=not_storage_params)
+		ebm_pretrain_tvars = model_io_fn.get_params("ebm/predictions", 
+									not_storage_params=not_storage_params)
 
 		if model_config.get('embedding_scope', None) is not None:
 			embedding_tvars = model_io_fn.get_params(model_config.get('embedding_scope', 'bert')+"/embeddings", 
@@ -95,9 +85,10 @@ def model_fn_builder(
 			pretrained_tvars.extend(embedding_tvars)
 
 		pretrained_tvars.extend(lm_pretrain_tvars)
+		pretrained_tvars.extend(ebm_pretrain_tvars)
 		tvars = pretrained_tvars
 
-		print('==generator parameters==', tvars)
+		print('==ebm parameters==', tvars)
 
 		if load_pretrained == "yes":
 			use_tpu = 1 if kargs.get('use_tpu', False) else 0
@@ -110,9 +101,17 @@ def model_fn_builder(
 			scaffold_fn = None
 
 		# logits is logp, when we need to directly maximize it, we only minus
+		# with tf.variable_scope("ebm", reuse=tf.AUTO_REUSE):
+		# 	ebm_global_step = tf.get_variable(
+		# 						"global_step",
+		# 						shape=[],
+		# 						initializer=tf.constant_initializer(0, dtype=tf.int64),
+		# 						trainable=False,
+		# 						dtype=tf.int64)
 		return_dict = {
 					"tvars":tvars,
-					"logits":logits
+					"logits":logits,
+					# "global_step":ebm_global_step
 				}
 		return return_dict
 	return model_fn

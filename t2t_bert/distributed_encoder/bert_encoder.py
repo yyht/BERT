@@ -332,6 +332,9 @@ def bert_seq_decoder(model_config, features, labels,
 	tf.logging.info(" attention_probs_dropout_prob: %s ", str(hidden_dropout_prob))
 	tf.logging.info(" dropout_prob: %s ", str(dropout_prob))
 
+	print(kargs.get("seq_type", "none"), "===seq type==")
+	print(kargs.get("mask_type", "none"), "===mask type==")
+
 	model = bert_seq.Bert(model_config)
 	model.build_embedder(input_ids, 
 						segment_ids,
@@ -349,7 +352,7 @@ def bert_seq_decoder(model_config, features, labels,
 						token_type_ids=features.get("segment_ids", None),
 						seq_type=kargs.get("seq_type", "none"),
 						mask_type=kargs.get("mask_type", "none"))
-	model.build_output_logits(reuse=reuse)
+	model.build_output_logits(reuse=reuse, scope=kargs.get("scope", None))
 	# model.build_pooler(reuse=reuse)
 
 	return model

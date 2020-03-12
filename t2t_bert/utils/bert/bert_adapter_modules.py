@@ -303,11 +303,15 @@ def embedding_postprocessor(input_tensor,
 		# sequence has positions [0, 1, 2, ... seq_length-1], so we can just
 		# perform a slice.
 
-		if seq_length < max_position_embeddings:
-			position_embeddings = tf.slice(full_position_embeddings, [0, 0],
-																		 [seq_length, -1])
-		else:
-			position_embeddings = full_position_embeddings
+		# if seq_length < max_position_embeddings:
+		# 	position_embeddings = tf.slice(full_position_embeddings, [0, 0],
+		# 																 [seq_length, -1])
+		# else:
+		# 	position_embeddings = full_position_embeddings
+
+		flat_pos_ids = tf.range(seq_length, dtype=tf.int32)
+		one_hot_pos_ids = tf.one_hot(flat_pos_ids, depth=max_position_embeddings)
+		position_embeddings = tf.matmul(one_hot_pos_ids, full_position_embeddings)
 
 		# position_embeddings = tf.cond(tf.less(seq_length, max_position_embeddings), 
 		# 												lambda:tf.slice(full_position_embeddings, [0, 0],

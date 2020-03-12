@@ -42,6 +42,10 @@ flags = tf.flags
 FLAGS = flags.FLAGS
 
 os.environ['NCCL_LL_THRESHOLD'] = '0' # to avoid collective reduce hangs on
+os.environ['TF_ENABLE_WHILE_V2'] = '1'
+os.environ['TF_ENABLE_COND_V2'] = '1'
+
+print(os.environ['TF_ENABLE_COND_V2'], os.environ['TF_ENABLE_WHILE_V2'])
 
 # os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 tf.logging.set_verbosity(tf.logging.INFO)
@@ -372,7 +376,11 @@ def main(_):
 	print(FLAGS)
 	print(tf.__version__, "==tensorflow version==")
 
-	os.environ['NCCL_LL_THRESHOLD'] = "0"
+	os.environ['NCCL_LL_THRESHOLD'] = '0' # to avoid collective reduce hangs on
+	# os.environ['TF_ENABLE_WHILE_V2'] = '1'
+	# os.environ['TF_ENABLE_COND_V2'] = '1'
+
+	tf.enable_resource_variables()
 
 	init_checkpoint = os.path.join(FLAGS.buckets, FLAGS.init_checkpoint)
 	train_file = []
@@ -468,7 +476,9 @@ def main(_):
 			train_op_type=FLAGS.train_op_type,
 			mask_method=FLAGS.mask_method,
 			minmax_mode=FLAGS.minmax_mode,
-			use_tpu=FLAGS.use_tpu)
+			seq_type=FLAGS.seq_type,
+			mask_type=FLAGS.mask_type)
+			# use_tpu=FLAGS.use_tpu)
 	else:
 		train_eval_api.monitored_estimator(
 			FLAGS=FLAGS,
@@ -497,8 +507,8 @@ def main(_):
 			attention_type=FLAGS.attention_type,
 			ues_token_type=FLAGS.ues_token_type,
 			seq_type=FLAGS.seq_type,
-			mask_type=FLAGS.mask_type,
-			use_tpu=FLAGS.use_tpu)
+			mask_type=FLAGS.mask_type)
+			# use_tpu=FLAGS.use_tpu)
 
 if __name__ == "__main__":
 	tf.app.run()

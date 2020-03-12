@@ -243,11 +243,16 @@ def embedding_postprocessor(input_tensor,
 		# 	position_embeddings = full_position_embeddings
 
 		if position_offset == 0:
-			if seq_length < max_position_embeddings:
-				position_embeddings = tf.slice(full_position_embeddings, [0, 0],
-																		 [seq_length, -1])
-			else:
-				position_embeddings = full_position_embeddings
+			# if seq_length < max_position_embeddings:
+			# 	position_embeddings = tf.slice(full_position_embeddings, [0, 0],
+			# 															 [seq_length, -1])
+			# else:
+			# 	position_embeddings = full_position_embeddings
+
+			flat_pos_ids = tf.range(seq_length, dtype=tf.int32)
+			one_hot_pos_ids = tf.one_hot(flat_pos_ids, depth=max_position_embeddings)
+			position_embeddings = tf.matmul(one_hot_pos_ids, full_position_embeddings)	
+
 		else:
 			# Tensorflow is too stupid to allow slicing
 			flat_pos_ids = (tf.range(seq_length, dtype=tf.int32) + position_offset)

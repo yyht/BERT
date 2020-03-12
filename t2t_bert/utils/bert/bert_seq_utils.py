@@ -8,6 +8,17 @@ def get_finised_pos(token_seq, finished_index, max_length):
 	sequence_mask = tf.sequence_mask(finished_pos+1, maxlen=max_length)
 	return tf.cast(sequence_mask, tf.int32)
 
+def get_finised_pos_v1(token_seq, finished_index, max_length): 
+	seq_shape = bert_utils.get_shape_list(token_seq, expected_rank=[2,3])
+	match_indices = tf.where(                          # [[5, 5, 2, 5, 4],
+	tf.equal(finished_index, token_seq),                              #  [0, 5, 2, 3, 5],
+		x=tf.range(seq_shape[1]) * tf.ones_like(token_seq),  #  [5, 1, 5, 5, 5]]
+		y=(seq_shape[1])*tf.ones_like(token_seq))
+
+	finished_pos = tf.reduce_min(match_indices, axis=1)
+	sequence_mask = tf.sequence_mask(finished_pos+1, maxlen=max_length)
+	return sequence_mask
+
 def top_k_logits(logits, k):
 	if k == 0:
 		# no truncation
@@ -285,6 +296,8 @@ def sample_sequence(model_api,
 	batch_size = input_shape[0]
 	seq_length = input_shape[1]
 
+	print(seq_length, "=====seq length======")
+
 	print("=mask type=", kargs.get("seq_type", "seq2seq"), kargs.get("mask_type", "seq2seq"), "========")
 
 	if context is None:
@@ -464,6 +477,7 @@ def sample_sequence(model_api,
 			samples += tf.cast(sample_mask, tf.int32) * tf.cast(tf.expand_dims(next_samples, axis=-1), tf.int32)
 			
 			next_sample_logits = get_samples_logits(next_samples, next_logits)
+			print(next_sample_logits.get_shape(), "===next sampleslogis shape==")
 			logits += tf.cast(sample_mask, tf.float32) * tf.expand_dims(next_sample_logits, axis=-1)
 
 			return [i+1, 
@@ -529,9 +543,9 @@ def sample_sequence(model_api,
 			# gumbel sample
 			next_gumbel_probs, _ = gumbel_softmax(next_logits, gumbel_temp, gumbel_samples=None, samples=1)
 			next_samples = tf.cast(tf.argmax(next_gumbel_probs, axis=1), tf.int32)
-			next_samples_onehot = tf.one_hot(next_samples, 
-												   model_config.vocab_size,
-													axis=1) # sampled multiminal id
+			# next_samples_onehot = tf.one_hot(next_samples, 
+			# 									   model_config.vocab_size,
+			# 										axis=1) # sampled multiminal id
 
 			# straight-through token_matrix
 			# straight_through_onehot = tf.stop_gradient(next_samples_onehot-next_gumbel_probs)+next_gumbel_probs
@@ -618,8 +632,8 @@ def sample_sequence(model_api,
 #         results = body(5, presents, context[:, -1], samples)
 #         samples = results[-1]
 #         print(samples)
-		mask_sequence = get_finised_pos(samples, end_token, actual_length)
-#         print(mask_sequence.get_shape())
+		mask_sequence = get_finised_pos_v1(samples, end_token, actual_length)
+		print(mask_sequence.get_shape(), "==mask shape==")
 		samples *= tf.cast(mask_sequence, tf.int32)
 		logits *= tf.cast(mask_sequence, tf.float32)
 		if estimator in ["straight_through", "soft"]:

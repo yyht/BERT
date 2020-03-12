@@ -50,7 +50,7 @@ def model_fn_builder(
 					opt_config={},
 					exclude_scope="",
 					not_storage_params=[],
-					target="a",
+					target="",
 					**kargs):
 
 	model_config = copy.deepcopy(model_config)
@@ -83,30 +83,43 @@ def model_fn_builder(
 
 		return_dict = {}
 
-		if mode == tf.estimator.ModeKeys.TRAIN:
+		if kargs.get("noise_true_distribution", True):
+			model = model_api(model_config, features, labels,
+								mode, target, reuse=tf.AUTO_REUSE,
+								scope=generator_scope_prefix, # need to add noise scope to lm
+								**kargs)
 
-			if kargs.get("noise_true_distribution", True):
-				model = model_api(model_config, features, labels,
-									mode, target, reuse=tf.AUTO_REUSE,
-									**kargs)
+			sequence_mask = tf.to_float(tf.not_equal(features['input_ids'][:, 1:], 
+														kargs.get('[PAD]', 0)))
 
+			# batch x seq_length
+			seq_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+						labels=features['input_ids'][:, 1:], 
+						logits=model.get_sequence_output_logits()[:, :-1])
 
-				sequence_mask = tf.to_float(tf.not_equal(features['input_ids'][:, 1:], 
-															kargs.get('[PAD]', 0)))
-
-				# batch x seq_length
-				seq_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-							labels=features['input_ids'][:, 1:], 
-							logits=model.get_sequence_output_logits()[:, :-1])
-
+			if not kargs.get("prob_ln", False):
+				tf.logging.info("****** sum of plogprob as sentence probability *******")
+				logits = tf.reduce_sum(seq_loss*sequence_mask, axis=-1) #/ (tf.reduce_sum(sequence_mask, axis=-1)+1e-10)
+			else:
+				tf.logging.info("****** sum of plogprob with length normalization as sentence probability *******")
 				logits = tf.reduce_sum(seq_loss*sequence_mask, axis=-1) / (tf.reduce_sum(sequence_mask, axis=-1)+1e-10)
-				# since sparse_softmax_cross_entropy_with_logits will output -logits for minimization
-				# while we actually need the log_prob, so we need to minus logits
-				return_dict['true_logits'] = -logits
-				tf.logging.info("****** noise distribution for true data *******")
+			# since sparse_softmax_cross_entropy_with_logits will output -logits for minimization
+			# while we actually need the log_prob, so we need to minus logits
+			return_dict['true_logits'] = -logits
+			return_dict['true_seq_logits'] = model.get_sequence_output_logits()
+			tf.logging.info("****** noise distribution for true data *******")
 
 		noise_estimator_type = kargs.get("noise_estimator_type", "straight_through")
 		tf.logging.info("****** noise estimator for nce: %s *******", noise_estimator_type)
+
+		# with tf.variable_scope("noise", reuse=tf.AUTO_REUSE):
+		# 	noise_global_step = tf.get_variable(
+		# 						"global_step",
+		# 						shape=[],
+		# 						initializer=tf.constant_initializer(0, dtype=tf.int64),
+		# 						trainable=False,
+		# 						dtype=tf.int64)
+		# return_dict['global_step'] = noise_global_step
 
 		if kargs.get("sample_noise_dist", True):
 			tf.logging.info("****** noise distribution for fake data *******")
@@ -115,48 +128,71 @@ def model_fn_builder(
 			temper = kargs.get("gumbel_inv_temper", 100)
 			num_train_steps = kargs.get("num_train_steps", 100000)
 
+			# step = tf.cast(return_dict['global_step'], tf.float32)
 			step = tf.cast(tf.train.get_or_create_global_step(), tf.float32)
 
 			temperature = get_fixed_temperature(temper, step, num_train_steps, temp_adapt)
 
 			results = bert_seq_utils.sample_sequence(model_api,
 											model_config, 
-											mode, 
+											tf.estimator.ModeKeys.TRAIN, 
 											features,
 											target="", 
 											start_token=kargs.get("start_token_id", 101), 
 											batch_size=None, 
 											context=features.get("context", None), 
-											temperature=temperature, 
+											temperature=1.0, 
 											n_samples=kargs.get("n_samples", 1),
 											top_k=0,
 											end_token=kargs.get("end_token_id", 102),
 											greedy_or_sample="sample",
-											gumbel_temp=0.01,
+											gumbel_temp=temperature,
 											estimator=noise_estimator_type,
 											back_prop=True,
-											swap_memory=True,
+											swap_memory=False,
 											seq_type=kargs.get("seq_type", "seq2seq"),
-											mask_type=kargs.get("mask_type", "seq2seq"),
-											attention_type=kargs.get('attention_type', 'normal_attention')
+											mask_type=kargs.get("mask_type", "left2right"),
+											attention_type=kargs.get('attention_type', 'normal_attention'),
+											scope=generator_scope_prefix # need to add noise scope to lm
 											)
 
-			if noise_estimator in ["straight_through", "soft"]:
+			if noise_estimator_type in ["straight_through", "soft"]:
+				tf.logging.info("****** using apply gumbel samples *******")
 				gumbel_probs = results['gumbel_probs']
 			else:
 				gumbel_probs = tf.cast(results['samples'], tf.int32)
+				tf.logging.info("****** using apply stop gradient samples *******")
 			return_dict['gumbel_probs'] = tf.cast(gumbel_probs, tf.float32)
 			sample_mask = results['mask_sequence']
-			return_dict['fake_logits'] = tf.reduce_sum(results['logits']*tf.cast(sample_mask, tf.float32), axis=-1) / tf.reduce_sum(1e-10+tf.cast(sample_mask, tf.float32), axis=-1)
+			if not kargs.get("prob_ln", False):
+				tf.logging.info("****** sum of plogprob as sentence probability *******")
+				return_dict['fake_logits'] = tf.reduce_sum(results['logits']*tf.cast(sample_mask, tf.float32), axis=-1) #/ tf.reduce_sum(1e-10+tf.cast(sample_mask, tf.float32), axis=-1)
+			else:
+				tf.logging.info("****** sum of plogprob with length normalization as sentence probability *******")
+				return_dict['fake_logits'] = tf.reduce_sum(results['logits']*tf.cast(sample_mask, tf.float32), axis=-1) / tf.reduce_sum(1e-10+tf.cast(sample_mask, tf.float32), axis=-1)
 			return_dict['fake_samples'] = tf.cast(results['samples'], tf.int32)
+
+			print(return_dict['fake_samples'].get_shape(), return_dict['fake_logits'].get_shape(), results['logits'].get_shape(),  "====fake samples, logitss, shape===")
 			
 		model_io_fn = model_io.ModelIO(model_io_config)
 
 		pretrained_tvars = model_io_fn.get_params(model_config.scope, 
 										not_storage_params=not_storage_params)
 
-		lm_pretrain_tvars = model_io_fn.get_params("cls/predictions", 
+		if generator_scope_prefix:
+			"""
+			"generator/cls/predictions"
+			"""
+			lm_pretrain_tvars = model_io_fn.get_params(generator_scope_prefix+"/cls/predictions", 
+										not_storage_params=not_storage_params)
+		else:
+			lm_pretrain_tvars = model_io_fn.get_params("cls/predictions", 
+										not_storage_params=not_storage_params)
+
+		if model_config.get('embedding_scope', None) is not None:
+			embedding_tvars = model_io_fn.get_params(model_config.get('embedding_scope', 'bert')+"/embeddings", 
 									not_storage_params=not_storage_params)
+			pretrained_tvars.extend(embedding_tvars)
 
 		pretrained_tvars.extend(lm_pretrain_tvars)
 		return_dict['tvars'] = pretrained_tvars

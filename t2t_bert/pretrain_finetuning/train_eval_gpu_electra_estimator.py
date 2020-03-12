@@ -40,6 +40,11 @@ try:
 except:
 	from electra_model_fn_gumbel_relgan import classifier_model_fn_builder as classifier_model_fn_builder_relgan
 
+try:
+	from .trf_bert_ebm_gpt import classifier_model_fn_builder as classifier_model_fn_builder_trf_fce
+except:
+	from trf_bert_ebm_gpt import classifier_model_fn_builder as classifier_model_fn_builder_trf_fce
+
 
 import numpy as np
 import tensorflow as tf
@@ -223,6 +228,8 @@ def train_eval_fn(FLAGS,
 	elif kargs.get("electra_mode", "electra_fce") == "electra_relgan":
 		tf.logging.info("***** electra mode ***** relgan with global adversarial training")
 		model_fn_builder = classifier_model_fn_builder_relgan
+	elif kargs.get("electra_mode", "trf_fce") == "trf_fce":
+		model_fn_builder = classifier_model_fn_builder_trf_fce
 	else:
 		model_fn_builder = classifier_model_fn_builder
 

@@ -316,10 +316,14 @@ def embedding_postprocessor(input_tensor,
 		# else:
 		# 	position_embeddings = full_position_embeddings
 
-		position_embeddings = tf.cond(tf.less(seq_length, max_position_embeddings), 
-														lambda:tf.slice(full_position_embeddings, [0, 0],
-																		 [seq_length, -1]), 
-														lambda:full_position_embeddings)
+		# position_embeddings = tf.cond(tf.less(seq_length, max_position_embeddings), 
+		# 												lambda:tf.slice(full_position_embeddings, [0, 0],
+		# 																 [seq_length, -1]), 
+		# 												lambda:full_position_embeddings)
+
+		flat_pos_ids = tf.range(seq_length, dtype=tf.int32)
+		one_hot_pos_ids = tf.one_hot(flat_pos_ids, depth=max_position_embeddings)
+		position_embeddings = tf.matmul(one_hot_pos_ids, full_position_embeddings)
 
 		num_dims = len(output.shape.as_list())
 
