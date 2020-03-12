@@ -405,7 +405,9 @@ def sample_sequence(model_api,
 			print(next_presents_shape)
 			print(next_presents.get_shape(), "===next presents shape===")
 #             mask = tf.expand_dims(tf.one_hot(step, seq_length+1), axis=(0, 1, 2, 3, 5))
-			mask = tf.cast(tf.one_hot(tf.range(step, step+1), actual_length), tf.float32)
+			# mask = tf.cast(tf.one_hot(tf.range(step, step+1), actual_length), tf.float32)
+			mask = tf.expand_dims(tf.cast(tf.one_hot(step, actual_length), tf.float32), axis=0)
+
 #             tf.expand_dims(tf.one_hot(tf.range(step, step+token_shape[1]), seq_length+1), axis=0)
 #             mask = tf.expand_dims(mask, axis=1)
 #             mask = tf.expand_dims(mask, axis=2)
