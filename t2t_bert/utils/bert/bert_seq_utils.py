@@ -369,6 +369,8 @@ def sample_sequence(model_api,
 		start_probs = context
 		start_one_hot = tf.one_hot(start_probs, model_config.vocab_size)
 		gumbel_probs = tf.concat([tf.cast(start_one_hot, tf.float32), gumbel_probs], axis=1)
+
+	whole_input_mask = tf.cast(tf.ones((batch_size, seq_length)), tf.float32)
 		
 	def step(step, tokens, segment_ids=None, past=None):
 		
@@ -377,15 +379,16 @@ def sample_sequence(model_api,
 		features = {}
 		features['input_ids'] = tokens
 		if segment_ids is None:
-			features['segment_ids'] = tf.cast(tf.zeros((token_shape[0], token_shape[1])), tf.int32)
+			features['segment_ids'] = tf.cast(tf.zeros((batch_size, 1)), tf.int32)
 		else:
 			features['segment_ids'] = tf.cast(segment_ids, tf.int32)
 		if past is None:
-			features['input_mask'] = tf.cast(tf.ones((token_shape[0], token_shape[1])), tf.int32)
+			features['input_mask'] = tf.cast(tf.ones((batch_size, 1)), tf.int32)
 			features['past'] = None
 		else:
 			past_shape = bert_utils.get_shape_list(past, expected_rank=[6])
-			features['input_mask'] = tf.cast(tf.ones((past_shape[0], step+token_shape[1])), tf.int32)
+			# features['input_mask'] = tf.cast(tf.ones((batch_size, step+1)), tf.int32)
+			features['input_mask'] = tf.cast(whole_input_mask[:, :(step+1)], tf.int32)
 			features['past'] = past[:, :, :, :, :(step), :]
 
 		inference_model = model_api(model_config, features, [],
@@ -402,7 +405,7 @@ def sample_sequence(model_api,
 			print(next_presents_shape)
 			print(next_presents.get_shape(), "===next presents shape===")
 #             mask = tf.expand_dims(tf.one_hot(step, seq_length+1), axis=(0, 1, 2, 3, 5))
-			mask = tf.cast(tf.one_hot(tf.range(step, step+token_shape[1]), actual_length), tf.float32)
+			mask = tf.cast(tf.one_hot(tf.range(step, step+1), actual_length), tf.float32)
 #             tf.expand_dims(tf.one_hot(tf.range(step, step+token_shape[1]), seq_length+1), axis=0)
 #             mask = tf.expand_dims(mask, axis=1)
 #             mask = tf.expand_dims(mask, axis=2)
