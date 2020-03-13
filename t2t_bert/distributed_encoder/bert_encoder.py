@@ -341,7 +341,8 @@ def bert_seq_decoder(model_config, features, labels,
 						hidden_dropout_prob,
 						attention_probs_dropout_prob,
 						reuse=reuse,
-						past=features.get("past", None))
+						past=features.get("past", None),
+						decode_loop_step=kargs.get("decode_loop_step", None))
 	model.build_encoder(input_ids,
 						input_mask,
 						hidden_dropout_prob, 
@@ -351,7 +352,10 @@ def bert_seq_decoder(model_config, features, labels,
 						past=features.get("past", None),
 						token_type_ids=features.get("segment_ids", None),
 						seq_type=kargs.get("seq_type", "none"),
-						mask_type=kargs.get("mask_type", "none"))
+						mask_type=kargs.get("mask_type", "none"),
+						decode_loop_step=kargs.get("decode_loop_step", None),
+						max_decode_length=kargs.get("max_decode_length", None),
+						if_bp=kargs.get("if_bp", False))
 	model.build_output_logits(reuse=reuse, scope=kargs.get("scope", None))
 	# model.build_pooler(reuse=reuse)
 

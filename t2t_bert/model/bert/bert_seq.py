@@ -17,6 +17,7 @@ class Bert(object):
 									hidden_dropout_prob, 
 									attention_probs_dropout_prob,
 									past=None,
+									decode_loop_step=None,
 									**kargs):
 
 		reuse = kargs["reuse"]
@@ -41,8 +42,12 @@ class Bert(object):
 			self.past_length = 0
 		else:
 			# batch_size_, num_layers_, two_, num_heads_, self.cache_length, features_
-			past_shape = bert_utils.get_shape_list(past, expected_rank=[6])
-			self.past_length = past_shape[-2]
+			if decode_loop_step is None:
+				# gpu-decode length
+				past_shape = bert_utils.get_shape_list(past, expected_rank=[6])
+				self.past_length = past_shape[-2]
+			else:
+				self.past_length = decode_loop_step
 
 		with tf.variable_scope(embedding_scope, reuse=reuse):
 			with tf.variable_scope("embeddings"):
@@ -111,6 +116,9 @@ class Bert(object):
 									hidden_dropout_prob, 
 									attention_probs_dropout_prob,
 									past=None,
+									decode_loop_step=None,
+									max_decode_length=None,
+									if_bp=False,
 									**kargs):
 		reuse = kargs["reuse"]
 		input_shape = bert_utils.get_shape_list(input_ids, expected_rank=[2,3])
@@ -125,27 +133,51 @@ class Bert(object):
 				# This converts a 2D mask of shape [batch_size, seq_length] to a 3D
 				# mask of shape [batch_size, seq_length, seq_length] which is used
 				# for the attention scores.
-				self.bi_attention_mask = bert_seq_modules.create_attention_mask_from_input_mask(
-						input_ids, input_mask)
+
+				input_shape = bert_utils.get_shape_list(input_ids, expected_rank=[2,3])
+				if len(input_shape) == 3:
+					tmp_input_ids = tf.argmax(input_ids, axis=-1)
+				else:
+					tmp_input_ids = input_ids
+
+				if decode_loop_step is None:
+					self.bi_attention_mask = bert_seq_modules.create_attention_mask_from_input_mask(
+						tmp_input_ids, input_mask)
+				else:
+					if max_decode_length is None:
+						max_decode_length = self.max_position_embeddings
+					# [max_decode_length, 1]
+					input_mask = tf.expand_dims(tf.sequence_mask(decode_loop_step+1, maxlen=max_decode_length), axis=-1)
+					# [1, max_decode_length]
+					input_mask = tf.transpose(input_mask, perm=[1,0])
+					input_mask = tf.tile(input_mask, [batch_size, 1])
+					self.bi_attention_mask = bert_seq_modules.create_attention_mask_from_input_mask(
+						tmp_input_ids, input_mask)
 
 				seq_type = kargs.get('seq_type', "None")
 				print(seq_type)
 
 				if seq_type == "seq2seq":
 					if kargs.get("mask_type", "left2right") == "left2right":
-						mask_sequence = input_mask
+						mask_sequence = None
 						tf.logging.info("==apply left2right LM model with casual mask==")
 					elif kargs.get("mask_type", "left2right") == "seq2seq":
 						token_type_ids = kargs.get("token_type_ids", None)
 						tf.logging.info("==apply left2right LM model with conditional casual mask==")
 						if token_type_ids is None:
-							token_type_ids = tf.zeros(shape=[batch_size, seq_length], dtype=tf.int32)
+							token_type_ids = tf.zeros_like(input_mask)
 							tf.logging.info("==conditional mask is set to 0 and degenerate to left2right LM model==")
 						mask_sequence = token_type_ids
 					else:
 						mask_sequence = None
-					self.attention_mask = bert_utils.generate_seq2seq_mask(self.bi_attention_mask, 
+					if decode_loop_step is None:
+						self.attention_mask = bert_utils.generate_seq2seq_mask(self.bi_attention_mask, 
 														mask_sequence,
+														seq_type)
+					else:
+						# with loop step, we must do casual decoding
+						self.attention_mask = bert_utils.generate_seq2seq_mask(self.bi_attention_mask, 
+														None,
 														seq_type)
 				else:
 					tf.logging.info("==apply bi-directional LM model with bi-directional mask==")
@@ -168,7 +200,9 @@ class Bert(object):
 						attention_probs_dropout_prob=attention_probs_dropout_prob,
 						initializer_range=self.config.initializer_range,
 						do_return_all_layers=True,
-						past=past)
+						past=past,
+						decode_loop_step=decode_loop_step,
+						if_bp=if_bp)
 				# self.cached_present = tf.stack(self.all_present, axis=1)
 
 	def build_output_logits(self, **kargs):

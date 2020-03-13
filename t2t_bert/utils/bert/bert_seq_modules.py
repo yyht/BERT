@@ -14,6 +14,7 @@ import numpy as np
 from utils.bert import bert_utils
 from utils.bert import layer_norm_utils
 from utils.bert import bert_modules
+from tensorflow.python.ops import inplace_ops
 
 def gelu(input_tensor):
 	"""Gaussian Error Linear Unit.
@@ -477,7 +478,9 @@ def attention_layer(from_tensor,
 					batch_size=None,
 					from_seq_length=None,
 					to_seq_length=None,
-					past=None):
+					past=None,
+					decode_loop_step=None,
+					if_bp=False):
 	"""Performs multi-headed attention from `from_tensor` to `to_tensor`.
 
 	This is an implementation of multi-headed attention based on "Attention
@@ -618,10 +621,38 @@ def attention_layer(from_tensor,
 	# present: [B, 2, N, T, H]
 	present = tf.stack([key_layer, value_layer], axis=1) # multihead attention
 	if past is not None:
-		# print("===present===shape===", past.get_shape()) 
-		pk, pv = tf.unstack(past, axis=1)
-		key_layer = tf.concat([pk, key_layer], axis=-2)
-		value_layer = tf.concat([pv, value_layer], axis=-2)
+		if decode_loop_step is None:
+			# print("===present===shape===", past.get_shape()) 
+			pk, pv = tf.unstack(past, axis=1)
+			key_layer = tf.concat([pk, key_layer], axis=-2)
+			value_layer = tf.concat([pv, value_layer], axis=-2)
+			print("====key_layer==", key_layer.get_shape(), "==value_layer==shape", value_layer.get_shape())
+			tf.logging.info("****** gpu dynamic cache generation *******")
+		else:
+			if if_bp is False:
+				# for tpu, inplace update
+				# [B, 2, N, T, H] to [B, N, T, H]
+				pk, pv = tf.unstack(past, axis=1)
+				# tmp_key shape: [B, N, T, H]
+				tmp_pk = tf.transpose(pk, perm=[2, 0, 1, 3]) # [T,B,N,H]
+				tmp_pk = inplace_ops.alias_inplace_update(
+				  tmp_pk, decode_loop_step, tf.squeeze(key_layer, axis=2))
+				key_layer = tf.transpose(tmp_pk, perm=[1, 2, 0, 3])
+
+				tmp_pv = tf.transpose(pv, perm=[2, 0, 1, 3]) # [T,B,N,H]
+				tmp_pv = inplace_ops.alias_inplace_update(
+				  tmp_pv, decode_loop_step, tf.squeeze(value_layer, axis=2)) # inplace_ops has no bp
+				value_layer = tf.transpose(tmp_pv, perm=[1, 2, 0, 3])
+				tf.logging.info("****** tpu fixed type and no bp generation *******")
+			else:
+				# attention mask needs to be full length
+				attention_mask_shape = bert_utils.get_shape_list(attention_mask, expected_rank=[2, 3])
+				mask = tf.cast(tf.one_hot(decode_loop_step, attention_mask_shape[-1]), tf.float32)
+				print(mask.get_shape(), "===mask shape===")
+				
+				past = tf.einsum("abcde,dg->abcge", present, tf.expand_dims(mask, axis=0)) + past # present: [B, 2, N, T, H]
+				key_layer, value_layer = tf.unstack(past, axis=1)
+				tf.logging.info("****** tpu fixed type and bp generation *******")
 
 	# Take the dot product between "query" and "key" to get the raw
 	# attention scores.
@@ -699,7 +730,9 @@ def transformer_model(input_tensor,
 						attention_probs_dropout_prob=0.1,
 						initializer_range=0.02,
 						do_return_all_layers=False,
-						past=None):
+						past=None,
+						decode_loop_step=None,
+						if_bp=False):
 	"""Multi-headed, multi-layer Transformer from "Attention is All You Need".
 
 	This is almost an exact implementation of the original Transformer encoder.
@@ -792,7 +825,9 @@ def transformer_model(input_tensor,
 							batch_size=batch_size,
 							from_seq_length=seq_length,
 							to_seq_length=seq_length,
-							past=pasts[layer_idx])
+							past=pasts[layer_idx],
+							decode_loop_step=decode_loop_step,
+							if_bp=if_bp)
 					attention_heads.append(attention_head)
 					all_present.append(present)
 					all_attention_scores.append(attention_scores)

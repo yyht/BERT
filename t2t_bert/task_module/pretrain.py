@@ -343,7 +343,7 @@ def emb_score(config, input_tensor, input_ids,
 			# ebm_scalar /= (1e-10+tf.reduce_sum(tf.cast(input_mask, tf.float32), axis=-1))
 		else:
 			ebm_scalar /= (1e-10+tf.reduce_sum(tf.cast(input_mask, tf.float32), axis=-1))
-			tf.logging.info("****** sum of plogprob with length normalization as sentence probability *******")
+			tf.logging.info("****** sum of plogprob with length normalization as sentence probability of ebm *******")
 		print("===ebm_scalar====", ebm_scalar.get_shape())
 		print("===input_normalized_constant====", input_normalized_constant.get_shape())
 

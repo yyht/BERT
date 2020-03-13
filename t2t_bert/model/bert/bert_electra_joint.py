@@ -104,8 +104,13 @@ class Bert(object):
 				# This converts a 2D mask of shape [batch_size, seq_length] to a 3D
 				# mask of shape [batch_size, seq_length, seq_length] which is used
 				# for the attention scores.
+				input_shape = bert_utils.get_shape_list(input_ids, expected_rank=[2,3])
+				if len(input_shape) == 3:
+					tmp_input_ids = tf.argmax(input_ids, axis=-1)
+				else:
+					tmp_input_ids = input_ids
 				attention_mask = bert_modules.create_attention_mask_from_input_mask(
-						input_ids, input_mask)
+						tmp_input_ids, input_mask)
 
 				seq_type = kargs.get('seq_type', "None")
 
