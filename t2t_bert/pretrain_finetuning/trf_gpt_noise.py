@@ -161,7 +161,7 @@ def model_fn_builder(
 
 			results = sample_sequence_api(model_api,
 											model_config, 
-											tf.estimator.ModeKeys.TRAIN, 
+											tf.estimator.ModeKeys.PREDICT, 
 											features,
 											target="", 
 											start_token=kargs.get("start_token_id", 101), 
@@ -180,7 +180,7 @@ def model_fn_builder(
 											mask_type=kargs.get("mask_type", "left2right"),
 											attention_type=kargs.get('attention_type', 'normal_attention'),
 											scope=generator_scope_prefix, # need to add noise scope to lm,
-											max_length=int(kargs.get('max_length', 512)/4),
+											max_length=int(kargs.get('max_length', 512)/8),
 											if_bp=if_bp,
 											if_cache_decode=if_cache_decode
 											)
