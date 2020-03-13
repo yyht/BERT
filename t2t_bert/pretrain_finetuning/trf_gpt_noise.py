@@ -160,7 +160,7 @@ def model_fn_builder(
 											gumbel_temp=temperature,
 											estimator=noise_estimator_type,
 											back_prop=True,
-											swap_memory=True,
+											swap_memory=False,
 											seq_type=kargs.get("seq_type", "seq2seq"),
 											mask_type=kargs.get("mask_type", "left2right"),
 											attention_type=kargs.get('attention_type', 'normal_attention'),

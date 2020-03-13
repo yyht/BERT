@@ -136,9 +136,9 @@ def classifier_model_fn_builder(
 
 		train_op_type = kargs.get('train_op_type', 'joint')
 
-		
 		if kargs.get("truncted_seq_length", False):
 			actual_length = 256
+
 
 			token_seq = token_seq_truncted(features['input_ori_ids'], 102, max_length=actual_length)
 
