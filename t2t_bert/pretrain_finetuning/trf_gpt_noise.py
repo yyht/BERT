@@ -133,16 +133,22 @@ def model_fn_builder(
 
 			temperature = get_fixed_temperature(temper, step, num_train_steps, temp_adapt)
 
-			sample_type = kargs.get("sample_type", "none_cache_sample")
+			sample_type = kargs.get("sample_type", "cache_sample")
 
 			if sample_type == 'none_cache_sample':
 				sample_sequence_api = bert_seq_tpu_utils.sample_sequence_without_cache
+				if_bp = False
+				if_cache_decode = False
 				tf.logging.info("****** noise sample without cache *******")
 			elif sample_type == 'cache_sample':
 				sample_sequence_api = bert_seq_tpu_utils.sample_sequence
+				if_bp = True
+				if_cache_decode = True
 				tf.logging.info("****** noise sample with cache *******")
 			else:
 				sample_sequence_api = bert_seq_tpu_utils.sample_sequence_without_cache
+				if_bp = False
+				if_cache_decode = False
 				tf.logging.info("****** noise sample without cache *******")
 			tf.logging.info("****** max_length: %s *******", str(kargs.get('max_length', 512)))
 			results = sample_sequence_api(model_api,
@@ -160,15 +166,15 @@ def model_fn_builder(
 											greedy_or_sample="sample",
 											gumbel_temp=temperature,
 											estimator=noise_estimator_type,
-											back_prop=True,
+											back_prop=False,
 											swap_memory=True,
 											seq_type=kargs.get("seq_type", "seq2seq"),
 											mask_type=kargs.get("mask_type", "left2right"),
 											attention_type=kargs.get('attention_type', 'normal_attention'),
 											scope=generator_scope_prefix, # need to add noise scope to lm,
-											max_length=kargs.get('max_length', 512),
-											if_bp=kargs.get('if_bp', False),
-											if_cache_decode=kargs.get('if_cache_decode', None)
+											max_length=64,
+											if_bp=if_bp,
+											if_cache_decode=if_cache_decode
 											)
 
 			if noise_estimator_type in ["straight_through", "soft"]:
