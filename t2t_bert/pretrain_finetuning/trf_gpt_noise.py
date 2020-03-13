@@ -151,6 +151,14 @@ def model_fn_builder(
 				if_cache_decode = False
 				tf.logging.info("****** noise sample without cache *******")
 			tf.logging.info("****** max_length: %s *******", str(kargs.get('max_length', 512)))
+
+			if noise_estimator_type in ["straight_through", "soft"]:
+				back_prop = True
+				tf.logging.info("****** st or soft with bp: %s *******", str(back_prop))
+			else:
+				back_prop = False
+				tf.logging.info("****** hard without bp: %s *******", str(back_prop))
+
 			results = sample_sequence_api(model_api,
 											model_config, 
 											tf.estimator.ModeKeys.TRAIN, 
@@ -166,13 +174,13 @@ def model_fn_builder(
 											greedy_or_sample="sample",
 											gumbel_temp=temperature,
 											estimator=noise_estimator_type,
-											back_prop=False,
+											back_prop=back_prop,
 											swap_memory=True,
 											seq_type=kargs.get("seq_type", "seq2seq"),
 											mask_type=kargs.get("mask_type", "left2right"),
 											attention_type=kargs.get('attention_type', 'normal_attention'),
 											scope=generator_scope_prefix, # need to add noise scope to lm,
-											max_length=64,
+											max_length=int(kargs.get('max_length', 512)/4),
 											if_bp=if_bp,
 											if_cache_decode=if_cache_decode
 											)
@@ -192,6 +200,7 @@ def model_fn_builder(
 				tf.logging.info("****** sum of plogprob with length normalization as sentence probability of noise sampled data *******")
 				return_dict['fake_logits'] = tf.reduce_sum(results['logits']*tf.cast(sample_mask, tf.float32), axis=-1) / tf.reduce_sum(1e-10+tf.cast(sample_mask, tf.float32), axis=-1)
 			return_dict['fake_samples'] = tf.cast(results['samples'], tf.int32)
+			return_dict['fake_mask'] = results['mask_sequence']
 
 			print(return_dict['fake_samples'].get_shape(), return_dict['fake_logits'].get_shape(), results['logits'].get_shape(),  "====fake samples, logitss, shape===")
 			
