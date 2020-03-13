@@ -99,6 +99,27 @@ def get_train_op(ebm_dist_dict, noise_dist_dict, optimizer_fn, opt_config,
 
 	return train_op
 
+def token_seq_truncted(token_seq, finished_index, max_length): 
+	seq_shape = bert_utils.get_shape_list(token_seq, expected_rank=[2,3])
+	batch_size = seq_shape[0]
+	token_seq = token_seq[:, :actual_length]
+
+	token_seq = tf.concat([token_seq, finished_index*tf.cast(tf.ones((batch_size, 1)), tf.int32)])
+
+	token_seq = tf.cast(token_seq, tf.int32)
+	seq_shape = bert_utils.get_shape_list(token_seq, expected_rank=[2,3])
+	match_indices = tf.where(                          # [[5, 5, 2, 5, 4],
+	tf.equal(finished_index, token_seq),                              #  [0, 5, 2, 3, 5],
+		x=tf.range(seq_shape[1]) * tf.ones_like(token_seq),  #  [5, 1, 5, 5, 5]]
+		y=(seq_shape[1])*tf.ones_like(token_seq))
+
+	finished_pos = tf.reduce_min(match_indices, axis=1)				
+	sequence_mask = tf.sequence_mask(finished_pos+1, maxlen=seq_shape[1])
+
+	token_seq = tf.cast(sequence_mask, tf.float32) * tf.cast(token_seq, tf.float32)
+				
+	return tf.cast(token_seq, tf.int32)
+
 def classifier_model_fn_builder(
 						model_config_dict,
 						num_labels_dict,
@@ -114,6 +135,17 @@ def classifier_model_fn_builder(
 	def model_fn(features, labels, mode, params):
 
 		train_op_type = kargs.get('train_op_type', 'joint')
+
+		
+		if kargs.get("truncted_seq_length", True):
+			actual_length = 256
+
+			token_seq = token_seq_truncted(features['input_ori_ids'], 102, max_length=actual_length): 
+
+			features['input_ori_ids'] = token_seq
+			features['input_ids'] = token_seq
+			features['input_mask'] = tf.cast(tf.not_equal(token_seq, 0), tf.int32)
+			features['segment_ids'] = tf.zeros_like(token_seq)
 
 		ebm_dist_fn = ebm_dist(model_config_dict['ebm_dist'],
 					num_labels_dict['ebm_dist'],

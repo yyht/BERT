@@ -51,7 +51,7 @@ def model_fn_builder(
 
 		model_api = model_zoo(model_config)
 
-		if kargs.get('trf_input', True):
+		if kargs.get('trf_input', False):
 
 			input_shape_list = bert_utils.get_shape_list(features['input_ids'], expected_rank=2)
 			batch_size = input_shape_list[0]

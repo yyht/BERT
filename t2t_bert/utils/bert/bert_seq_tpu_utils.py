@@ -436,3 +436,25 @@ def sample_sequence(model_api,
 				"logits":logits,
 				"final":final
 			}
+
+# def sample_sequence_without_cache(model_api,
+# 							model_config, 
+# 							mode, 
+# 							features,
+# 							target="", 
+# 							start_token=101, 
+# 							batch_size=None, 
+# 							seq_length=None,
+# 							context=None, 
+# 							temperature=1, 
+# 							n_samples=1,
+# 							top_k=0,
+# 							end_token=102,
+# 							greedy_or_sample="sample",
+# 							gumbel_temp=0.01,
+# 							estimator="straight_through",
+# 							back_prop=True,
+# 							swap_memory=True,
+# 							**kargs):
+
+	
