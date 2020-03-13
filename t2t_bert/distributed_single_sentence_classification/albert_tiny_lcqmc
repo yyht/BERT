@@ -1,12 +1,12 @@
 config_file=./BERT/data/electra_share_embedding/generator/bert_config_tiny.json
-init_checkpoint=bert_pretrain/open_domain/pretrain_single_random_debug_gan/trf_ebm_tiny/ebm_bert_gpt_noise_tiny_alternate_softplus_length_normalized/model.ckpt-30000
+init_checkpoint=bert_pretrain/open_domain/pretrain_single_random_debug_gan/trf_ebm_tiny/ebm_bert_gpt_noise_tiny_alternate_softplus_length_normalized/model.ckpt-80000
 vocab_file=./BERT/data/chinese_L-12_H-768_A-12/vocab.txt
 label_id=./BERT/data/lcqmc/label_dict.json
 max_length=128
 train_file=lcqmc/albert_tiny/train_tfrecords
 dev_file=lcqmc/albert_tiny/test_tfrecords
-model_output=lcqmc/bert_tiny/model/estimator/bert_tiny_trf_no_segment_3
-epoch=3
+model_output=lcqmc/bert_tiny/model/estimator/bert_tiny_trf_80000_modified_input_v1
+epoch=5
 num_classes=2
 train_size=238766
 eval_size=12500

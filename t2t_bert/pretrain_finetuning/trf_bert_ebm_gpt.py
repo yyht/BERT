@@ -142,6 +142,7 @@ def classifier_model_fn_builder(
 					sample_noise_dist=True,
 					noise_estimator_type=kargs.get("noise_estimator_type", "stop_gradient"),
 					prob_ln=True,
+					if_bp=True,
 					**kargs)
 
 		ebm_true_features = {}
@@ -257,6 +258,7 @@ def classifier_model_fn_builder(
 										features['input_ori_ids'],
 										tf.cast(features['input_mask'], tf.float32),
 										noise_dist_dict["true_seq_logits"],
+										prob_ln=True,
 										)
 
 			if not kargs.get('use_tpu', False):

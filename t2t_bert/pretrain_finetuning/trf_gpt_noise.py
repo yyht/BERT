@@ -14,7 +14,7 @@ from pretrain_finetuning.token_generator_hmm import hmm_input_ids_generation, ng
 
 from utils.bert import bert_utils
 from model_io import model_io
-from utils.bert import bert_seq_utils
+from utils.bert import bert_seq_utils, bert_seq_tpu_utils
 import copy
 
 def get_fixed_temperature(temper, i, nadv_steps, adapt):
@@ -98,10 +98,10 @@ def model_fn_builder(
 						logits=model.get_sequence_output_logits()[:, :-1])
 
 			if not kargs.get("prob_ln", False):
-				tf.logging.info("****** sum of plogprob as sentence probability *******")
+				tf.logging.info("****** sum of plogprob as sentence probability of noise true data *******")
 				logits = tf.reduce_sum(seq_loss*sequence_mask, axis=-1) #/ (tf.reduce_sum(sequence_mask, axis=-1)+1e-10)
 			else:
-				tf.logging.info("****** sum of plogprob with length normalization as sentence probability *******")
+				tf.logging.info("****** sum of plogprob with length normalization as sentence probability of noise true data *******")
 				logits = tf.reduce_sum(seq_loss*sequence_mask, axis=-1) / (tf.reduce_sum(sequence_mask, axis=-1)+1e-10)
 			# since sparse_softmax_cross_entropy_with_logits will output -logits for minimization
 			# while we actually need the log_prob, so we need to minus logits
@@ -133,7 +133,15 @@ def model_fn_builder(
 
 			temperature = get_fixed_temperature(temper, step, num_train_steps, temp_adapt)
 
-			results = bert_seq_utils.sample_sequence(model_api,
+			# use_tpu = 1 if kargs.get('use_tpu', False) else 0
+			# if use_tpu:
+			# 	sample_sequence_api = bert_seq_tpu_utils.sample_sequence
+			# else:
+			# 	sample_sequence_api = bert_seq_utils.sample_sequence
+
+
+			sample_sequence_api = bert_seq_tpu_utils.sample_sequence
+			results = sample_sequence_api(model_api,
 											model_config, 
 											tf.estimator.ModeKeys.TRAIN, 
 											features,
@@ -153,7 +161,9 @@ def model_fn_builder(
 											seq_type=kargs.get("seq_type", "seq2seq"),
 											mask_type=kargs.get("mask_type", "left2right"),
 											attention_type=kargs.get('attention_type', 'normal_attention'),
-											scope=generator_scope_prefix # need to add noise scope to lm
+											scope=generator_scope_prefix, # need to add noise scope to lm,
+											max_length=model_config.max_position_embeddings,
+											if_bp=kargs.get('if_bp', False)
 											)
 
 			if noise_estimator_type in ["straight_through", "soft"]:
@@ -165,10 +175,10 @@ def model_fn_builder(
 			return_dict['gumbel_probs'] = tf.cast(gumbel_probs, tf.float32)
 			sample_mask = results['mask_sequence']
 			if not kargs.get("prob_ln", False):
-				tf.logging.info("****** sum of plogprob as sentence probability *******")
+				tf.logging.info("****** sum of plogprob as sentence probability of noise sampled data *******")
 				return_dict['fake_logits'] = tf.reduce_sum(results['logits']*tf.cast(sample_mask, tf.float32), axis=-1) #/ tf.reduce_sum(1e-10+tf.cast(sample_mask, tf.float32), axis=-1)
 			else:
-				tf.logging.info("****** sum of plogprob with length normalization as sentence probability *******")
+				tf.logging.info("****** sum of plogprob with length normalization as sentence probability of noise sampled data *******")
 				return_dict['fake_logits'] = tf.reduce_sum(results['logits']*tf.cast(sample_mask, tf.float32), axis=-1) / tf.reduce_sum(1e-10+tf.cast(sample_mask, tf.float32), axis=-1)
 			return_dict['fake_samples'] = tf.cast(results['samples'], tf.int32)
 

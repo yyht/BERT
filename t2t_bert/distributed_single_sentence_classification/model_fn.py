@@ -5,6 +5,8 @@ except:
 
 import tensorflow as tf
 import numpy as np
+from utils.bert import bert_utils
+
 
 from model_io import model_io
 from task_module import classifier
@@ -13,6 +15,22 @@ from metric import tf_metrics
 
 from optimizer import distributed_optimizer as optimizer
 from model_io import model_io
+
+def get_finised_pos_v1(token_seq, finished_index, max_length): 
+	token_seq = tf.cast(token_seq, tf.int32)
+	seq_shape = bert_utils.get_shape_list(token_seq, expected_rank=[2,3])
+	match_indices = tf.where(                          # [[5, 5, 2, 5, 4],
+	tf.equal(finished_index, token_seq),                              #  [0, 5, 2, 3, 5],
+		x=tf.range(seq_shape[1]) * tf.ones_like(token_seq),  #  [5, 1, 5, 5, 5]]
+		y=(seq_shape[1])*tf.ones_like(token_seq))
+
+	finished_pos = tf.reduce_min(match_indices, axis=1)
+	mask = tf.cast(tf.one_hot(finished_pos, max_length), tf.float32) # [batch, max_length]
+				
+	modified_token_seq = tf.cast(token_seq, tf.float32) - float(finished_index) * mask + mask * 1.0
+				
+	return tf.cast(modified_token_seq, tf.int32)
+
 
 def model_fn_builder(
 					model_config,
@@ -32,6 +50,17 @@ def model_fn_builder(
 	def model_fn(features, labels, mode):
 
 		model_api = model_zoo(model_config)
+
+		if kargs.get('trf_input', True):
+
+			input_shape_list = bert_utils.get_shape_list(features['input_ids'], expected_rank=2)
+			batch_size = input_shape_list[0]
+			seq_length = input_shape_list[1]
+
+			input_ids = get_finised_pos_v1(features['input_ids'], 102, seq_length)
+			features['input_ids'] = input_ids
+
+			tf.logging.info("**** trf input modification for qa and sentence pair **** ")
 
 		model = model_api(model_config, features, labels,
 							mode, target, reuse=model_reuse, **kargs)
