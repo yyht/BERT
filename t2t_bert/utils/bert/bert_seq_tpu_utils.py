@@ -541,7 +541,14 @@ def sample_sequence_without_cache(model_api,
 
 		def body(i, samples, input_mask, segment_ids, logits):
 			next_outputs = step(i, samples, input_mask, segment_ids)
-			next_logits = next_outputs['logits'][:, i-1, :]  / tf.to_float(temperature)
+			
+			logits_mask = tf.expand_dims(tf.one_hot(i-1, actual_length), axis=(0)) # [1, seq]
+
+			next_logits = tf.reduce_sum(next_outputs['logits'] *  tf.cast(tf.expand_dims(logits_mask, axis=-1), tf.float32),
+										axis=1)
+
+			next_logits = next_logits / tf.to_float(temperature)
+			
 			next_logits = tf.nn.log_softmax(next_logits, axis=-1)
 			if greedy_or_sample == "sample":
 				next_samples = tf.multinomial(next_logits, num_samples=1, output_dtype=tf.int32)
@@ -554,7 +561,9 @@ def sample_sequence_without_cache(model_api,
 			print(next_samples.get_shape(), "==sample shape==")
 
 			print(tf.one_hot(i, actual_length).get_shape(), "====shhhhape===")
+
 			sample_mask = tf.expand_dims(tf.one_hot(i, actual_length), axis=(0)) # [1, seq]
+			
 			print(sample_mask.get_shape(), "==sample mask shape==")
 			print(samples.get_shape(), "==samples shape==")
 			samples += tf.cast(sample_mask, tf.int32) * tf.cast(tf.expand_dims(next_samples, axis=-1), tf.int32)
@@ -576,7 +585,11 @@ def sample_sequence_without_cache(model_api,
 			next_outputs = step(i, gumbel_probs, 
 								input_mask, segment_ids)
 			
-			next_logits = next_outputs['logits'][:, i-1, :]  / tf.to_float(temperature)
+			# next_logits = next_outputs['logits'][:, i-1, :]  / tf.to_float(temperature)
+			logits_mask = tf.expand_dims(tf.one_hot(i-1, actual_length), axis=(0)) # [1, seq]
+			next_logits = tf.reduce_sum(next_outputs['logits'] *  tf.cast(tf.expand_dims(logits_mask, axis=-1), tf.float32),
+										axis=1)
+			next_logits = next_logits / tf.to_float(temperature)
 			next_logits = tf.nn.log_softmax(next_logits, axis=-1)
 
 			next_gumbel_probs, _ = gumbel_softmax(next_logits, gumbel_temp, gumbel_samples=None, samples=1)
@@ -609,8 +622,12 @@ def sample_sequence_without_cache(model_api,
 		def gumbel_soft_body(i, samples, gumbel_probs, input_mask, segment_ids, logits):
 			next_outputs = step(i, samples, input_mask, segment_ids)
 
-			next_logits = next_outputs['logits'][:, i-1, :]  / tf.to_float(temperature)
-			next_logits = tf.nn.log_softmax(next_logits, axis=-1)
+			logits_mask = tf.expand_dims(tf.one_hot(i-1, actual_length), axis=(0)) # [1, seq]
+
+			next_logits = tf.reduce_sum(next_outputs['logits'] *  tf.cast(tf.expand_dims(logits_mask, axis=-1), tf.float32),
+										axis=1)
+
+			next_logits = next_logits / tf.to_float(temperature)
 		   
 			# gumbel sample
 			next_gumbel_probs, _ = gumbel_softmax(next_logits, gumbel_temp, gumbel_samples=None, samples=1)
@@ -651,7 +668,7 @@ def sample_sequence_without_cache(model_api,
 				],
 				back_prop=back_prop,
 				swap_memory=swap_memory,
-				maximum_iterations=seq_length+1
+				maximum_iterations=seq_length
 			)
 			
 		elif estimator == "soft":
@@ -667,7 +684,7 @@ def sample_sequence_without_cache(model_api,
 				],
 				back_prop=back_prop,
 				swap_memory=swap_memory,
-				maximum_iterations=seq_length+1
+				maximum_iterations=seq_length
 			)
 
 		else:
@@ -682,7 +699,7 @@ def sample_sequence_without_cache(model_api,
 				],
 				back_prop=back_prop,
 				swap_memory=swap_memory,
-				maximum_iterations=seq_length+1
+				maximum_iterations=seq_length
 			)
 
 		mask_sequence = get_finised_pos_v1(samples, end_token, actual_length)
