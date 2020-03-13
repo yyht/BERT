@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 import re
-
+from utils.bert import bert_utils
 try:
 	from .trf_gpt_noise import model_fn_builder as noise_dist
 	from .trf_ebm_bert import model_fn_builder as ebm_dist
@@ -102,9 +102,9 @@ def get_train_op(ebm_dist_dict, noise_dist_dict, optimizer_fn, opt_config,
 def token_seq_truncted(token_seq, finished_index, max_length): 
 	seq_shape = bert_utils.get_shape_list(token_seq, expected_rank=[2,3])
 	batch_size = seq_shape[0]
-	token_seq = token_seq[:, :actual_length]
+	token_seq = token_seq[:, :max_length]
 
-	token_seq = tf.concat([token_seq, finished_index*tf.cast(tf.ones((batch_size, 1)), tf.int32)])
+	token_seq = tf.concat([token_seq, finished_index*tf.cast(tf.ones((batch_size, 1)), tf.int32)], axis=-1)
 
 	token_seq = tf.cast(token_seq, tf.int32)
 	seq_shape = bert_utils.get_shape_list(token_seq, expected_rank=[2,3])
@@ -138,9 +138,9 @@ def classifier_model_fn_builder(
 
 		
 		if kargs.get("truncted_seq_length", True):
-			actual_length = 256
+			actual_length = 128
 
-			token_seq = token_seq_truncted(features['input_ori_ids'], 102, max_length=actual_length): 
+			token_seq = token_seq_truncted(features['input_ori_ids'], 102, max_length=actual_length)
 
 			features['input_ori_ids'] = token_seq
 			features['input_ids'] = token_seq
