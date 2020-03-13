@@ -135,7 +135,7 @@ def classifier_model_fn_builder(
 	def model_fn(features, labels, mode, params):
 
 		train_op_type = kargs.get('train_op_type', 'joint')
-
+		print("==input shape==", features["input_ids"].get_shape())
 		if kargs.get("truncted_seq_length", False):
 			actual_length = 256
 
