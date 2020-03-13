@@ -652,7 +652,7 @@ def attention_layer(from_tensor,
 				
 				past = tf.einsum("abcde,dg->abcge", present, tf.expand_dims(mask, axis=0)) + past # present: [B, 2, N, T, H]
 				key_layer, value_layer = tf.unstack(past, axis=1)
-				tf.logging.info("****** tpu fixed type and bp generation *******")
+				tf.logging.info("****** tpu fixed type and no bp generation *******")
 
 	# Take the dot product between "query" and "key" to get the raw
 	# attention scores.
