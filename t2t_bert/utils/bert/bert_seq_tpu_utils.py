@@ -86,7 +86,7 @@ def sample_sequence(model_api,
 	batch_size = input_shape[0]
 	seq_length = kargs.get('max_length', input_shape[1])
 
-	print(seq_length, "=====seq length======")
+	print(seq_length, "=====seq length======", batch_size)
 
 	print("=mask type=", kargs.get("seq_type", "seq2seq"), kargs.get("mask_type", "seq2seq"), "========")
 
