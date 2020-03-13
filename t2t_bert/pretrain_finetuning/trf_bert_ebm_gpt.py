@@ -197,9 +197,6 @@ def classifier_model_fn_builder(
 
 		# third, get fake ebm dict
 		ebm_fake_features = {}
-		for key in features:
-			if key in ['input_mask', 'segment_ids']:
-				ebm_fake_features[key] = features[key]
 
 		if kargs.get("training_mode", "stop_gradient") == 'stop_gradient':
 			ebm_fake_features["input_ids"] = noise_dist_dict['fake_samples']
@@ -207,6 +204,13 @@ def classifier_model_fn_builder(
 		elif kargs.get("training_mode", "stop_gradient") == 'adv_gumbel':
 			ebm_fake_features["input_ids"] = noise_dist_dict['gumbel_probs']
 			tf.logging.info("****** using samples with gradient *******")
+
+		# fake_shape = bert_utils.get_shape_list(ebm_fake_features["input_ids"], expected_rank=[2,3])
+		# for key in features:
+		# 	if key in ['input_mask', 'segment_ids']:
+		# 		ebm_fake_features[key] = features[key][:, :fake_shape[1]]
+		ebm_fake_features['input_mask'] = tf.cast(noise_dist_dict['fake_mask'], tf.int32)
+		ebm_fake_features['segment_ids'] = tf.zeros_like(ebm_fake_features['input_mask'])
 
 		fake_ebm_dist_dict = ebm_dist_fn(ebm_fake_features, labels, mode, params)
 

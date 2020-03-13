@@ -84,7 +84,7 @@ def sample_sequence(model_api,
 
 	input_shape = bert_utils.get_shape_list(features["input_ids"], expected_rank=[2,3])
 	batch_size = input_shape[0]
-	seq_length = input_shape[1]
+	seq_length = kargs.get('max_length', input_shape[1])
 
 	print(seq_length, "=====seq length======")
 

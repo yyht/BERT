@@ -133,21 +133,35 @@ def model_fn_builder(
 
 			temperature = get_fixed_temperature(temper, step, num_train_steps, temp_adapt)
 
-			sample_type = kargs.get("sample_type", "none_cache_sample")
+			sample_type = kargs.get("sample_type", "cache_sample")
 
 			if sample_type == 'none_cache_sample':
 				sample_sequence_api = bert_seq_tpu_utils.sample_sequence_without_cache
+				if_bp = False
+				if_cache_decode = False
 				tf.logging.info("****** noise sample without cache *******")
 			elif sample_type == 'cache_sample':
 				sample_sequence_api = bert_seq_tpu_utils.sample_sequence
+				if_bp = True
+				if_cache_decode = True
 				tf.logging.info("****** noise sample with cache *******")
 			else:
 				sample_sequence_api = bert_seq_tpu_utils.sample_sequence_without_cache
+				if_bp = False
+				if_cache_decode = False
 				tf.logging.info("****** noise sample without cache *******")
 			tf.logging.info("****** max_length: %s *******", str(kargs.get('max_length', 512)))
+
+			if noise_estimator_type in ["straight_through", "soft"]:
+				back_prop = True
+				tf.logging.info("****** st or soft with bp: %s *******", str(back_prop))
+			else:
+				back_prop = False
+				tf.logging.info("****** hard without bp: %s *******", str(back_prop))
+
 			results = sample_sequence_api(model_api,
 											model_config, 
-											tf.estimator.ModeKeys.TRAIN, 
+											tf.estimator.ModeKeys.PREDICT, 
 											features,
 											target="", 
 											start_token=kargs.get("start_token_id", 101), 
@@ -160,15 +174,15 @@ def model_fn_builder(
 											greedy_or_sample="sample",
 											gumbel_temp=temperature,
 											estimator=noise_estimator_type,
-											back_prop=True,
+											back_prop=back_prop,
 											swap_memory=True,
 											seq_type=kargs.get("seq_type", "seq2seq"),
 											mask_type=kargs.get("mask_type", "left2right"),
 											attention_type=kargs.get('attention_type', 'normal_attention'),
 											scope=generator_scope_prefix, # need to add noise scope to lm,
-											max_length=kargs.get('max_length', 512),
-											if_bp=kargs.get('if_bp', False),
-											if_cache_decode=kargs.get('if_cache_decode', None)
+											max_length=int(kargs.get('max_length', 512)/8),
+											if_bp=if_bp,
+											if_cache_decode=if_cache_decode
 											)
 
 			if noise_estimator_type in ["straight_through", "soft"]:
@@ -186,6 +200,7 @@ def model_fn_builder(
 				tf.logging.info("****** sum of plogprob with length normalization as sentence probability of noise sampled data *******")
 				return_dict['fake_logits'] = tf.reduce_sum(results['logits']*tf.cast(sample_mask, tf.float32), axis=-1) / tf.reduce_sum(1e-10+tf.cast(sample_mask, tf.float32), axis=-1)
 			return_dict['fake_samples'] = tf.cast(results['samples'], tf.int32)
+			return_dict['fake_mask'] = results['mask_sequence']
 
 			print(return_dict['fake_samples'].get_shape(), return_dict['fake_logits'].get_shape(), results['logits'].get_shape(),  "====fake samples, logitss, shape===")
 			
