@@ -175,6 +175,7 @@ def classifier_model_fn_builder(
 					noise_estimator_type=kargs.get("noise_estimator_type", "stop_gradient"),
 					prob_ln=True,
 					if_bp=True,
+					max_length=kargs.get("max_length", 512),
 					**kargs)
 
 		ebm_true_features = {}

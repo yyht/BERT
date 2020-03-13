@@ -245,6 +245,7 @@ def train_eval_fn(FLAGS,
 				use_tpu=FLAGS.use_tpu,
 				graph=None,
 				num_train_steps=num_train_steps,
+				max_length=FLAGS.max_length,
 				**kargs)
 
 	if FLAGS.use_tpu:
