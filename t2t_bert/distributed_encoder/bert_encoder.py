@@ -355,7 +355,8 @@ def bert_seq_decoder(model_config, features, labels,
 						mask_type=kargs.get("mask_type", "none"),
 						decode_loop_step=kargs.get("decode_loop_step", None),
 						max_decode_length=kargs.get("max_decode_length", None),
-						if_bp=kargs.get("if_bp", False))
+						if_bp=kargs.get("if_bp", False),
+						if_cache_decode=kargs.get("if_cache_decode", None))
 	model.build_output_logits(reuse=reuse, scope=kargs.get("scope", None))
 	# model.build_pooler(reuse=reuse)
 

@@ -327,7 +327,7 @@ def sample_sequence(model_api,
 
 			next_logits = next_outputs['logits'][:, -1, :]  / tf.to_float(temperature)
 			next_logits = tf.nn.log_softmax(next_logits, axis=-1)
-           
+		   
 			# gumbel sample
 			next_gumbel_probs, _ = gumbel_softmax(next_logits, gumbel_temp, gumbel_samples=None, samples=1)
 			next_samples = tf.cast(tf.argmax(next_gumbel_probs, axis=1), tf.int32)
@@ -437,24 +437,275 @@ def sample_sequence(model_api,
 				"final":final
 			}
 
-# def sample_sequence_without_cache(model_api,
-# 							model_config, 
-# 							mode, 
-# 							features,
-# 							target="", 
-# 							start_token=101, 
-# 							batch_size=None, 
-# 							seq_length=None,
-# 							context=None, 
-# 							temperature=1, 
-# 							n_samples=1,
-# 							top_k=0,
-# 							end_token=102,
-# 							greedy_or_sample="sample",
-# 							gumbel_temp=0.01,
-# 							estimator="straight_through",
-# 							back_prop=True,
-# 							swap_memory=True,
-# 							**kargs):
+def sample_sequence_without_cache(model_api,
+							model_config, 
+							mode, 
+							features,
+							target="", 
+							start_token=101, 
+							batch_size=None, 
+							seq_length=None,
+							context=None, 
+							temperature=1, 
+							n_samples=1,
+							top_k=0,
+							end_token=102,
+							greedy_or_sample="sample",
+							gumbel_temp=0.01,
+							estimator="straight_through",
+							back_prop=True,
+							swap_memory=True,
+							**kargs):
+
+	input_shape = bert_utils.get_shape_list(features["input_ids"], expected_rank=[2,3])
+	batch_size = input_shape[0]
+	seq_length = input_shape[1]
+
+	actual_length = seq_length
+
+	if context is None:
+		assert start_token is not None, 'Specify exactly one of start_token and context!'
+		context = tf.fill([batch_size, 1], start_token)
+		context = tf.cast(context, tf.int32)
+		context_shape = bert_utils.get_shape_list(context, expected_rank=[2])
+		print(context.get_shape(), "===init context shape===")
+	else:
+		context = tf.cast(context, tf.int32)
+		context_shape = bert_utils.get_shape_list(context, expected_rank=[2])
+		batch_size = input_shape[0]
+
+	samples = tf.cast(tf.zeros((batch_size, actual_length)), tf.int32)
+	end_mask = tf.expand_dims(tf.one_hot(actual_length-1, actual_length), axis=(0))
+	samples += end_token*tf.cast(end_mask, tf.int32) # make sure last token is end token
+	
+	start_mask = tf.one_hot(tf.range(0, context_shape[1]), actual_length)
+	samples += tf.cast(tf.einsum("ab,bc->ac", 
+									tf.cast(context, tf.float32), 
+									 tf.cast(start_mask, tf.float32)), tf.int32)
+
+	segment_ids = tf.cast(tf.zeros((batch_size, actual_length-context_shape[1])), tf.int32)
+
+	if kargs.get("mask_type", "left2right") == 'left2right':
+		segment_ids = tf.concat([tf.cast(tf.zeros((batch_size, context_shape[1])), tf.int32), 
+							segment_ids], axis=-1)
+	elif kargs.get("mask_type", "left2right") == 'seq2seq':
+		segment_ids = tf.concat([tf.cast(tf.ones((batch_size, context_shape[1])), tf.int32), 
+							segment_ids], axis=-1)
+
+	logits = tf.cast(tf.zeros((batch_size, actual_length)), tf.float32)
+
+	input_mask =  tf.cast(tf.zeros((batch_size, actual_length-context_shape[1])), tf.int32)
+	input_mask = tf.concat([tf.cast(tf.ones((batch_size, context_shape[1])), tf.int32), 
+							input_mask], axis=-1)
+
+	if estimator in ["straight_through", "soft"]:
+		gumbel_probs = tf.zeros((batch_size,
+						 actual_length-context_shape[1],
+						 model_config.vocab_size
+						 ))
+		
+		start_probs = context
+		start_one_hot = tf.one_hot(start_probs, model_config.vocab_size)
+		gumbel_probs = tf.concat([tf.cast(start_one_hot, tf.float32), gumbel_probs], axis=1)
+
+	def step(step, tokens, input_mask, segment_ids):
+		
+		token_shape = bert_utils.get_shape_list(tokens, expected_rank=[2,3])
+		
+		features = {}
+		features['input_ids'] = tokens
+		features['segment_ids'] = segment_ids
+		features['input_mask'] = input_mask
+
+		inference_model = model_api(model_config, features, [],
+							mode, target, reuse=tf.AUTO_REUSE,
+							**kargs)
+
+		logits = inference_model.get_sequence_output_logits()
+		
+				   
+		return {
+			'logits': logits
+		}
+
+	with tf.name_scope('sample_sequence'):
+
+		def get_samples_logits(samples, logits):
+			batch_idxs = tf.range(0, tf.shape(samples)[0])
+			batch_idxs = tf.expand_dims(tf.cast(batch_idxs, tf.int32), 1)
+			samples = tf.expand_dims(tf.cast(samples, tf.int32), 1)
+
+			idxs = tf.concat([batch_idxs, samples], 1)
+			sample_logits = tf.gather_nd(logits, idxs)
+			return sample_logits
+
+		def body(i, samples, input_mask, segment_ids, logits):
+			next_outputs = step(i, samples, input_mask, segment_ids)
+			next_logits = next_outputs['logits'][:, i-1, :]  / tf.to_float(temperature)
+			next_logits = tf.nn.log_softmax(next_logits, axis=-1)
+			if greedy_or_sample == "sample":
+				next_samples = tf.multinomial(next_logits, num_samples=1, output_dtype=tf.int32)
+				next_samples = tf.squeeze(next_samples, axis=-1)
+			elif greedy_or_sample == "greedy":
+				next_samples = tf.argmax(next_logits, axis=-1)
+			else:
+				next_samples = tf.argmax(next_logits, axis=-1)
+			next_samples = tf.cast(next_samples, tf.int32)
+			print(next_samples.get_shape(), "==sample shape==")
+
+			print(tf.one_hot(i, actual_length).get_shape(), "====shhhhape===")
+			sample_mask = tf.expand_dims(tf.one_hot(i, actual_length), axis=(0)) # [1, seq]
+			print(sample_mask.get_shape(), "==sample mask shape==")
+			print(samples.get_shape(), "==samples shape==")
+			samples += tf.cast(sample_mask, tf.int32) * tf.cast(tf.expand_dims(next_samples, axis=-1), tf.int32)
+			
+			next_sample_logits = get_samples_logits(next_samples, next_logits)
+			print(next_sample_logits.get_shape(), "===next sampleslogis shape==")
+			logits += tf.cast(sample_mask, tf.float32) * tf.expand_dims(next_sample_logits, axis=-1)
+
+			input_mask += tf.cast(sample_mask, tf.int32) * tf.cast(tf.expand_dims(tf.ones_like(next_samples), axis=-1), tf.int32)
+
+			return [i+1, 
+					samples,
+					input_mask, 
+					segment_ids,
+					logits]
+
+		def gumbel_st_body(i, samples, gumbel_probs, input_mask, segment_ids, logits):
+
+			next_outputs = step(i, gumbel_probs, 
+								input_mask, segment_ids)
+			
+			next_logits = next_outputs['logits'][:, i-1, :]  / tf.to_float(temperature)
+			next_logits = tf.nn.log_softmax(next_logits, axis=-1)
+
+			next_gumbel_probs, _ = gumbel_softmax(next_logits, gumbel_temp, gumbel_samples=None, samples=1)
+			next_samples = tf.cast(tf.argmax(next_gumbel_probs, axis=1), tf.int32)
+			next_samples_onehot = tf.one_hot(next_samples, 
+												   model_config.vocab_size,
+													axis=1) # sampled multiminal id
+			straight_through_onehot = tf.stop_gradient(next_samples_onehot-next_gumbel_probs)+next_gumbel_probs
+			
+			print(next_gumbel_probs.get_shape(), "=====gumbel====", straight_through_onehot.get_shape())
+			gumbel_mask = tf.expand_dims(tf.expand_dims(tf.one_hot(i, actual_length), axis=0), axis=2) # [1, seq, 1]
+			gumbel_probs += tf.cast(gumbel_mask, tf.float32) * tf.expand_dims(straight_through_onehot, axis=1) # b x 1 x vocab
+			
+			sample_mask = tf.expand_dims(tf.one_hot(i, actual_length), axis=(0)) # [1, seq, 1]
+			print(sample_mask.get_shape(), "==sample mask shape==")
+			print(samples.get_shape(), "==samples shape==")
+			samples += tf.cast(sample_mask, tf.int32) * tf.cast(tf.expand_dims(next_samples, axis=-1), tf.int32)
+			
+			next_sample_logits = get_samples_logits(next_samples, next_logits)
+			logits += tf.cast(sample_mask, tf.float32) * tf.expand_dims(next_sample_logits, axis=-1)
+			input_mask += tf.cast(sample_mask, tf.int32) * tf.cast(tf.expand_dims(tf.ones_like(next_samples), axis=-1), tf.int32)
+			
+			return [i+1, 
+					samples, 
+					gumbel_probs,
+					input_mask,
+					segment_ids,
+				   logits]
+		
+		def gumbel_soft_body(i, samples, gumbel_probs, input_mask, segment_ids, logits):
+			next_outputs = step(i, samples, input_mask, segment_ids)
+
+			next_logits = next_outputs['logits'][:, i-1, :]  / tf.to_float(temperature)
+			next_logits = tf.nn.log_softmax(next_logits, axis=-1)
+		   
+			# gumbel sample
+			next_gumbel_probs, _ = gumbel_softmax(next_logits, gumbel_temp, gumbel_samples=None, samples=1)
+			next_samples = tf.cast(tf.argmax(next_gumbel_probs, axis=1), tf.int32)
+
+			print(next_gumbel_probs.get_shape())
+			gumbel_mask = tf.expand_dims(tf.expand_dims(tf.one_hot(i, actual_length), axis=0), axis=2) # [1, seq, 1]
+			gumbel_probs += tf.cast(gumbel_mask, tf.float32) * tf.expand_dims(next_gumbel_probs, axis=1) # b x 1 x vocab
+
+			sample_mask = tf.expand_dims(tf.one_hot(i, actual_length), axis=(0)) # [1, seq]
+			print(sample_mask.get_shape(), "==sample mask shape==")
+			print(samples.get_shape(), "==samples shape==")
+			samples += tf.cast(sample_mask, tf.int32) * tf.cast(tf.expand_dims(next_samples, axis=-1), tf.int32)
+
+			next_sample_logits = get_samples_logits(next_samples, next_logits)
+			logits += tf.cast(sample_mask, tf.float32) * tf.expand_dims(next_sample_logits, axis=-1)
+
+			return [i+1, 
+					samples,
+					gumbel_probs,
+					input_mask,
+					segment_ids,
+				    logits]
+
+
+		init_i = tf.cast(bert_utils.get_shape_list(context, expected_rank=[2,3])[1], tf.int32)
+
+		if estimator == "straight_through":
+			final, samples, gumbel_probs, input_mask, segment_ids, logits = tf.while_loop(
+				cond=lambda i, _1, _2, _3, _4, _5: i < seq_length-1,
+				body=gumbel_st_body,
+				loop_vars=[init_i,
+					samples,
+					gumbel_probs,
+					input_mask,
+					segment_ids,
+					logits
+				],
+				back_prop=back_prop,
+				swap_memory=swap_memory,
+				maximum_iterations=seq_length+1
+			)
+			
+		elif estimator == "soft":
+			final, samples, gumbel_probs, input_mask, segment_ids, logits = tf.while_loop(
+				cond=lambda i, _1, _2, _3, _4, _5: i < seq_length-1,
+				body=gumbel_soft_body,
+				loop_vars=[init_i,
+					samples,
+					gumbel_probs,
+					input_mask,
+					segment_ids,
+					logits
+				],
+				back_prop=back_prop,
+				swap_memory=swap_memory,
+				maximum_iterations=seq_length+1
+			)
+
+		else:
+			final, samples, input_mask, segment_ids, logits = tf.while_loop(
+				cond=lambda i, _1, _2, _3, _4: i < seq_length-1,
+				body=body,
+				loop_vars=[init_i,
+					samples,
+					input_mask,
+					segment_ids,
+					logits
+				],
+				back_prop=back_prop,
+				swap_memory=swap_memory,
+				maximum_iterations=seq_length+1
+			)
+
+		mask_sequence = get_finised_pos_v1(samples, end_token, actual_length)
+		print(mask_sequence.get_shape(), "==mask shape==")
+		samples *= tf.cast(mask_sequence, tf.int32)
+		logits *= tf.cast(mask_sequence, tf.float32)
+		if estimator in ["straight_through", "soft"]:
+			gumbel_probs *= tf.expand_dims(tf.cast(mask_sequence, tf.float32), axis=-1)
+			return {
+				"samples":samples,
+				"mask_sequence":mask_sequence,
+				"gumbel_probs":gumbel_probs,
+				"logits":logits,
+				"final":final,
+				"input_mask":input_mask
+			}
+		else:
+			return {
+				"samples":samples,
+				"mask_sequence":mask_sequence,
+				"logits":logits,
+				"final":final,
+				"input_mask":input_mask
+			}
 
 	

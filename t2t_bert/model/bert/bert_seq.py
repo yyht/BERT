@@ -119,6 +119,7 @@ class Bert(object):
 									decode_loop_step=None,
 									max_decode_length=None,
 									if_bp=False,
+									if_cache_decode=None,
 									**kargs):
 		reuse = kargs["reuse"]
 		input_shape = bert_utils.get_shape_list(input_ids, expected_rank=[2,3])
@@ -202,7 +203,8 @@ class Bert(object):
 						do_return_all_layers=True,
 						past=past,
 						decode_loop_step=decode_loop_step,
-						if_bp=if_bp)
+						if_bp=if_bp,
+						if_cache_decode=if_cache_decode)
 				# self.cached_present = tf.stack(self.all_present, axis=1)
 
 	def build_output_logits(self, **kargs):

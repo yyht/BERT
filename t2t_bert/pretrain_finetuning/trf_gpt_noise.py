@@ -133,14 +133,17 @@ def model_fn_builder(
 
 			temperature = get_fixed_temperature(temper, step, num_train_steps, temp_adapt)
 
-			# use_tpu = 1 if kargs.get('use_tpu', False) else 0
-			# if use_tpu:
-			# 	sample_sequence_api = bert_seq_tpu_utils.sample_sequence
-			# else:
-			# 	sample_sequence_api = bert_seq_utils.sample_sequence
+			sample_type = kargs.get("sample_type", "none_cache_sample")
 
-
-			sample_sequence_api = bert_seq_tpu_utils.sample_sequence
+			if sample_type == 'none_cache_sample':
+				sample_sequence_api = bert_seq_tpu_utils.sample_sequence_without_cache
+				tf.logging.info("****** noise sample without cache *******")
+			elif sample_type == 'cache_sample':
+				sample_sequence_api = bert_seq_tpu_utils.sample_sequence
+				tf.logging.info("****** noise sample with cache *******")
+			else:
+				sample_sequence_api = bert_seq_tpu_utils.sample_sequence_without_cache
+				tf.logging.info("****** noise sample without cache *******")
 			results = sample_sequence_api(model_api,
 											model_config, 
 											tf.estimator.ModeKeys.TRAIN, 
@@ -163,7 +166,8 @@ def model_fn_builder(
 											attention_type=kargs.get('attention_type', 'normal_attention'),
 											scope=generator_scope_prefix, # need to add noise scope to lm,
 											max_length=model_config.max_position_embeddings,
-											if_bp=kargs.get('if_bp', False)
+											if_bp=kargs.get('if_bp', False),
+											if_cache_decode=kargs.get('if_cache_decode', None)
 											)
 
 			if noise_estimator_type in ["straight_through", "soft"]:

@@ -480,7 +480,8 @@ def attention_layer(from_tensor,
 					to_seq_length=None,
 					past=None,
 					decode_loop_step=None,
-					if_bp=False):
+					if_bp=False,
+					if_cache_decode=None):
 	"""Performs multi-headed attention from `from_tensor` to `to_tensor`.
 
 	This is an implementation of multi-headed attention based on "Attention
@@ -619,7 +620,10 @@ def attention_layer(from_tensor,
 									size_per_head)
 
 	# present: [B, 2, N, T, H]
-	present = tf.stack([key_layer, value_layer], axis=1) # multihead attention
+	if if_cache_decode:
+		present = tf.stack([key_layer, value_layer], axis=1) # multihead attention
+	else:
+		present = None
 	if past is not None:
 		if decode_loop_step is None:
 			# print("===present===shape===", past.get_shape()) 
@@ -732,7 +736,8 @@ def transformer_model(input_tensor,
 						do_return_all_layers=False,
 						past=None,
 						decode_loop_step=None,
-						if_bp=False):
+						if_bp=False,
+						if_cache_decode=None):
 	"""Multi-headed, multi-layer Transformer from "Attention is All You Need".
 
 	This is almost an exact implementation of the original Transformer encoder.
@@ -827,7 +832,8 @@ def transformer_model(input_tensor,
 							to_seq_length=seq_length,
 							past=pasts[layer_idx],
 							decode_loop_step=decode_loop_step,
-							if_bp=if_bp)
+							if_bp=if_bp,
+							if_cache_decode=if_cache_decode)
 					attention_heads.append(attention_head)
 					all_present.append(present)
 					all_attention_scores.append(attention_scores)
