@@ -144,6 +144,7 @@ def model_fn_builder(
 			else:
 				sample_sequence_api = bert_seq_tpu_utils.sample_sequence_without_cache
 				tf.logging.info("****** noise sample without cache *******")
+			tf.logging.info("****** max_length: %s *******", str(kargs.get('max_length', 512)))
 			results = sample_sequence_api(model_api,
 											model_config, 
 											tf.estimator.ModeKeys.TRAIN, 
@@ -165,7 +166,7 @@ def model_fn_builder(
 											mask_type=kargs.get("mask_type", "left2right"),
 											attention_type=kargs.get('attention_type', 'normal_attention'),
 											scope=generator_scope_prefix, # need to add noise scope to lm,
-											max_length=model_config.max_position_embeddings,
+											max_length=kargs.get('max_length', 512),
 											if_bp=kargs.get('if_bp', False),
 											if_cache_decode=kargs.get('if_cache_decode', None)
 											)

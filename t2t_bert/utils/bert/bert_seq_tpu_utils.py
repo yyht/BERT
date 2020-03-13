@@ -455,6 +455,7 @@ def sample_sequence_without_cache(model_api,
 							estimator="straight_through",
 							back_prop=True,
 							swap_memory=True,
+							max_seq_length=512,
 							**kargs):
 
 	input_shape = bert_utils.get_shape_list(features["input_ids"], expected_rank=[2,3])
@@ -656,51 +657,80 @@ def sample_sequence_without_cache(model_api,
 		init_i = tf.cast(bert_utils.get_shape_list(context, expected_rank=[2,3])[1], tf.int32)
 
 		if estimator == "straight_through":
-			final, samples, gumbel_probs, input_mask, segment_ids, logits = tf.while_loop(
-				cond=lambda i, _1, _2, _3, _4, _5: i < seq_length-1,
-				body=gumbel_st_body,
-				loop_vars=[init_i,
+			# final, samples, gumbel_probs, input_mask, segment_ids, logits = tf.while_loop(
+			# 	cond=lambda i, _1, _2, _3, _4, _5: i < seq_length-1,
+			# 	body=gumbel_st_body,
+			# 	loop_vars=[init_i,
+			# 		samples,
+			# 		gumbel_probs,
+			# 		input_mask,
+			# 		segment_ids,
+			# 		logits
+			# 	],
+			# 	back_prop=back_prop,
+			# 	swap_memory=swap_memory,
+			# 	maximum_iterations=seq_length
+			# )
+
+			for i in range(1, max_seq_length-1):
+				[final, samples, gumbel_probs, 
+				input_mask, segment_ids, logits] = gumbel_st_body(
+					i,
 					samples,
 					gumbel_probs,
 					input_mask,
 					segment_ids,
-					logits
-				],
-				back_prop=back_prop,
-				swap_memory=swap_memory,
-				maximum_iterations=seq_length
-			)
+					logits)
 			
 		elif estimator == "soft":
-			final, samples, gumbel_probs, input_mask, segment_ids, logits = tf.while_loop(
-				cond=lambda i, _1, _2, _3, _4, _5: i < seq_length-1,
-				body=gumbel_soft_body,
-				loop_vars=[init_i,
+			# final, samples, gumbel_probs, input_mask, segment_ids, logits = tf.while_loop(
+			# 	cond=lambda i, _1, _2, _3, _4, _5: i < seq_length-1,
+			# 	body=gumbel_soft_body,
+			# 	loop_vars=[init_i,
+			# 		samples,
+			# 		gumbel_probs,
+			# 		input_mask,
+			# 		segment_ids,
+			# 		logits
+			# 	],
+			# 	back_prop=back_prop,
+			# 	swap_memory=swap_memory,
+			# 	maximum_iterations=seq_length
+			# )
+
+			for i in range(1, max_seq_length-1):
+				[final, samples, gumbel_probs, 
+				input_mask, segment_ids, logits] = gumbel_soft_body(
+					i,
 					samples,
 					gumbel_probs,
 					input_mask,
 					segment_ids,
-					logits
-				],
-				back_prop=back_prop,
-				swap_memory=swap_memory,
-				maximum_iterations=seq_length
-			)
+					logits)
 
 		else:
-			final, samples, input_mask, segment_ids, logits = tf.while_loop(
-				cond=lambda i, _1, _2, _3, _4: i < seq_length-1,
-				body=body,
-				loop_vars=[init_i,
+			# final, samples, input_mask, segment_ids, logits = tf.while_loop(
+			# 	cond=lambda i, _1, _2, _3, _4: i < seq_length-1,
+			# 	body=body,
+			# 	loop_vars=[init_i,
+			# 		samples,
+			# 		input_mask,
+			# 		segment_ids,
+			# 		logits
+			# 	],
+			# 	back_prop=back_prop,
+			# 	swap_memory=swap_memory,
+			# 	maximum_iterations=seq_length
+			# )
+
+			for i in range(1, max_seq_length-1):
+				[final, samples, 
+				input_mask, segment_ids, logits] = body(
+					i,
 					samples,
 					input_mask,
 					segment_ids,
-					logits
-				],
-				back_prop=back_prop,
-				swap_memory=swap_memory,
-				maximum_iterations=seq_length
-			)
+					logits)
 
 		mask_sequence = get_finised_pos_v1(samples, end_token, actual_length)
 		print(mask_sequence.get_shape(), "==mask shape==")
@@ -713,7 +743,6 @@ def sample_sequence_without_cache(model_api,
 				"mask_sequence":mask_sequence,
 				"gumbel_probs":gumbel_probs,
 				"logits":logits,
-				"final":final,
 				"input_mask":input_mask
 			}
 		else:
@@ -721,7 +750,6 @@ def sample_sequence_without_cache(model_api,
 				"samples":samples,
 				"mask_sequence":mask_sequence,
 				"logits":logits,
-				"final":final,
 				"input_mask":input_mask
 			}
 
