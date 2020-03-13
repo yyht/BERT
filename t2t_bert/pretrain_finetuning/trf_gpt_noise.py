@@ -180,7 +180,7 @@ def model_fn_builder(
 											mask_type=kargs.get("mask_type", "left2right"),
 											attention_type=kargs.get('attention_type', 'normal_attention'),
 											scope=generator_scope_prefix, # need to add noise scope to lm,
-											max_length=min(int(kargs.get('max_length', 512)/8), 32),
+											max_length=max(int(kargs.get('max_length', 512)/8), 32),
 											if_bp=if_bp,
 											if_cache_decode=if_cache_decode
 											)
