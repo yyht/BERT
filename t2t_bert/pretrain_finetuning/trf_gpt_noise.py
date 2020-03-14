@@ -166,7 +166,7 @@ def model_fn_builder(
 											target="", 
 											start_token=kargs.get("start_token_id", 101), 
 											batch_size=None, 
-											context=features.get("context", None), 
+											context=None, #features["input_ids"][:, :32], 
 											temperature=1.0, 
 											n_samples=kargs.get("n_samples", 1),
 											top_k=0,

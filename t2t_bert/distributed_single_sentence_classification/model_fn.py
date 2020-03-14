@@ -51,17 +51,18 @@ def model_fn_builder(
 
 		model_api = model_zoo(model_config)
 
-		if kargs.get('trf_input', False):
+		# if kargs.get('trf_input', False):
 
-			input_shape_list = bert_utils.get_shape_list(features['input_ids'], expected_rank=2)
-			batch_size = input_shape_list[0]
-			seq_length = input_shape_list[1]
+		# 	input_shape_list = bert_utils.get_shape_list(features['input_ids'], expected_rank=2)
+		# 	batch_size = input_shape_list[0]
+		# 	seq_length = input_shape_list[1]
 
-			input_ids = get_finised_pos_v1(features['input_ids'], 102, seq_length)
-			features['input_ids'] = input_ids
+		# 	input_ids = get_finised_pos_v1(features['input_ids'], 102, seq_length)
+		# 	features['input_ids'] = input_ids
 
-			tf.logging.info("**** trf input modification for qa and sentence pair **** ")
+		# 	tf.logging.info("**** trf input modification for qa and sentence pair **** ")
 
+		features['segment_ids'] = 0 * features['segment_ids']
 		model = model_api(model_config, features, labels,
 							mode, target, reuse=model_reuse, **kargs)
 

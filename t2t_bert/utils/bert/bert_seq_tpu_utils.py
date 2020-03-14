@@ -17,7 +17,7 @@ def get_finised_pos_v1(token_seq, finished_index, max_length):
 
 	finished_pos = tf.reduce_min(match_indices, axis=1)
 	sequence_mask = tf.sequence_mask(finished_pos+1, maxlen=max_length)
-	return sequence_mask
+	return tf.cast(sequence_mask, tf.int32)
 
 def top_k_logits(logits, k):
 	if k == 0:
@@ -100,6 +100,14 @@ def sample_sequence(model_api,
 		context_shape = bert_utils.get_shape_list(context, expected_rank=[2])
 		batch_size = input_shape[0]
 
+	actual_length = seq_length
+
+	input_mask = tf.cast(tf.ones((batch_size,
+						 actual_length-context_shape[1]
+						 )), tf.int32)
+	input_mask = tf.concat([tf.cast(tf.zeros((batch_size, context_shape[1])), tf.int32),
+							input_mask], axis=-1)
+
 	# if start_token is None:
 	# 	assert context is not None, 'Specify exactly one of start_token and context!'
 	# 	context = tf.cast(context, tf.int32)
@@ -110,8 +118,7 @@ def sample_sequence(model_api,
 	# 	print(context.get_shape(), "===init context shape===")
 		
 	context_shape = bert_utils.get_shape_list(context, expected_rank=[2])
-	actual_length = seq_length
-
+	
 	# Scalar dimensions referenced here:
 	#   B = batch size (number of sequences)
 	#   F = `from_tensor` sequence length
