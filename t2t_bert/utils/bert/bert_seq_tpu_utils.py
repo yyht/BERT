@@ -95,6 +95,7 @@ def sample_sequence(model_api,
 		context = tf.fill([batch_size, 1], start_token)
 		context = tf.cast(context, tf.int32)
 		print(context.get_shape(), "===init context shape===")
+		context_shape = bert_utils.get_shape_list(context, expected_rank=[2])
 	else:
 		context = tf.cast(context, tf.int32)
 		context_shape = bert_utils.get_shape_list(context, expected_rank=[2])
