@@ -31,13 +31,12 @@ class Bert(object):
 
 		if self.config.get('embedding_scope', None):
 			embedding_scope = self.config['embedding_scope']
-			other_embedding_scope = self.config.get("scope", "bert")
-			tf.logging.info("==using embedding scope of original model_config.embedding_scope: %s==", embedding_scope)
+			other_embedding_scope = self.config['embedding_scope'] #self.config.get("scope", "bert")
+			tf.logging.info("==using embedding scope of original model_config.embedding_scope: %s, other_embedding_scope:%s ==", embedding_scope, other_embedding_scope)
 		else:
 			embedding_scope = self.config.get("scope", "bert")
 			other_embedding_scope = self.config.get("scope", "bert")
-			tf.logging.info("==using embedding scope of original model_config.scope: %s==", embedding_scope)
-
+			tf.logging.info("==using embedding scope of original model_config.embedding_scope: %s, other_embedding_scope:%s ==", embedding_scope, other_embedding_scope)
 		if past is None:
 			self.past_length = 0
 		else:

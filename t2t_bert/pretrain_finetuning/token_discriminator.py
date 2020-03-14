@@ -1,7 +1,7 @@
 import tensorflow as tf
 from utils.bert import bert_utils
 from loss import loss_utils
-from utils.bert import albert_modules
+from utils.bert import bert_modules, albert_modules
 from metric import tf_metrics
 
 def label_smoothing(inputs, epsilon=0.1):
@@ -61,12 +61,20 @@ def classifier(config, seq_output,
 	input_mask = tf.cast(input_mask, tf.int32)
 	input_mask *= tf.cast(1 - none_replace_mask, tf.int32) # cls, unk, sep are not considered as replace or original
 
-	output_weights = tf.get_variable(
-			"output_weights", [num_labels, hidden_size],
-			initializer=tf.truncated_normal_initializer(stddev=0.02))
+	hidden = tf.layers.dense(
+		  seq_output,
+		  units=config.hidden_size,
+		  activation=bert_modules.get_activation(config.hidden_act),
+		  kernel_initializer=bert_modules.create_initializer(
+							config.initializer_range))
+	logits = tf.layers.dense(hidden, units=2) # batch x seq x 2
 
-	output_bias = tf.get_variable(
-			"output_bias", [num_labels], initializer=tf.zeros_initializer())
+	# output_weights = tf.get_variable(
+	# 		"output_weights", [num_labels, hidden_size],
+	# 		initializer=tf.truncated_normal_initializer(stddev=0.02))
+
+	# output_bias = tf.get_variable(
+	# 		"output_bias", [num_labels], initializer=tf.zeros_initializer())
 
 	if config.get('ln_type', 'postln') == 'preln':
 		output_layer = albert_modules.layer_norm(output_layer)
@@ -78,10 +86,10 @@ def classifier(config, seq_output,
 		output_layer = output_layer
 		print('====no layer layer_norm====')
 
-	output_layer = tf.nn.dropout(output_layer, keep_prob=1 - dropout_prob)
+	# output_layer = tf.nn.dropout(output_layer, keep_prob=1 - dropout_prob)
 
-	logits = tf.einsum("abc,dc->abd", output_layer, output_weights)
-	logits = tf.nn.bias_add(logits, output_bias) # batch x seq_length x 2
+	# logits = tf.einsum("abc,dc->abd", output_layer, output_weights)
+	# logits = tf.nn.bias_add(logits, output_bias) # batch x seq_length x 2
 
 	input_ids = tf.cast(input_ids, tf.int32)
 
