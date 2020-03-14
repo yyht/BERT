@@ -166,7 +166,7 @@ def model_fn_builder(
 											target="", 
 											start_token=kargs.get("start_token_id", 101), 
 											batch_size=None, 
-											context=features.get("context", None), 
+											context=None, #features["input_ids"][:, :32], 
 											temperature=1.0, 
 											n_samples=kargs.get("n_samples", 1),
 											top_k=0,
@@ -180,7 +180,7 @@ def model_fn_builder(
 											mask_type=kargs.get("mask_type", "left2right"),
 											attention_type=kargs.get('attention_type', 'normal_attention'),
 											scope=generator_scope_prefix, # need to add noise scope to lm,
-											max_length=max(int(kargs.get('max_length', 512)/4), 32),
+											max_length=max(int(kargs.get('max_length', 512)/4), 64),
 											if_bp=if_bp,
 											if_cache_decode=if_cache_decode
 											)
