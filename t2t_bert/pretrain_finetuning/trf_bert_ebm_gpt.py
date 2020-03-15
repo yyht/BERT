@@ -158,6 +158,9 @@ def classifier_model_fn_builder(
 					not_storage_params=not_storage_params_dict.get('ebm_dist', []),
 					target=target_dict['ebm_dist'],
 					prob_ln=True,
+					transform=True,
+					transformer_activation="none",
+					logz_mode='default',
 					**kargs)
 
 		noise_dist_fn = noise_dist(model_config_dict['noise_dist'],

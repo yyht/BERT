@@ -273,7 +273,7 @@ def emb_score(config, input_tensor, input_ids,
 		normalized_constant = tf.get_variable(
 				"ebm_normalized_constant",
 				shape=[config.max_position_embeddings],
-				initializer=tf.zeros_initializer())
+				initializer=tf.ones_initializer())
 
 		valid_seq_length = tf.cast(tf.reduce_sum(input_mask, axis=-1), tf.int32) # batch_size
 		onehot_length_ids = tf.one_hot(valid_seq_length, config.max_position_embeddings)
@@ -314,23 +314,34 @@ def emb_score(config, input_tensor, input_ids,
 
 		if kargs.get('transform', True):
 
-			with tf.variable_scope("transform"):
-				ebm_scalar = tf.layers.dense(
-						pool_features,
-						units=1,
-						use_bias=False,
-						activation=tf.nn.softplus # mask scalar to [0,inifite]
-						)
-				print("===ebm_scalar====", ebm_scalar.get_shape())
+			if kargs.get("transformer_activation", "none") == 'softplus':
 
-				ebm_scalar = tf.squeeze(ebm_scalar, axis=-1)
-				print("===ebm_scalar====", ebm_scalar.get_shape())
-				# ebm_scalar /= (1e-10+tf.reduce_sum(tf.cast(input_mask, tf.float32), axis=-1))
-				
-				# if kargs.get("energy_pooling", "mi") == "mean_pooling":
-				
-				print("===ebm_scalar====", ebm_scalar.get_shape())
-				print("===input_normalized_constant====", input_normalized_constant.get_shape())
+				with tf.variable_scope("transform"):
+					ebm_scalar = tf.layers.dense(
+							pool_features,
+							units=1,
+							use_bias=False,
+							activation=tf.nn.softplus # mask scalar to [0,inifite]
+							)
+				tf.logging.info("****** apply softplus *******")
+			else:
+				with tf.variable_scope("transform"):
+					ebm_scalar = tf.layers.dense(
+							pool_features,
+							units=1,
+							use_bias=True
+							)
+				tf.logging.info("****** apply linear projection *******")
+			print("===ebm_scalar====", ebm_scalar.get_shape())
+
+			ebm_scalar = tf.squeeze(ebm_scalar, axis=-1)
+			print("===ebm_scalar====", ebm_scalar.get_shape())
+			# ebm_scalar /= (1e-10+tf.reduce_sum(tf.cast(input_mask, tf.float32), axis=-1))
+			
+			# if kargs.get("energy_pooling", "mi") == "mean_pooling":
+			
+			print("===ebm_scalar====", ebm_scalar.get_shape())
+			print("===input_normalized_constant====", input_normalized_constant.get_shape())
 
 		else:
 			ebm_scalar = tf.squeeze(pool_features, axis=-1)
@@ -352,7 +363,12 @@ def emb_score(config, input_tensor, input_ids,
 		# here we use bert encoder of pooled hidden states as energy function which need to minus when apply to 
 		# actual energy function
 
-		logits = -ebm_scalar - input_normalized_constant - tf.log(1e-10+tf.reduce_sum(tf.cast(input_mask, tf.float32), axis=-1))
+		if kargs.get("logz_mode", "default") == 'default':
+			tf.logging.info("****** default logz *******")
+			logits = ebm_scalar - input_normalized_constant - tf.log(1e-10+tf.reduce_sum(tf.cast(input_mask, tf.float32), axis=-1))
+		else:
+			tf.logging.info("****** linear logz *******")
+			logits = ebm_scalar - input_normalized_constant * tf.reduce_sum(tf.cast(input_mask, tf.float32), axis=-1)
 		print("=ebm logits shape==", logits.get_shape())
 	return logits
 

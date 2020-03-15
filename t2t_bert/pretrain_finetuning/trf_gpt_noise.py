@@ -161,7 +161,7 @@ def model_fn_builder(
 
 			results = sample_sequence_api(model_api,
 											model_config, 
-											tf.estimator.ModeKeys.PREDICT, 
+											tf.estimator.ModeKeys.TRAIN, 
 											features,
 											target="", 
 											start_token=kargs.get("start_token_id", 101), 

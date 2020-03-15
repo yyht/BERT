@@ -1,5 +1,5 @@
 config_file=./BERT/data/electra_share_embedding/generator/bert_config_tiny.json
-init_checkpoint=lcqmc/bert_tiny/model/estimator/bert_tiny_trf/model.ckpt-14922
+init_checkpoint=lcqmc/bert_tiny/model/estimator/bert_tiny_trf_chinese/model.ckpt-44766
 vocab_file=./BERT/data/chinese_L-12_H-768_A-12/vocab.txt
 label_id=./BERT/data/lcqmc/label_dict.json
 max_length=128
