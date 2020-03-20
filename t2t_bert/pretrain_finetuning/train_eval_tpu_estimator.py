@@ -78,7 +78,17 @@ def train_eval_fn(FLAGS,
 		num_classes = FLAGS.num_classes
 		checkpoint_dir = checkpoint_dir
 
-		model_fn = classifier_model_fn_builder(config, 
+		if FLAGS.model_type == 'bert':
+			model_fn_builder = classifier_model_fn_builder
+			tf.logging.info("****** bert mlm ******")
+		elif FLAGS.model_type == 'bert_seq':
+			model_fn_builder = classifier_seq_model_fn_builder
+			tf.logging.info("****** bert seq as gpt ******")
+		else:
+			model_fn_builder = classifier_model_fn_builder
+			tf.logging.info("****** bert mlm ******")
+
+		model_fn = model_fn_builder(config, 
 									num_classes, 
 									init_checkpoint, 
 									model_reuse=None, 
@@ -90,6 +100,7 @@ def train_eval_fn(FLAGS,
 									not_storage_params=[],
 									target=kargs.get("input_target", ""),
 									num_train_steps=num_train_steps,
+									use_tpu=True,
 									**kargs)
 
 		estimator = tf.contrib.tpu.TPUEstimator(
