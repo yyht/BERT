@@ -85,14 +85,19 @@ def model_fn_builder(
 			pretrained_tvars.extend(embedding_tvars)
 
 		pretrained_tvars.extend(lm_pretrain_tvars)
-		pretrained_tvars.extend(ebm_pretrain_tvars)
+		# pretrained_tvars.extend(ebm_pretrain_tvars)
 		tvars = pretrained_tvars
+		logz_tvars = ebm_pretrain_tvars
 
 		print('==ebm parameters==', tvars)
+		print('==ebm logz parameters==', logz_tvars)
+
+		load_vars = tvars + logz_tvars
 
 		if load_pretrained == "yes":
 			use_tpu = 1 if kargs.get('use_tpu', False) else 0
-			scaffold_fn = model_io_fn.load_pretrained(tvars, 
+			print("==load vars==", load_vars)
+			scaffold_fn = model_io_fn.load_pretrained(load_vars, 
 											init_checkpoint,
 											exclude_scope=exclude_scope,
 											use_tpu=use_tpu,
@@ -111,6 +116,7 @@ def model_fn_builder(
 		return_dict = {
 					"tvars":tvars,
 					"logits":logits,
+					"logz_tvars":logz_tvars
 					# "global_step":ebm_global_step
 				}
 		return return_dict

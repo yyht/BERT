@@ -359,6 +359,12 @@ class Optimizer(object):
 			for key in loss_dict:
 				loop_step_dict[key] = 1
 
+		if_grad_clip_dict = kargs.get('if_grad_clip_dict', None)
+		if not loop_step_dict:
+			loop_step_dict = {}
+			for key in loss_dict:
+				loop_step_dict[key] = True
+
 		optimizer_dict = {}
 
 		alternate_order = kargs.get('alternate_order', list(loss_dict.keys()))
@@ -384,8 +390,22 @@ class Optimizer(object):
 			tvars = tvars_dict[key]
 			loop_steps = loop_step_dict[key]
 			optimizer = optimizer_dict[key]
+			if_grad_clip = if_grad_clip_dict[key]
 
-			grads = self.grad_clip_fn(loss, tvars, **kargs)
+			# grads = self.grad_clip_fn(loss, tvars, **kargs)
+
+			if if_grad_clip:
+				grads = self.grad_clip_fn(loss, tvars, **kargs)
+				tf.logging.info("==appy grad clip : %s==", key)
+			else:
+				grads = tf.gradients(loss, tvars)
+				# grad_name = key
+				# for grad, var in grads_and_vars:
+				# 	if grad is not None:
+				# 		var_grad_norm = tf.global_norm([grad])
+				# 		tf.summary.scalar(grad_name+"/"+var.name, var_grad_norm)
+				tf.logging.info("==not appy grad clip : %s==", key)
+
 			for i in range(loop_steps):
 				with tf.control_dependencies([prev_op]):
 					with tf.variable_scope(key+"/"+"optimizer", reuse=tf.AUTO_REUSE):
