@@ -6,9 +6,11 @@ try:
 	from .trf_gpt_noise import model_fn_builder as noise_dist
 	from .trf_ebm_bert import model_fn_builder as ebm_dist
 	from .trf_classifier import get_ebm_loss, get_noise_loss, ebm_noise_train_metric, ebm_noise_eval_metric
+	from .trf_ebm_noise_mlm_sample import model_fn_builder as mlm_noise_dist
 except:
 	from trf_gpt_noise import model_fn_builder as noise_dist
 	from trf_ebm_bert import model_fn_builder as ebm_dist
+	from trf_ebm_noise_mlm_sample import model_fn_builder as mlm_noise_dist
 	from trf_classifier import get_ebm_loss, get_noise_loss, ebm_noise_train_metric, ebm_noise_eval_metric
 
 import tensorflow as tf
@@ -61,11 +63,12 @@ def get_train_op(ebm_dist_dict, noise_dist_dict, optimizer_fn, opt_config,
 				optimizer_fn.gradient_norm_summary(noise_dist_dict['loss'], ebm_dist_dict['tvars'], debug_grad_name="ebm_of_noise_grad_norm")
 				optimizer_fn.gradient_norm_summary(noise_dist_dict['loss'], noise_dist_dict['tvars'], debug_grad_name="noise_grad_norm")
 
-		loss_dict = OrderedDict(zip(['ebm', 'noise'], [ebm_dist_loss, noise_dist_loss]))
-		tvars_dict = OrderedDict(zip(['ebm', 'noise'], [ebm_dist_dict['tvars'], noise_dist_dict['tvars']]))
-		init_lr_dict = OrderedDict(zip(['ebm', 'noise'], [ebm_dist_config['init_lr'], noise_dist_config['init_lr']]))
-		optimizer_type_dict = OrderedDict(zip(['ebm', 'noise'], [ebm_dist_config['optimizer_type'], noise_dist_config['optimizer_type']]))
-		loop_step_dict = OrderedDict(zip(['ebm', 'noise'], [ebm_dist_config.get("steps", 1), noise_dist_config.get('steps', 1)]))
+		loss_dict = OrderedDict(zip(['ebm', 'noise', 'ebm_logz'], [ebm_dist_loss, noise_dist_loss, ebm_dist_loss]))
+		tvars_dict = OrderedDict(zip(['ebm', 'noise', 'ebm_logz'], [ebm_dist_dict['tvars'], noise_dist_dict['tvars'], ebm_dist_dict['logz_tvars']]))
+		init_lr_dict = OrderedDict(zip(['ebm', 'noise', 'ebm_logz'], [ebm_dist_config['init_lr'], noise_dist_config['init_lr'], ebm_dist_config['init_lr']]))
+		optimizer_type_dict = OrderedDict(zip(['ebm', 'noise', 'ebm_logz'], [ebm_dist_config['optimizer_type'], noise_dist_config['optimizer_type'], 'adam']))
+		loop_step_dict = OrderedDict(zip(['ebm', 'noise', 'ebm_logz'], [ebm_dist_config.get("steps", 1), noise_dist_config.get('steps', 1), 1]))
+		if_grad_clip_dict = OrderedDict(zip(['ebm', 'noise', 'ebm_logz'], [True, True, False]))
 		# global_step_dict = OrderedDict(zip(['ebm', 'noise'], [ebm_dist_dict['global_step'], noise_dist_dict['global_step']]))
 		print(loss_dict, '===loss dict=====')
 		if kargs.get('train_op_type', 'joint') == 'alternate':
@@ -89,10 +92,11 @@ def get_train_op(ebm_dist_dict, noise_dist_dict, optimizer_fn, opt_config,
 									optimizer_type_dict,
 									opt_config.num_train_steps,
 									loop_step_dict=loop_step_dict,
+									if_grad_clip_dict=if_grad_clip_dict,
 									# global_step_dict=global_step_dict,
 									postive_key="ebm",
 									negative_key="noise",
-									alternate_order=['noise', 'ebm'],
+									alternate_order=['noise', 'ebm', 'ebm_logz'],
 									**kargs)
 
 			print("===train op===", train_op)
@@ -136,16 +140,6 @@ def classifier_model_fn_builder(
 
 		train_op_type = kargs.get('train_op_type', 'joint')
 		print("==input shape==", features["input_ids"].get_shape())
-		if kargs.get("truncted_seq_length", False):
-			actual_length = 256
-
-
-			token_seq = token_seq_truncted(features['input_ori_ids'], 102, max_length=actual_length)
-
-			features['input_ori_ids'] = token_seq
-			features['input_ids'] = token_seq
-			features['input_mask'] = tf.cast(tf.not_equal(token_seq, 0), tf.int32)
-			features['segment_ids'] = tf.zeros_like(token_seq)
 
 		ebm_dist_fn = ebm_dist(model_config_dict['ebm_dist'],
 					num_labels_dict['ebm_dist'],
@@ -157,11 +151,27 @@ def classifier_model_fn_builder(
 					exclude_scope=exclude_scope_dict.get('ebm_dist', ""),
 					not_storage_params=not_storage_params_dict.get('ebm_dist', []),
 					target=target_dict['ebm_dist'],
-					prob_ln=True,
+					prob_ln=False,
 					transform=True,
-					transformer_activation="none",
-					logz_mode='default',
+					transformer_activation="linear",
+					logz_mode='standard_minus',
+					normalized_constant="length_linear",
+					energy_pooling="mean_pooling",
+					softplus_features=False,
 					**kargs)
+
+		noise_prob_ln = False
+		noise_sample = kargs.get("noise_sample", 'mlm')
+
+		if kargs.get("noise_sample", 'mlm') == 'gpt':
+			tf.logging.info("****** using gpt for noise dist sample *******")
+			sample_noise_dist = True
+		elif kargs.get("noise_sample", 'mlm') == 'mlm':
+			tf.logging.info("****** using bert mlm for noise dist sample *******")
+			sample_noise_dist = False
+		else:
+			tf.logging.info("****** using gpt for noise dist sample *******")
+			sample_noise_dist = True
 
 		noise_dist_fn = noise_dist(model_config_dict['noise_dist'],
 					num_labels_dict['noise_dist'],
@@ -174,16 +184,31 @@ def classifier_model_fn_builder(
 					not_storage_params=not_storage_params_dict.get('noise_dist', []),
 					target=target_dict['noise_dist'],
 					noise_true_distribution=True,
-					sample_noise_dist=True,
+					sample_noise_dist=sample_noise_dist,
 					noise_estimator_type=kargs.get("noise_estimator_type", "stop_gradient"),
-					prob_ln=True,
+					prob_ln=noise_prob_ln,
 					if_bp=True,
 					**kargs)
+
+		if not sample_noise_dist:
+			tf.logging.info("****** using bert mlm for noise dist sample *******")
+			mlm_noise_dist_fn = mlm_noise_dist(model_config_dict['generator'],
+						num_labels_dict['generator'],
+						init_checkpoint_dict['generator'],
+						model_reuse=None,
+						load_pretrained=load_pretrained_dict['generator'],
+						model_io_config=model_io_config,
+						opt_config=opt_config,
+						exclude_scope=exclude_scope_dict.get('generator', ""),
+						not_storage_params=not_storage_params_dict.get('generator', []),
+						target=target_dict['generator'],
+						**kargs)
+		else:
+			mlm_noise_dist_fn = None
 
 		ebm_true_features = {}
 		noise_true_features = {}
 		
-
 		for key in features:
 			if key == 'input_ori_ids':
 				ebm_true_features["input_ids"] = features['input_ori_ids']
@@ -192,33 +217,38 @@ def classifier_model_fn_builder(
 				ebm_true_features[key] = features[key]
 				noise_true_features[key] = features[key]
 
+		if not sample_noise_dist:
+			mlm_noise_dist_dict = mlm_noise_dist_fn(features, labels, mode, params)
+		else:
+			mlm_noise_dist_dict = None
+
 		# first get noise dict
 		noise_dist_dict = noise_dist_fn(noise_true_features, labels, mode, params)
-
-		# second, get true ebm dict
-		true_ebm_dist_dict = ebm_dist_fn(ebm_true_features, labels, mode, params)
 
 		# third, get fake ebm dict
 		ebm_fake_features = {}
 
-		if kargs.get("training_mode", "stop_gradient") == 'stop_gradient':
-			ebm_fake_features["input_ids"] = noise_dist_dict['fake_samples']
-			tf.logging.info("****** using samples stop gradient *******")
-		elif kargs.get("training_mode", "stop_gradient") == 'adv_gumbel':
-			ebm_fake_features["input_ids"] = noise_dist_dict['gumbel_probs']
-			tf.logging.info("****** using samples with gradient *******")
+		if noise_sample == 'gpt':
+			if kargs.get("training_mode", "stop_gradient") == 'stop_gradient':
+				ebm_fake_features["input_ids"] = noise_dist_dict['fake_samples']
+				tf.logging.info("****** using samples stop gradient *******")
+			elif kargs.get("training_mode", "stop_gradient") == 'adv_gumbel':
+				ebm_fake_features["input_ids"] = noise_dist_dict['gumbel_probs']
+				tf.logging.info("****** using samples with gradient *******")
+			ebm_fake_features['input_mask'] = tf.cast(noise_dist_dict['fake_mask'], tf.int32)
+			ebm_fake_features['segment_ids'] = tf.zeros_like(ebm_fake_features['input_mask'])
+		elif noise_sample == 'mlm':
+			ebm_fake_features["input_ids"] = mlm_noise_dist_dict['sampled_ids']
+			ebm_fake_features['input_mask'] = tf.cast(features['input_mask'], tf.int32)
+			ebm_fake_features['segment_ids'] = tf.zeros_like(features['input_mask'])
+			tf.logging.info("****** using bert mlm stop gradient *******")
 
-		# fake_shape = bert_utils.get_shape_list(ebm_fake_features["input_ids"], expected_rank=[2,3])
-		# for key in features:
-		# 	if key in ['input_mask', 'segment_ids']:
-		# 		ebm_fake_features[key] = features[key][:, :fake_shape[1]]
-		ebm_fake_features['input_mask'] = tf.cast(noise_dist_dict['fake_mask'], tf.int32)
-		ebm_fake_features['segment_ids'] = tf.zeros_like(ebm_fake_features['input_mask'])
-
+		# second, get true ebm dict
+		true_ebm_dist_dict = ebm_dist_fn(ebm_true_features, labels, mode, params)
 		fake_ebm_dist_dict = ebm_dist_fn(ebm_fake_features, labels, mode, params)
-
-		# log(1/(1+exp(logp_n-logp_ebm)))
-		# for sigmoid simplicity, we just minus 
+		if not sample_noise_dist:
+			fake_noise_dist_dict = noise_dist_fn(ebm_fake_features, labels, mode, params)
+			noise_dist_dict['fake_logits'] = fake_noise_dist_dict['true_logits']
 
 		ebm_loss = get_ebm_loss(true_ebm_dist_dict['logits'], 
 								noise_dist_dict['true_logits'], 
@@ -230,7 +260,12 @@ def classifier_model_fn_builder(
 									noise_dist_dict['true_logits'], 
 									fake_ebm_dist_dict['logits'], 
 									noise_dist_dict['fake_logits'], 
-									noise_loss_type=kargs.get('noise_loss_type', 'jsd_noise'))
+									noise_loss_type=kargs.get('noise_loss_type', 'jsd_noise'),
+									num_train_steps=opt_config.num_train_steps,
+									num_warmup_steps=opt_config.num_warmup_steps,
+									use_tpu=kargs.get('use_tpu', False),
+									loss_mask=features['input_mask'],
+									prob_ln=noise_prob_ln)
 
 		model_io_fn = model_io.ModelIO(model_io_config)
 
@@ -247,13 +282,12 @@ def classifier_model_fn_builder(
 		ebm_opt_dict = {
 			"loss":ebm_loss,
 			"tvars":true_ebm_dist_dict['tvars'],
-			# "global_step":true_ebm_dist_dict['global_step'],
+			"logz_tvars":true_ebm_dist_dict['logz_tvars']
 		}
 
 		noise_opt_dict = {
 			"loss":noise_loss,
-			"tvars":noise_dist_dict['tvars'],
-			# "global_step":noise_dist_dict['global_step'],
+			"tvars":noise_dist_dict['tvars']
 		}
 
 		var_checkpoint_dict_list = []
@@ -261,7 +295,7 @@ def classifier_model_fn_builder(
 			if load_pretrained_dict[key] == "yes":
 				if key == 'ebm_dist':
 					tmp = {
-							"tvars":ebm_opt_dict['tvars'],
+							"tvars":ebm_opt_dict['tvars']+ebm_opt_dict['logz_tvars'],
 							"init_checkpoint":init_checkpoint_dict['ebm_dist'],
 							"exclude_scope":exclude_scope_dict[key],
 							"restore_var_name":model_config_dict['ebm_dist'].get('restore_var_name', [])
@@ -277,6 +311,17 @@ def classifier_model_fn_builder(
 							"restore_var_name":model_config_dict['noise_dist'].get('restore_var_name', [])
 					}
 					var_checkpoint_dict_list.append(tmp)
+				elif key == 'generator':
+					if not sample_noise_dist:
+						tmp = {
+								"tvars":mlm_noise_dist_dict['tvars'],
+								"init_checkpoint":init_checkpoint_dict['generator'],
+								"exclude_scope":exclude_scope_dict[key],
+								"restore_var_name":model_config_dict['generator'].get('restore_var_name', [])
+						}
+						if kargs.get("sharing_mode", "none") != "none":
+							tmp['exclude_scope'] = ''
+						var_checkpoint_dict_list.append(tmp)
 
 		use_tpu = 1 if kargs.get('use_tpu', False) else 0
 			
@@ -297,7 +342,7 @@ def classifier_model_fn_builder(
 										features['input_ori_ids'],
 										tf.cast(features['input_mask'], tf.float32),
 										noise_dist_dict["true_seq_logits"],
-										prob_ln=True,
+										prob_ln=noise_prob_ln,
 										)
 
 			if not kargs.get('use_tpu', False):

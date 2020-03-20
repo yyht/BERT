@@ -243,20 +243,31 @@ def emb_score(config, input_tensor, input_ids,
 			projection_width = config.get('embedding_size', config.hidden_size)
 			tf.logging.info("==using embedding factorized: embedding size: %s==", str(projection_width))
 
-		with tf.variable_scope("transform"):
-			input_tensor = tf.layers.dense(
-					input_tensor,
-					units=projection_width,
-					activation=bert_modules.get_activation(config.hidden_act),
-					kernel_initializer=bert_modules.create_initializer(
-							config.initializer_range))
+		if kargs.get("energy_pooling", "mi") == "mi":
+			with tf.variable_scope("transform"):
+				input_tensor = tf.layers.dense(
+						input_tensor,
+						units=projection_width,
+						activation=bert_modules.get_activation(config.hidden_act),
+						kernel_initializer=bert_modules.create_initializer(
+								config.initializer_range))
 
-			if config.get('ln_type', 'postln') == 'preln':
-				input_tensor = input_tensor
-			elif config.get('ln_type', 'postln') == 'postln':
-				input_tensor = bert_modules.layer_norm(input_tensor)
-			else:
-				input_tensor = bert_modules.layer_norm(input_tensor)
+				if config.get('ln_type', 'postln') == 'preln':
+					input_tensor = input_tensor
+				elif config.get('ln_type', 'postln') == 'postln':
+					input_tensor = bert_modules.layer_norm(input_tensor)
+				else:
+					input_tensor = bert_modules.layer_norm(input_tensor)
+			tf.logging.info("****** mi using mlm transform *******")
+		else:
+			with tf.variable_scope("transform_ebm"):
+				input_tensor = tf.layers.dense(
+				  input_tensor,
+				  units=projection_width,
+				  activation=tf.nn.tanh,
+				  kernel_initializer=bert_modules.create_initializer(
+					  config.initializer_range))
+			tf.logging.info("****** using other pooling transform *******")
 
 	# with tf.variable_scope("cls/predictions", reuse=tf.AUTO_REUSE):
 	if scope:
@@ -270,14 +281,42 @@ def emb_score(config, input_tensor, input_ids,
 
 	with tf.variable_scope(ebm_scope, reuse=tf.AUTO_REUSE):
 		# assume the whole model is self-normalization
-		normalized_constant = tf.get_variable(
-				"ebm_normalized_constant",
-				shape=[config.max_position_embeddings],
-				initializer=tf.ones_initializer())
+
+		if kargs.get("normalized_constant", "constant") == 'constant':
+			normalized_constant = tf.get_variable(
+					"ebm_normalized_constant",
+					shape=[config.max_position_embeddings],
+					initializer=tf.zeros_initializer())
+			tf.logging.info("****** cosntant logz *******")
+		elif kargs.get("normalized_constant", "length_linear") == 'length_linear':
+			normalized_constant = tf.get_variable(
+					"ebm_normalized_constant",
+					shape=[config.max_position_embeddings],
+					initializer=tf.constant_initializer(np.arange((config.max_position_embeddings))+1, tf.float32),
+					trainable=False)
+			scale_weights = tf.get_variable(
+					"ebm_normalized_constant_scale",
+					shape=[config.max_position_embeddings],
+					initializer=tf.constant_initializer(np.log(config.vocab_size)*np.ones((config.max_position_embeddings)), dtype=tf.float32),
+					trainable=True)
+			scale_bias = tf.get_variable(
+					"ebm_normalized_constant_bias",
+					shape=[config.max_position_embeddings],
+					initializer=tf.zeros_initializer(),
+					trainable=True)
+			tf.logging.info("****** length linear logz *******")
+			# normalized_constant = scale_bias + scale_weights * tf.pow(normalized_constant, 2)
 
 		valid_seq_length = tf.cast(tf.reduce_sum(input_mask, axis=-1), tf.int32) # batch_size
 		onehot_length_ids = tf.one_hot(valid_seq_length, config.max_position_embeddings)
-		input_normalized_constant = tf.einsum("ab,b->a", tf.cast(onehot_length_ids, tf.float32), normalized_constant)
+		
+		length_part = tf.einsum("ab,b->a", tf.cast(onehot_length_ids, tf.float32), normalized_constant)
+		length_scale_part = tf.einsum("ab,b->a", tf.cast(onehot_length_ids, tf.float32), scale_weights)
+		length_bias_part = tf.einsum("ab,b->a", tf.cast(onehot_length_ids, tf.float32), scale_bias)
+
+		input_normalized_constant = length_part*length_scale_part + length_bias_part
+
+		# input_normalized_constant = tf.einsum("ab,b->a", tf.cast(onehot_length_ids, tf.float32), normalized_constant)
 
 		# f_input_mask = tf.cast(tf.expand_dims(input_mask, axis=-1), tf.float32)
 
@@ -287,12 +326,18 @@ def emb_score(config, input_tensor, input_ids,
 			# we only calculate energy on a,b,c which <start> can't contribute to final 
 			# energy function
 			# batch x dim
-			pool_features = tf.einsum("abc,ab->ac", input_tensor, tf.cast(input_mask, tf.float32))
+			pool_features = tf.einsum("abc,ab->ac", input_tensor[:, 1:], tf.cast(input_mask[:, 1:], tf.float32))
+			pool_features /= (1e-10+tf.reduce_sum(tf.cast(input_mask[:, 1:], tf.float32), axis=1, keepdims=True))
 			# tf.reduce_sum(input_tensor*f_input_mask, axis=1) #/ (1e-10+tf.reduce_sum(f_input_mask, axis=1))
 
 			print(pool_features.get_shape(), "===pool_features shape===")
 		elif kargs.get("energy_pooling", "mi") == "mi":
 			tf.logging.info("==apply mi to get hidden states projections==")
+			# input_tensor_norm = tf.expand_dims(tf.sqrt(tf.reduce_sum(tf.pow(input_tensor, 2), axis=-1))+1e-20, axis=-1)
+			# input_tensor = input_tensor / tf.stop_gradient(input_tensor_norm)
+			# output_weights_norm = tf.expand_dims(tf.sqrt(tf.reduce_sum(tf.pow(output_weights, 2), axis=-1))+1e-20, axis=-1)
+			# output_weights = output_weights / tf.stop_gradient(output_weights_norm)
+			# we calculate cosine distance to make mi bounded by [-1, 1]
 			logits = tf.einsum("abc,dc->abd", input_tensor, output_weights) # batch x seq x vocab
 
 			input_id_shape = bert_utils.get_shape_list(input_ids, [2,3])
@@ -306,31 +351,67 @@ def emb_score(config, input_tensor, input_ids,
 
 			logits = tf.einsum("abd,abd->ab", logits, input_ori_ids)
 			print(logits.get_shape(), "==pooled logits shape==")
-			pool_features = tf.reduce_sum(logits*tf.cast(input_mask, tf.float32), axis=1) #/ (1e-10+tf.reduce_sum(f_input_mask, axis=1))
+			# with l2-normalize, we can bound logits to 1
+			pool_features = tf.reduce_sum(logits[:, 1:]*tf.cast(input_mask[:, 1:], tf.float32), axis=1) #/ (1e-10+tf.reduce_sum(tf.cast(input_mask[:, 1:], tf.float32), axis=1))
 			pool_features = tf.expand_dims(pool_features, axis=-1)
 			print(pool_features.get_shape(), "==pooled feature shape==")
-		# batch_size x hidden_dims
 
+			if kargs.get("softplus_features", False):
+				# when pooled_features is to infinite, it converges to 0
+				# when is to minus inifinite, it will converges to inifite
+				pool_features = tf.nn.softplus(-pool_features)
+				tf.logging.info("****** apply softplus transformation for pooled_features *******")
+
+		# batch_size x hidden_dims
 
 		if kargs.get('transform', True):
 
 			if kargs.get("transformer_activation", "none") == 'softplus':
-
+				with tf.variable_scope("transform"):
+					ebm_scalar = tf.layers.dense(
+							pool_features,
+							units=1,
+							use_bias=True,
+							activation=tf.nn.softplus # mask scalar to [0,inifite]
+							)
+				tf.logging.info("****** apply softplus *******")
+			elif kargs.get("transformer_activation", "none") == 'linear':
+				tf.logging.info("****** apply linear projection *******")
 				with tf.variable_scope("transform"):
 					ebm_scalar = tf.layers.dense(
 							pool_features,
 							units=1,
 							use_bias=False,
-							activation=tf.nn.softplus # mask scalar to [0,inifite]
+							activation=None # mask scalar to [0,inifite]
 							)
-				tf.logging.info("****** apply softplus *******")
 			else:
 				with tf.variable_scope("transform"):
-					ebm_scalar = tf.layers.dense(
+
+					feature_shape = bert_utils.get_shape_list(pool_features, expected_rank=[1,2])
+
+					pool_features = tf.layers.dense(
 							pool_features,
-							units=1,
-							use_bias=True
+							units=feature_shape[-1],
+							activation=tf.nn.relu,
 							)
+
+					output_weights = tf.get_variable(
+							"output_weights", [config.max_position_embeddings, feature_shape[-1]],
+							initializer=tf.truncated_normal_initializer(stddev=0.02))
+
+					output_bias = tf.get_variable(
+							"output_bias", [config.max_position_embeddings], 
+							initializer=tf.constant_initializer(-np.log(np.arange(config.max_position_embeddings).astype(np.float32)+1.0), dtype=tf.float32)
+							)
+				
+					# batch x max_position_embeddings
+					ebm_scalar_pos = tf.nn.relu(tf.matmul(pool_features, output_weights, transpose_b=True)) + output_bias
+					
+					pos_tensor = tf.cast(tf.reduce_sum(tf.cast(input_mask, tf.float32), axis=-1), tf.int32)
+					onehot_pos = tf.cast(tf.one_hot(tf.cast(pos_tensor, tf.int32), config.max_position_embeddings), tf.float32) # batch x seq x vocab
+					ebm_scalar = tf.einsum("ab,ab->a", ebm_scalar_pos, onehot_pos)
+					ebm_scalar = tf.expand_dims(ebm_scalar, axis=-1)
+
 				tf.logging.info("****** apply linear projection *******")
 			print("===ebm_scalar====", ebm_scalar.get_shape())
 
@@ -365,10 +446,23 @@ def emb_score(config, input_tensor, input_ids,
 
 		if kargs.get("logz_mode", "default") == 'default':
 			tf.logging.info("****** default logz *******")
-			logits = ebm_scalar - input_normalized_constant - tf.log(1e-10+tf.reduce_sum(tf.cast(input_mask, tf.float32), axis=-1))
+			logits = -ebm_scalar - input_normalized_constant - tf.log(1e-10+tf.reduce_sum(tf.cast(input_mask, tf.float32), axis=-1))
+		elif kargs.get("logz_mode", "default") == 'standard':
+			logits = ebm_scalar - input_normalized_constant
+			tf.logging.info("****** standard logz *******")
+		elif kargs.get("logz_mode", "default") == 'standard_minus':
+			tf.logging.info("****** minus standard logz *******")
+			logits = -ebm_scalar - input_normalized_constant
+		elif kargs.get("logz_mode", "default") == 'constant':
+			logits = -ebm_scalar - tf.log(1e-10+tf.reduce_sum(tf.cast(input_mask, tf.float32), axis=-1))
+			tf.logging.info("****** constant logz *******")
+		elif kargs.get("logz_mode", "self_normalizing") == 'self_normalizing':
+			logits = -ebm_scalar
+			tf.logging.info("****** self_normalizing *******")
 		else:
 			tf.logging.info("****** linear logz *******")
 			logits = ebm_scalar - input_normalized_constant * tf.reduce_sum(tf.cast(input_mask, tf.float32), axis=-1)
 		print("=ebm logits shape==", logits.get_shape())
+
 	return logits
 
