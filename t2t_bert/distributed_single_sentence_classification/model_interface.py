@@ -51,6 +51,7 @@ def model_zoo(model_config):
 		model_interface = electra_gumbel_albert_official_encoder
 	elif model_config.get("model_type", "bert_seq") == "bert_seq":
 		model_interface = bert_seq_decoder
+		tf.logging.info("****** bert seq encoder ******* ")
 	return model_interface
 
 def model_config_parser(FLAGS):

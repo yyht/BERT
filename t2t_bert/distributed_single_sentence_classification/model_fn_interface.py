@@ -75,4 +75,5 @@ def model_fn_interface(FLAGS):
 	elif FLAGS.task_type in ['bert_chid_crf']:
 		return chid_crf_model_fn_builder
 	elif FLAGS.task_type in ['bert_seq_lm']:
+		tf.logging.info("****** bert seq lm ******* ")
 		return bert_seq_model_fn_builder
