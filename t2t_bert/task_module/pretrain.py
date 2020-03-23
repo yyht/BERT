@@ -264,7 +264,7 @@ def emb_score(config, input_tensor, input_ids,
 				input_tensor = tf.layers.dense(
 				  input_tensor,
 				  units=projection_width,
-				  activation=tf.nn.tanh,
+				  activation=bert_modules.get_activation(config.hidden_act),
 				  kernel_initializer=bert_modules.create_initializer(
 					  config.initializer_range))
 			tf.logging.info("****** using other pooling transform *******")
@@ -282,12 +282,51 @@ def emb_score(config, input_tensor, input_ids,
 	with tf.variable_scope(ebm_scope, reuse=tf.AUTO_REUSE):
 		# assume the whole model is self-normalization
 
-		if kargs.get("normalized_constant", "constant") == 'constant':
+		if kargs.get("normalized_constant", "constant") == 'zero_constant':
 			normalized_constant = tf.get_variable(
 					"ebm_normalized_constant",
 					shape=[config.max_position_embeddings],
 					initializer=tf.zeros_initializer())
-			tf.logging.info("****** cosntant logz *******")
+
+			valid_seq_length = tf.cast(tf.reduce_sum(input_mask, axis=-1), tf.int32) # batch_size
+			onehot_length_ids = tf.one_hot(valid_seq_length, config.max_position_embeddings)
+
+			input_normalized_constant = tf.einsum("ab,b->a", tf.cast(onehot_length_ids, tf.float32), normalized_constant)
+
+			tf.logging.info("****** zero_constant logz *******")
+		elif kargs.get("normalized_constant", "constant") == 'one_constant':
+			normalized_constant = tf.get_variable(
+					"ebm_normalized_constant",
+					shape=[config.max_position_embeddings],
+					initializer=tf.ones_initializer())
+			tf.logging.info("****** one_constant logz *******")
+			valid_seq_length = tf.cast(tf.reduce_sum(input_mask, axis=-1), tf.int32) # batch_size
+			onehot_length_ids = tf.one_hot(valid_seq_length, config.max_position_embeddings)
+
+			input_normalized_constant = tf.einsum("ab,b->a", tf.cast(onehot_length_ids, tf.float32), normalized_constant)
+
+		elif kargs.get("normalized_constant", "constant") == 'constant_constant':
+			normalized_constant = tf.get_variable(
+					"ebm_normalized_constant",
+					shape=[config.max_position_embeddings],
+					initializer=tf.constant_initializer(np.ones((config.max_position_embeddings))*200.0, tf.float32))
+			tf.logging.info("****** one_constant logz *******")
+			valid_seq_length = tf.cast(tf.reduce_sum(input_mask, axis=-1), tf.int32) # batch_size
+			onehot_length_ids = tf.one_hot(valid_seq_length, config.max_position_embeddings)
+
+			input_normalized_constant = tf.einsum("ab,b->a", tf.cast(onehot_length_ids, tf.float32), normalized_constant)
+
+		elif kargs.get("normalized_constant", "constant") == 'log9_constant':
+			normalized_constant = tf.get_variable(
+					"ebm_normalized_constant",
+					shape=[config.max_position_embeddings],
+					initializer=tf.constant_initializer(np.ones((config.max_position_embeddings))*np.log(9.0), tf.float32))
+			tf.logging.info("****** one_constant logz *******")
+			valid_seq_length = tf.cast(tf.reduce_sum(input_mask, axis=-1), tf.int32) # batch_size
+			onehot_length_ids = tf.one_hot(valid_seq_length, config.max_position_embeddings)
+
+			input_normalized_constant = tf.einsum("ab,b->a", tf.cast(onehot_length_ids, tf.float32), normalized_constant)
+
 		elif kargs.get("normalized_constant", "length_linear") == 'length_linear':
 			normalized_constant = tf.get_variable(
 					"ebm_normalized_constant",
@@ -307,14 +346,14 @@ def emb_score(config, input_tensor, input_ids,
 			tf.logging.info("****** length linear logz *******")
 			# normalized_constant = scale_bias + scale_weights * tf.pow(normalized_constant, 2)
 
-		valid_seq_length = tf.cast(tf.reduce_sum(input_mask, axis=-1), tf.int32) # batch_size
-		onehot_length_ids = tf.one_hot(valid_seq_length, config.max_position_embeddings)
-		
-		length_part = tf.einsum("ab,b->a", tf.cast(onehot_length_ids, tf.float32), normalized_constant)
-		length_scale_part = tf.einsum("ab,b->a", tf.cast(onehot_length_ids, tf.float32), scale_weights)
-		length_bias_part = tf.einsum("ab,b->a", tf.cast(onehot_length_ids, tf.float32), scale_bias)
+			valid_seq_length = tf.cast(tf.reduce_sum(input_mask, axis=-1), tf.int32) # batch_size
+			onehot_length_ids = tf.one_hot(valid_seq_length, config.max_position_embeddings)
+			
+			length_part = tf.einsum("ab,b->a", tf.cast(onehot_length_ids, tf.float32), normalized_constant)
+			length_scale_part = tf.einsum("ab,b->a", tf.cast(onehot_length_ids, tf.float32), scale_weights)
+			length_bias_part = tf.einsum("ab,b->a", tf.cast(onehot_length_ids, tf.float32), scale_bias)
 
-		input_normalized_constant = length_part*length_scale_part + length_bias_part
+			input_normalized_constant = length_part*length_scale_part + length_bias_part
 
 		# input_normalized_constant = tf.einsum("ab,b->a", tf.cast(onehot_length_ids, tf.float32), normalized_constant)
 
@@ -459,6 +498,9 @@ def emb_score(config, input_tensor, input_ids,
 		elif kargs.get("logz_mode", "self_normalizing") == 'self_normalizing':
 			logits = -ebm_scalar
 			tf.logging.info("****** self_normalizing *******")
+		elif kargs.get("logz_mode", "none") == 'none':
+			logits = ebm_scalar
+			tf.logging.info("****** none logz *******")
 		else:
 			tf.logging.info("****** linear logz *******")
 			logits = ebm_scalar - input_normalized_constant * tf.reduce_sum(tf.cast(input_mask, tf.float32), axis=-1)

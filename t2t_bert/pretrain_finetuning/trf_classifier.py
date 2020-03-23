@@ -12,39 +12,42 @@ from metric import tf_metrics
 def get_ebm_loss(true_ebm_logits, true_noise_logits, 
 					fake_ebm_logits, fake_noise_logits, **kargs):
 
-	true_labels = tf.cast(tf.zeros_like(true_ebm_logits), tf.int32)
-	true_ebm_logits = tf.expand_dims(true_ebm_logits, axis=-1)
-	true_noise_logits = tf.expand_dims(true_noise_logits, axis=-1)
-	true_logits = tf.concat([true_ebm_logits, true_noise_logits], axis=-1)
+	# true_labels = tf.cast(tf.zeros_like(true_ebm_logits), tf.int32)
+	# true_ebm_logits = tf.expand_dims(true_ebm_logits, axis=-1)
+	# true_noise_logits = tf.expand_dims(true_noise_logits, axis=-1)
+	# true_logits = tf.concat([true_ebm_logits, true_noise_logits], axis=-1)
 
-	print(true_logits.get_shape(), "===true_logits logits shape==")
+	# print(true_logits.get_shape(), "===true_logits logits shape==")
 
-	fake_labels = tf.cast(tf.ones_like(fake_ebm_logits), tf.int32)
-	fake_ebm_logits = tf.expand_dims(fake_ebm_logits, axis=-1)
-	fake_noise_logits = tf.expand_dims(fake_noise_logits, axis=-1)
-	fake_logits = tf.concat([fake_ebm_logits, fake_noise_logits], axis=-1)
+	# fake_labels = tf.cast(tf.ones_like(fake_ebm_logits), tf.int32)
+	# fake_ebm_logits = tf.expand_dims(fake_ebm_logits, axis=-1)
+	# fake_noise_logits = tf.expand_dims(fake_noise_logits, axis=-1)
+	# fake_logits = tf.concat([fake_ebm_logits, fake_noise_logits], axis=-1)
 
-	print(fake_logits.get_shape(), "===fake_logits logits shape==")
+	# print(fake_logits.get_shape(), "===fake_logits logits shape==")
 
-	true_log_probs = tf.nn.log_softmax(true_logits, axis=-1) # batch x 2
-	one_hot_true_labels = tf.one_hot(true_labels, depth=2, dtype=tf.float32)
-	true_data_loss = -tf.reduce_sum(one_hot_true_labels * true_log_probs, axis=-1)
-	true_data_loss = tf.reduce_mean(true_data_loss)
+	# true_log_probs = tf.nn.log_softmax(true_logits, axis=-1) # batch x 2
+	# one_hot_true_labels = tf.one_hot(true_labels, depth=2, dtype=tf.float32)
+	# true_data_loss = -tf.reduce_sum(one_hot_true_labels * true_log_probs, axis=-1)
+	# true_data_loss = tf.reduce_mean(true_data_loss)
 
-	fake_log_probs = tf.nn.log_softmax(fake_logits, axis=-1) # batch x 2
-	one_hot_fake_labels = tf.one_hot(fake_labels, depth=2, dtype=tf.float32)
-	fake_data_loss = -tf.reduce_sum(one_hot_fake_labels * fake_log_probs, axis=-1)
-	fake_data_loss = tf.reduce_mean(fake_data_loss)
+	# fake_log_probs = tf.nn.log_softmax(fake_logits, axis=-1) # batch x 2
+	# one_hot_fake_labels = tf.one_hot(fake_labels, depth=2, dtype=tf.float32)
+	# fake_data_loss = -tf.reduce_sum(one_hot_fake_labels * fake_log_probs, axis=-1)
+	# fake_data_loss = tf.reduce_mean(fake_data_loss)
 
 	# print(true_ebm_logits.get_shape(), true_noise_logits.get_shape(), "=======ebm logits shape====")
 	# print(fake_ebm_logits.get_shape(), fake_noise_logits.get_shape(), "=======noise logits shape====")
 
-	# true_data_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
-	# 						logits=true_logits,
-	# 						labels=tf.ones_like(true_logits)))
-	# fake_data_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
-	# 						logits=fake_logits,
-	# 						labels=tf.zeros_like(fake_logits)))
+	true_logits = true_ebm_logits - true_noise_logits
+	fake_logits = fake_ebm_logits - fake_noise_logits
+
+	true_data_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
+							logits=true_logits,
+							labels=tf.ones_like(true_logits)))
+	fake_data_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
+							logits=fake_logits,
+							labels=tf.zeros_like(fake_logits)))
 
 	# use softplus to numerical stable
 	# true_data_loss = tf.reduce_mean(tf.nn.softplus(true_noise_logits-true_ebm_logits))

@@ -154,13 +154,13 @@ def classifier_model_fn_builder(
 					prob_ln=False,
 					transform=True,
 					transformer_activation="linear",
-					logz_mode='standard_minus',
-					normalized_constant="length_linear",
+					logz_mode='standard',
+					normalized_constant="log9_constant",
 					energy_pooling="mean_pooling",
 					softplus_features=False,
 					**kargs)
 
-		noise_prob_ln = False
+		noise_prob_ln = True
 		noise_sample = kargs.get("noise_sample", 'mlm')
 
 		if kargs.get("noise_sample", 'mlm') == 'gpt':
