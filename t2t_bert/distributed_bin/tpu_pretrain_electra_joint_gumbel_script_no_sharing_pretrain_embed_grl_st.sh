@@ -7,7 +7,7 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--max_length 512 \
 	--train_file "data_single_hard_gan/chunk_0.tfrecords,data_single_hard_gan/chunk_1.tfrecords,data_single_hard_gan/chunk_2.tfrecords,data_single_hard_gan/chunk_3.tfrecords,data_single_hard_gan/chunk_4.tfrecords,data_single_hard_gan/chunk_5.tfrecords,data_single_hard_gan/chunk_6.tfrecords,data_single_hard_gan/chunk_7.tfrecords,data_single_hard_gan/chunk_8.tfrecords,data_single_hard_gan/chunk_9.tfrecords,data_single_hard_gan/chunk_10.tfrecords,data_single_hard_gan/chunk_11.tfrecords,data_single_hard_gan/chunk_12.tfrecords,data_single_hard_gan/chunk_13.tfrecords,data_single_hard_gan/chunk_14.tfrecords,data_single_hard_gan/chunk_15.tfrecords,data_single_hard_gan/chunk_16.tfrecords,data_single_hard_gan/chunk_17.tfrecords" \
 	--dev_file "data_single_hard_gan/chunk_18.tfrecords,data_single_hard_gan/chunk_19.tfrecords" \
-	--model_output "model/grl/st/constant_0.01/electra_bert_tiny_gen_bert_tiny_official" \
+	--model_output "model/alternate/st/constant_0.01/electra_bert_tiny_gen_bert_tiny_official" \
 	--epoch 25 \
 	--num_classes 2 \
 	--train_size 11000000 \
@@ -26,7 +26,7 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--ln_type "postln" \
 	--warmup "warmup" \
 	--decay "decay" \
-	--init_lr 2e-4 \
+	--init_lr 5e-4 \
 	--do_train true \
 	--tpu_name "albert1" \
 	--num_tpu_cores 8 \
@@ -37,8 +37,8 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--electra_mode "gumbel_training" \
 	--sharing_mode "none" \
 	--train_op_type "alternate" \
-	--optimization_type "grl" \
+	--optimization_type "minmax" \
 	--gumbel_anneal "none" \
 	--minmax_mode "corrupted" \
-	--gen_disc_type "not_equal_disc_loss_all"
+	--gen_disc_type "all_disc"
 

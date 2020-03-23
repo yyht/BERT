@@ -7,7 +7,7 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--max_length 512 \
 	--train_file "english_corpus/pretrain_single_random_gan_uncased/chunk_0.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_1.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_2.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_3.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_4.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_5.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_6.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_7.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_8.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_9.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_10.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_11.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_12.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_13.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_14.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_15.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_16.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_17.tfrecords" \
 	--dev_file "english_corpus/pretrain_single_random_gan_uncased/chunk_18.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_19.tfrecords" \
-	--model_output "model/grl/st/constant_0.01/electra_bert_tiny_gen_bert_tiny_dis_joint_gumbel_sharing_pretrained_embedding_mixed_mask_english_uncased" \
+	--model_output "model/alternate/st/constant_0.01/electra_bert_tiny_gen_bert_tiny_official_uncased" \
 	--epoch 25 \
 	--num_classes 2 \
 	--train_size 11000000 \
@@ -28,17 +28,17 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--decay "decay" \
 	--init_lr 5e-4 \
 	--do_train true \
-	--tpu_name "albert3" \
+	--tpu_name "albert4" \
 	--num_tpu_cores 8 \
 	--mode 'electra' \
 	--multi_task_type "generator,discriminator" \
-	--multi_task_config "./t2t_bert/pretrain_finetuning/multi_model_gs_gumbel_scratch_tiny_uncased.json" \
+	--multi_task_config "./t2t_bert/pretrain_finetuning/multi_model_gs_gumbel_scratch_sharing_embedding_tiny_uncased.json" \
 	--joint_train "1" \
 	--electra_mode "gumbel_training" \
 	--sharing_mode "none" \
 	--train_op_type "alternate" \
-	--optimization_type "grl" \
+	--optimization_type "minmax" \
 	--gumbel_anneal "none" \
 	--minmax_mode "corrupted" \
-	--gen_disc_type "not_equal_disc_loss_all"
+	--gen_disc_type "all_disc"
 

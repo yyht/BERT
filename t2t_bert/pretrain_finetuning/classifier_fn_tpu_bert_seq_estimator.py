@@ -114,13 +114,13 @@ def classifier_model_fn_builder(
 		
 		# if mode == tf.estimator.ModeKeys.TRAIN:
 		sequence_mask = tf.to_float(tf.not_equal(features['input_ori_ids'][:, 1:], 
-													kargs.get('[PAD]', 0)))
+														kargs.get('[PAD]', 0)))
 
-		# batch x seq_length
+			# batch x seq_length
 		print(model.get_sequence_output_logits().get_shape(), "===logits shape===")
 		seq_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-					labels=features['input_ori_ids'][:, 1:], 
-					logits=model.get_sequence_output_logits()[:, :-1])
+						labels=features['input_ori_ids'][:, 1:], 
+						logits=model.get_sequence_output_logits()[:, :-1])
 
 		per_example_loss = tf.reduce_sum(seq_loss*sequence_mask, axis=-1) / (tf.reduce_sum(sequence_mask, axis=-1)+1e-10)
 		loss = tf.reduce_mean(per_example_loss)
