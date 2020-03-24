@@ -94,7 +94,7 @@ def model_fn_builder(
 									mask_method='only_mask',
 									use_tpu=kargs.get('use_tpu', True),
 									apply_valid_vocab=kargs.get('apply_valid_vocab', True),
-									invalid_size=kargs.get('invalid_size', 105))
+									invalid_size=kargs.get('invalid_size', 106))
 
 		model_io_fn = model_io.ModelIO(model_io_config)
 

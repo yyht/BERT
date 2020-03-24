@@ -348,18 +348,18 @@ def token_generator(config, input_tensor,
 		input_shape_list = bert_utils.get_shape_list(logits, expected_rank=3)
 		width = input_shape_list[2]
 
-		if kargs.get("apply_valid_vocab", False):
+		if not kargs.get("apply_valid_vocab", False):
 			logits = logits
 			tf.logging.info("****** normal logits *******")
 		else:
-			invalid_size = kargs.get("invalid_size", 105)
+			invalid_size = kargs.get("invalid_size", 106)
 			invalid_mask = tf.cast(tf.ones((1, invalid_size))*(-10000), tf.float32)
 			valid_mask = tf.cast(tf.zeros((1, config.vocab_size-invalid_size)), tf.float32)
 			invaild_mask = tf.concat([invalid_mask, valid_mask], axis=-1)
 			# 
 			invaild_mask = tf.expand_dims(invaild_mask, axis=-1)
 			logits += tf.cast(invaild_mask, tf.float32)
-			tf.logging.info("****** only valid logits *******")
+			tf.logging.info("****** only valid logits ******* , invalid size: %s", str(invalid_size))
 
 		logits_tempered = tf.nn.log_softmax(logits / config.get("temperature", 1.0))
 
