@@ -31,7 +31,7 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--tpu_name "albert3" \
 	--num_tpu_cores 8 \
 	--mode 'electra' \
-	--multi_task_type "ebm_dist,noise_dist" \
+	--multi_task_type "ebm_dist,noise_dist,generator" \
 	--multi_task_config "./t2t_bert/pretrain_finetuning/multi_model_gs_ebm_fce.json" \
 	--joint_train "1" \
 	--electra_mode "trf_fce" \
