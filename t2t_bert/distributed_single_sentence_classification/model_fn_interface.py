@@ -33,6 +33,8 @@ except:
 	from chid_nlpcc2019.model_fn_crf import model_fn_builder as chid_crf_model_fn_builder
 	from pretrain_finetuning.classifier_fn_tpu_bert_seq_estimator import classifier_model_fn_builder as bert_seq_model_fn_builder 
 
+import tensorflow as tf
+
 def model_fn_interface(FLAGS):
 	print("==apply {} {} model fn builder==".format(FLAGS.task_type, FLAGS.distillation))
 	if FLAGS.task_type in ["single_sentence_classification", "single_sentence_multilabel_classification"]:

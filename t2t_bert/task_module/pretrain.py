@@ -327,6 +327,17 @@ def emb_score(config, input_tensor, input_ids,
 
 			input_normalized_constant = tf.einsum("ab,b->a", tf.cast(onehot_length_ids, tf.float32), normalized_constant)
 
+		elif kargs.get("normalized_constant", "constant") == 'logv_constant':
+			normalized_constant = tf.get_variable(
+					"ebm_normalized_constant",
+					shape=[config.max_position_embeddings],
+					initializer=tf.constant_initializer(np.ones((config.max_position_embeddings))*np.log(config.vocab_size), tf.float32))
+			tf.logging.info("****** one_constant logz *******")
+			valid_seq_length = tf.cast(tf.reduce_sum(input_mask, axis=-1), tf.int32) # batch_size
+			onehot_length_ids = tf.one_hot(valid_seq_length, config.max_position_embeddings)
+
+			input_normalized_constant = tf.einsum("ab,b->a", tf.cast(onehot_length_ids, tf.float32), normalized_constant)
+
 		elif kargs.get("normalized_constant", "length_linear") == 'length_linear':
 			normalized_constant = tf.get_variable(
 					"ebm_normalized_constant",
@@ -420,7 +431,7 @@ def emb_score(config, input_tensor, input_ids,
 					ebm_scalar = tf.layers.dense(
 							pool_features,
 							units=1,
-							use_bias=False,
+							use_bias=True,
 							activation=None # mask scalar to [0,inifite]
 							)
 			else:
@@ -482,6 +493,10 @@ def emb_score(config, input_tensor, input_ids,
 		# log(exp(-E(x))/Z) = -E(x) - log(Z)
 		# here we use bert encoder of pooled hidden states as energy function which need to minus when apply to 
 		# actual energy function
+
+		if not kargs.get("use_tpu", False):
+			tf.summary.scalar('ebm_scalar', 
+							tf.reduce_mean(ebm_scalar))
 
 		if kargs.get("logz_mode", "default") == 'default':
 			tf.logging.info("****** default logz *******")

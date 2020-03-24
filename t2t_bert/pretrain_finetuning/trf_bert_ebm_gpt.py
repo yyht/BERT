@@ -66,9 +66,9 @@ def get_train_op(ebm_dist_dict, noise_dist_dict, optimizer_fn, opt_config,
 		loss_dict = OrderedDict(zip(['ebm', 'noise', 'ebm_logz'], [ebm_dist_loss, noise_dist_loss, ebm_dist_loss]))
 		tvars_dict = OrderedDict(zip(['ebm', 'noise', 'ebm_logz'], [ebm_dist_dict['tvars'], noise_dist_dict['tvars'], ebm_dist_dict['logz_tvars']]))
 		init_lr_dict = OrderedDict(zip(['ebm', 'noise', 'ebm_logz'], [ebm_dist_config['init_lr'], noise_dist_config['init_lr'], ebm_dist_config['init_lr']]))
-		optimizer_type_dict = OrderedDict(zip(['ebm', 'noise', 'ebm_logz'], [ebm_dist_config['optimizer_type'], noise_dist_config['optimizer_type'], 'adam']))
+		optimizer_type_dict = OrderedDict(zip(['ebm', 'noise', 'ebm_logz'], [ebm_dist_config['optimizer_type'], noise_dist_config['optimizer_type'], ebm_dist_config['optimizer_type']]))
 		loop_step_dict = OrderedDict(zip(['ebm', 'noise', 'ebm_logz'], [ebm_dist_config.get("steps", 1), noise_dist_config.get('steps', 1), 1]))
-		if_grad_clip_dict = OrderedDict(zip(['ebm', 'noise', 'ebm_logz'], [True, True, False]))
+		if_grad_clip_dict = OrderedDict(zip(['ebm', 'noise', 'ebm_logz'], [True, True, True]))
 		# global_step_dict = OrderedDict(zip(['ebm', 'noise'], [ebm_dist_dict['global_step'], noise_dist_dict['global_step']]))
 		print(loss_dict, '===loss dict=====')
 		if kargs.get('train_op_type', 'joint') == 'alternate':
@@ -152,15 +152,15 @@ def classifier_model_fn_builder(
 					not_storage_params=not_storage_params_dict.get('ebm_dist', []),
 					target=target_dict['ebm_dist'],
 					prob_ln=False,
-					transform=True,
+					transform=False,
 					transformer_activation="linear",
 					logz_mode='standard',
-					normalized_constant="log9_constant",
-					energy_pooling="mean_pooling",
+					normalized_constant="length_linear",
+					energy_pooling="mi",
 					softplus_features=False,
 					**kargs)
 
-		noise_prob_ln = True
+		noise_prob_ln = False
 		noise_sample = kargs.get("noise_sample", 'mlm')
 
 		if kargs.get("noise_sample", 'mlm') == 'gpt':
