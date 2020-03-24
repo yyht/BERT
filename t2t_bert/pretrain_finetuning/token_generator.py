@@ -357,7 +357,7 @@ def token_generator(config, input_tensor,
 			valid_mask = tf.cast(tf.zeros((1, config.vocab_size-invalid_size)), tf.float32)
 			invaild_mask = tf.concat([invalid_mask, valid_mask], axis=-1)
 			# 
-			invaild_mask = tf.expand_dims(invaild_mask, axis=-1)
+			invaild_mask = tf.expand_dims(invaild_mask, axis=1) # batch x seq x vocab
 			logits += tf.cast(invaild_mask, tf.float32)
 			tf.logging.info("****** only valid logits ******* , invalid size: %s", str(invalid_size))
 
