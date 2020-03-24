@@ -216,7 +216,7 @@
 		"data_type":"sentence_pair",
 		"model_type":"bert",
 		"model_scope":"bert",
-		"config_file":"./data/electra_share_embedding/generator/electra_config_tiny.json",
+		"config_file":"./data/electra_share_embedding/generator/bert_config_tiny.json",
 		"target":"",
 		"not_storage_params":[],
 		"exclude_scope":"generator",
