@@ -76,15 +76,15 @@ def classifier(config, seq_output,
 	# output_bias = tf.get_variable(
 	# 		"output_bias", [num_labels], initializer=tf.zeros_initializer())
 
-	if config.get('ln_type', 'postln') == 'preln':
-		output_layer = albert_modules.layer_norm(output_layer)
-		print('====preln transformer====')
-	elif config.get('ln_type', 'postln') == 'postln':
-		output_layer = output_layer
-		print('====postln transformer====')
-	else:
-		output_layer = output_layer
-		print('====no layer layer_norm====')
+	# if config.get('ln_type', 'postln') == 'preln':
+	# 	output_layer = albert_modules.layer_norm(output_layer)
+	# 	print('====preln transformer====')
+	# elif config.get('ln_type', 'postln') == 'postln':
+	# 	output_layer = output_layer
+	# 	print('====postln transformer====')
+	# else:
+	# 	output_layer = output_layer
+	# 	print('====no layer layer_norm====')
 
 	# output_layer = tf.nn.dropout(output_layer, keep_prob=1 - dropout_prob)
 

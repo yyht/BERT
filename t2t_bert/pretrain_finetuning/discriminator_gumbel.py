@@ -73,7 +73,7 @@ def model_fn_builder(
 										features['next_sentence_labels'],
 										reuse=tf.AUTO_REUSE)
 
-		with tf.variable_scope('cls/seq_predictions', reuse=tf.AUTO_REUSE):
+		with tf.variable_scope('discriminator_predictions', reuse=tf.AUTO_REUSE):
 			(disc_loss, 
 			logits, 
 			per_example_loss) = classifier(model_config, 
@@ -107,7 +107,7 @@ def model_fn_builder(
 
 		pretrained_tvars = model_io_fn.get_params(model_config.scope, 
 										not_storage_params=not_storage_params)
-		lm_seq_prediction_tvars = model_io_fn.get_params("cls/seq_predictions", 
+		lm_seq_prediction_tvars = model_io_fn.get_params("discriminator_predictions", 
 									not_storage_params=not_storage_params)
 		lm_pretrain_tvars = model_io_fn.get_params("cls/seq_relationship", 
 									not_storage_params=not_storage_params)
