@@ -72,8 +72,8 @@ def model_fn_builder(
 									features['input_mask'],
 									[tf.cast(tf.constant(hmm_tran_prob), tf.float32) for hmm_tran_prob in hmm_tran_prob_list],
 									mask_probability=0.3,
-									replace_probability=0.1,
-									original_probability=0.1,
+									replace_probability=0.0,
+									original_probability=0.0,
 									mask_prior=tf.constant(mask_prior, tf.float32),
 									**kargs)
 

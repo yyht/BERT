@@ -91,9 +91,11 @@ def get_noise_loss(true_ebm_logits, true_noise_logits,
 	prob_ln = kargs.get('prob_ln', False)
 	if loss_mask is not None and not prob_ln:
 		tf.logging.info("====apply length normalization for noise kl-divergence ====")
-		true_noise_logits = true_noise_logits / (tf.reduce_sum(tf.cast(loss_mask, tf.float32), axis=-1)+1e-10)
+		kl_true_noise_logits = true_noise_logits / (tf.reduce_sum(tf.cast(loss_mask, tf.float32), axis=-1)+1e-10)
+	else:
+		kl_true_noise_logits = true_noise_logits
 
-	kl_noise_loss = -tf.reduce_mean(true_noise_logits)
+	kl_noise_loss = -tf.reduce_mean(kl_true_noise_logits)
 
 	true_noise_logits = tf.expand_dims(true_noise_logits, axis=-1)
 	true_ebm_logits = tf.expand_dims(true_ebm_logits, axis=-1)
@@ -101,15 +103,21 @@ def get_noise_loss(true_ebm_logits, true_noise_logits,
 	true_logits = tf.concat([true_ebm_logits, true_noise_logits], axis=-1)
 	first_term = -(tf.reduce_logsumexp(true_logits, axis=-1)-tf.log(2.0))
 
-	fake_labels = tf.cast(tf.ones_like(fake_ebm_logits), tf.int32)
-	fake_ebm_logits = tf.expand_dims(fake_ebm_logits, axis=-1)
-	fake_noise_logits = tf.expand_dims(fake_noise_logits, axis=-1)
-	fake_logits = tf.concat([fake_ebm_logits, fake_noise_logits], axis=-1)
+	fake_logits = fake_ebm_logits - fake_noise_logits
+	fake_data_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
+							logits=fake_logits,
+							labels=tf.zeros_like(fake_logits)))
+	second_term = tf.log(2.0) - fake_data_loss
 
-	fake_log_probs = tf.nn.log_softmax(fake_logits, axis=-1) # batch x 2
-	one_hot_fake_labels = tf.one_hot(fake_labels, depth=2, dtype=tf.float32)
-	fake_data_loss = tf.reduce_sum(one_hot_fake_labels * fake_log_probs, axis=-1)
-	second_term = tf.reduce_mean(fake_data_loss) + tf.log(2.0)
+	# fake_labels = tf.cast(tf.ones_like(fake_ebm_logits), tf.int32)
+	# fake_ebm_logits = tf.expand_dims(fake_ebm_logits, axis=-1)
+	# fake_noise_logits = tf.expand_dims(fake_noise_logits, axis=-1)
+	# fake_logits = tf.concat([fake_ebm_logits, fake_noise_logits], axis=-1)
+
+	# fake_log_probs = tf.nn.log_softmax(fake_logits, axis=-1) # batch x 2
+	# one_hot_fake_labels = tf.one_hot(fake_labels, depth=2, dtype=tf.float32)
+	# fake_data_loss = tf.reduce_sum(one_hot_fake_labels * fake_log_probs, axis=-1)
+	# second_term = tf.reduce_mean(fake_data_loss) + tf.log(2.0)
 
 	# true_data_jsd = tf.reduce_mean(tf.nn.softplus(true_noise_logits-true_ebm_logits))
 	# fake_data_jsd = tf.reduce_mean(tf.nn.softplus(fake_ebm_logits-fake_noise_logits))
@@ -133,6 +141,7 @@ def get_noise_loss(true_ebm_logits, true_noise_logits,
 						noise_ratio)
 
 	noise_loss = noise_ratio * kl_noise_loss + (1-noise_ratio) * jsd_noise_loss
+	# noise_loss = kl_noise_loss
 	return noise_loss
 	
 def ebm_noise_train_metric(true_ebm_logits, true_noise_logits, 
