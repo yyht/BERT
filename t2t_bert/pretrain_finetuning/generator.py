@@ -47,7 +47,7 @@ def model_fn_builder(
 	ngram_list = kargs.get("ngram", [10, 3])
 	mask_prob_list = kargs.get("mask_prob", [0.2, 0.2])
 	ngram_ratio = kargs.get("ngram_ratio", [8, 1])
-	uniform_ratio = kargs.get("uniform_ratio", 0.1)
+	uniform_ratio = kargs.get("uniform_ratio", 1.0)
 	tf.logging.info("****** dynamic ngram: %s, mask_prob: %s, mask_prior: %s, uniform_ratio: %s *******", 
 			str(ngram_list), str(mask_prob_list), str(ngram_ratio), str(uniform_ratio))	
 	tran_prob_list, hmm_tran_prob_list = [], []
@@ -86,8 +86,8 @@ def model_fn_builder(
 											features['input_mask'],
 											[tf.cast(tf.constant(hmm_tran_prob), tf.float32) for hmm_tran_prob in hmm_tran_prob_list],
 											mask_probability=0.2,
-											replace_probability=0.1,
-											original_probability=0.1,
+											replace_probability=0.0,
+											original_probability=0.0,
 											mask_prior=tf.constant(mask_prior, tf.float32),
 											**kargs)
 
