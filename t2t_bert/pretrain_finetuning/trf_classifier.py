@@ -97,17 +97,21 @@ def get_noise_loss(true_ebm_logits, true_noise_logits,
 
 	kl_noise_loss = -tf.reduce_mean(kl_true_noise_logits)
 
-	true_noise_logits = tf.expand_dims(true_noise_logits, axis=-1)
-	true_ebm_logits = tf.expand_dims(true_ebm_logits, axis=-1)
+	# first_term = kl_noise_loss
+	# # true_ebm_logits /= (tf.reduce_sum(tf.cast(loss_mask, tf.float32), axis=-1)+1e-10)
+	# # true_noise_logits /= (tf.reduce_sum(tf.cast(loss_mask, tf.float32), axis=-1)+1e-10)
 
-	true_logits = tf.concat([true_ebm_logits, true_noise_logits], axis=-1)
-	first_term = -(tf.reduce_logsumexp(true_logits, axis=-1)-tf.log(2.0))
+	# # true_noise_logits = tf.expand_dims(true_noise_logits, axis=-1)
+	# # true_ebm_logits = tf.expand_dims(true_ebm_logits, axis=-1)
 
-	fake_logits = fake_ebm_logits - fake_noise_logits
-	fake_data_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
-							logits=fake_logits,
-							labels=tf.zeros_like(fake_logits)))
-	second_term = tf.log(2.0) - fake_data_loss
+	# # true_logits = tf.concat([true_ebm_logits, true_noise_logits], axis=-1)
+	# # first_term = -(tf.reduce_logsumexp(true_logits, axis=-1)-tf.log(2.0))
+
+	# fake_logits = fake_ebm_logits - fake_noise_logits
+	# fake_data_loss = tf.nn.sigmoid_cross_entropy_with_logits(
+	# 						logits=fake_logits,
+	# 						labels=tf.zeros_like(fake_logits))
+	# second_term = -fake_data_loss
 
 	# fake_labels = tf.cast(tf.ones_like(fake_ebm_logits), tf.int32)
 	# fake_ebm_logits = tf.expand_dims(fake_ebm_logits, axis=-1)
@@ -131,17 +135,21 @@ def get_noise_loss(true_ebm_logits, true_noise_logits,
 	# first_term = -(true_ebm_logits + true_data_jsd-tf.log(2.0))
 	# second_term = -fake_data_jsd+tf.log(2.0)
 
-	jsd_noise_loss = tf.reduce_mean(first_term+second_term)
-	if not kargs.get('use_tpu', True):
-		tf.summary.scalar('kl_loss', 
-						kl_noise_loss)
-		tf.summary.scalar('jsd_loss', 
-						jsd_noise_loss)
-		tf.summary.scalar('noise_ratio', 
-						noise_ratio)
+	# jsd_noise_loss = tf.reduce_mean(first_term+second_term)
+	# if not kargs.get('use_tpu', True):
+	# 	tf.summary.scalar('kl_loss', 
+	# 					kl_noise_loss)
+	# 	tf.summary.scalar('jsd_loss', 
+	# 					jsd_noise_loss)
+	# 	tf.summary.scalar('noise_ratio', 
+	# 					noise_ratio)
+	# 	tf.summary.scalar('jsd_loss_first_term', 
+	# 					tf.reduce_mean(first_term))
+	# 	tf.summary.scalar('jsd_loss_second_term', 
+	# 					tf.reduce_mean(second_term))
 
-	noise_loss = noise_ratio * kl_noise_loss + (1-noise_ratio) * jsd_noise_loss
-	# noise_loss = kl_noise_loss
+	# noise_loss = noise_ratio * kl_noise_loss + (1-noise_ratio) * jsd_noise_loss
+	noise_loss = kl_noise_loss
 	return noise_loss
 	
 def ebm_noise_train_metric(true_ebm_logits, true_noise_logits, 

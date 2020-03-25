@@ -124,6 +124,16 @@ def token_seq_truncted(token_seq, finished_index, max_length):
 				
 	return tf.cast(token_seq, tf.int32)
 
+def mixed_sample(features, mix_ratio=0.2):
+	shape = bert_utils.get_shape_list(features['input_mask'], expected_rank=[2,3])
+	sample_probs = tf.ones((shape[0]))
+	sample_probs = mix_ratio * tf.cast(sample_probs, tf.float32) #+ 0.8 * tf.cast(must_have_one, tf.float32) # mask 15% token
+
+	noise_dist = tf.distributions.Bernoulli(probs=sample_probs, dtype=tf.float32)
+	mixed_mask = noise_dist.sample()
+	mixed_mask = tf.cast(mixed_mask, tf.float32)
+	return mixed_mask
+
 def classifier_model_fn_builder(
 						model_config_dict,
 						num_labels_dict,
@@ -202,20 +212,44 @@ def classifier_model_fn_builder(
 						exclude_scope=exclude_scope_dict.get('generator', ""),
 						not_storage_params=not_storage_params_dict.get('generator', []),
 						target=target_dict['generator'],
+						mask_probability=0.3,
+						replace_probability=0.0,
+						original_probability=0.0,
 						**kargs)
 		else:
 			mlm_noise_dist_fn = None
 
-		ebm_true_features = {}
-		noise_true_features = {}
-		
+		true_features = {}
+
 		for key in features:
 			if key == 'input_ori_ids':
-				ebm_true_features["input_ids"] = features['input_ori_ids']
-				noise_true_features["input_ids"] = features['input_ori_ids']
+				true_features["input_ids"] = tf.cast(features['input_ori_ids'], tf.int32)
 			if key in ['input_mask', 'segment_ids']:
-				ebm_true_features[key] = features[key]
-				noise_true_features[key] = features[key]
+				true_features[key] = tf.cast(features[key], tf.int32)
+
+		if kargs.get("dnce", True):
+
+			mlm_noise_noise_dist_fn = mlm_noise_dist(model_config_dict['generator'],
+						num_labels_dict['generator'],
+						init_checkpoint_dict['generator'],
+						model_reuse=None,
+						load_pretrained=load_pretrained_dict['generator'],
+						model_io_config=model_io_config,
+						opt_config=opt_config,
+						exclude_scope=exclude_scope_dict.get('generator', ""),
+						not_storage_params=not_storage_params_dict.get('generator', []),
+						target=target_dict['generator'],
+						mask_probability=0.1,
+						replace_probability=0.0,
+						original_probability=0.0,
+						**kargs)
+
+			mlm_noise_dist_dict_noise = mlm_noise_noise_dist_fn(features, labels, mode, params)
+			mixed_mask = mixed_sample(features, mix_ratio=0.2)
+			tf.logging.info("****** apply dnce *******")
+			mixed_mask = tf.expand_dims(mixed_mask, axis=-1) # batch_size x 1
+			mixed_mask = tf.cast(mixed_mask, tf.int32)
+			true_features["input_ids"] = (1-mixed_mask)*true_features["input_ids"] + mixed_mask * mlm_noise_dist_dict_noise['sampled_ids']
 
 		if not sample_noise_dist:
 			mlm_noise_dist_dict = mlm_noise_dist_fn(features, labels, mode, params)
@@ -223,31 +257,31 @@ def classifier_model_fn_builder(
 			mlm_noise_dist_dict = None
 
 		# first get noise dict
-		noise_dist_dict = noise_dist_fn(noise_true_features, labels, mode, params)
+		noise_dist_dict = noise_dist_fn(true_features, labels, mode, params)
 
 		# third, get fake ebm dict
-		ebm_fake_features = {}
+		fake_features = {}
 
 		if noise_sample == 'gpt':
 			if kargs.get("training_mode", "stop_gradient") == 'stop_gradient':
-				ebm_fake_features["input_ids"] = noise_dist_dict['fake_samples']
+				fake_features["input_ids"] = noise_dist_dict['fake_samples']
 				tf.logging.info("****** using samples stop gradient *******")
 			elif kargs.get("training_mode", "stop_gradient") == 'adv_gumbel':
-				ebm_fake_features["input_ids"] = noise_dist_dict['gumbel_probs']
+				fake_features["input_ids"] = noise_dist_dict['gumbel_probs']
 				tf.logging.info("****** using samples with gradient *******")
-			ebm_fake_features['input_mask'] = tf.cast(noise_dist_dict['fake_mask'], tf.int32)
-			ebm_fake_features['segment_ids'] = tf.zeros_like(ebm_fake_features['input_mask'])
+			fake_features['input_mask'] = tf.cast(noise_dist_dict['fake_mask'], tf.int32)
+			fake_features['segment_ids'] = tf.zeros_like(fake_features['input_mask'])
 		elif noise_sample == 'mlm':
-			ebm_fake_features["input_ids"] = mlm_noise_dist_dict['sampled_ids']
-			ebm_fake_features['input_mask'] = tf.cast(features['input_mask'], tf.int32)
-			ebm_fake_features['segment_ids'] = tf.zeros_like(features['input_mask'])
+			fake_features["input_ids"] = mlm_noise_dist_dict['sampled_ids']
+			fake_features['input_mask'] = tf.cast(features['input_mask'], tf.int32)
+			fake_features['segment_ids'] = tf.zeros_like(features['input_mask'])
 			tf.logging.info("****** using bert mlm stop gradient *******")
 
 		# second, get true ebm dict
-		true_ebm_dist_dict = ebm_dist_fn(ebm_true_features, labels, mode, params)
-		fake_ebm_dist_dict = ebm_dist_fn(ebm_fake_features, labels, mode, params)
+		true_ebm_dist_dict = ebm_dist_fn(true_features, labels, mode, params)
+		fake_ebm_dist_dict = ebm_dist_fn(fake_features, labels, mode, params)
 		if not sample_noise_dist:
-			fake_noise_dist_dict = noise_dist_fn(ebm_fake_features, labels, mode, params)
+			fake_noise_dist_dict = noise_dist_fn(fake_features, labels, mode, params)
 			noise_dist_dict['fake_logits'] = fake_noise_dist_dict['true_logits']
 
 		ebm_loss = get_ebm_loss(true_ebm_dist_dict['logits'], 
