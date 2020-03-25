@@ -212,7 +212,7 @@ def classifier_model_fn_builder(
 						exclude_scope=exclude_scope_dict.get('generator', ""),
 						not_storage_params=not_storage_params_dict.get('generator', []),
 						target=target_dict['generator'],
-						mask_probability=0.3,
+						mask_probability=0.15,
 						replace_probability=0.0,
 						original_probability=0.0,
 						**kargs)
@@ -229,6 +229,20 @@ def classifier_model_fn_builder(
 
 		if kargs.get("dnce", True):
 
+			if kargs.get("anneal_dnce", False):
+				global_step = tf.train.get_or_create_global_step()
+				noise_sample_ratio = tf.train.polynomial_decay(
+														0.10,
+														global_step,
+														opt_config.num_train_steps,
+														end_learning_rate=0.05,
+														power=1.0,
+														cycle=False)
+				tf.logging.info("****** anneal dnce mix ratio *******")
+			else:
+				noise_sample_ratio = 0.10
+				tf.logging.info("****** not anneal dnce mix ratio *******")
+
 			mlm_noise_noise_dist_fn = mlm_noise_dist(model_config_dict['generator'],
 						num_labels_dict['generator'],
 						init_checkpoint_dict['generator'],
@@ -239,13 +253,14 @@ def classifier_model_fn_builder(
 						exclude_scope=exclude_scope_dict.get('generator', ""),
 						not_storage_params=not_storage_params_dict.get('generator', []),
 						target=target_dict['generator'],
-						mask_probability=0.1,
+						mask_probability=noise_sample_ratio,
 						replace_probability=0.0,
 						original_probability=0.0,
 						**kargs)
 
 			mlm_noise_dist_dict_noise = mlm_noise_noise_dist_fn(features, labels, mode, params)
-			mixed_mask = mixed_sample(features, mix_ratio=0.2)
+
+			mixed_mask = mixed_sample(features, mix_ratio=noise_sample_ratio)
 			tf.logging.info("****** apply dnce *******")
 			mixed_mask = tf.expand_dims(mixed_mask, axis=-1) # batch_size x 1
 			mixed_mask = tf.cast(mixed_mask, tf.int32)
