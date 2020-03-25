@@ -227,7 +227,7 @@ def classifier_model_fn_builder(
 			if key in ['input_mask', 'segment_ids']:
 				true_features[key] = tf.cast(features[key], tf.int32)
 
-		if kargs.get("dnce", True):
+		if kargs.get("dnce", False):
 
 			if kargs.get("anneal_dnce", False):
 				global_step = tf.train.get_or_create_global_step()
