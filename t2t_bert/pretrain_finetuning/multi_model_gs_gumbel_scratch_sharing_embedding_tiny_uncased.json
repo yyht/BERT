@@ -22,7 +22,7 @@
 		"vocab_file":"./data/chinese_L-12_H-768_A-12/vocab.txt",
 		"do_lower_case":true,
 		"ln_type":"postln",
-		"init_lr":2e-4,
+		"init_lr":5e-4,
 		"optimizer_type":"adam_decay",
 		"steps":1
 	},
@@ -180,7 +180,7 @@
 		"vocab_file":"./data/chinese_L-12_H-768_A-12/vocab.txt",
 		"do_lower_case":true,
 		"ln_type":"postln",
-		"init_lr":2e-4,
+		"init_lr":5e-4,
 		"optimizer_type":"adam_decay",
 		"steps":1
 	},

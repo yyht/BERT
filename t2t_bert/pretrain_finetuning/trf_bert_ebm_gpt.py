@@ -68,7 +68,7 @@ def get_train_op(ebm_dist_dict, noise_dist_dict, optimizer_fn, opt_config,
 		init_lr_dict = OrderedDict(zip(['ebm', 'noise', 'ebm_logz'], [ebm_dist_config['init_lr'], noise_dist_config['init_lr'], ebm_dist_config['init_lr']]))
 		optimizer_type_dict = OrderedDict(zip(['ebm', 'noise', 'ebm_logz'], [ebm_dist_config['optimizer_type'], noise_dist_config['optimizer_type'], ebm_dist_config['optimizer_type']]))
 		loop_step_dict = OrderedDict(zip(['ebm', 'noise', 'ebm_logz'], [ebm_dist_config.get("steps", 1), noise_dist_config.get('steps', 1), 1]))
-		if_grad_clip_dict = OrderedDict(zip(['ebm', 'noise', 'ebm_logz'], [True, True, True]))
+		if_grad_clip_dict = OrderedDict(zip(['ebm', 'noise', 'ebm_logz'], [True, True, False]))
 		# global_step_dict = OrderedDict(zip(['ebm', 'noise'], [ebm_dist_dict['global_step'], noise_dist_dict['global_step']]))
 		print(loss_dict, '===loss dict=====')
 		if kargs.get('train_op_type', 'joint') == 'alternate':

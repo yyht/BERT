@@ -360,7 +360,7 @@ class Optimizer(object):
 				loop_step_dict[key] = 1
 
 		if_grad_clip_dict = kargs.get('if_grad_clip_dict', None)
-		if not loop_step_dict:
+		if not if_grad_clip_dict:
 			if_grad_clip_dict = {}
 			for key in loss_dict:
 				if_grad_clip_dict[key] = True
