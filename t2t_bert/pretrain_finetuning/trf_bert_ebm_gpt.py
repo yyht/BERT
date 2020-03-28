@@ -202,6 +202,16 @@ def classifier_model_fn_builder(
 
 		if not sample_noise_dist:
 			tf.logging.info("****** using bert mlm for noise dist sample *******")
+
+			global_step = tf.train.get_or_create_global_step()
+			noise_sample_ratio = tf.train.polynomial_decay(
+													0.20,
+													global_step,
+													opt_config.num_train_steps,
+													end_learning_rate=0.1,
+													power=1.0,
+													cycle=False)
+
 			mlm_noise_dist_fn = mlm_noise_dist(model_config_dict['generator'],
 						num_labels_dict['generator'],
 						init_checkpoint_dict['generator'],
@@ -212,7 +222,7 @@ def classifier_model_fn_builder(
 						exclude_scope=exclude_scope_dict.get('generator', ""),
 						not_storage_params=not_storage_params_dict.get('generator', []),
 						target=target_dict['generator'],
-						mask_probability=0.20,
+						mask_probability=noise_sample_ratio,
 						replace_probability=0.0,
 						original_probability=0.0,
 						**kargs)
