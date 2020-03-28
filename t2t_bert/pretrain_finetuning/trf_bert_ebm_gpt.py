@@ -64,11 +64,11 @@ def get_train_op(ebm_dist_dict, noise_dist_dict, optimizer_fn, opt_config,
 				optimizer_fn.gradient_norm_summary(noise_dist_dict['loss'], noise_dist_dict['tvars'], debug_grad_name="noise_grad_norm")
 
 		loss_dict = OrderedDict(zip(['ebm', 'noise', 'ebm_logz'], [ebm_dist_loss, noise_dist_loss, ebm_dist_loss]))
-		tvars_dict = OrderedDict(zip(['ebm', 'noise', 'ebm_logz'], [ebm_dist_dict['tvars'], noise_dist_dict['tvars'], ebm_dist_dict['logz_tvars']]))
-		init_lr_dict = OrderedDict(zip(['ebm', 'noise', 'ebm_logz'], [ebm_dist_config['init_lr'], noise_dist_config['init_lr'], ebm_dist_config['init_lr']]))
-		optimizer_type_dict = OrderedDict(zip(['ebm', 'noise', 'ebm_logz'], [ebm_dist_config['optimizer_type'], noise_dist_config['optimizer_type'], ebm_dist_config['optimizer_type']]))
-		loop_step_dict = OrderedDict(zip(['ebm', 'noise', 'ebm_logz'], [ebm_dist_config.get("steps", 1), noise_dist_config.get('steps', 1), 1]))
-		if_grad_clip_dict = OrderedDict(zip(['ebm', 'noise', 'ebm_logz'], [True, True, False]))
+		tvars_dict = OrderedDict(zip(['ebm', 'noise', 'ebm_logz'], [ebm_dist_dict['tvars'], noise_dist_dict['tvars'], ebm_dist_dict['logz_tvars']])
+		init_lr_dict = OrderedDict(zip(['ebm', 'noise', 'ebm_logz'], [ebm_dist_config['init_lr'], noise_dist_config['init_lr'], ebm_dist_config.get('logz_init_lr', ebm_dist_config['init_lr'])]))
+		optimizer_type_dict = OrderedDict(zip(['ebm', 'noise', 'ebm_logz'], [ebm_dist_config['optimizer_type'], noise_dist_config['optimizer_type'], ebm_dist_config['logz_optimizer_type']]))
+		loop_step_dict = OrderedDict(zip(['ebm', 'noise', 'ebm_logz'], [ebm_dist_config.get("steps", 1), noise_dist_config.get('steps', 1), ebm_dist_config.get("logz_steps", 1)]))
+		if_grad_clip_dict = OrderedDict(zip(['ebm', 'noise', 'ebm_logz'], [True, True, True]))
 		# global_step_dict = OrderedDict(zip(['ebm', 'noise'], [ebm_dist_dict['global_step'], noise_dist_dict['global_step']]))
 		print(loss_dict, '===loss dict=====')
 		if kargs.get('train_op_type', 'joint') == 'alternate':
@@ -202,6 +202,16 @@ def classifier_model_fn_builder(
 
 		if not sample_noise_dist:
 			tf.logging.info("****** using bert mlm for noise dist sample *******")
+
+			global_step = tf.train.get_or_create_global_step()
+			noise_sample_ratio = tf.train.polynomial_decay(
+													0.20,
+													global_step,
+													opt_config.num_train_steps,
+													end_learning_rate=0.1,
+													power=1.0,
+													cycle=False)
+
 			mlm_noise_dist_fn = mlm_noise_dist(model_config_dict['generator'],
 						num_labels_dict['generator'],
 						init_checkpoint_dict['generator'],
@@ -212,7 +222,7 @@ def classifier_model_fn_builder(
 						exclude_scope=exclude_scope_dict.get('generator', ""),
 						not_storage_params=not_storage_params_dict.get('generator', []),
 						target=target_dict['generator'],
-						mask_probability=0.15,
+						mask_probability=noise_sample_ratio,
 						replace_probability=0.0,
 						original_probability=0.0,
 						**kargs)

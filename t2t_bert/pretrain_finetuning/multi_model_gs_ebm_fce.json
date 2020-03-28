@@ -23,8 +23,11 @@
 		"do_lower_case":true,
 		"ln_type":"postln",
 		"init_lr":1e-4,
+		"logz_init_lr":1e-4,
 		"optimizer_type":"adam_decay",
-		"steps":1
+		"logz_optimizer_type":"adam",
+		"steps":1,
+		"logz_steps":1
 	},
 	"teacher_porn":{
 		"task_type":"single_sentence_classification",

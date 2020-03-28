@@ -258,6 +258,10 @@ def emb_score(config, input_tensor, input_ids,
 					input_tensor = bert_modules.layer_norm(input_tensor)
 				else:
 					input_tensor = bert_modules.layer_norm(input_tensor)
+			output_bias = tf.get_variable(
+				"output_bias",
+				shape=[config.vocab_size],
+				initializer=tf.zeros_initializer())
 			tf.logging.info("****** mi using mlm transform *******")
 		else:
 			with tf.variable_scope("transform_ebm"):
@@ -389,6 +393,7 @@ def emb_score(config, input_tensor, input_ids,
 			# output_weights = output_weights / tf.stop_gradient(output_weights_norm)
 			# we calculate cosine distance to make mi bounded by [-1, 1]
 			logits = tf.einsum("abc,dc->abd", input_tensor, output_weights) # batch x seq x vocab
+			logits = tf.nn.bias_add(logits, output_bias)
 
 			input_id_shape = bert_utils.get_shape_list(input_ids, [2,3])
 			if len(input_id_shape) == 2:
