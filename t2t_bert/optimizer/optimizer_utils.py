@@ -38,9 +38,9 @@ class AdamWeightDecayOptimizer(tf.train.Optimizer):
 
 		if learning_rate is None:
 			learning_rate = self.learning_rate
-			tf.logging.info("***** use default learning rate ***** ", learning_rate)
+			tf.logging.info("***** use default learning rate ***** ", str(learning_rate))
 		else:
-			tf.logging.info("***** use provided learning rate ***** ", learning_rate)
+			tf.logging.info("***** use provided learning rate ***** ", str(learning_rate))
 
 		assignments = []
 		for (grad, param) in grads_and_vars:
