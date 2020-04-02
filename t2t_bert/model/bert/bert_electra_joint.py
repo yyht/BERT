@@ -138,6 +138,9 @@ class Bert(object):
 				elif kargs.get('attention_type', 'efficient_attention') == 'efficient_attention':
 					tf.logging.info("****** efficient attention *******")
 					transformer_model = bert_modules.transformer_efficient_model
+				elif kargs.get('attention_type', 'efficient_attention') == 'rezero_transformer':
+					transformer_model = bert_modules.transformer_rezero_model
+					tf.logging.info("****** rezero_transformer *******")
 				else:
 					tf.logging.info("****** normal attention *******")
 					transformer_model = bert_modules.transformer_model

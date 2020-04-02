@@ -21,10 +21,10 @@
 		"short_seq_prob":0.2,
 		"vocab_file":"./BERT/data/uncased_L-12_H-768_A-12/vocab.txt",
 		"do_lower_case":true,
-		"init_lr":1e-4,
-		"logz_init_lr":1e-4,
+		"init_lr":1e-5,
+		"logz_init_lr":1e-5,
 		"optimizer_type":"adam_decay",
-		"logz_optimizer_type":"adam",
+		"logz_optimizer_type":"sgd",
 		"steps":1,
 		"logz_steps":1
 	},
@@ -208,7 +208,7 @@
 		"vocab_file":"./BERT/data/uncased_L-12_H-768_A-12/vocab.txt",
 		"do_lower_case":true,
 		"ln_type":"postln",
-		"init_lr":1e-4,
+		"init_lr":2e-4,
 		"optimizer_type":"adam_decay",
 		"steps":1
 	},

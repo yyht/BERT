@@ -238,6 +238,9 @@ class Optimizer(object):
 								beta_2=self.config.get("beta_2", 0.999),
 								epsilon=self.config.get("epsilon", 1e-6),
 								exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"])
+		elif opt_type == "sgd":
+			tf.logging.info("***** apply sgd *****")
+			opt = tf.train.GradientDescentOptimizer(learning_rate=learning_rate)
 		return opt
 
 	def get_train_op(self, loss, tvars, init_lr, 

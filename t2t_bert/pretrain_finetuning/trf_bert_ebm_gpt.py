@@ -34,6 +34,7 @@ def get_train_op(ebm_dist_dict, noise_dist_dict, optimizer_fn, opt_config,
 		noise_loss_ratio = kargs.get('noise_loss_ratio', 1.0)
 		noise_loss = noise_dist_dict['loss']
 		ebm_loss = ebm_dist_dict['loss']
+		ebm_logz_loss = ebm_dist_dict['logz_loss']
 
 		print(ebm_loss.get_shape(), "==ebm loss type==")
 		print(noise_loss.get_shape(), "==noise loss type==")
@@ -63,7 +64,7 @@ def get_train_op(ebm_dist_dict, noise_dist_dict, optimizer_fn, opt_config,
 				optimizer_fn.gradient_norm_summary(noise_dist_dict['loss'], ebm_dist_dict['tvars'], debug_grad_name="ebm_of_noise_grad_norm")
 				optimizer_fn.gradient_norm_summary(noise_dist_dict['loss'], noise_dist_dict['tvars'], debug_grad_name="noise_grad_norm")
 
-		loss_dict = OrderedDict(zip(['ebm', 'noise', 'ebm_logz'], [ebm_dist_loss, noise_dist_loss, ebm_dist_loss]))
+		loss_dict = OrderedDict(zip(['ebm', 'noise', 'ebm_logz'], [ebm_dist_loss, noise_dist_loss, ebm_logz_loss]))
 		tvars_dict = OrderedDict(zip(['ebm', 'noise', 'ebm_logz'], [ebm_dist_dict['tvars'], noise_dist_dict['tvars'], ebm_dist_dict['logz_tvars']]))
 		init_lr_dict = OrderedDict(zip(['ebm', 'noise', 'ebm_logz'], [ebm_dist_config['init_lr'], noise_dist_config['init_lr'], ebm_dist_config.get('logz_init_lr', ebm_dist_config['init_lr'])]))
 		optimizer_type_dict = OrderedDict(zip(['ebm', 'noise', 'ebm_logz'], [ebm_dist_config['optimizer_type'], noise_dist_config['optimizer_type'], ebm_dist_config['logz_optimizer_type']]))
@@ -96,12 +97,42 @@ def get_train_op(ebm_dist_dict, noise_dist_dict, optimizer_fn, opt_config,
 									# global_step_dict=global_step_dict,
 									postive_key="ebm",
 									negative_key="noise",
-									alternate_order=['noise', 'ebm', 'ebm_logz'],
+									alternate_order=['ebm_logz', 'ebm', 'noise'],
 									**kargs)
 
 			print("===train op===", train_op)
 
 	return train_op
+
+def ebm_logz_length_cond_loss(config, features, ebm_all_loss, valid_mask=None):
+	"""
+	we group by length and mean over loss by length
+	and apply sgd to optimize logz's parameters just like center-loss for center updating
+	"""
+	input_mask = features['input_mask']
+	shape = bert_utils.get_shape_list(input_mask)
+	valid_seq_length = tf.cast(tf.reduce_sum(input_mask, axis=-1), tf.int32) # batch_size
+	onehot_length_ids = tf.one_hot(valid_seq_length, config.max_position_embeddings)
+	onehot_length_ids = tf.cast(onehot_length_ids, tf.float32)
+
+	if_provided = 1
+	if valid_mask is None:
+		valid_mask = tf.ones(shape=[shape[0]])
+		if_provided = 0
+		tf.logging.info("====ones valid mask ====")
+	if if_provided == 1:
+		tf.logging.info("====provided valid mask ====")
+
+	valid_mask = tf.expand_dims(tf.cast(valid_mask, tf.float32), axis=-1) # batch_size x 1
+
+	length_accumulate_loss = tf.einsum("ab,a->ab", onehot_length_ids, ebm_all_loss)
+	length_loss = tf.reduce_sum(length_accumulate_loss*valid_mask, axis=0)
+
+	length_appear_time = tf.reduce_sum(onehot_length_ids*valid_mask, axis=0) + 1
+
+	logz_length_attribute_loss = length_loss / length_appear_time # 1 x max_position_embeddings
+	logz_length_loss = tf.reduce_sum(logz_length_attribute_loss)
+	return logz_length_loss
 
 def token_seq_truncted(token_seq, finished_index, max_length): 
 	seq_shape = bert_utils.get_shape_list(token_seq, expected_rank=[2,3])
@@ -223,7 +254,7 @@ def classifier_model_fn_builder(
 						not_storage_params=not_storage_params_dict.get('generator', []),
 						target=target_dict['generator'],
 						mask_probability=noise_sample_ratio,
-						replace_probability=0.0,
+						replace_probability=0.2,
 						original_probability=0.0,
 						**kargs)
 		else:
@@ -279,7 +310,7 @@ def classifier_model_fn_builder(
 		if not sample_noise_dist:
 			mlm_noise_dist_dict = mlm_noise_dist_fn(features, labels, mode, params)
 		else:
-			mlm_noise_dist_dict = None
+			mlm_noise_dist_dict = {}
 
 		# first get noise dict
 		noise_dist_dict = noise_dist_fn(true_features, labels, mode, params)
@@ -309,11 +340,25 @@ def classifier_model_fn_builder(
 			fake_noise_dist_dict = noise_dist_fn(fake_features, labels, mode, params)
 			noise_dist_dict['fake_logits'] = fake_noise_dist_dict['true_logits']
 
-		ebm_loss = get_ebm_loss(true_ebm_dist_dict['logits'], 
+		[ebm_loss, 
+		ebm_all_true_loss,
+		ebm_all_fake_loss] = get_ebm_loss(true_ebm_dist_dict['logits'], 
 								noise_dist_dict['true_logits'], 
 								fake_ebm_dist_dict['logits'], 
 								noise_dist_dict['fake_logits'], 
-								use_tpu=kargs.get('use_tpu', False))
+								use_tpu=kargs.get('use_tpu', False),
+								valid_mask=mlm_noise_dist_dict.get("valid_mask", None))
+
+		logz_length_true_loss = ebm_logz_length_cond_loss(model_config_dict['ebm_dist'],
+															true_features,
+															ebm_all_true_loss,
+															valid_mask=mlm_noise_dist_dict.get("valid_mask", None))
+
+		logz_length_fake_loss = ebm_logz_length_cond_loss(model_config_dict['ebm_dist'],
+															fake_features,
+															ebm_all_fake_loss,
+															valid_mask=mlm_noise_dist_dict.get("valid_mask", None))
+		true_ebm_dist_dict['logz_loss'] = logz_length_true_loss + logz_length_fake_loss
 
 		noise_loss = get_noise_loss(true_ebm_dist_dict['logits'], 
 									noise_dist_dict['true_logits'], 
@@ -341,7 +386,8 @@ def classifier_model_fn_builder(
 		ebm_opt_dict = {
 			"loss":ebm_loss,
 			"tvars":true_ebm_dist_dict['tvars'],
-			"logz_tvars":true_ebm_dist_dict['logz_tvars']
+			"logz_tvars":true_ebm_dist_dict['logz_tvars'],
+			"logz_loss":true_ebm_dist_dict['logz_loss']
 		}
 
 		noise_opt_dict = {

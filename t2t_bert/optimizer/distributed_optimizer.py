@@ -233,11 +233,13 @@ class Optimizer(object):
 
 	def optimizer_op(self, learning_rate,
 							**kargs):
-		opt_type = self.config.get("train_op", "adam_decay")
+		opt_type = kargs.get('train_op', None)
+		if opt_type is None:
+			opt_type = self.config.get("train_op", "adam_decay")
 		tf.logging.info(" optimization method {}".format(opt_type))
 		if opt_type not in ["adam_decay", "adam", "adam_weight_decay", 
 					"adam_weight_decay_exclude", "pai_soar_adam_decay", "lamb",
-					"adafactor"]:
+					"adafactor", "sgd"]:
 			raise NotImplementedError()
 		if opt_type == "adam_decay":
 			print("==apply bert adam weight decay==")
@@ -308,6 +310,10 @@ class Optimizer(object):
 								beta_2=self.config.get("beta_2", 0.999),
 								epsilon=self.config.get("epsilon", 1e-6),
 								exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"])
+
+		elif opt_type == "sgd":
+			print("=== apply sgd ===")
+			opt = tf.train.GradientDescentOptimizer(learning_rate=learning_rate)
 
 		if self.config.get("opt_ema", "no") == "yes":
 			print("==apply ema optimizer==")

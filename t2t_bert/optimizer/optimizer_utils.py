@@ -440,10 +440,11 @@ class AdaFactorOptimizer(tf.train.Optimizer):
 			if grad is None or param is None:
 				continue
 
+			param_name = self._get_variable_name(param.name)
+
 			tf.logging.info("***** apply gradients parameter name ***** %s", param_name)
 			tf.logging.info("***** param: %s learning rate: %s ***** ", param_name, str(learning_rate))
 
-			param_name = self._get_variable_name(param.name)
 			shape_list = bert_utils.get_shape_list(param, expected_rank=[1, 2])
 
 			# decay_rate = 1 - tf.pow(tf.cast(tf.train.get_or_create_global_step(), tf.float32) + 1.0, -0.8)

@@ -40,10 +40,15 @@ try:
 except:
 	from electra_model_fn_gumbel_relgan import classifier_model_fn_builder as classifier_model_fn_builder_relgan
 
+# try:
+# 	from .trf_bert_ebm_gpt import classifier_model_fn_builder as classifier_model_fn_builder_trf_fce
+# except:
+# 	from trf_bert_ebm_gpt import classifier_model_fn_builder as classifier_model_fn_builder_trf_fce
+
 try:
-	from .trf_bert_ebm_gpt import classifier_model_fn_builder as classifier_model_fn_builder_trf_fce
+	from .trf_bert_ebm_gpt_estimator import classifier_model_fn_builder as classifier_model_fn_builder_trf_fce
 except:
-	from trf_bert_ebm_gpt import classifier_model_fn_builder as classifier_model_fn_builder_trf_fce
+	from trf_bert_ebm_gpt_estimator import classifier_model_fn_builder as classifier_model_fn_builder_trf_fce
 
 
 import numpy as np

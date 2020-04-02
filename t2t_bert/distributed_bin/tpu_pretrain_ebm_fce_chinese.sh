@@ -7,8 +7,8 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--max_length 512 \
 	--train_file "data_single_hard_gan/chunk_0.tfrecords,data_single_hard_gan/chunk_1.tfrecords,data_single_hard_gan/chunk_2.tfrecords,data_single_hard_gan/chunk_3.tfrecords,data_single_hard_gan/chunk_4.tfrecords,data_single_hard_gan/chunk_5.tfrecords,data_single_hard_gan/chunk_6.tfrecords,data_single_hard_gan/chunk_7.tfrecords,data_single_hard_gan/chunk_8.tfrecords,data_single_hard_gan/chunk_9.tfrecords,data_single_hard_gan/chunk_10.tfrecords,data_single_hard_gan/chunk_11.tfrecords,data_single_hard_gan/chunk_12.tfrecords,data_single_hard_gan/chunk_13.tfrecords,data_single_hard_gan/chunk_14.tfrecords,data_single_hard_gan/chunk_15.tfrecords,data_single_hard_gan/chunk_16.tfrecords,data_single_hard_gan/chunk_17.tfrecords" \
 	--dev_file "data_single_hard_gan/chunk_18.tfrecords,data_single_hard_gan/chunk_19.tfrecords" \
-	--model_output "model/ebm_fce/chinese/ebm_gpt_fce_mi_logz" \
-	--epoch 25 \
+	--model_output "model/ebm_fce/chinese/ebm_gpt_fce_tiny_mi_logz_final" \
+	--epoch 1 \
 	--num_classes 2 \
 	--train_size 11000000 \
 	--eval_size 1100000 \
@@ -28,7 +28,7 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--decay "decay" \
 	--init_lr 2e-4 \
 	--do_train true \
-	--tpu_name "albert4" \
+	--tpu_name "albert0" \
 	--num_tpu_cores 8 \
 	--mode 'electra' \
 	--multi_task_type "ebm_dist,noise_dist,generator" \
@@ -36,7 +36,7 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--joint_train "1" \
 	--electra_mode "trf_fce" \
 	--sharing_mode "none" \
-	--train_op_type "alternate" \
+	--train_op_type "group_v2" \
 	--optimization_type "minxmax" \
 	--gumbel_anneal "vqvae" \
 	--minmax_mode "corrupted" \

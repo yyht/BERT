@@ -141,9 +141,21 @@ def model_fn_builder(
 		else:
 			scaffold_fn = None
 
+		sampeld_id_shape = bert_utils.get_shape_list(sampled_ids, expected_rank=[2,3])
+		idx = tf.random_shuffle(tf.range(sampeld_id_shape[0]))
+		shuffled_sampled_ids = tf.gather(sampled_ids, idx)
+
+		use_tpu = 1 if kargs.get('use_tpu', False) else 0
+		not_equal = tf.cast(tf.not_equal(tf.cast(shuffled_sampled_ids, tf.int32), tf.cast(features['input_ori_ids'], tf.int32)), tf.int32)
+		not_equal = tf.reduce_sum(not_equal, axis=-1) # summary not equal ids
+		not_equal_instance = tf.cast(tf.not_equal(not_equal, tf.zeros_like(not_equal)), tf.float32)
+		if not use_tpu:
+			tf.summary.scalar("not_equal_instance", tf.reduce_sum(not_equal_instance))
+
 		return_dict = {
 					"tvars":tvars,
-					"sampled_ids":sampled_ids
+					"sampled_ids":shuffled_sampled_ids,
+					"valid_mask":not_equal_instance
 				}
 		return return_dict
 	return model_fn

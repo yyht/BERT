@@ -186,9 +186,19 @@ class Bert(object):
 				# Run the stacked transformer.
 				# `sequence_output` shape = [batch_size, seq_length, hidden_size].
 
+				if kargs.get('attention_type', 'normal_attention') == 'normal_attention':
+					tf.logging.info("****** normal attention *******")
+					transformer_model = bert_seq_modules.transformer_model
+				elif kargs.get('attention_type', 'normal_attention') == 'rezero_transformer':
+					transformer_model = bert_seq_modules.transformer_rezero_model
+					tf.logging.info("****** rezero_transformer *******")
+				else:
+					tf.logging.info("****** normal attention *******")
+					transformer_model = bert_seq_modules.transformer_model
+
 				[self.all_encoder_layers,
 				self.all_present,
-				self.all_attention_scores] = bert_seq_modules.transformer_model(
+				self.all_attention_scores] = transformer_model(
 						input_tensor=self.embedding_output,
 						attention_mask=self.attention_mask,
 						hidden_size=self.config.hidden_size,

@@ -99,6 +99,12 @@ def model_config_parser(FLAGS):
 					config.init_lr = 2e-5
 			print('==apply albert finetuning==', config.init_lr)
 		print("===learning rate===", config.init_lr)
+		try:
+			if FLAGS.attention_type in ['rezero_transformer']:
+				config.warmup = 0.0
+				tf.logging.info("****** warmup ******* %s", str(config.warmup))
+		except:
+			tf.logging.info("****** normal attention ******* ")
 		tf.logging.info("****** learning rate ******* %s", str(config.init_lr))
 		# config.loss = "dmi_loss"
 		config.loss = "entropy"

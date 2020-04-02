@@ -42,10 +42,10 @@ def get_ebm_loss(true_ebm_logits, true_noise_logits,
 	true_logits = true_ebm_logits - true_noise_logits
 	fake_logits = fake_ebm_logits - fake_noise_logits
 
-	true_data_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
+	true_data_loss = (tf.nn.sigmoid_cross_entropy_with_logits(
 							logits=true_logits,
 							labels=tf.ones_like(true_logits)))
-	fake_data_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
+	fake_data_loss = (tf.nn.sigmoid_cross_entropy_with_logits(
 							logits=fake_logits,
 							labels=tf.zeros_like(fake_logits)))
 
@@ -59,11 +59,25 @@ def get_ebm_loss(true_ebm_logits, true_noise_logits,
 	if not kargs.get('use_tpu', False):
 		tf.logging.info("====logging discriminator loss ====")
 		tf.summary.scalar('true_data_loss', 
-							true_data_loss)
+							tf.reduce_mean(true_data_loss))
 		tf.summary.scalar('fake_data_loss', 
-							fake_data_loss)
+							tf.reduce_mean(fake_data_loss))
 
-	return (true_data_loss + fake_data_loss)
+	valid_mask = kargs.get('valid_mask', None)
+	if_provided = 1
+	if valid_mask is None:
+		tf.logging.info("====ones valid mask ====")
+		shape = bert_utils.get_shape_list(true_data_loss)
+		valid_mask = tf.ones(shape=[shape[0]])
+		if_provided = 0
+	valid_mask = tf.cast(valid_mask, tf.float32)
+	if if_provided == 1:
+		tf.logging.info("====provided valid mask ====")
+
+	loss = true_data_loss + fake_data_loss
+	loss = tf.reduce_sum(loss*valid_mask) / (tf.reduce_sum(valid_mask)+1e-10)
+
+	return loss, true_data_loss, fake_data_loss
 
 def get_noise_loss(true_ebm_logits, true_noise_logits, 
 					fake_ebm_logits, fake_noise_logits, 
