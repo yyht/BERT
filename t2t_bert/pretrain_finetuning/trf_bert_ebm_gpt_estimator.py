@@ -415,7 +415,7 @@ class EBM_NOISE_NCE(object):
 									    name="ebm_logz_update"
 									)
 					lr_ratio = tf.cast(tf.equal(tf.cast(lr_ratio, tf.int32), 0), tf.float32)
-					tf.logging.info("****** learning_rate circle update ****** with {} circle", kargs.get('ebm_logz_update', 5))
+					tf.logging.info("****** learning_rate circle update ****** with %s circle", kargs.get('ebm_logz_update', 5))
 				else:
 					lr_ratio = 1.0
 					tf.logging.info("****** normal learning_rate ******")
