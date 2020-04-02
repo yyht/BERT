@@ -180,7 +180,7 @@ class Optimizer(object):
 		tf.logging.info(" optimization method {}".format(opt_type))
 		if opt_type not in ["adam_decay", "adam", "lamb_v2", 
 								"lamb_v1", "radam",
-								"adafactor"]:
+								"adafactor", "sgd"]:
 			raise NotImplementedError()
 		if opt_type == "adam_decay":
 			opt = optimizer_utils.AdamWeightDecayOptimizer(
