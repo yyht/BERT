@@ -64,7 +64,7 @@ def get_train_op(model_cls, optimizer_fn, opt_config,
 
 	alternate_order = kargs.get("alternate_order", list(loop_step_dict.keys()))
 	ebm_logz_update_circle = kargs.get("ebm_logz_update_circle", True)
-	ebm_logz_update = kargs.get("ebm_logz_update", 50)
+	ebm_logz_update = kargs.get("ebm_logz_update", 10)
 
 	model_cls.get_opt(optimizer_fn, init_lr_dict, optimizer_type_dict, 
 						alternate_order=alternate_order,
