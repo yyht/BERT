@@ -367,6 +367,11 @@ flags.DEFINE_string(
 	)
 
 flags.DEFINE_string(
+	"random_generator", "1",
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
 	"mask_type", "none",
 	"if apply distillation"
 	)

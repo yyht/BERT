@@ -289,24 +289,34 @@ def train_eval_fn(FLAGS,
 					writer.write("%s = %s\n" % (key, str(result[key])))
 	else:
 		from data_generator import distributed_tf_data_utils as tf_data_utils
-		name_to_features = {
-			"input_ids":
-				tf.FixedLenFeature([FLAGS.max_length], tf.int64),
-			"input_mask":
-				tf.FixedLenFeature([FLAGS.max_length], tf.int64),
-			"segment_ids":
-				tf.FixedLenFeature([FLAGS.max_length], tf.int64),
-			"input_ori_ids":
-				tf.FixedLenFeature([FLAGS.max_length], tf.int64),
-			"masked_lm_positions":
-				tf.FixedLenFeature([FLAGS.max_predictions_per_seq], tf.int64),
-			"masked_lm_ids":
-				tf.FixedLenFeature([FLAGS.max_predictions_per_seq], tf.int64),
-			"masked_lm_weights":
-				tf.FixedLenFeature([FLAGS.max_predictions_per_seq], tf.float32),
-			"next_sentence_labels":
-				tf.FixedLenFeature([], tf.int64),
-			}
+		if FLAGS.random_generator == "1":
+			name_to_features = {
+				"input_ids":
+					tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+				"input_mask":
+					tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+				"segment_ids":
+					tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+				"input_ori_ids":
+					tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+				"masked_lm_positions":
+					tf.FixedLenFeature([FLAGS.max_predictions_per_seq], tf.int64),
+				"masked_lm_ids":
+					tf.FixedLenFeature([FLAGS.max_predictions_per_seq], tf.int64),
+				"masked_lm_weights":
+					tf.FixedLenFeature([FLAGS.max_predictions_per_seq], tf.float32),
+				"next_sentence_labels":
+					tf.FixedLenFeature([], tf.int64),
+				}
+		elif FLAGS.random_generator == "2":
+			name_to_features = {
+				"input_ids":
+					tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+				"input_mask":
+					tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+				"segment_ids":
+					tf.FixedLenFeature([FLAGS.max_length], tf.int64)
+				}
 
 		def _decode_record(record, name_to_features):
 			"""Decodes a record to a TensorFlow example.

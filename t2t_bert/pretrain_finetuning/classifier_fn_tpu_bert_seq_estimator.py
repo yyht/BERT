@@ -14,14 +14,14 @@ import tensorflow as tf
 import numpy as np
 from optimizer import optimizer
 from model_io import model_io
-from utils.bert import bert_seq_utils
+from utils.bert import bert_seq_utils, bert_seq_sample_utils
 
 from task_module import classifier
 from task_module import tsa_pretrain
 import tensorflow as tf
 from metric import tf_metrics
 
-def train_metric(input_ids, predicted_logits, **kargs):
+def train_metric(input_ids, predicted_logits, features, **kargs):
 	labels = input_ids[:, 1:] # <S>,1,2,3,<T>,<PAD>, <PAD>
 	logits = predicted_logits[:, :-1] # 1,2,3,<T>, xxx, xxx
 
@@ -29,8 +29,18 @@ def train_metric(input_ids, predicted_logits, **kargs):
 										labels=labels, 
 										logits=logits)
 
-	sequence_mask = tf.to_float(tf.not_equal(labels, 
-								kargs.get('[PAD]', 0)))
+	if kargs.get('mask_type', 'left2right') == 'left2right':
+		tf.logging.info("***** using left2right mask and loss *****")
+		sequence_mask = tf.to_float(tf.not_equal(features['input_ori_ids'][:, 1:], 
+													kargs.get('[PAD]', 0)))
+	elif kargs.get('mask_type', 'left2right') == 'seq2seq':
+		tf.logging.info("***** using seq2seq mask and loss *****")
+		sequence_mask = tf.to_float(features['segment_ids'][:, 1:])
+		if not kargs.get('use_tpu', False):
+			tf.summary.scalar("loss mask", tf.reduce_mean(sequence_mask))
+
+	# sequence_mask = tf.to_float(tf.not_equal(labels, 
+	# 							kargs.get('[PAD]', 0)))
 
 	per_example_perplexity = tf.reduce_sum(input_id_logits * sequence_mask, axis=-1) # batch
 	per_example_perplexity /= tf.reduce_sum(sequence_mask, axis=-1) # batch
@@ -49,7 +59,7 @@ def train_metric(input_ids, predicted_logits, **kargs):
 		"token_acc": tf.reduce_mean(lm_token_accuracy)
 		}
 
-def eval_metric(input_ids, predicted_logits, **kargs):
+def eval_metric(input_ids, predicted_logits, features, **kargs):
 	labels = input_ids[:, 1:] # <S>,1,2,3,<T>,<PAD>, <PAD>
 	logits = predicted_logits[:, :-1] # 1,2,3,<T>, xxx, xxx
 
@@ -57,8 +67,18 @@ def eval_metric(input_ids, predicted_logits, **kargs):
 										labels=labels, 
 										logits=logits)
 
-	sequence_mask = tf.to_float(tf.not_equal(labels, 
-								kargs.get('[PAD]', 0)))
+	# sequence_mask = tf.to_float(tf.not_equal(labels, 
+	# 							kargs.get('[PAD]', 0)))
+
+	if kargs.get('mask_type', 'left2right') == 'left2right':
+		tf.logging.info("***** using left2right mask and loss *****")
+		sequence_mask = tf.to_float(tf.not_equal(features['input_ori_ids'][:, 1:], 
+													kargs.get('[PAD]', 0)))
+	elif kargs.get('mask_type', 'left2right') == 'seq2seq':
+		tf.logging.info("***** using seq2seq mask and loss *****")
+		sequence_mask = tf.to_float(features['segment_ids'][:, 1:])
+		if not kargs.get('use_tpu', False):
+			tf.summary.scalar("loss mask", tf.reduce_mean(sequence_mask))
 
 	per_example_perplexity = tf.reduce_sum(input_id_logits * sequence_mask, axis=-1) # batch
 	per_example_perplexity /= tf.reduce_sum(sequence_mask, axis=-1) # batch
@@ -96,8 +116,11 @@ def classifier_model_fn_builder(
 		seq_features = {}
 		for key in features:
 			seq_features[key] = features[key]
-		seq_features['input_ids'] = features["input_ori_ids"]
-
+		if 'input_ori_ids' in features:
+			seq_features['input_ids'] = features["input_ori_ids"]
+		else:
+			features['input_ori_ids'] = seq_features['input_ids']
+			
 		model = model_api(model_config, seq_features, labels,
 							mode, target, reuse=tf.AUTO_REUSE,
 							**kargs)
@@ -113,8 +136,15 @@ def classifier_model_fn_builder(
 			scope = model_config.scope
 		
 		# if mode == tf.estimator.ModeKeys.TRAIN:
-		sequence_mask = tf.to_float(tf.not_equal(features['input_ori_ids'][:, 1:], 
+		if kargs.get('mask_type', 'left2right') == 'left2right':
+			tf.logging.info("***** using left2right mask and loss *****")
+			sequence_mask = tf.to_float(tf.not_equal(features['input_ori_ids'][:, 1:], 
 														kargs.get('[PAD]', 0)))
+		elif kargs.get('mask_type', 'left2right') == 'seq2seq':
+			tf.logging.info("***** using seq2seq mask and loss *****")
+			sequence_mask = tf.to_float(features['segment_ids'][:, 1:])
+			if not kargs.get('use_tpu', False):
+				tf.summary.scalar("loss mask", tf.reduce_mean(sequence_mask))
 
 			# batch x seq_length
 		print(model.get_sequence_output_logits().get_shape(), "===logits shape===")
@@ -168,7 +198,8 @@ def classifier_model_fn_builder(
 								use_tpu=use_tpu)
 
 				train_metric_dict = train_metric(features['input_ori_ids'], 
-												model.get_sequence_output_logits(), 
+												model.get_sequence_output_logits(),
+												seq_features,
 												**kargs)
 
 				if not kargs.get('use_tpu', False):
@@ -196,10 +227,14 @@ def classifier_model_fn_builder(
 		elif mode == tf.estimator.ModeKeys.EVAL:
 
 			gpu_eval_metrics = eval_metric(features['input_ori_ids'],
-										model.get_sequence_output_logits())
+										model.get_sequence_output_logits(),
+										seq_features,
+										**kargs)
 			tpu_eval_metrics = (eval_metric, [
 										features['input_ori_ids'],
-										model.get_sequence_output_logits()
+										model.get_sequence_output_logits(),
+										seq_features,
+										kargs.get('mask_type', 'left2right')
 									])	
 
 			if kargs.get('use_tpu', False):
@@ -217,7 +252,7 @@ def classifier_model_fn_builder(
 
 		elif mode == tf.estimator.ModeKeys.PREDICT:
 			if kargs.get('predict_type', 'sample_sequence') == 'sample_sequence':
-				results = bert_seq_utils.sample_sequence(model_api,
+				results = bert_seq_sample_utils.sample_sequence(model_api,
 										model_config, 
 										mode, 
 										features,
@@ -269,6 +304,17 @@ def classifier_model_fn_builder(
 
 				sequence_mask = tf.to_float(tf.not_equal(features['input_ids'][:, 1:], 
 													kargs.get('[PAD]', 0)))
+
+				if kargs.get('mask_type', 'left2right') == 'left2right':
+					tf.logging.info("***** using left2right mask and loss *****")
+					sequence_mask = tf.to_float(tf.not_equal(features['input_ori_ids'][:, 1:], 
+																kargs.get('[PAD]', 0)))
+				elif kargs.get('mask_type', 'left2right') == 'seq2seq':
+					tf.logging.info("***** using seq2seq mask and loss *****")
+					sequence_mask = tf.to_float(features['segment_ids'][:, 1:])
+					if not kargs.get('use_tpu', False):
+						tf.summary.scalar("loss mask", tf.reduce_mean(sequence_mask))
+
 				output_logits = model.get_sequence_output_logits()[:, :-1]
 				# output_logits = tf.nn.log_softmax(output_logits, axis=-1)
 

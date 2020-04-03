@@ -294,10 +294,13 @@ def sample_sequence(model_api,
 			swap_memory=swap_memory
 		)
 
-		mask_sequence = get_finised_pos_v1(samples, end_token, actual_length)
-		print(mask_sequence.get_shape(), "==mask shape==")
-		samples *= tf.cast(mask_sequence, tf.int32)
-		logits *= tf.cast(mask_sequence, tf.float32)
+		if kargs.get("mask_type", "left2right") == 'left2right': 
+			mask_sequence = get_finised_pos_v1(samples, end_token, actual_length)
+			print(mask_sequence.get_shape(), "==mask shape==")
+			samples *= tf.cast(mask_sequence, tf.int32)
+			logits *= tf.cast(mask_sequence, tf.float32)
+		else:
+			mask_sequence = tf.ones_like(samples)
 		
 		return {
 			"samples":samples,

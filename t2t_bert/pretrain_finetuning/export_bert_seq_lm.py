@@ -44,7 +44,7 @@ def export_model(FLAGS,
 			"segment_ids":tf.placeholder(tf.int32, [None, FLAGS.max_length], name='segment_ids'),
 			"input_mask":tf.placeholder(tf.int32, [None, FLAGS.max_length], name='input_mask'),
 			"input_ori_ids":tf.placeholder(tf.int32, [None, FLAGS.max_length], name='input_ori_ids'),
-			"context":tf.placeholder(tf.int32, [None, 1], name='context'),
+			"context":tf.placeholder(tf.int32, [None, None], name='context'),
 		}
 		return receiver_tensors
 

@@ -473,7 +473,8 @@ class EBM_NOISE_NCE(object):
 			fake_features['segment_ids'] = tf.zeros_like(fake_features['input_mask'])
 		elif self.noise_sample == 'mlm':
 			fake_features["input_ids"] = self.mlm_noise_dist_dict['sampled_ids']
-			fake_features['input_mask'] = tf.cast(features['input_mask'], tf.int32)
+			fake_features["input_mask"] = self.mlm_noise_dist_dict['sampled_mask']
+			# fake_features['input_mask'] = tf.cast(features['input_mask'], tf.int32)
 			fake_features['segment_ids'] = tf.zeros_like(features['input_mask'])
 			tf.logging.info("****** using bert mlm stop gradient *******")
 

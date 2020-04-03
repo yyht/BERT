@@ -49,24 +49,34 @@ def data_interface(FLAGS):
 					tf.FixedLenFeature([], tf.int64),
 				}
 		elif FLAGS.task_type in ['bert_seq_lm']:
-			name_to_features = {
+			if FLAGS.random_generator == "1": 
+				name_to_features = {
+					"input_ids":
+						tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+					"input_mask":
+						tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+					"segment_ids":
+						tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+					"input_ori_ids":
+						tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+					"masked_lm_positions":
+						tf.FixedLenFeature([FLAGS.max_predictions_per_seq], tf.int64),
+					"masked_lm_ids":
+						tf.FixedLenFeature([FLAGS.max_predictions_per_seq], tf.int64),
+					"masked_lm_weights":
+						tf.FixedLenFeature([FLAGS.max_predictions_per_seq], tf.float32),
+					"next_sentence_labels":
+						tf.FixedLenFeature([], tf.int64),
+				}
+			elif FLAGS.random_generator == "2":
+				name_to_features = {
 				"input_ids":
 					tf.FixedLenFeature([FLAGS.max_length], tf.int64),
 				"input_mask":
 					tf.FixedLenFeature([FLAGS.max_length], tf.int64),
 				"segment_ids":
-					tf.FixedLenFeature([FLAGS.max_length], tf.int64),
-				"input_ori_ids":
-					tf.FixedLenFeature([FLAGS.max_length], tf.int64),
-				"masked_lm_positions":
-					tf.FixedLenFeature([FLAGS.max_predictions_per_seq], tf.int64),
-				"masked_lm_ids":
-					tf.FixedLenFeature([FLAGS.max_predictions_per_seq], tf.int64),
-				"masked_lm_weights":
-					tf.FixedLenFeature([FLAGS.max_predictions_per_seq], tf.float32),
-				"next_sentence_labels":
-					tf.FixedLenFeature([], tf.int64),
-			}
+					tf.FixedLenFeature([FLAGS.max_length], tf.int64)
+				} 
 		elif FLAGS.task_type in ['bert_chid']:
 			 name_to_features = {
 				"input_ids":

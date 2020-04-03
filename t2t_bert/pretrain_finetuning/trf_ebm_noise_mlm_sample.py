@@ -145,6 +145,10 @@ def model_fn_builder(
 		idx = tf.random_shuffle(tf.range(sampeld_id_shape[0]))
 		shuffled_sampled_ids = tf.gather(sampled_ids, idx)
 
+		shuffled_sampled_mask = tf.cast(tf.not_equal(shuffled_sampled_ids, 
+													kargs.get('[PAD]', 0)),
+										tf.int32)
+
 		use_tpu = 1 if kargs.get('use_tpu', False) else 0
 		not_equal = tf.cast(tf.not_equal(tf.cast(shuffled_sampled_ids, tf.int32), tf.cast(features['input_ori_ids'], tf.int32)), tf.int32)
 		not_equal = tf.reduce_sum(not_equal, axis=-1) # summary not equal ids
@@ -155,6 +159,7 @@ def model_fn_builder(
 		return_dict = {
 					"tvars":tvars,
 					"sampled_ids":shuffled_sampled_ids,
+					"sampled_mask":shuffled_sampled_mask,
 					"valid_mask":not_equal_instance
 				}
 		return return_dict
