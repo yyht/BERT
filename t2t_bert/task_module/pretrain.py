@@ -342,6 +342,14 @@ def emb_score(config, input_tensor, input_ids,
 
 			input_normalized_constant = tf.einsum("ab,b->a", tf.cast(onehot_length_ids, tf.float32), normalized_constant)
 
+		elif kargs.get("normalized_constant", "constant") == 'logv_constant_ln':
+			normalized_constant = tf.get_variable(
+					"ebm_normalized_constant",
+					shape=[],
+					initializer=tf.constant_initializer(np.log(config.vocab_size), tf.float32))
+
+			input_normalized_constant = normalized_constant
+
 		elif kargs.get("normalized_constant", "length_linear") == 'length_linear':
 			normalized_constant = tf.get_variable(
 					"ebm_normalized_constant",

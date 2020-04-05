@@ -62,7 +62,7 @@ def model_fn_builder(
 
 		# 	tf.logging.info("**** trf input modification for qa and sentence pair **** ")
 
-		features['segment_ids'] = 0 * features['segment_ids']
+		# features['segment_ids'] = 0 * features['segment_ids']
 		model = model_api(model_config, features, labels,
 							mode, target, reuse=model_reuse, **kargs)
 

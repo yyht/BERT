@@ -16,7 +16,6 @@
   "pooler_type": "first_token_transform", 
   "type_vocab_size": 2, 
   "vocab_size": 21128,
-  "restore_var_name": ["bert/embeddings/word_embeddings"],
   "embedding_size": 768,
   "embedding":"factorized"
 }

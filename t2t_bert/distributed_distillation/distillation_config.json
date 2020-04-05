@@ -1,5 +1,5 @@
 {
-	"kl_temperature":1.0,
+	"kl_temperature":2.0,
 	"kl_logits_ratio":1.0,
 	"ce_loss":1.0,
 	"attention_score_uniform":1.0,
@@ -8,5 +8,5 @@
 	"rkd_ratio":0.0,
 	"wpc_hidden":1.0,
 	"cpc_hidden":1.0,
-	"distillation_type":["cpc"]
+	"distillation_type":["kl_logits"]
 }

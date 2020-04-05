@@ -255,6 +255,27 @@ def mixed_sample(features, mix_ratio=0.2):
 	mixed_mask = tf.cast(mixed_mask, tf.float32)
 	return mixed_mask
 
+def get_finised_pos_v1(token_seq, finished_index, max_length): 
+	seq_shape = bert_utils.get_shape_list(token_seq, expected_rank=[2,3])
+	match_indices = tf.where(                          # [[5, 5, 2, 5, 4],
+	tf.equal(finished_index, token_seq),                              #  [0, 5, 2, 3, 5],
+		x=tf.range(seq_shape[1]) * tf.ones_like(token_seq),  #  [5, 1, 5, 5, 5]]
+		y=(seq_shape[1])*tf.ones_like(token_seq))
+
+	finished_pos = tf.reduce_min(match_indices, axis=1)
+	# sequence_mask = tf.sequence_mask(finished_pos, maxlen=max_length)
+	sequence_mask = tf.cast(tf.one_hot(finished_pos, max_length), tf.float32) # [batch, max_length]
+	return sequence_mask
+
+def transfer2lm(input_ids, input_mask, finished_index=102, sentence_end_index=105):
+	shape = bert_utils.get_shape_list(input_ids, expected_rank=[2,3])
+	sequence_mask = get_finised_pos_v1(input_ids, finished_index, shape[1])
+
+	sequence_mask = tf.cast(sequence_mask, tf.float32)
+
+	modified_token_seq = tf.cast(input_ids, tf.float32) - float(finished_index) * sequence_mask + sequence_mask * sentence_end_index
+	return tf.cast(modified_token_seq, tf.int32)
+
 class EBM_NOISE_NCE(object):
 	def __init__(self, model_config_dict,
 						num_labels_dict,
@@ -277,6 +298,7 @@ class EBM_NOISE_NCE(object):
 		self.num_labels_dict = num_labels_dict
 
 		self.train_op_type = kargs.get('train_op_type', 'joint')
+		self.ebm_prob_ln = True
 
 		self.ebm_dist_fn = ebm_dist(self.model_config_dict['ebm_dist'],
 							self.num_labels_dict['ebm_dist'],
@@ -288,16 +310,16 @@ class EBM_NOISE_NCE(object):
 							exclude_scope=self.exclude_scope_dict.get('ebm_dist', ""),
 							not_storage_params=self.not_storage_params_dict.get('ebm_dist', []),
 							target=self.target_dict['ebm_dist'],
-							prob_ln=False,
+							prob_ln=self.ebm_prob_ln,
 							transform=False,
 							transformer_activation="linear",
 							logz_mode='standard',
-							normalized_constant="length_linear",
+							normalized_constant="logv_constant_ln",
 							energy_pooling="mi",
 							softplus_features=False,
 							**kargs)
 
-		self.noise_prob_ln = False
+		self.noise_prob_ln = True
 		self.noise_sample = kargs.get("noise_sample", 'mlm')
 
 		if kargs.get("noise_sample", 'mlm') == 'gpt':
@@ -332,7 +354,7 @@ class EBM_NOISE_NCE(object):
 
 			global_step = tf.train.get_or_create_global_step()
 			self.noise_sample_ratio = tf.train.polynomial_decay(
-													0.20,
+													0.30,
 													global_step,
 													self.opt_config.num_train_steps,
 													end_learning_rate=0.1,
@@ -410,9 +432,9 @@ class EBM_NOISE_NCE(object):
 				tf.logging.info("****** ebm logz learning rate ******")
 				if kargs.get('ebm_logz_update_circle', False):
 					lr_ratio = tf.floormod(
-									    tf.train.get_or_create_global_step(),
-									    kargs.get('ebm_logz_update', 5),
-									    name="ebm_logz_update"
+										tf.train.get_or_create_global_step(),
+										kargs.get('ebm_logz_update', 5),
+										name="ebm_logz_update"
 									)
 					lr_ratio = tf.cast(tf.equal(tf.cast(lr_ratio, tf.int32), 0), tf.float32)
 					tf.logging.info("****** learning_rate circle update ****** with %s circle", kargs.get('ebm_logz_update', 5))
@@ -439,6 +461,8 @@ class EBM_NOISE_NCE(object):
 		for key in features:
 			if key == 'input_ori_ids':
 				true_features["input_ids"] = tf.cast(features['input_ori_ids'], tf.int32)
+				# true_features["input_ids"] = transfer2lm(true_features['input_ids'], 
+				# 										features['input_mask'])
 			if key in ['input_mask', 'segment_ids']:
 				true_features[key] = tf.cast(features[key], tf.int32)
 
@@ -477,6 +501,9 @@ class EBM_NOISE_NCE(object):
 			# fake_features['input_mask'] = tf.cast(features['input_mask'], tf.int32)
 			fake_features['segment_ids'] = tf.zeros_like(features['input_mask'])
 			tf.logging.info("****** using bert mlm stop gradient *******")
+
+			# fake_features["input_ids"] = transfer2lm(fake_features['input_ids'], 
+			# 										fake_features['input_mask'])
 
 		# second, get true ebm dict
 		self.true_ebm_dist_dict = self.ebm_dist_fn(true_features, labels, mode, params)
