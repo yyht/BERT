@@ -1,11 +1,11 @@
 config_file=./BERT/data/electra_share_embedding/generator/bert_config_tiny.json
-init_checkpoint=bert_pretrain/open_domain/pretrain_single_random_debug_gan/trf_ebm_tiny/mlm_sample/mi_ebm_log_linear_sgd_length_logz_tpugan_group_v2_shuffled_3_circle_500_normal/model.ckpt-150000
+init_checkpoint=bert_pretrain/open_domain/pretrain_single_random_debug_gan/trf_ebm_tiny/mlm_sample_new/trf_mi_linear_logz_logv_constant_ln_1/model.ckpt-20000
 vocab_file=./BERT/data/chinese_L-12_H-768_A-12/vocab.txt
 label_id=./BERT/data/lcqmc/label_dict.json
 max_length=128
 train_file=porn_2/data/train_tfrecords
 dev_file=porn_2/data/dev_tfrecords
-model_output=porn_2/data/model/estimator/trf_ebm_chinese-circle-150000-1/
+model_output=porn_2/data/model/estimator/trf_mi_linear_logz_logv_constant_ln_1-circle-20000-2/
 epoch=3
 num_classes=2
 train_size=50000
