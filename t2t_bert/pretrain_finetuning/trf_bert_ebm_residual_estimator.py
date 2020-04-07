@@ -123,14 +123,14 @@ def get_train_op(model_cls, optimizer_fn, opt_config,
 		
 		prev_op = tf.group([ebm_op, ebm_logz_op])
 	elif train_op == 'joint':
-		tf.logging.info("****** group optimization *******")
+		tf.logging.info("****** joint optimization *******")
 		update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 		with tf.control_dependencies(update_ops):
 			model_cls.get_loss(features, labels, mode, params, **kargs)
 		loss = model_cls.ebm_opt_dict['loss']
 		tvars = model_cls.ebm_opt_dict['tvars'].extend(model_cls.ebm_opt_dict['logz_tvars'])
 		opt = model_cls.optimizer_dict['ebm']
-		print(loss, tvars, "====")
+		print(loss, tvars, "====", model_cls.ebm_opt_dict['tvars'])
 		order = 'ebm'
 		ebm_op = get_train_op(opt, loss, tvars, order, if_grad_clip_dict[order])
 		prev_op = ebm_op

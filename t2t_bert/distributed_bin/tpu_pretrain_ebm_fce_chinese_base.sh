@@ -36,7 +36,7 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--joint_train "1" \
 	--electra_mode "trf_fce" \
 	--sharing_mode "none" \
-	--train_op_type "group_v2" \
+	--train_op_type "joint" \
 	--optimization_type "minxmax" \
 	--gumbel_anneal "vqvae" \
 	--minmax_mode "corrupted" \
