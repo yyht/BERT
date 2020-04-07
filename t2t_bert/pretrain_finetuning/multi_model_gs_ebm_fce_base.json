@@ -22,12 +22,13 @@
 		"vocab_file":"./BERT/data/chinese_L-12_H-768_A-12/vocab.txt",
 		"do_lower_case":true,
 		"ln_type":"postln",
-		"init_lr":1e-4,
-		"logz_init_lr":1e-4,
+		"init_lr":5e-5,
+		"logz_init_lr":5e-5,
 		"optimizer_type":"adam_decay",
-		"logz_optimizer_type":"sgd",
+		"logz_optimizer_type":"adam_decay",
 		"steps":1,
-		"logz_steps":1
+		"logz_steps":1,
+		"use_token_type":true
 	},
 	"teacher_porn":{
 		"task_type":"single_sentence_classification",
@@ -212,7 +213,8 @@
 		"ln_type":"postln",
 		"init_lr":1e-4,
 		"optimizer_type":"adam_decay",
-		"steps":1
+		"steps":1,
+		"use_token_type":false
 	},
 	"generator":{
 		"task_type":"single_sentence_classification",
@@ -239,7 +241,8 @@
 		"ln_type":"postln",
 		"init_lr":1e-4,
 		"optimizer_type":"adam_decay",
-		"steps":1
+		"steps":1,
+		"use_token_type":true
 	},
 	"generator_albert":{
 		"task_type":"single_sentence_classification",

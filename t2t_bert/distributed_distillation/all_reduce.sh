@@ -17,7 +17,7 @@ pai -name tensorflow1120
 	-project algo_public
 	-Dscript='file://${model_zip}'
 	-DentryFile='./BERT/t2t_bert/distributed_bin/all_reduce_train_eval_api.py' 
-	-DgpuRequired=400
+	-DgpuRequired=100
 	-Dtags='bert'
 	-DjobName='bert_mrc_pretrain'
 	-DhyperParameters='file:///Users/xuhaotian/Desktop/my_work/BERT/t2t_bert/distributed_distillation/knowledge_distillation_multilingual_sst'

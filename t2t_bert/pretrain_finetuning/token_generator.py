@@ -271,6 +271,21 @@ def top_k_logits(logits, k):
 	   lambda: _top_k(),
 	)
 
+def top_k_softmax(x, k):
+	"""Calculate softmax(x), select top-k and rescale to sum to 1.
+	Args:
+		x: Input to softmax over.
+		k: Number of top-k to select.
+	Returns:
+		softmax(x) and maximum item.
+	"""
+	x = tf.nn.softmax(x)
+	top_x, _ = tf.nn.top_k(x, k=k + 1)
+	min_top = tf.reduce_min(top_x, axis=-1, keep_dims=True)
+	x = tf.nn.relu((x - min_top) + 1e-12)
+	x /= tf.reduce_sum(x, axis=-1, keep_dims=True)
+	return x, tf.reduce_max(top_x, axis=-1)
+
 def token_generator(config, input_tensor,
 					output_weights, 
 					input_ids, 
@@ -351,6 +366,10 @@ def token_generator(config, input_tensor,
 		if not kargs.get("apply_valid_vocab", False):
 			logits = logits
 			tf.logging.info("****** normal logits *******")
+		elif kargs.get("apply_valid_vocab", False) == 'topk':
+			prob, _ = top_k_softmax(logits, kargs.get('topk', 10))
+			logits = tf.log(prob+1e-10)
+			tf.logging.info("****** topk logits *******")
 		else:
 			invalid_size = kargs.get("invalid_size", 106)
 			invalid_mask = tf.cast(tf.ones((1, invalid_size))*(-10000), tf.float32)

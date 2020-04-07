@@ -61,11 +61,17 @@ def bert_encoder(model_config, features, labels,
 		attention_probs_dropout_prob = 0.0
 		dropout_prob = 0.0
 
+	if kargs.get('use_token_type', True):
+		tf.logging.info(" use token type ")
+	else:
+		tf.logging.info(" not use token type ")
+
 	model = bert.Bert(model_config)
 	model.build_embedder(input_ids, 
 						segment_ids,
 						hidden_dropout_prob,
 						attention_probs_dropout_prob,
+						use_token_type=kargs.get('use_token_type', True),
 						reuse=reuse)
 	model.build_encoder(input_ids,
 						input_mask,

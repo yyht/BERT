@@ -50,7 +50,7 @@ def model_fn_builder(
 	ngram_list = kargs.get("ngram", [10, 3])
 	mask_prob_list = kargs.get("mask_prob", [0.15, 0.15])
 	ngram_ratio = kargs.get("ngram_ratio", [8, 1])
-	uniform_ratio = kargs.get("uniform_ratio", 0.5)
+	uniform_ratio = kargs.get("uniform_ratio", 1.0)
 	tf.logging.info("****** dynamic ngram: %s, mask_prob: %s, mask_prior: %s, uniform_ratio: %s *******", 
 			str(ngram_list), str(mask_prob_list), str(ngram_ratio), str(uniform_ratio))	
 	tran_prob_list, hmm_tran_prob_list = [], []
@@ -96,8 +96,9 @@ def model_fn_builder(
 									scope=generator_scope_prefix,
 									mask_method='only_mask',
 									use_tpu=kargs.get('use_tpu', True),
-									apply_valid_vocab=kargs.get('apply_valid_vocab', True),
-									invalid_size=kargs.get('invalid_size', 106))
+									apply_valid_vocab=kargs.get('apply_valid_vocab', 'topk'),
+									invalid_size=kargs.get('invalid_size', 106),
+									greedy=kargs.get("greedy", False))
 
 		model_io_fn = model_io.ModelIO(model_io_config)
 

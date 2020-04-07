@@ -263,6 +263,17 @@ def emb_score(config, input_tensor, input_ids,
 				shape=[config.vocab_size],
 				initializer=tf.zeros_initializer())
 			tf.logging.info("****** mi using mlm transform *******")
+		elif kargs.get("energy_pooling", "mi") == "cls":
+			with tf.variable_scope("transform_ebm"):
+				# We "pool" the model by simply taking the hidden state corresponding
+				# to the first token. We assume that this has been pre-trained
+				first_token_tensor = tf.squeeze(input_tensor[:, 0:1, :], axis=1)
+				input_tensor = tf.layers.dense(
+						first_token_tensor,
+						config.hidden_size,
+						activation=bert_modules.get_activation(config.hidden_act),
+						kernel_initializer=bert_modules.create_initializer(config.initializer_range))
+				tf.logging.info("****** using cls pooling *******")
 		else:
 			with tf.variable_scope("transform_ebm"):
 				input_tensor = tf.layers.dense(
@@ -425,6 +436,15 @@ def emb_score(config, input_tensor, input_ids,
 				pool_features = tf.nn.softplus(-pool_features)
 				tf.logging.info("****** apply softplus transformation for pooled_features *******")
 
+		elif kargs.get("energy_pooling", "mi") == "cls":
+			with tf.variable_scope("transform"):
+				pool_features = tf.layers.dense(
+						input_tensor,
+						units=1,
+						use_bias=False,
+						activation=None
+						)
+			tf.logging.info("****** apply linear transformation for pooled_features *******")
 		# batch_size x hidden_dims
 
 		if kargs.get('transform', True):
@@ -497,7 +517,7 @@ def emb_score(config, input_tensor, input_ids,
 			tf.logging.info("****** sum of plogprob as sentence probability *******")
 			# ebm_scalar /= (1e-10+tf.reduce_sum(tf.cast(input_mask, tf.float32), axis=-1))
 		else:
-			ebm_scalar /= (1e-10+tf.reduce_sum(tf.cast(input_mask, tf.float32), axis=-1))
+			ebm_scalar /= (1e-10+tf.reduce_sum(tf.cast(input_mask[:, 1:], tf.float32), axis=-1))
 			tf.logging.info("****** sum of plogprob with length normalization as sentence probability *******")
 		print("===ebm_scalar====", ebm_scalar.get_shape())
 		print("===input_normalized_constant====", input_normalized_constant.get_shape())

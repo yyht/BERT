@@ -326,9 +326,9 @@ def train_eval_fn(FLAGS,
 			eval_spec = tf.estimator.EvalSpec(input_fn=eval_features, 
 											steps=num_eval_steps)
 			
-			model_estimator.train(input_fn=train_features,
-							max_steps=num_train_steps,
-							hooks=train_hooks)
+			# model_estimator.train(input_fn=train_features,
+			# 				max_steps=num_train_steps,
+			# 				hooks=train_hooks)
 			# tf.estimator.train(model_estimator, train_spec)
 
 			train_end_time = time.time()
