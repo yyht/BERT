@@ -130,6 +130,7 @@ def get_train_op(model_cls, optimizer_fn, opt_config,
 		loss = model_cls.ebm_opt_dict['loss']
 		tvars = model_cls.ebm_opt_dict['tvars'].extend(model_cls.ebm_opt_dict['logz_tvars'])
 		opt = model_cls.optimizer_dict['ebm']
+		print(loss, tvars, "====")
 		order = 'ebm'
 		ebm_op = get_train_op(opt, loss, tvars, order, if_grad_clip_dict[order])
 		prev_op = ebm_op
