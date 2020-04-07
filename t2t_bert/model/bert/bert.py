@@ -86,7 +86,7 @@ class Bert(object):
 				tf.logging.info("==using segment type embedding ratio: %s==", str(self.config.get("token_type_ratio", 1.0)))
 				self.embedding_output = bert_modules.embedding_postprocessor(
 						input_tensor=self.embedding_output_word,
-						use_token_type=True,
+						use_token_type=kargs.get('use_token_type', True),
 						token_type_ids=token_type_ids,
 						token_type_vocab_size=self.config.type_vocab_size,
 						token_type_embedding_name="token_type_embeddings",

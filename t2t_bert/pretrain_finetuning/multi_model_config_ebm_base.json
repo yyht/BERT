@@ -5,13 +5,13 @@
 		"data_type":"sentence_pair",
 		"model_type":"bert",
 		"model_scope":"bert",
-		"config_file":"./BERT/data/electra_share_embedding/generator/bert_config_tiny.json",
+		"config_file":"./BERT/data/electra_share_embedding/generator/bert_config.json",
 		"target":"",
 		"not_storage_params":[],
 		"exclude_scope":"",
 		"load_pretrained":"yes",
 		"num_labels":2,
-		"init_checkpoint":"bert_pretrain/open_domain/pretrain_single_random_hard_gan/tiny/bert_tiny_with_single_random_adam_decay_40_mixed_mask/model.ckpt-1145800",
+		"init_checkpoint":"bert_pretrain/open_domain/pretrained_model/roberta/chinese_roberta_wwm_ext_L-12_H-768_A-12/bert_model.ckpt",
 		"max_length":128,
 		"lm_augumentation":false,
 		"masked_lm_prob":0.2,
@@ -22,12 +22,13 @@
 		"vocab_file":"./BERT/data/chinese_L-12_H-768_A-12/vocab.txt",
 		"do_lower_case":true,
 		"ln_type":"postln",
-		"init_lr":1e-4,
-		"logz_init_lr":1e-4,
+		"init_lr":5e-5,
+		"logz_init_lr":5e-5,
 		"optimizer_type":"adam_decay",
 		"logz_optimizer_type":"adam_decay",
 		"steps":1,
-		"logz_steps":1
+		"logz_steps":1,
+		"use_token_type":true
 	},
 	"teacher_porn":{
 		"task_type":"single_sentence_classification",
@@ -212,7 +213,8 @@
 		"ln_type":"postln",
 		"init_lr":2e-4,
 		"optimizer_type":"adam_decay",
-		"steps":1
+		"steps":1,
+		"use_token_type":false
 	},
 	"generator":{
 		"task_type":"single_sentence_classification",
@@ -220,13 +222,16 @@
 		"data_type":"sentence_pair",
 		"model_type":"bert",
 		"model_scope":"bert",
-		"config_file":"./BERT/data/electra_share_embedding/generator/bert_config_tiny.json",
+		"config_file":"./BERT/data/electra_share_embedding/generator/bert_config.json",
 		"target":"",
 		"not_storage_params":[],
 		"exclude_scope":"generator",
 		"load_pretrained":"yes",
 		"num_labels":2,
-		"init_checkpoint":"bert_pretrain/open_domain/pretrain_single_random_hard_gan/tiny/bert_tiny_with_single_random_adam_decay_40_mixed_mask/model.ckpt-1145800",
+		"init_checkpoint_roberta":"bert_pretrain/open_domain/pretrained_model/roberta/chinese_roberta_wwm_ext_L-12_H-768_A-12/bert_model.ckpt",
+		"init_checkpoint":"chinese_L-12_H-768_A-12/bert_model.ckpt",
+		"init_checkpoint_roberta_1":"chinese_roberta_wwm_ext_L-12_H-768_A-12/bert_model.ckpt",
+		"init_checkpoint_wwm":"chinese_wwm_ext_L-12_H-768_A-12/bert_model.ckpt",
 		"max_length":128,
 		"lm_augumentation":false,
 		"masked_lm_prob":0.2,
@@ -239,7 +244,8 @@
 		"ln_type":"postln",
 		"init_lr":5e-4,
 		"optimizer_type":"adam_decay",
-		"steps":1
+		"steps":1,
+		"use_token_type":true
 	},
 	"noise_dist_base":{
 		"task_type":"single_sentence_classification",
