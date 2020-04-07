@@ -128,7 +128,7 @@ def get_train_op(model_cls, optimizer_fn, opt_config,
 		with tf.control_dependencies(update_ops):
 			model_cls.get_loss(features, labels, mode, params, **kargs)
 		loss = model_cls.ebm_opt_dict['loss']
-		tvars = model_cls.ebm_opt_dict['tvars'] #.extend(model_cls.ebm_opt_dict['logz_tvars'])
+		tvars = model_cls.ebm_opt_dict['tvars'].extend(model_cls.ebm_opt_dict['logz_tvars'])
 		print(model_cls.ebm_opt_dict['logz_tvars'], '====logz_tvars=====')
 		opt = model_cls.optimizer_dict['ebm']
 		order = 'ebm'
