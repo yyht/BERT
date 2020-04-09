@@ -79,7 +79,108 @@ def get_residual_ebm_loss(true_ebm_logits,
 	loss = true_data_loss + fake_data_loss
 	loss = tf.reduce_sum(loss*valid_mask) / (tf.reduce_sum(valid_mask)+1e-10)
 
-	return loss, true_data_loss, fake_data_loss
+	return loss
+
+def get_ebm_mlm_adv_loss(true_ebm_logits, fake_ebm_logits, **kargs):
+
+	d_out_real = true_ebm_logits
+	d_out_fake = fake_ebm_logits
+
+	input_shape_list = bert_utils.get_shape_list(d_out_real, 
+													expected_rank=[1,2,3])
+
+	gan_type = kargs.get('gan_type', 'standard')
+
+	if gan_type == 'standard':  # the non-satuating GAN loss
+		d_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
+			logits=d_out_real, labels=tf.ones_like(d_out_real)
+		))
+		d_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
+			logits=d_out_fake, labels=tf.zeros_like(d_out_fake)
+		))
+		d_loss = d_loss_real + d_loss_fake
+
+		g_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
+			logits=d_out_fake, labels=tf.ones_like(d_out_fake)
+		))
+		tf.logging.info("====the non-satuating GAN loss ====")
+
+	elif gan_type == 'JS':  # the vanilla GAN loss
+		d_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
+			logits=d_out_real, labels=tf.ones_like(d_out_real)
+		))
+		d_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
+			logits=d_out_fake, labels=tf.zeros_like(d_out_fake)
+		))
+		d_loss = d_loss_real + d_loss_fake
+
+		g_loss = -d_loss_fake
+		tf.logging.info("====the vanilla GAN loss ====")
+
+	elif gan_type == 'KL':  # the GAN loss implicitly minimizing KL-divergence
+		d_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
+			logits=d_out_real, labels=tf.ones_like(d_out_real)
+		))
+		d_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
+			logits=d_out_fake, labels=tf.zeros_like(d_out_fake)
+		))
+		d_loss = d_loss_real + d_loss_fake
+
+		g_loss = tf.reduce_mean(-d_out_fake)
+		tf.logging.info("====the GAN loss implicitly minimizing KL-divergence ====")
+
+	elif gan_type == 'hinge':  # the hinge loss
+		d_loss_real = tf.reduce_mean(tf.nn.relu(1.0 - d_out_real))
+		d_loss_fake = tf.reduce_mean(tf.nn.relu(1.0 + d_out_fake))
+		d_loss = d_loss_real + d_loss_fake
+
+		g_loss = -tf.reduce_mean(d_out_fake)
+		tf.logging.info("====the hinge loss ====")
+
+	elif gan_type == 'tv':  # the total variation distance
+		d_loss = tf.reduce_mean(tf.tanh(d_out_fake) - tf.tanh(d_out_real))
+		g_loss = tf.reduce_mean(-tf.tanh(d_out_fake))
+		tf.logging.info("====the total variation distance ====")
+
+	# elif gan_type == 'wgan-gp':  # WGAN-GP
+	# 	d_loss = tf.reduce_mean(d_out_fake) - tf.reduce_mean(d_out_real)
+	# 	GP = gradient_penalty(discriminator, x_real_onehot, x_fake_onehot_appr, config)
+	# 	d_loss += GP
+
+	# 	g_loss = -tf.reduce_mean(d_out_fake)
+
+	elif gan_type == 'LS':  # LS-GAN
+		d_loss_real = tf.reduce_mean(tf.squared_difference(d_out_real, 1.0))
+		d_loss_fake = tf.reduce_mean(tf.square(d_out_fake))
+		d_loss = d_loss_real + d_loss_fake
+
+		g_loss = tf.reduce_mean(tf.squared_difference(d_out_fake, 1.0))
+		tf.logging.info("====LS-GAN ====")
+
+	elif gan_type == 'RSGAN':  # relativistic standard GAN
+		d_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
+			logits=d_out_real - d_out_fake, labels=tf.ones_like(d_out_real)
+		))
+		g_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
+			logits=d_out_fake - d_out_real, labels=tf.ones_like(d_out_fake)
+		))
+		tf.logging.info("====relativistic standard GAN ====")
+
+	else:
+		raise NotImplementedError("Divergence '%s' is not implemented" % gan_type)
+
+	if not kargs.get('use_tpu', True):
+		tf.logging.info("====logging discriminator global loss ====")
+		tf.summary.scalar('disc_loss', 
+							d_loss)
+		tf.summary.scalar('gen_loss', 
+							g_loss)
+		tf.summary.scalar('d_loss_real', 
+							d_loss_real)
+		tf.summary.scalar('d_loss_fake', 
+							d_loss_fake)
+
+	return d_loss, g_loss
 
 def get_noise_loss(true_ebm_logits, true_noise_logits, 
 					fake_ebm_logits, fake_noise_logits, 

@@ -11,6 +11,8 @@ except:
 
 from pretrain_finetuning.token_generator import token_generator, random_input_ids_generation
 from pretrain_finetuning.token_generator_hmm import hmm_input_ids_generation, ngram_prob
+from pretrain_finetuning.token_generator_gumbel import token_generator_gumbel
+
 
 from utils.bert import bert_utils
 from model_io import model_io
@@ -86,19 +88,39 @@ def model_fn_builder(
 							tf.estimator.ModeKeys.EVAL, target, reuse=tf.AUTO_REUSE,
 							**kargs)
 
-		sampled_ids = token_generator(model_config, 
-									model.get_sequence_output(), 
-									model.get_embedding_table(), 
-									features['input_ids'], 
-									features['input_ori_ids'],
-									features['input_mask'],	
-									embedding_projection=model.get_embedding_projection_table(),
-									scope=generator_scope_prefix,
-									mask_method='only_mask',
-									use_tpu=kargs.get('use_tpu', True),
-									apply_valid_vocab=kargs.get('apply_valid_vocab', 'topk'),
-									invalid_size=kargs.get('invalid_size', 106),
-									greedy=kargs.get("greedy", False))
+		if kargs.get("stop_gradient_mlm", True):
+			sampled_ids = token_generator(model_config, 
+										model.get_sequence_output(), 
+										model.get_embedding_table(), 
+										features['input_ids'], 
+										features['input_ori_ids'],
+										features['input_mask'],	
+										embedding_projection=model.get_embedding_projection_table(),
+										scope=generator_scope_prefix,
+										mask_method='only_mask',
+										use_tpu=kargs.get('use_tpu', True),
+										apply_valid_vocab=kargs.get('apply_valid_vocab', 'topk'),
+										invalid_size=kargs.get('invalid_size', 106),
+										greedy=kargs.get("greedy", False))
+			tf.logging.info("****** stop gradient mlm *******")
+		else:
+			sampled_ids = token_generator_gumbel(model_config, 
+										model.get_sequence_output(), 
+										model.get_embedding_table(), 
+										features['input_ids'], 
+										features['input_ori_ids'],
+										features['input_mask'],	
+										embedding_projection=model.get_embedding_projection_table(),
+										scope=generator_scope_prefix,
+										mask_method='only_mask',
+										use_tpu=kargs.get('use_tpu', True),
+										stable_gradient=True,
+										sampled_prob_id=False,
+										if_flip_grad=False,
+										straight_through=kargs.get('straight_through', True),
+										gumbel_anneal='vqvae_v2',
+										num_train_steps=kargs.get('num_train_steps', 100000))
+			tf.logging.info("****** gumbel softmax gradient mlm: %s *******", str(kargs.get('num_train_steps', 100000)))
 
 		model_io_fn = model_io.ModelIO(model_io_config)
 
@@ -146,12 +168,18 @@ def model_fn_builder(
 		idx = tf.random_shuffle(tf.range(sampeld_id_shape[0]))
 		shuffled_sampled_ids = tf.gather(sampled_ids, idx)
 
-		shuffled_sampled_mask = tf.cast(tf.not_equal(shuffled_sampled_ids, 
-													kargs.get('[PAD]', 0)),
-										tf.int32)
+		if len(sampeld_id_shape) == 2:
+			shuffled_sampled_mask = tf.cast(tf.not_equal(shuffled_sampled_ids, 
+														kargs.get('[PAD]', 0)),
+														tf.int32)
+			not_equal = tf.cast(tf.not_equal(tf.cast(shuffled_sampled_ids, tf.int32), tf.cast(features['input_ori_ids'], tf.int32)), tf.int32)
+		elif len(sampeld_id_shape) == 3:
+			shuffled_sampled_mask = tf.cast(tf.not_equal(tf.argmax(shuffled_sampled_ids, axis=-1), 
+														kargs.get('[PAD]', 0)),
+														tf.int32)
+			not_equal = tf.cast(tf.not_equal(tf.cast(tf.argmax(shuffled_sampled_ids, axis=-1), tf.int32), tf.cast(features['input_ori_ids'], tf.int32)), tf.int32)
 
-		use_tpu = 1 if kargs.get('use_tpu', False) else 0
-		not_equal = tf.cast(tf.not_equal(tf.cast(shuffled_sampled_ids, tf.int32), tf.cast(features['input_ori_ids'], tf.int32)), tf.int32)
+		use_tpu = 1 if kargs.get('use_tpu', False) else 0			
 		not_equal = tf.reduce_sum(not_equal, axis=-1) # summary not equal ids
 		not_equal_instance = tf.cast(tf.not_equal(not_equal, tf.zeros_like(not_equal)), tf.float32)
 		if not use_tpu:
