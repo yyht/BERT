@@ -5,13 +5,13 @@ from utils.bert import bert_utils
 try:
 	from .trf_gpt_noise import model_fn_builder as noise_dist
 	from .trf_ebm_bert import model_fn_builder as ebm_dist
-	from .trf_classifier import get_ebm_loss, get_residual_ebm_loss, get_noise_loss, ebm_noise_train_metric, ebm_noise_eval_metric, ebm_eval_metric, ebm_train_metric
+	from .trf_classifier import get_ebm_loss, get_residual_ebm_loss, get_ebm_mlm_adv_loss, get_noise_loss, ebm_noise_train_metric, ebm_noise_eval_metric, ebm_eval_metric, ebm_train_metric
 	from .trf_ebm_noise_mlm_sample import model_fn_builder as mlm_noise_dist
 except:
 	from trf_gpt_noise import model_fn_builder as noise_dist
 	from trf_ebm_bert import model_fn_builder as ebm_dist
 	from trf_ebm_noise_mlm_sample import model_fn_builder as mlm_noise_dist
-	from trf_classifier import get_ebm_loss, get_residual_ebm_loss, get_noise_loss, ebm_noise_train_metric, ebm_noise_eval_metric, ebm_eval_metric, ebm_train_metric
+	from trf_classifier import get_ebm_loss, get_residual_ebm_loss, get_ebm_mlm_adv_loss, get_noise_loss, ebm_noise_train_metric, ebm_noise_eval_metric, ebm_eval_metric, ebm_train_metric
 
 import tensorflow as tf
 import numpy as np
@@ -26,13 +26,14 @@ from collections import OrderedDict
 
 def get_train_op(model_cls, optimizer_fn, opt_config,
 				ebm_dist_config, noise_dist_config,
+				mlm_dist_config,
 				features, labels, mode, params,
 				**kargs):
 	
-	init_lr_dict = OrderedDict(zip(['ebm', 'ebm_logz'], [ebm_dist_config['init_lr'], ebm_dist_config.get('logz_init_lr', ebm_dist_config['init_lr'])]))
-	optimizer_type_dict = OrderedDict(zip(['ebm', 'ebm_logz'], [ebm_dist_config['optimizer_type'], ebm_dist_config['logz_optimizer_type']]))
-	loop_step_dict = OrderedDict(zip(['ebm', 'ebm_logz'], [ebm_dist_config.get("steps", 1), ebm_dist_config.get("logz_steps", 1)]))
-	if_grad_clip_dict = OrderedDict(zip(['ebm', 'ebm_logz'], [True, True]))
+	init_lr_dict = OrderedDict(zip(['ebm', 'ebm_logz', 'generator'], [ebm_dist_config['init_lr'], ebm_dist_config.get('logz_init_lr', ebm_dist_config['init_lr']), mlm_dist_config['init_lr']]))
+	optimizer_type_dict = OrderedDict(zip(['ebm', 'ebm_logz', 'generator'], [ebm_dist_config['optimizer_type'], ebm_dist_config['logz_optimizer_type'], mlm_dist_config['optimizer_type']]))
+	loop_step_dict = OrderedDict(zip(['ebm', 'ebm_logz', 'generator'], [ebm_dist_config.get("steps", 1), ebm_dist_config.get("logz_steps", 1), mlm_dist_config.get("steps", 1)]))
+	if_grad_clip_dict = OrderedDict(zip(['ebm', 'ebm_logz', 'generator'], [True, True, True]))
 	
 	use_tpu = 1 if kargs.get('use_tpu', False) else 0
 
@@ -96,32 +97,14 @@ def get_train_op(model_cls, optimizer_fn, opt_config,
 					order = step2order[step]
 					if order == 'ebm':
 						loss = model_cls.ebm_opt_dict['loss']
-						tvars = model_cls.ebm_opt_dict['tvars']
+						tvars = model_cls.ebm_opt_dict['tvars']+model_cls.ebm_opt_dict['logz_tvars']
 						opt = model_cls.optimizer_dict['ebm']
-					elif order == 'ebm_logz':
-						loss = model_cls.ebm_opt_dict['logz_loss']
-						tvars = model_cls.ebm_opt_dict['logz_tvars']
-						opt = model_cls.optimizer_dict['ebm_logz']
+					elif order == 'generator':
+						loss = model_cls.ebm_opt_dict['mlm_adv_loss']
+						tvars = model_cls.ebm_opt_dict['mlm_tvars']
+						opt = model_cls.optimizer_dict['generator']
 					prev_op = get_train_op(opt, loss, tvars, order, if_grad_clip_dict[order])
 
-	elif train_op == 'group':
-		tf.logging.info("****** group optimization *******")
-		update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-		with tf.control_dependencies(update_ops):
-			model_cls.get_loss(features, labels, mode, params, **kargs)
-		loss = model_cls.ebm_opt_dict['loss']
-		tvars = model_cls.ebm_opt_dict['tvars']
-		opt = model_cls.optimizer_dict['ebm']
-		order = 'ebm'
-		ebm_op = get_train_op(opt, loss, tvars, order, if_grad_clip_dict[order])
-
-		loss = model_cls.ebm_opt_dict['logz_loss']
-		tvars = model_cls.ebm_opt_dict['logz_tvars']
-		opt = model_cls.optimizer_dict['ebm_logz']
-		order = 'ebm_logz'
-		ebm_logz_op = get_train_op(opt, loss, tvars, order, if_grad_clip_dict[order])
-		
-		prev_op = tf.group([ebm_op, ebm_logz_op])
 	elif train_op == 'joint':
 		tf.logging.info("****** joint optimization *******")
 		update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
@@ -139,36 +122,6 @@ def get_train_op(model_cls, optimizer_fn, opt_config,
 		train_op = optimizer_fn.global_step.assign_add(1)
 
 	return train_op
-
-def ebm_logz_length_cond_loss(config, features, ebm_all_loss, valid_mask=None):
-	"""
-	we group by length and mean over loss by length
-	and apply sgd to optimize logz's parameters just like center-loss for center updating
-	"""
-	input_mask = features['input_mask']
-	shape = bert_utils.get_shape_list(input_mask)
-	valid_seq_length = tf.cast(tf.reduce_sum(input_mask, axis=-1), tf.int32) # batch_size
-	onehot_length_ids = tf.one_hot(valid_seq_length, config.max_position_embeddings)
-	onehot_length_ids = tf.cast(onehot_length_ids, tf.float32)
-
-	if_provided = 1
-	if valid_mask is None:
-		valid_mask = tf.ones(shape=[shape[0]])
-		if_provided = 0
-		tf.logging.info("====ones valid mask ====")
-	if if_provided == 1:
-		tf.logging.info("====provided valid mask ====")
-
-	valid_mask = tf.expand_dims(tf.cast(valid_mask, tf.float32), axis=-1) # batch_size x 1
-
-	length_accumulate_loss = tf.einsum("ab,a->ab", onehot_length_ids, ebm_all_loss)
-	length_loss = tf.reduce_sum(length_accumulate_loss*valid_mask, axis=0)
-
-	length_appear_time = tf.reduce_sum(onehot_length_ids*valid_mask, axis=0) + 1e-10
-
-	logz_length_attribute_loss = length_loss / length_appear_time # 1 x max_position_embeddings
-	logz_length_loss = tf.reduce_sum(logz_length_attribute_loss)
-	return logz_length_loss
 
 def token_seq_truncted(token_seq, finished_index, max_length): 
 	seq_shape = bert_utils.get_shape_list(token_seq, expected_rank=[2,3])
@@ -245,6 +198,7 @@ class EBM_NOISE_NCE(object):
 
 		self.train_op_type = kargs.get('train_op_type', 'joint')
 		self.ebm_prob_ln = True
+		self.stop_gradient_mlm = False
 
 		self.ebm_dist_fn = ebm_dist(self.model_config_dict['ebm_dist'],
 							self.num_labels_dict['ebm_dist'],
@@ -270,13 +224,13 @@ class EBM_NOISE_NCE(object):
 
 		global_step = tf.train.get_or_create_global_step()
 		self.noise_sample_ratio = tf.train.polynomial_decay(
-												0.30,
+												0.25,
 												global_step,
 												self.opt_config.num_train_steps,
-												end_learning_rate=0.1,
+												end_learning_rate=0.15,
 												power=1.0,
 												cycle=False)
-
+	
 		self.mlm_noise_dist_fn = mlm_noise_dist(self.model_config_dict['generator'],
 					self.num_labels_dict['generator'],
 					self.init_checkpoint_dict['generator'],
@@ -291,6 +245,7 @@ class EBM_NOISE_NCE(object):
 					replace_probability=0.0,
 					original_probability=0.0,
 					use_token_type=self.model_config_dict['generator'].get('use_token_type', True),
+					stop_gradient_mlm=self.stop_gradient_mlm,
 					**kargs)
 
 	def get_opt(self, optimizer_fn, init_lr_dict, optimizer_type_dict, **kargs):
@@ -361,39 +316,31 @@ class EBM_NOISE_NCE(object):
 		self.true_ebm_dist_dict = self.ebm_dist_fn(true_features, labels, mode, params)
 		self.fake_ebm_dist_dict = self.ebm_dist_fn(fake_features, labels, mode, params)
 
-		[self.ebm_loss, 
-		self.ebm_all_true_loss,
-		self.ebm_all_fake_loss] = get_residual_ebm_loss(self.true_ebm_dist_dict['logits'], 
-								self.fake_ebm_dist_dict['logits'], 
-								use_tpu=kargs.get('use_tpu', False),
-								valid_mask=self.mlm_noise_dist_dict.get("valid_mask", None))
+		# self.ebm_loss = get_residual_ebm_loss(self.true_ebm_dist_dict['logits'], 
+		# 						self.fake_ebm_dist_dict['logits'], 
+		# 						use_tpu=kargs.get('use_tpu', False))
 
-		self.logz_length_true_loss = ebm_logz_length_cond_loss(self.model_config_dict['ebm_dist'],
-															true_features,
-															self.ebm_all_true_loss,
-															valid_mask=self.mlm_noise_dist_dict.get("valid_mask", None))
+		self.gan_type = kargs.get('gan_type', 'JS')
+		tf.logging.info("****** gan type *******", self.gan_type)
 
-		self.logz_length_fake_loss = ebm_logz_length_cond_loss(self.model_config_dict['ebm_dist'],
-															fake_features,
-															self.ebm_all_fake_loss,
-															valid_mask=self.mlm_noise_dist_dict.get("valid_mask", None))
+		[self.ebm_loss, self.mlm_adv_loss] = get_ebm_mlm_adv_loss(self.true_ebm_dist_dict['logits'], 
+															self.fake_ebm_dist_dict['logits'], 
+															gan_type=self.gan_type,
+															use_tpu=kargs.get('use_tpu', False))
 		
-		if kargs.get("logz_loss", "normal_loss") == "center_loss_like":
-			tf.logging.info("****** center_loss_like *******")
-			self.true_ebm_dist_dict['logz_loss'] = self.logz_length_true_loss + self.logz_length_fake_loss
-		else:
-			tf.logging.info("****** normal loss *******")
-			self.true_ebm_dist_dict['logz_loss'] = self.ebm_loss
+		self.true_ebm_dist_dict['logz_loss'] = self.ebm_loss
 
 		self.ebm_opt_dict = {
 			"loss":self.ebm_loss,
 			"tvars":self.true_ebm_dist_dict['tvars'],
 			"logz_tvars":self.true_ebm_dist_dict['logz_tvars'],
-			"logz_loss":self.true_ebm_dist_dict['logz_loss']
+			"logz_loss":self.true_ebm_dist_dict['logz_loss'],
+			"mlm_adv_loss":self.mlm_adv_loss,
+			"mlm_tvars":self.mlm_noise_dist_dict['tvars']
 		}
 
 		self.loss = self.ebm_loss
-		self.tvars = self.true_ebm_dist_dict['logz_tvars'] + self.true_ebm_dist_dict['tvars']
+		self.tvars = self.true_ebm_dist_dict['logz_tvars'] + self.true_ebm_dist_dict['tvars'] + self.mlm_noise_dist_dict['tvars']
 
 	def load_pretrained_model(self, **kargs):
 		self.var_checkpoint_dict_list = []
@@ -465,10 +412,11 @@ def classifier_model_fn_builder(
 								opt_config,
 								model_config_dict['ebm_dist'], 
 								model_config_dict['noise_dist'],
+								model_config_dict['generator'],
 								features, labels, mode, params,
 								use_tpu=use_tpu,
 								train_op_type=train_op_type,
-								alternate_order=['ebm_logz', 'ebm'])
+								alternate_order=['generator', 'ebm'])
 
 			ebm_noise_fce.load_pretrained_model(**kargs)
 			var_checkpoint_dict_list = ebm_noise_fce.var_checkpoint_dict_list
