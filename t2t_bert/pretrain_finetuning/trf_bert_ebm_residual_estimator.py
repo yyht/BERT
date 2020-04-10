@@ -198,7 +198,7 @@ class EBM_NOISE_NCE(object):
 
 		self.train_op_type = kargs.get('train_op_type', 'joint')
 		self.ebm_prob_ln = False
-		self.stop_gradient_mlm = True
+		self.stop_gradient_mlm = False
 
 		self.ebm_dist_fn = ebm_dist(self.model_config_dict['ebm_dist'],
 							self.num_labels_dict['ebm_dist'],
