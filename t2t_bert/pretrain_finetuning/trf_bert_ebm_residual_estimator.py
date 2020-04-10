@@ -197,8 +197,8 @@ class EBM_NOISE_NCE(object):
 		self.num_labels_dict = num_labels_dict
 
 		self.train_op_type = kargs.get('train_op_type', 'joint')
-		self.ebm_prob_ln = True
-		self.stop_gradient_mlm = False
+		self.ebm_prob_ln = False
+		self.stop_gradient_mlm = True
 
 		self.ebm_dist_fn = ebm_dist(self.model_config_dict['ebm_dist'],
 							self.num_labels_dict['ebm_dist'],
@@ -215,7 +215,7 @@ class EBM_NOISE_NCE(object):
 							transformer_activation="linear",
 							logz_mode='none',
 							normalized_constant="logv_constant_ln",
-							energy_pooling="mi",
+							energy_pooling="cls",
 							softplus_features=False,
 							use_token_type=self.model_config_dict['ebm_dist'].get('use_token_type', True),
 							**kargs)
@@ -418,7 +418,7 @@ def classifier_model_fn_builder(
 								features, labels, mode, params,
 								use_tpu=use_tpu,
 								train_op_type=train_op_type,
-								alternate_order=['generator', 'ebm'])
+								alternate_order=['ebm'])
 
 			ebm_noise_fce.load_pretrained_model(**kargs)
 			var_checkpoint_dict_list = ebm_noise_fce.var_checkpoint_dict_list

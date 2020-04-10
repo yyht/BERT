@@ -271,7 +271,7 @@ def emb_score(config, input_tensor, input_ids,
 				input_tensor = tf.layers.dense(
 						first_token_tensor,
 						config.hidden_size,
-						activation=bert_modules.get_activation(config.hidden_act),
+						activation=tf.nn.tanh,
 						kernel_initializer=bert_modules.create_initializer(config.initializer_range))
 				tf.logging.info("****** using cls pooling *******")
 		else:
