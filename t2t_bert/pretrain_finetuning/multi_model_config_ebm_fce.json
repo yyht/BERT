@@ -27,7 +27,8 @@
 		"optimizer_type":"adam_decay",
 		"logz_optimizer_type":"adam_decay",
 		"steps":1,
-		"logz_steps":1
+		"logz_steps":1,
+		"fix_embeddings":false
 	},
 	"teacher_porn":{
 		"task_type":"single_sentence_classification",

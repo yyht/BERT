@@ -490,8 +490,8 @@ def ebm_eval_metric(true_ebm_logits,
 		labels=fake_labels,
 		predictions=pred_fake_label)
 
-	all_data_pred = tf.concat([true_accuracy, fake_accuracy], axis=0)
-	all_data_label = tf.concat([true_accuracy, fake_accuracy], axis=0)
+	all_data_pred = tf.concat([pred_true_label, pred_fake_label], axis=0)
+	all_data_label = tf.concat([true_labels, fake_labels], axis=0)
 	all_accuracy = tf.metrics.accuracy(
 		labels=all_data_label,
 		predictions=all_data_pred)

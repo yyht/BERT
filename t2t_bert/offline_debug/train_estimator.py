@@ -54,7 +54,7 @@ def train_eval_fn(FLAGS,
 		config.label_type = "single_label"
 
 		config.model = FLAGS.model_type
-		config.init_lr = 1e-4
+		config.init_lr = 3e-4
 		config.ln_type = FLAGS.ln_type
 
 		config.loss = 'entropy'

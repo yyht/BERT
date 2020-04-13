@@ -332,9 +332,20 @@ class EBM_NOISE_NCE(object):
 		
 		self.true_ebm_dist_dict['logz_loss'] = self.ebm_loss
 
+		if self.model_config_dict['ebm_dist'].get('fix_embeddings', False):
+			tf.logging.info("****** generator parameter *******")
+			self.true_ebm_dist_vars = []
+			for var in self.true_ebm_dist_dict['tvars']:
+				if 'embeddings' in var.name:
+					print(var, "==emebdding vars==")
+				else:
+					self.true_ebm_dist_vars.append(var)
+		else:
+			self.true_ebm_dist_vars = self.true_ebm_dist_dict['tvars']
+
 		self.ebm_opt_dict = {
 			"loss":self.ebm_loss,
-			"tvars":self.true_ebm_dist_dict['tvars'],
+			"tvars":self.true_ebm_dist_vars,
 			"logz_tvars":self.true_ebm_dist_dict['logz_tvars'],
 			"logz_loss":self.true_ebm_dist_dict['logz_loss'],
 			"mlm_adv_loss":self.mlm_adv_loss,
@@ -350,7 +361,7 @@ class EBM_NOISE_NCE(object):
 			if self.load_pretrained_dict[key] == "yes":
 				if key == 'ebm_dist':
 					tmp = {
-							"tvars":self.ebm_opt_dict['tvars']+self.ebm_opt_dict['logz_tvars'],
+							"tvars":self.true_ebm_dist_dict['tvars']+self.true_ebm_dist_dict['logz_tvars'],
 							"init_checkpoint":self.init_checkpoint_dict['ebm_dist'],
 							"exclude_scope":self.exclude_scope_dict[key],
 							"restore_var_name":self.model_config_dict['ebm_dist'].get('restore_var_name', [])
