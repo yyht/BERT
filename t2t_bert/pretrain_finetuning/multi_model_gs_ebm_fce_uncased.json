@@ -222,7 +222,7 @@
 		"config_file":"./data/uncased_L-4_H-256_A-4/bert_config.json",
 		"target":"",
 		"not_storage_params":[],
-		"exclude_scope":"noise",
+		"exclude_scope":"generator",
 		"load_pretrained":"yes",
 		"num_labels":2,
 		"init_checkpoint":"model/tiny/english/uncased_L-4_H-256_A-4/bert_model.ckpt",
