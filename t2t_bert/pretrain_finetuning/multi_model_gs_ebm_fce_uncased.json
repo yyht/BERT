@@ -26,6 +26,7 @@
 		"optimizer_type":"adam_decay",
 		"logz_optimizer_type":"sgd",
 		"steps":1,
+		"ln_type":"postln",
 		"logz_steps":1
 	},
 	"teacher_porn":{
