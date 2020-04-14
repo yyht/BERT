@@ -213,7 +213,8 @@ class Bert(object):
 						past=past,
 						decode_loop_step=decode_loop_step,
 						if_bp=if_bp,
-						if_cache_decode=if_cache_decode)
+						if_cache_decode=if_cache_decode,
+						attention_fixed_size=self.config.get('attention_fixed_size', None))
 				# self.cached_present = tf.stack(self.all_present, axis=1)
 
 	def build_output_logits(self, **kargs):

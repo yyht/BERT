@@ -17,7 +17,8 @@ def efficient_attention_layer(from_tensor,
 										do_return_2d_tensor=False,
 										batch_size=None,
 										from_seq_length=None,
-										to_seq_length=None):
+										to_seq_length=None,
+										attention_fixed_size=None):
 	"""Performs multi-headed attention from `from_tensor` to `to_tensor`.
 
 	This is an implementation of multi-headed attention based on "Attention
@@ -107,13 +108,20 @@ def efficient_attention_layer(from_tensor,
 	#   N = `num_attention_heads`
 	#   H = `size_per_head`
 
+	if attention_fixed_size:
+		attention_head_size = attention_fixed_size
+		tf.logging.info("==apply attention_fixed_size==", str(attention_head_size))
+	else:
+		attention_head_size = size_per_head
+		tf.logging.info("==apply attention_original_size==", str(attention_head_size))
+
 	from_tensor_2d = bert_utils.reshape_to_matrix(from_tensor)
 	to_tensor_2d = bert_utils.reshape_to_matrix(to_tensor)
 
 	# `query_layer` = [B*F, N*H]
 	query_layer = tf.layers.dense(
 			from_tensor_2d,
-			num_attention_heads * size_per_head,
+			num_attention_heads * attention_head_size,
 			activation=query_act,
 			name="query",
 			kernel_initializer=albert_modules.create_initializer(initializer_range))
@@ -121,7 +129,7 @@ def efficient_attention_layer(from_tensor,
 	# `key_layer` = [B*T, N*H]
 	key_layer = tf.layers.dense(
 			to_tensor_2d,
-			num_attention_heads * size_per_head,
+			num_attention_heads * attention_head_size,
 			activation=key_act,
 			name="key",
 			kernel_initializer=albert_modules.create_initializer(initializer_range))
@@ -129,7 +137,7 @@ def efficient_attention_layer(from_tensor,
 	# `value_layer` = [B*T, N*H]
 	value_layer = tf.layers.dense(
 			to_tensor_2d,
-			num_attention_heads * size_per_head,
+			num_attention_heads * attention_head_size,
 			activation=value_act,
 			name="value",
 			kernel_initializer=albert_modules.create_initializer(initializer_range))
@@ -140,15 +148,15 @@ def efficient_attention_layer(from_tensor,
 	# `query_layer` = [B, N, F, H]
 	query_layer = transpose_for_scores(query_layer, batch_size,
 									 num_attention_heads, from_seq_length,
-									 size_per_head)
+									 attention_head_size)
 
 	# `key_layer` = [B, N, T, H]
 	key_layer = transpose_for_scores(key_layer, batch_size, num_attention_heads,
-									to_seq_length, size_per_head)
+									to_seq_length, attention_head_size)
 
 	# `value_layer` = [B, N, T, H]
 	value_layer = transpose_for_scores(value_layer, batch_size, num_attention_heads,
-									to_seq_length, size_per_head)
+									to_seq_length, attention_head_size)
 
 	# Take the dot product between "query" and "key" to get the raw
 	# attention scores.
@@ -178,11 +186,11 @@ def efficient_attention_layer(from_tensor,
 		# `context_layer` = [B*F, N*V]
 		context_layer = tf.reshape(
 				context_layer,
-				[batch_size * from_seq_length, num_attention_heads * size_per_head])
+				[batch_size * from_seq_length, num_attention_heads * attention_head_size])
 	else:
 		# `context_layer` = [B, F, N*V]
 		context_layer = tf.reshape(
 				context_layer,
-				[batch_size, from_seq_length, num_attention_heads * size_per_head])
+				[batch_size, from_seq_length, num_attention_heads * attention_head_size])
 
 	return context_layer, attention_scores
