@@ -290,6 +290,7 @@ def sample_sequence(model_api,
 				estimator="straight_through",
 				back_prop=True,
 				swap_memory=True,
+				attention_fixed_size=None,
 				**kargs):
 
 	input_shape = bert_utils.get_shape_list(features["input_ids"], expected_rank=[2,3])
@@ -329,7 +330,10 @@ def sample_sequence(model_api,
 	#   N = `num_attention_heads`
 	#   H = `size_per_head`
 
-	attention_head_size = int(model_config.hidden_size / model_config.num_attention_heads)
+	if attention_fixed_size:
+		attention_head_size = attention_fixed_size
+	else:
+		attention_head_size = int(model_config.hidden_size / model_config.num_attention_heads)
 
 	# single layer present: [B, 2, N, T, H]
 	# all layer present: [B, N_layer, 2, N, T, H]

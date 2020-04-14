@@ -7,12 +7,12 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--max_length 512 \
 	--train_file "english_corpus/pretrain_single_random_gan_uncased/chunk_0.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_1.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_2.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_3.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_4.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_5.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_6.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_7.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_8.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_9.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_10.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_11.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_12.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_13.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_14.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_15.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_16.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_17.tfrecords" \
 	--dev_file "english_corpus/pretrain_single_random_gan_uncased/chunk_18.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_19.tfrecords" \
-	--model_output "model/ebm_fce/uncased/ebm_tiny_cls_gelu" \
+	--model_output "model/ebm_fce/uncased/ebm_base_cls_gelu" \
 	--epoch 1 \
 	--num_classes 2 \
 	--train_size 11000000 \
 	--eval_size 1100000 \
-	--batch_size 256 \
+	--batch_size 128 \
 	--model_type "albert" \
 	--if_shard 1 \
 	--is_debug 1 \
@@ -28,11 +28,11 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--decay "decay" \
 	--init_lr 2e-4 \
 	--do_train true \
-	--tpu_name "albert3" \
+	--tpu_name "albert4" \
 	--num_tpu_cores 8 \
 	--mode 'electra' \
-	--multi_task_type "ebm_dist,noise_dist" \
-	--multi_task_config "./t2t_bert/pretrain_finetuning/multi_model_gs_ebm_fce_uncased.json" \
+	--multi_task_type "ebm_dist,noise_dist,generator" \
+	--multi_task_config "./t2t_bert/pretrain_finetuning/multi_model_gs_ebm_fce_uncased_base.json" \
 	--joint_train "1" \
 	--electra_mode "trf_fce" \
 	--sharing_mode "none" \

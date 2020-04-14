@@ -526,7 +526,8 @@ def attention_layer(from_tensor,
 										do_return_2d_tensor=False,
 										batch_size=None,
 										from_seq_length=None,
-										to_seq_length=None):
+										to_seq_length=None,
+										attention_fixed_size=None):
 	"""Performs multi-headed attention from `from_tensor` to `to_tensor`.
 
 	This is an implementation of multi-headed attention based on "Attention
@@ -616,13 +617,20 @@ def attention_layer(from_tensor,
 	#   N = `num_attention_heads`
 	#   H = `size_per_head`
 
+	if attention_fixed_size:
+		attention_head_size = attention_fixed_size
+		tf.logging.info("==apply attention_fixed_size==")
+	else:
+		attention_head_size = size_per_head
+		tf.logging.info("==apply attention_original_size==")
+
 	from_tensor_2d = bert_utils.reshape_to_matrix(from_tensor)
 	to_tensor_2d = bert_utils.reshape_to_matrix(to_tensor)
 
 	# `query_layer` = [B*F, N*H]
 	query_layer = tf.layers.dense(
 			from_tensor_2d,
-			num_attention_heads * size_per_head,
+			num_attention_heads * attention_head_size,
 			activation=query_act,
 			name="query",
 			kernel_initializer=create_initializer(initializer_range))
@@ -630,7 +638,7 @@ def attention_layer(from_tensor,
 	# `key_layer` = [B*T, N*H]
 	key_layer = tf.layers.dense(
 			to_tensor_2d,
-			num_attention_heads * size_per_head,
+			num_attention_heads * attention_head_size,
 			activation=key_act,
 			name="key",
 			kernel_initializer=create_initializer(initializer_range))
@@ -638,26 +646,29 @@ def attention_layer(from_tensor,
 	# `value_layer` = [B*T, N*H]
 	value_layer = tf.layers.dense(
 			to_tensor_2d,
-			num_attention_heads * size_per_head,
+			num_attention_heads * attention_head_size,
 			activation=value_act,
 			name="value",
 			kernel_initializer=create_initializer(initializer_range))
 
 	# `query_layer` = [B, N, F, H]
 	query_layer = transpose_for_scores(query_layer, batch_size,
-																		 num_attention_heads, from_seq_length,
-																		 size_per_head)
+									 num_attention_heads, 
+									 from_seq_length,
+									 attention_head_size)
 
 	# `key_layer` = [B, N, T, H]
-	key_layer = transpose_for_scores(key_layer, batch_size, num_attention_heads,
-																	 to_seq_length, size_per_head)
+	key_layer = transpose_for_scores(key_layer, batch_size, 
+									num_attention_heads,
+									to_seq_length, 
+									attention_head_size)
 
 	# Take the dot product between "query" and "key" to get the raw
 	# attention scores.
 	# `attention_scores` = [B, N, F, T]
 	attention_scores = tf.matmul(query_layer, key_layer, transpose_b=True)
 	attention_scores = tf.multiply(attention_scores,
-																 1.0 / math.sqrt(float(size_per_head)))
+									1.0 / math.sqrt(float(attention_head_size)))
 
 	if attention_mask is not None:
 		# `attention_mask` = [B, 1, F, T]
@@ -684,7 +695,7 @@ def attention_layer(from_tensor,
 	# `value_layer` = [B, T, N, H]
 	value_layer = tf.reshape(
 			value_layer,
-			[batch_size, to_seq_length, num_attention_heads, size_per_head])
+			[batch_size, to_seq_length, num_attention_heads, attention_head_size])
 
 	# `value_layer` = [B, N, T, H]
 	value_layer = tf.transpose(value_layer, [0, 2, 1, 3])
@@ -699,12 +710,12 @@ def attention_layer(from_tensor,
 		# `context_layer` = [B*F, N*V]
 		context_layer = tf.reshape(
 				context_layer,
-				[batch_size * from_seq_length, num_attention_heads * size_per_head])
+				[batch_size * from_seq_length, num_attention_heads * attention_head_size])
 	else:
 		# `context_layer` = [B, F, N*V]
 		context_layer = tf.reshape(
 				context_layer,
-				[batch_size, from_seq_length, num_attention_heads * size_per_head])
+				[batch_size, from_seq_length, num_attention_heads * attention_head_size])
 
 	return context_layer, attention_scores
 
@@ -718,7 +729,8 @@ def transformer_efficient_model(input_tensor,
 						hidden_dropout_prob=0.1,
 						attention_probs_dropout_prob=0.1,
 						initializer_range=0.02,
-						do_return_all_layers=False):
+						do_return_all_layers=False,
+						attention_fixed_size=None):
 	"""Multi-headed, multi-layer Transformer from "Attention is All You Need".
 
 	This is almost an exact implementation of the original Transformer encoder.
@@ -808,7 +820,8 @@ def transformer_efficient_model(input_tensor,
 							do_return_2d_tensor=True,
 							batch_size=batch_size,
 							from_seq_length=seq_length,
-							to_seq_length=seq_length)
+							to_seq_length=seq_length,
+							attention_fixed_size=attention_fixed_size)
 					attention_heads.append(attention_head)
 					all_attention_scores.append(attention_scores)
 
@@ -870,7 +883,8 @@ def transformer_model(input_tensor,
 						hidden_dropout_prob=0.1,
 						attention_probs_dropout_prob=0.1,
 						initializer_range=0.02,
-						do_return_all_layers=False):
+						do_return_all_layers=False,
+						attention_fixed_size=None):
 	"""Multi-headed, multi-layer Transformer from "Attention is All You Need".
 
 	This is almost an exact implementation of the original Transformer encoder.
@@ -960,7 +974,8 @@ def transformer_model(input_tensor,
 							do_return_2d_tensor=True,
 							batch_size=batch_size,
 							from_seq_length=seq_length,
-							to_seq_length=seq_length)
+							to_seq_length=seq_length,
+							attention_fixed_size=attention_fixed_size)
 					attention_heads.append(attention_head)
 					all_attention_scores.append(attention_scores)
 
@@ -1021,7 +1036,8 @@ def transformer_rezero_model(input_tensor,
 						hidden_dropout_prob=0.1,
 						attention_probs_dropout_prob=0.1,
 						initializer_range=0.02,
-						do_return_all_layers=False):
+						do_return_all_layers=False,
+						attention_fixed_size=None):
 	
 	"""Multi-headed, multi-layer Transformer from "Attention is All You Need".
 
@@ -1114,7 +1130,8 @@ def transformer_rezero_model(input_tensor,
 							do_return_2d_tensor=True,
 							batch_size=batch_size,
 							from_seq_length=seq_length,
-							to_seq_length=seq_length)
+							to_seq_length=seq_length,
+							attention_fixed_size=attention_fixed_size)
 					attention_heads.append(attention_head)
 					all_attention_scores.append(attention_scores)
 
