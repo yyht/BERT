@@ -22,7 +22,9 @@ def load_pretrained_w2v(vocab_path, w2v_path, vector_size=None):
 		for line in frobj:
 			vocab.append(line.strip())
 
+	vocab_size = len(vocab)
 	print("==actual corpus based vocab size==", len(vocab))
+	tf.logging.info("***** vocab size *****", str(vocab_size))
 
 	if vector:
 		w2v = {}
