@@ -6,10 +6,10 @@ from optimizer import distributed_optimizer as optimizer
 from data_generator import distributed_tf_data_utils as tf_data_utils
 
 try:
-	from .model_data_interface import data_interface
+	from .model_data_interface import data_interface, data_interface_dual_encoder
 	from distributed_single_sentence_classification.model_interface import model_config_parser
 except:
-	from model_data_interface import data_interface
+	from model_data_interface import data_interface, data_interface_dual_encoder
 	from distributed_single_sentence_classification.model_interface import model_config_parser
 
 try:
@@ -168,6 +168,7 @@ def train_eval_fn(FLAGS,
 											model_type_lst=model_type_lst,
 											task_invariant=FLAGS.task_invariant,
 											multi_task_config=multi_task_config,
+											flags=FLAGS,
 											**kargs)
 
 		print("==succeeded in building model==")

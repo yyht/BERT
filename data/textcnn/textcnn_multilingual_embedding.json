@@ -22,8 +22,6 @@
 
     "label_type":"single_label",
 
-    // "label_type":"multi_label",
-
     "slstm_layer_num": 5,
 
     "rnn":"lstm",
@@ -36,13 +34,14 @@
     "with_highway": true,
     "with_match_highway": true,
     "with_aggregation_highway": true,
+    "highway":"dense_highway",
 
     "use_cudnn": false,
     "with_center_loss":false,
 
     "with_moving_average": 0.999,
 
-    "loss":"focal_loss",
+    "loss":"entropy",
 
     "alpha":0.5,
     "gamma":2.0,

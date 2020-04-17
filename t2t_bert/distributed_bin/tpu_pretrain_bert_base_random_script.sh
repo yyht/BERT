@@ -1,13 +1,13 @@
 nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--buckets "gs://yyht_source/pretrain" \
-	--config_file "./data/roberta_zh_l12/bert_config.json" \
+	--config_file "./data/roberta_zh_l12/bert_config_fixed_attention_size.json" \
 	--init_checkpoint "" \
 	--vocab_file "./data/chinese_L-12_H-768_A-12/vocab.txt" \
 	--label_id "./data/lcqmc/label_dict.json" \
 	--max_length 512 \
 	--train_file "data_single_hard_gan/chunk_0.tfrecords,data_single_hard_gan/chunk_1.tfrecords,data_single_hard_gan/chunk_2.tfrecords,data_single_hard_gan/chunk_3.tfrecords,data_single_hard_gan/chunk_4.tfrecords,data_single_hard_gan/chunk_5.tfrecords,data_single_hard_gan/chunk_6.tfrecords,data_single_hard_gan/chunk_7.tfrecords,data_single_hard_gan/chunk_8.tfrecords,data_single_hard_gan/chunk_9.tfrecords,data_single_hard_gan/chunk_10.tfrecords,data_single_hard_gan/chunk_11.tfrecords,data_single_hard_gan/chunk_12.tfrecords,data_single_hard_gan/chunk_13.tfrecords,data_single_hard_gan/chunk_14.tfrecords,data_single_hard_gan/chunk_15.tfrecords,data_single_hard_gan/chunk_16.tfrecords,data_single_hard_gan/chunk_17.tfrecords" \
 	--dev_file "data_single_hard_gan/chunk_18.tfrecords,data_single_hard_gan/chunk_19.tfrecords" \
-	--model_output "model/bert_base_with_single_random_generator_adam_decay_15" \
+	--model_output "model/base/bert_base_span_mask_fixed_attention_size" \
 	--epoch 15 \
 	--num_classes 2 \
 	--train_size 11000000 \
@@ -30,8 +30,7 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--num_tpu_cores 8 \
 	--do_train true \
 	--tpu_name "albert2" \
-	--mode "pretrain" \
-	--random_generator "1"
+	--mode "pretrain"
 
 
 

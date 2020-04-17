@@ -1,6 +1,7 @@
 import tensorflow as tf
 import numpy as np
 from collections import Counter
+from bunch import Bunch
 
 try:
 	from .cls_task import model_fn_builder as cls_model_fn
@@ -52,8 +53,10 @@ def multitask_model_fn(model_config_dict,
 		num_task = len(task_type_dict)
 
 		from data_generator import load_w2v
-		w2v_path = os.path.join(FLAGS.buckets, FLAGS.pretrained_w2v_path)
-		vocab_path = os.path.join(FLAGS.buckets, FLAGS.vocab_file)
+		flags = kargs.get('flags', Bunch({}))
+		print(flags.pretrained_w2v_path, "===pretrain vocab path===")
+		w2v_path = os.path.join(flags.buckets, flags.pretrained_w2v_path)
+		vocab_path = os.path.join(flags.buckets, flags.vocab_file)
 
 		[w2v_embed, token2id, 
 		id2token, is_extral_symbol, use_pretrained] = load_w2v.load_pretrained_w2v(vocab_path, w2v_path)
