@@ -138,6 +138,8 @@ def train_eval_fn(FLAGS,
 
 		for task_type in FLAGS.multi_task_type.split(","):
 			print("==task type==", task_type)
+			multi_task_config[task_type]['buckets'] = FLAGS.buckets
+			multi_task_config[task_type]['w2v_path'] = FLAGS.w2v_path
 			model_config_dict[task_type] = model_config_parser(Bunch(multi_task_config[task_type]))
 			num_labels_dict[task_type] = multi_task_config[task_type]["num_labels"]
 			init_checkpoint_dict[task_type] = os.path.join(FLAGS.buckets, multi_task_config[task_type]["init_checkpoint"])
@@ -170,7 +172,7 @@ def train_eval_fn(FLAGS,
 
 		print("==succeeded in building model==")
 		
-		name_to_features = data_interface(FLAGS, multi_task_config, FLAGS.multi_task_type.split(","))
+		name_to_features = data_interface_dual_encoder(FLAGS, multi_task_config, FLAGS.multi_task_type.split(","))
 
 		def _decode_record(record, name_to_features):
 			"""Decodes a record to a TensorFlow example.

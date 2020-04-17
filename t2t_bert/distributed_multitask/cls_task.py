@@ -58,18 +58,54 @@ def model_fn_builder(model,
 		else:
 			scope = model_config.scope
 
+		if kargs.get("get_pooled_output", "pooled_output") == "pooled_output":
+			pooled_feature = model.get_pooled_output()
+		elif kargs.get("get_pooled_output", "task_output") == "task_output":
+			pooled_feature_dict = model.get_task_output()
+			pooled_feature = pooled_feature_dict['pooled_feature']
+
+		loss_mask = tf.cast(features["{}_loss_multiplier".format(task_type)], tf.float32)
+		loss = tf.constant(0.0)
+
+		if kargs.get("feature_distillation", True):
+			universal_feature_a = features.get("universal_feature_a", None)
+			universal_feature_b = features.get("universal_feature_b", None)
+
+			if universal_feature_a and universal_feature_b:
+				feature_a = pooled_feature['feature_a'] 
+				feature_a_norm = tf.stop_gradient(tf.sqrt(tf.reduce_sum(tf.pow(feature_a, 2), axis=-1))+1e-20)
+				feature_a /= feature_a_norm
+
+				feature_b = pooled_feature['feature_b'] 
+				feature_b_norm = tf.stop_gradient(tf.sqrt(tf.reduce_sum(tf.pow(feature_b, 2), axis=-1))+1e-20)
+				feature_b /= feature_b_norm
+
+				feature_a_distillation = tf.reduce_sum(tf.square(universal_feature_a-feature_a), axis=-1)
+				feature_a_distillation = tf.reduce_sum(tf.square(universal_feature_b-feature_b), axis=-1)
+
+				loss += tf.reduce_mean((feature_a_distillation + feature_a_distillation)/2.0)/float(num_task)
+		
+		if kargs.get("embedding_distillation", True):
+			word_embed = model.word_emb
+			pretrained_embed = kargs.get('pretrained_embed', None)
+			if pretrained_embed:
+				hidden_size = pretrained_embed.get_shape()[-1]
+				with tf.variable_scope(scope+"/embedding_proj", reuse=tf.AUTO_REUSE):
+					proj_embed = tf.layers.dense(word_embed, hidden_size)
+				loss += tf.reduce_mean(tf.reduce_sum(tf.square(proj_embed-word_embed), axis=-1))/float(num_task)
+
 		with tf.variable_scope(scope+"/{}/classifier".format(task_type), reuse=task_layer_reuse):
 			(_, 
 				per_example_loss, 
 				logits) = classifier.classifier(model_config,
-											model.get_pooled_output(),
+											pooled_feature,
 											num_labels,
 											label_ids,
 											dropout_prob)
 
 		loss_mask = tf.cast(features["{}_loss_multiplier".format(task_type)], tf.float32)
 		masked_per_example_loss = per_example_loss * loss_mask
-		loss = tf.reduce_sum(masked_per_example_loss) / (1e-10+tf.reduce_sum(loss_mask))
+		loss += tf.reduce_sum(masked_per_example_loss) / (1e-10+tf.reduce_sum(loss_mask))
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
 			multi_task_config = kargs.get("multi_task_config", {})

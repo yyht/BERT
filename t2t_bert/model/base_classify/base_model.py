@@ -46,7 +46,7 @@ class BaseModel(object):
                                      extra_symbol=self.extra_symbol, 
                                      scope=self.scope+'_token_embedding',
                                      reuse=kargs.get("reuse", None),
-                                     trainable=False)
+                                     trainable=not self.config.get('use_pretrained', True))
 		word_emb = tf.nn.embedding_lookup(self.emb_mat, input_ids)
 		if self.config.get("trainable_embedding", False):
 			self.trainable_emb_mat = integration_func.generate_embedding_mat(self.vocab_size, emb_len=self.emb_size,

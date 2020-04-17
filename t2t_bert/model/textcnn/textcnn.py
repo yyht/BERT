@@ -28,7 +28,7 @@ class TextCNN(base_model.BaseModel):
 								size = self.config.num_filters, 
 								scope = "highway", 
 								dropout = dropout_rate, 
-								reuse = None)
+								reuse = reuse)
 			else:
 				sent_repres = word_emb_dropout
 
@@ -49,6 +49,12 @@ class TextCNN(base_model.BaseModel):
 
 	def get_pooled_output(self):
 		return self.output
+
+	def put_task_output(self, input_repres):
+		self.task_repres = input_repres
+
+	def get_task_output(self):
+		return self.task_repres
 
 	
 
