@@ -12,7 +12,7 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--num_classes 2 \
 	--train_size 11000000 \
 	--eval_size 1100000 \
-	--batch_size 384 \
+	--batch_size 512 \
 	--model_type "bert" \
 	--if_shard 1 \
 	--is_debug 1 \
