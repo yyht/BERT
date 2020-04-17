@@ -51,6 +51,15 @@ def multitask_model_fn(model_config_dict,
 		print(task_type_dict.keys(), "==task type dict==")
 		num_task = len(task_type_dict)
 
+		from data_generator import load_w2v
+		w2v_path = os.path.join(FLAGS.buckets, FLAGS.pretrained_w2v_path)
+		vocab_path = os.path.join(FLAGS.buckets, FLAGS.vocab_file)
+
+		[w2v_embed, token2id, 
+		id2token, is_extral_symbol, use_pretrained] = load_w2v.load_pretrained_w2v(vocab_path, w2v_path)
+
+		pretrained_embed = tf.cast(tf.constant(w2v_embed), tf.float32)
+
 		for index, task_type in enumerate(task_type_dict.keys()):
 			if model_config_dict[task_type].model_type in model_type_lst:
 				reuse = True
@@ -85,6 +94,10 @@ def multitask_model_fn(model_config_dict,
 												task_type=task_type,
 												num_task=num_task,
 												task_adversarial=1e-2,
+												get_pooled_output='task_output',
+												feature_distillation=True,
+												embedding_distillation=True,
+												pretrained_embed=pretrained_embed,
 												**kargs)
 				print("==SUCCEEDED IN LODING==", task_type)
 

@@ -10,6 +10,7 @@ from distributed_encoder.bert_encoder import electra_gumbel_albert_official_enco
 from distributed_encoder.classifynet_encoder import textcnn_encoder
 from distributed_encoder.classifynet_encoder import textlstm_encoder
 from distributed_encoder.interaction_encoder import match_pyramid_encoder
+from distributed_encoder.interaction_encoder import textcnn_interaction_encoder
 from distributed_encoder.classifynet_encoder import dan_encoder
 
 import tensorflow as tf
@@ -37,6 +38,8 @@ def model_zoo(model_config):
 		model_interface = textlstm_encoder
 	elif model_config.get("model_type", "match_pyramid") in ["match_pyramid", "match_pyramid_distillation"]:
 		model_interface = match_pyramid_encoder
+	elif model_config.get("model_type", "textcnn_interaction") in ["textcnn_interaction"]:
+		model_interface = textcnn_interaction_encoder
 	elif model_config.get("model_type", "match_pyramid") in ["dan", "dan_distillation"]:
 		model_interface = dan_encoder
 	elif model_config.get('model_type', 'gpt') in ['gpt']:
@@ -133,7 +136,8 @@ def model_config_parser(FLAGS):
 			config.output_layer = FLAGS.output_layer
 
 	elif FLAGS.model_type in ["textcnn", 'textcnn_distillation', 
-								'textcnn_distillation_adv_adaptation']:
+								'textcnn_distillation_adv_adaptation',
+								'textcnn_interaction']:
 		from data_generator import load_w2v
 		w2v_path = os.path.join(FLAGS.buckets, FLAGS.w2v_path)
 		vocab_path = os.path.join(FLAGS.buckets, FLAGS.vocab_file)
@@ -141,7 +145,7 @@ def model_config_parser(FLAGS):
 		print(w2v_path, vocab_path)
 
 		[w2v_embed, token2id, 
-		id2token, is_extral_symbol] = load_w2v.load_pretrained_w2v(vocab_path, w2v_path)
+		id2token, is_extral_symbol, use_pretrained] = load_w2v.load_pretrained_w2v(vocab_path, w2v_path)
 		config = json.load(open(FLAGS.config_file, "r"))
 		config = Bunch(config)
 		config.token_emb_mat = w2v_embed
@@ -156,6 +160,7 @@ def model_config_parser(FLAGS):
 		config.model_type = FLAGS.model_type
 		config.dropout_prob = config.dropout_rate
 		config.init_lr = config.learning_rate
+		config.use_pretrained = use_pretrained
 		if is_extral_symbol == 1:
 			config.extra_symbol = ["<pad>", "<unk>", "<s>", "</s>"]
 			print("==need extra_symbol==")

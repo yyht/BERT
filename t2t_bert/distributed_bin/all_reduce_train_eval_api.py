@@ -176,6 +176,11 @@ flags.DEFINE_string(
 	)
 
 flags.DEFINE_string(
+	"pretrained_w2v_path", "",
+	"pretrained w2v"
+	)
+
+flags.DEFINE_string(
 	"with_char", "no_char",
 	"pretrained w2v"
 	)
