@@ -88,6 +88,32 @@ def model_fn_builder(
 							tf.estimator.ModeKeys.EVAL, target, reuse=tf.AUTO_REUSE,
 							**kargs)
 
+		if model_config.model_type == 'bert':
+			masked_lm_fn = pretrain.get_masked_lm_output
+			seq_masked_lm_fn = pretrain.seq_mask_masked_lm_output
+			print("==apply bert masked lm==")
+		elif model_config.model_type == 'albert':
+			masked_lm_fn = pretrain_albert.get_masked_lm_output
+			seq_masked_lm_fn = pretrain_albert.seq_mask_masked_lm_output
+			print("==apply albert masked lm==")
+		else:
+			masked_lm_fn = pretrain.get_masked_lm_output
+			seq_masked_lm_fn = pretrain_albert.seq_mask_masked_lm_output
+			print("==apply bert masked lm==")
+
+		(masked_lm_loss,
+		masked_lm_example_loss, 
+		masked_lm_log_probs,
+		masked_lm_mask) = seq_masked_lm_fn(model_config, 
+									model.get_sequence_output(), 
+									model.get_embedding_table(),
+									features['input_mask'], 
+									features['input_ori_ids'], 
+									features['input_ids'],
+									sampled_binary_mask,
+									reuse=tf.AUTO_REUSE,
+									embedding_projection=model.get_embedding_projection_table())
+
 		if kargs.get("stop_gradient_mlm", True):
 			sampled_ids = token_generator(model_config, 
 										model.get_sequence_output(), 
@@ -189,7 +215,8 @@ def model_fn_builder(
 					"tvars":tvars,
 					"sampled_ids":shuffled_sampled_ids,
 					"sampled_mask":shuffled_sampled_mask,
-					"valid_mask":not_equal_instance
+					"valid_mask":not_equal_instance,
+					"loss":masked_lm_loss
 				}
 		return return_dict
 	return model_fn

@@ -7,7 +7,7 @@ def task_interface(name_to_features, task_type_dict, task_type_lst):
 			continue
 		if task_type_dict[task_type]["task_type"] == "cls_task":
 			name_to_features["{}_label_ids".format(task_type)] = tf.FixedLenFeature([], tf.int64)
-			name_to_features["{}_loss_multiplier".format(task_type)] = tf.FixedLenFeature([], tf.float32)
+			name_to_features["{}_loss_multipiler".format(task_type)] = tf.FixedLenFeature([], tf.float32)
 		if task_type_dict[task_type]["lm_augumentation"]:
 			name_to_features["masked_lm_positions"] = tf.FixedLenFeature([task_type_dict[task_type]["max_predictions_per_seq"]], tf.int64)
 			name_to_features["masked_lm_ids"] = tf.FixedLenFeature([task_type_dict[task_type]["max_predictions_per_seq"]], tf.int64)
@@ -86,7 +86,7 @@ def data_interface_server(FLAGS):
 	elif FLAGS.model_type in ["textcnn", "textlstm"]:
 		receiver_tensors = {
 				"input_ids_a":
-						tf.placeholder(tf.int32, [None, FLAGS.max_length], name='input_ids_a'),
+						tf.placeholder(tf.int32, [None, None], name='input_ids_a'),
 				"label_ids":
 						tf.placeholder(tf.int32, [None], name='label_ids')
 			}

@@ -58,8 +58,9 @@
 
     "elmo_pca":false,
 
-    "num_filters":128,
+    "num_filters":32,
     "max_pool_size":5,
+    "filter_size":[1,2,3,5],
     "encoder_type":"textcnn",
     "num_blocks":2,
     "hidden_units":300,

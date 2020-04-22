@@ -106,7 +106,7 @@ def train_eval_fn(FLAGS,
 							"decay":kargs.get("decay", "no"),
 							"warmup":kargs.get("warmup", "no"),
 							"grad_clip":kargs.get("grad_clip", "global_norm"),
-							"clip_norm":kargs.get("clip_norm", 1.0),
+							"clip_norm":kargs.get("clip_norm", 1000.0),
 							"opt_ema":kargs.get("opt_ema", "no")})
 
 		anneal_config = Bunch({
@@ -121,8 +121,12 @@ def train_eval_fn(FLAGS,
 
 		if FLAGS.opt_type == "hvd" and hvd:
 			checkpoint_dir = checkpoint_dir if task_index == 0 else None
-		else:
+		elif FLAGS.opt_type == "all_reduce":
 			checkpoint_dir = checkpoint_dir
+		elif FLAGS.opt_type == "collective_reduce":
+			checkpoint_dir = checkpoint_dir if task_index == 0 else None
+		elif FLAGS.opt_type == "ps" or FLAGS.opt_type == "ps_sync":
+			checkpoint_dir = checkpoint_dir if task_index == 0 else None
 		print("==checkpoint_dir==", checkpoint_dir, is_chief)
 
 		model_config_dict = {}
@@ -150,6 +154,14 @@ def train_eval_fn(FLAGS,
 			task_type_dict[task_type] = multi_task_config[task_type]["task_type"]
 			label_dict[task_type] = json.load(tf.gfile.Open(os.path.join(FLAGS.buckets,
 												multi_task_config[task_type]["label_id"])))
+
+		data_prior = []
+		for task_type in FLAGS.multi_task_type.split(","):
+			data_prior.append(multi_task_config[task_type].get("data_prior", None))
+		if None in data_prior:
+			data_prior = None
+		else:
+			print("===task prior===", data_prior)
 
 		model_fn = multitask_model_fn(model_config_dict, num_labels_dict,
 											task_type_dict,
@@ -215,12 +227,20 @@ def train_eval_fn(FLAGS,
 			train_file_path_lst = [os.path.join(FLAGS.buckets, train_file) for train_file in train_file_lst]
 
 			print(train_file_path_lst)
-			train_file_path_lst = list(set(train_file_path_lst))
 
-			train_features = lambda: tf_data_utils.all_reduce_train_batch_input_fn(train_file_path_lst,
-										_decode_batch_record, 
+			# train_features = lambda: tf_data_utils.all_reduce_train_batch_input_fn(train_file_path_lst,
+			# 							_decode_batch_record, 
+			# 							name_to_features, 
+			# 							params, 
+			# 							if_shard=FLAGS.if_shard,
+			# 							worker_count=worker_count,
+			# 							task_index=task_index)
+
+			train_features = lambda: tf_data_utils.all_reduce_multitask_train_batch_input_fn_sample(train_file_path_lst,
+										_decode_record, 
 										name_to_features, 
 										params, 
+										data_prior=data_prior,
 										if_shard=FLAGS.if_shard,
 										worker_count=worker_count,
 										task_index=task_index)

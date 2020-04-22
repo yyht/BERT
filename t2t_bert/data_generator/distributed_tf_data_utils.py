@@ -229,6 +229,46 @@ def all_reduce_multitask_train_batch_input_fn(input_file, _parse_fn, name_to_fea
 						num_parallel_calls=kargs.get("num_parallel_calls", 10))
 	return dataset
 
+def all_reduce_multitask_train_batch_input_fn_sample(input_file, _parse_fn, name_to_features,
+		params, data_prior=None, **kargs):
+
+	if_shard = kargs.get("if_shard", "1")
+
+	worker_count = kargs.get("worker_count", 1)
+	task_index = kargs.get("task_index", 0)
+
+	datasets = []
+	if not isinstance(input_file, list):
+		input_file = [input_file]
+	for item in input_file:
+		tmp = tf.data.TFRecordDataset(item, buffer_size=params.get("buffer_size", 100))
+		tmp = tmp.repeat()
+		tmp = tmp.shuffle(
+							buffer_size=params.get("buffer_size", 4096),
+							seed=np.random.randint(0,1e10,1)[0],
+							reshuffle_each_iteration=True)
+		datasets.append(tmp)
+	if not data_prior:
+		p = tf.cast(np.array([1.0/len(input_file)]*len(input_file)), tf.float32)
+	else:
+		p = tf.cast(np.array(data_prior), tf.float32)
+		print('===data prior==', data_prior)
+	# random choice function
+	def get_random_choice(p):
+		choice = tf.multinomial(tf.log([p]), 1)
+		return tf.cast(tf.squeeze(choice), tf.int64)
+
+	# choice_dataset = tf.data.Dataset.from_tensors([0])
+	# choice_dataset = choice_dataset.map(lambda x: get_random_choice(p))  # populate it with random choices
+	# choice_dataset = choice_dataset.repeat()  # repeat
+
+	combined_dataset = tf.contrib.data.sample_from_datasets(datasets, data_prior)
+	combined_dataset = combined_dataset.map(lambda x:_parse_fn(x, name_to_features),
+					num_parallel_calls=kargs.get("num_parallel_calls", 10))
+	combined_dataset = combined_dataset.batch(params.get("batch_size", 32))
+	
+	return combined_dataset
+
 def all_reduce_train_batch_input_fn(input_file, _parse_fn, name_to_features,
 		params, **kargs):
 	if_shard = kargs.get("if_shard", "1")
@@ -308,7 +348,7 @@ def _truncate_seq_pair_v1(tokens_a, tokens_b, max_length, rng):
 		# We want to sometimes truncate from the front and sometimes from the
 		# back to add more randomness and avoid biases.
 		if rng.random() < 0.5:
-		 	del trunc_tokens[0]
+			del trunc_tokens[0]
 		else:
 			trunc_tokens.pop()
 

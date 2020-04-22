@@ -24,8 +24,9 @@
 		"masked_lm_loss_ratio":0.1,
 		"dupe_factor":5,
 		"short_seq_prob":0.2,
-		"vocab_file":"multi_cased_L-12_H-768_A-12/vocab.txt",
-		"do_lower_case":true
+		"vocab_file":"sentence_pair/vocab.txt",
+		"do_lower_case":true,
+		"data_prior":0.15
 	},
 	"ccks":{
 		"task_type":"cls_task",
@@ -52,8 +53,9 @@
 		"masked_lm_loss_ratio":0.1,
 		"dupe_factor":5,
 		"short_seq_prob":0.2,
-		"vocab_file":"multi_cased_L-12_H-768_A-12/vocab.txt",
-		"do_lower_case":true
+		"vocab_file":"sentence_pair/vocab.txt",
+		"do_lower_case":true,
+		"data_prior":0.1
 	},
 	"afqmc":{
 		"task_type":"cls_task",
@@ -61,9 +63,9 @@
 		"dev_file":"multi_task/data/sentence_pair/ant/dev.txt",
 		"test_file":"multi_task/data/sentence_pair/ant/test.txt",
 		"label_id":"multi_task/data/sentence_pair/ant/label_dict.json",
-		"train_result_file":"sentence_pair/lcqmc/multitask_afqmc_train.tfrecords",
-		"test_result_file":"sentence_pair/lcqmc/multitask_afqmc_dev.tfrecords",
-		"dev_result_file":"sentence_pair/lcqmc/multitask_afqmc_dev.tfrecords",
+		"train_result_file":"sentence_pair/afqmc/multitask_afqmc_train.tfrecords",
+		"test_result_file":"sentence_pair/afqmc/multitask_afqmc_dev.tfrecords",
+		"dev_result_file":"sentence_pair/afqmc/multitask_afqmc_dev.tfrecords",
 		"data_type":"sentence_pair",
 		"model_type":"textcnn_interaction",
 		"config_file":"./BERT/data/textcnn/textcnn_multilingual_embedding.json",
@@ -80,8 +82,9 @@
 		"masked_lm_loss_ratio":0.1,
 		"dupe_factor":5,
 		"short_seq_prob":0.2,
-		"vocab_file":"multi_cased_L-12_H-768_A-12/vocab.txt",
-		"do_lower_case":true
+		"vocab_file":"sentence_pair/vocab.txt",
+		"do_lower_case":true,
+		"data_prior":0.1
 	},
 	"lcqmc":{
 		"task_type":"cls_task",
@@ -108,8 +111,9 @@
 		"masked_lm_loss_ratio":0.1,
 		"dupe_factor":5,
 		"short_seq_prob":0.2,
-		"vocab_file":"multi_cased_L-12_H-768_A-12/vocab.txt",
-		"do_lower_case":true
+		"vocab_file":"sentence_pair/vocab.txt",
+		"do_lower_case":true,
+		"data_prior":0.15
 	},
 	"paws":{
 		"task_type":"cls_task",
@@ -136,8 +140,9 @@
 		"masked_lm_loss_ratio":0.1,
 		"dupe_factor":5,
 		"short_seq_prob":0.2,
-		"vocab_file":"multi_cased_L-12_H-768_A-12/vocab.txt",
-		"do_lower_case":true
+		"vocab_file":"sentence_pair/vocab.txt",
+		"do_lower_case":true,
+		"data_prior":0.25
 	},
 	"cmnli":{
 		"task_type":"cls_task",
@@ -145,9 +150,9 @@
 		"dev_file":"multi_task/data/sentence_pair/lcqmc/dev.txt",
 		"test_file":"multi_task/data/sentence_pair/lcqmc/test.txt",
 		"label_id":"multi_task/data/sentence_pair/lcqmc/label_dict.json",
-		"train_result_file":"data/sentence_pair/cmnli/multitask_cmnli_train.tfrecords",
-		"test_result_file":"data/sentence_pair/cmnli/multitask_cmnli_dev.tfrecords",
-		"dev_result_file":"data/sentence_pair/cmnli/multitask_cmnli_dev.tfrecords",
+		"train_result_file":"sentence_pair/cmnli/multitask_cmnli_train.tfrecords",
+		"test_result_file":"sentence_pair/cmnli/multitask_cmnli_dev.tfrecords",
+		"dev_result_file":"sentence_pair/cmnli/multitask_cmnli_dev.tfrecords",
 		"data_type":"sentence_pair",
 		"model_type":"textcnn_interaction",
 		"config_file":"./BERT/data/textcnn/textcnn_multilingual_embedding.json",
@@ -164,7 +169,8 @@
 		"masked_lm_loss_ratio":0.1,
 		"dupe_factor":5,
 		"short_seq_prob":0.2,
-		"vocab_file":"multi_cased_L-12_H-768_A-12/vocab.txt",
-		"do_lower_case":true
+		"vocab_file":"sentence_pair/vocab.txt",
+		"do_lower_case":true,
+		"data_prior":0.25
 	}
 }

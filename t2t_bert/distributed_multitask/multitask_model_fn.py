@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 from collections import Counter
 from bunch import Bunch
-
+import os, sys
 try:
 	from .cls_task import model_fn_builder as cls_model_fn
 except:
@@ -75,7 +75,8 @@ def multitask_model_fn(model_config_dict,
 					model_api = model_zoo(model_config_dict[task_type])
 
 					model = model_api(model_config_dict[task_type], features, labels,
-							mode, target_dict[task_type], reuse=reuse)
+							mode, target_dict[task_type], reuse=reuse,
+														cnn_type='multilayer_textcnn')
 					encoder[model_config_dict[task_type].model_type] = model
 
 				print(encoder, "==encode==")
@@ -98,7 +99,7 @@ def multitask_model_fn(model_config_dict,
 												num_task=num_task,
 												task_adversarial=1e-2,
 												get_pooled_output='task_output',
-												feature_distillation=True,
+												feature_distillation=False,
 												embedding_distillation=True,
 												pretrained_embed=pretrained_embed,
 												**kargs)
@@ -112,8 +113,11 @@ def multitask_model_fn(model_config_dict,
 					if name in result_dict:
 						hook_dict[name] = result_dict[name]
 				hook_dict["{}_loss".format(task_type)] = result_dict["loss"]
+				hook_dict["{}_num".format(task_type)] = result_dict["task_num"]
 				total_loss += result_dict["loss"]
-
+				hook_dict['embed_loss'] = result_dict["embed_loss"]
+				hook_dict['feature_loss'] = result_dict["feature_loss"]
+				hook_dict["{}_task_loss".format(task_type)] = result_dict["task_loss"]
 				if mode == tf.estimator.ModeKeys.TRAIN:
 					tvars.extend(result_dict["tvars"])
 					task_num += result_dict["task_num"]
@@ -229,9 +233,9 @@ def multitask_model_fn(model_config_dict,
 				}
 			elif output_type == "estimator":
 				eval_metric_ops = {}
-				for key in logits:
+				for key in logits_dict:
 					eval_dict = metric_fn(
-							logits[key],
+							logits_dict[key],
 							features_task_dict[key]["label_ids"]
 						)
 					for sub_key in eval_dict.keys():
