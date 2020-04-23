@@ -7,7 +7,7 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--max_length 512 \
 	--train_file "data_single_hard_gan/chunk_0.tfrecords,data_single_hard_gan/chunk_1.tfrecords,data_single_hard_gan/chunk_2.tfrecords,data_single_hard_gan/chunk_3.tfrecords,data_single_hard_gan/chunk_4.tfrecords,data_single_hard_gan/chunk_5.tfrecords,data_single_hard_gan/chunk_6.tfrecords,data_single_hard_gan/chunk_7.tfrecords,data_single_hard_gan/chunk_8.tfrecords,data_single_hard_gan/chunk_9.tfrecords,data_single_hard_gan/chunk_10.tfrecords,data_single_hard_gan/chunk_11.tfrecords,data_single_hard_gan/chunk_12.tfrecords,data_single_hard_gan/chunk_13.tfrecords,data_single_hard_gan/chunk_14.tfrecords,data_single_hard_gan/chunk_15.tfrecords,data_single_hard_gan/chunk_16.tfrecords,data_single_hard_gan/chunk_17.tfrecords" \
 	--dev_file "data_single_hard_gan/chunk_18.tfrecords,data_single_hard_gan/chunk_19.tfrecords" \
-	--model_output "model/ebm_fce/chinese/ebm_tiny_cls_redisual_tanh" \
+	--model_output "model/ebm_fce/chinese/ebm_tiny_cls_redisual_tanh_adv" \
 	--epoch 1 \
 	--num_classes 2 \
 	--train_size 11000000 \
@@ -35,8 +35,8 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--multi_task_config "./t2t_bert/pretrain_finetuning/multi_model_gs_ebm_fce.json" \
 	--joint_train "1" \
 	--electra_mode "trf_fce" \
-	--sharing_mode "none" \
-	--train_op_type "alternate" \
+	--sharing_mode "all_sharing" \
+	--train_op_type "mlm_nce" \
 	--optimization_type "minxmax" \
 	--gumbel_anneal "vqvae" \
 	--minmax_mode "corrupted" \

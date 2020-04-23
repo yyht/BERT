@@ -47,8 +47,8 @@ def text_cnn_v1(in_val, filter_sizes, scope,
 	in_val = tf.expand_dims(in_val, axis=-1)
 	conved_concat = []
 
-	input_mask = tf.cast(tf.expand_dims(input_mask, axis=[2]), tf.float32)
-	input_mask = tf.expand_dims(input_mask, axis=[3])
+	# input_mask = tf.cast(tf.expand_dims(input_mask, axis=[2]), tf.float32)
+	# input_mask = tf.expand_dims(input_mask, axis=[3])
 	
 	for i, filter_size in enumerate(filter_sizes):
 		with tf.variable_scope(scope+'_conv-maxpool-%s' % filter_size):
@@ -375,3 +375,53 @@ def self_attn(enc, mask, scope,
 	enc *= mask_
 
 	return enc
+
+def cnn_multiple_layers(in_val, filter_sizes, scope, 
+	embed_size, num_filters, max_pool_size=2,
+	input_mask=None, is_training_flag=True):
+	# 2.=====>loop each filter size. for each filter, do:convolution-pooling layer(a.create filters,b.conv,c.apply nolinearity,d.max-pooling)--->
+	# you can use:tf.nn.conv2d;tf.nn.relu;tf.nn.max_pool; feature shape is 4-d. feature is a new variable
+
+	print(in_val.get_shape(), "===in_val shape===")
+	sentence_embeddings_expanded = tf.expand_dims(in_val, axis=-1)
+	initializer = tf.truncated_normal_initializer(stddev=0.1)
+	sequence_length = sentence_embeddings_expanded.get_shape()[1]
+	pooled_outputs = []
+	print("sentence_embeddings_expanded:", sentence_embeddings_expanded)
+	for i, filter_size in enumerate(filter_sizes):
+		with tf.variable_scope(scope+'/'+'cnn_multiple_layers' + "convolution-pooling-%s" % filter_size, 
+							   reuse=tf.AUTO_REUSE):
+			# 1) CNN->BN->relu
+			filter1 = tf.get_variable("filter1-%s" % filter_size,[filter_size, embed_size, 1, num_filters],initializer=initializer)
+			regoin_embedding = tf.nn.conv2d(sentence_embeddings_expanded, filter1, strides=[1, 1, 1, 1],padding="VALID",name="conv")  # shape:[batch_size,sequence_length - filter_size + 1,1,num_filters]
+			conv = tf.contrib.layers.batch_norm(regoin_embedding, is_training=is_training_flag, scope='cnn1')
+			print(i, filter_size, "conv1:", conv)
+			b = tf.get_variable("b-%s" % filter_size, [num_filters])  # ADD 2017-06-09
+			h = tf.nn.relu(tf.nn.bias_add(conv, b),"relu")  # shape:[batch_size,sequence_length,1,num_filters]. tf.nn.bias_add:adds `bias` to `value`
+
+			# 2) CNN->BN->relu
+#             h = tf.squeeze(h, axis=2) # batch x (sequence_length-1) x num_filters
+#             h = tf.expand_dims(h, axis=-1) # batch x (sequence_length-1) x num_filters x 1
+#             h = tf.reshape(h, [-1, sequence_length, num_filters,1])  # shape:[batch_size,sequence_length,num_filters,1]
+			print(i, filter_size, "h:", h) # batch x (sequence_length-1) x 1 x num_filters
+			# Layer2:CONV-RELU
+			filter2 = tf.get_variable("filter2-%s" % filter_size,[filter_size, 1, num_filters, num_filters],initializer=initializer)
+			conv2 = tf.nn.conv2d(h, filter2, strides=[1, 1, 1, 1], padding="SAME",name="conv2")  # shape:[batch_size,sequence_length-filter_size*2+2,1,num_filters]
+			conv2 = tf.contrib.layers.batch_norm(conv2, is_training=is_training_flag, scope='cnn2')
+			print(i, "conv2:", conv2)
+			b2 = tf.get_variable("b2-%s" % filter_size, [num_filters])  # ADD 2017-06-09
+			h = tf.nn.relu(tf.nn.bias_add(conv2, b2),"relu2")  # shape:[batch_size,sequence_length,1,num_filters]. tf.nn.bias_add:adds `bias` to `value`
+			print(i, filter_size, "h:", h)
+
+			# 3. Max-pooling
+#             pooling_max = tf.squeeze(tf.nn.max_pool(h, ksize=[1,sequence_length, 1, 1],strides=[1, 1, 1, 1], padding='VALID', name="pool"))
+			pooling_avg = tf.reduce_mean(h, axis=1) #[batch_size,num_filters]
+			print(i, filter_size, "pooling:", pooling_avg)
+			# pooling=tf.concat([pooling_max,pooling_avg],axis=1) #[batch_size,num_filters*2]
+			pooled_outputs.append(pooling_avg)  # h:[batch_size,sequence_length,1,num_filters]
+
+	cnn_output = tf.concat(pooled_outputs, axis=1)  # [batch_size,num_filters*len(self.filter_sizes)]
+	last_dim = len(filter_sizes) * num_filters
+	cnn_output = tf.reshape(cnn_output, [-1, last_dim])
+	print("h.concat:", cnn_output)
+	return cnn_output

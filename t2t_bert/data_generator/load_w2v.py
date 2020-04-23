@@ -35,7 +35,7 @@ def load_pretrained_w2v(vocab_path, w2v_path, vector_size=None):
 		w2v = {}
 
 	if not vector_size:
-		vector_size = 96
+		vector_size = 64
 
 	w2v_embed_lst = []
 	token2id, id2token = OrderedDict(), OrderedDict()

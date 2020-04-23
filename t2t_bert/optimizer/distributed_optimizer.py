@@ -177,6 +177,7 @@ class Optimizer(object):
 	def grad_clip_fn(self, opt, loss, tvars, **kargs):
 		gpu_count = self.config.get('gpu_count', 1)
 		grad_name = kargs.get('grad_name', "grad_norm")
+		grad_ratio = kargs.get('grad_name', {})
 		if self.config.get("opt_type", "pai_soar") == "pai_soar":
 			loss_fn = opt.compute_loss(loss, loss_scale=self.config.get("loss_scale", 1))
 			grads_and_vars = opt.compute_gradients(loss_fn, colocate_gradients_with_ops=True)
@@ -190,7 +191,7 @@ class Optimizer(object):
 				else:
 					print(var.name, "=====none grad======", grad_name)
 
-			grads = [grad/gpu_count for grad, _ in grads_and_vars if grad is not None] # allreduce from sum to mean
+			grads = [grad for grad, _ in grads_and_vars if grad is not None] # allreduce from sum to mean
 			# grads_and_vars = zip(valid_grads, valid_vars)
 			grad_clip = self.config.get("grad_clip", "global_norm")
 			use_norm = tf.global_norm(grads)
@@ -330,6 +331,8 @@ class Optimizer(object):
 		if self.config.get("warmup", "no") == "warmup":
 			print("==apply warmup==")
 			learning_rate = self.warm_up(learning_rate, init_lr, **kargs)
+		else:
+			learning_rate = tf.cast(tf.constant(learning_rate), tf.float32)
 		self.learning_rate = learning_rate #* (self.config.get('gpu_count', 1) / 2)
 		# self.learning_rate = learning_rate / np.sqrt(self.config.get('gpu_count', 1) / 2)
 		# self.learning_rate = learning_rate * np.sqrt(self.config.get('gpu_count', 1)) * 2

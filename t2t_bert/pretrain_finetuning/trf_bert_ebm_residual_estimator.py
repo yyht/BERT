@@ -117,6 +117,20 @@ def get_train_op(model_cls, optimizer_fn, opt_config,
 		order = 'ebm'
 		ebm_op = get_train_op(opt, loss, tvars, order, if_grad_clip_dict[order])
 		prev_op = ebm_op
+	elif train_op == 'mlm_nce':
+		tf.logging.info("****** mlm_nce *******")
+		update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+		with tf.control_dependencies(update_ops):
+			model_cls.get_loss(features, labels, mode, params, **kargs)
+		loss = model_cls.ebm_opt_dict['loss']+model_cls.ebm_opt_dict['mlm_loss']
+		tvars = model_cls.ebm_opt_dict['tvars']+model_cls.ebm_opt_dict['logz_tvars']+model_cls.ebm_opt_dict['mlm_tvars']
+		tvars = list(set(tvars))
+		print(model_cls.ebm_opt_dict['logz_tvars'], '====logz_tvars=====')
+		print(tvars, '===train tvars===')
+		opt = model_cls.optimizer_dict['ebm']
+		order = 'ebm'
+		ebm_op = get_train_op(opt, loss, tvars, order, if_grad_clip_dict[order])
+		prev_op = ebm_op
 
 	with tf.control_dependencies([prev_op]):
 		train_op = optimizer_fn.global_step.assign_add(1)
@@ -223,15 +237,15 @@ class EBM_NOISE_NCE(object):
 		tf.logging.info("****** using bert mlm for noise dist sample *******")
 
 		global_step = tf.train.get_or_create_global_step()
-		# self.noise_sample_ratio = tf.train.polynomial_decay(
-		# 										0.25,
-		# 										global_step,
-		# 										self.opt_config.num_train_steps,
-		# 										end_learning_rate=0.15,
-		# 										power=1.0,
-		# 										cycle=False)
+		self.noise_sample_ratio = tf.train.polynomial_decay(
+												0.25,
+												global_step,
+												self.opt_config.num_train_steps,
+												end_learning_rate=0.15,
+												power=1.0,
+												cycle=False)
 
-		self.noise_sample_ratio = 0.25
+		# self.noise_sample_ratio = 0.2
 	
 		self.mlm_noise_dist_fn = mlm_noise_dist(self.model_config_dict['generator'],
 					self.num_labels_dict['generator'],
@@ -344,12 +358,15 @@ class EBM_NOISE_NCE(object):
 			self.true_ebm_dist_vars = self.true_ebm_dist_dict['tvars']
 
 		self.ebm_opt_dict = {
-			"loss":self.ebm_loss,
+			"ebm_loss":self.ebm_loss,
+			"loss":self.ebm_loss * self.model_config_dict['ebm_dist'].get("ebm_loss_ratio", 10),
 			"tvars":self.true_ebm_dist_vars,
 			"logz_tvars":self.true_ebm_dist_dict['logz_tvars'],
 			"logz_loss":self.true_ebm_dist_dict['logz_loss'],
 			"mlm_adv_loss":self.mlm_adv_loss,
-			"mlm_tvars":self.mlm_noise_dist_dict['tvars']
+			"mlm_tvars":self.mlm_noise_dist_dict['tvars'],
+			"mlm_loss":self.mlm_noise_dist_dict['loss'],
+			"all_loss":self.mlm_noise_dist_dict['loss']+self.ebm_loss * self.model_config_dict['ebm_dist'].get("ebm_loss_ratio", 10)
 		}
 
 		self.loss = self.ebm_loss
@@ -451,8 +468,10 @@ def classifier_model_fn_builder(
 			if not kargs.get('use_tpu', False):
 				for key in metric_dict:
 					tf.summary.scalar(key, metric_dict[key])
-				tf.summary.scalar("ebm_loss", ebm_noise_fce.ebm_opt_dict['loss'])
-	
+				tf.summary.scalar("ebm_loss", ebm_noise_fce.ebm_opt_dict['ebm_loss'])
+				tf.summary.scalar("mlm_loss", ebm_noise_fce.ebm_opt_dict['mlm_loss'])
+				tf.summary.scalar("all_loss", ebm_noise_fce.ebm_opt_dict['all_loss'])
+
 			model_io_fn.print_params(tvars, string=", trainable params")
 
 			if kargs.get('use_tpu', False):

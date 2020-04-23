@@ -13,7 +13,7 @@ from task_module import classifier
 import tensorflow as tf
 from metric import tf_metrics
 from task_module import pretrain
-
+from utils.bert import bert_utils
 from optimizer import distributed_optimizer as optimizer
 
 def build_accuracy(logits, labels, mask):
@@ -25,6 +25,7 @@ def build_accuracy(logits, labels, mask):
 	mask = tf.cast(mask, tf.float32)
 	accuracy = tf.reduce_sum(tf.cast(correct, tf.float32)*mask)/(1e-10+tf.reduce_sum(mask))
 	return accuracy
+
 
 def model_fn_builder(model,
 					model_config,
@@ -48,6 +49,10 @@ def model_fn_builder(model,
 
 		label_ids = features["{}_label_ids".format(task_type)]
 
+		num_task = kargs.get('num_task', 1)
+
+		model_io_fn = model_io.ModelIO(model_io_config)
+
 		if mode == tf.estimator.ModeKeys.TRAIN:
 			dropout_prob = model_config.dropout_prob
 		else:
@@ -64,35 +69,76 @@ def model_fn_builder(model,
 			pooled_feature_dict = model.get_task_output()
 			pooled_feature = pooled_feature_dict['pooled_feature']
 
-		loss_mask = tf.cast(features["{}_loss_multiplier".format(task_type)], tf.float32)
+		loss_mask = tf.cast(features["{}_loss_multipiler".format(task_type)], tf.float32)
 		loss = tf.constant(0.0)
 
+		params_size = model_io_fn.count_params(model_config.scope)
+		print("==total encoder params==", params_size)
+
 		if kargs.get("feature_distillation", True):
-			universal_feature_a = features.get("universal_feature_a", None)
-			universal_feature_b = features.get("universal_feature_b", None)
+			universal_feature_a = features.get("input_ids_a_features", None)
+			universal_feature_b = features.get("input_ids_b_features", None)
+			
+			if universal_feature_a is None or universal_feature_b is None:
+				tf.logging.info("****** not apply feature distillation *******")
+				feature_loss = tf.constant(0.0)
+			else:
+				feature_a = pooled_feature_dict['feature_a']
+				feature_a_shape = bert_utils.get_shape_list(feature_a, expected_rank=[2,3])
+				pretrain_feature_a_shape = bert_utils.get_shape_list(universal_feature_a, expected_rank=[2,3])
+				if feature_a_shape[-1] != pretrain_feature_a_shape[-1]:
+					with tf.variable_scope(scope+"/feature_proj", reuse=tf.AUTO_REUSE):
+						proj_feature_a = tf.layers.dense(feature_a, pretrain_feature_a_shape[-1])
+					# with tf.variable_scope(scope+"/feature_rec", reuse=tf.AUTO_REUSE):
+					# 	proj_feature_a_rec = tf.layers.dense(proj_feature_a, feature_a_shape[-1])
+					# loss += tf.reduce_mean(tf.reduce_sum(tf.square(proj_feature_a_rec-feature_a), axis=-1))/float(num_task)
+					tf.logging.info("****** apply auto-encoder for feature compression *******")
+				else:
+					proj_feature_a = feature_a
+				feature_a_norm = tf.stop_gradient(tf.sqrt(tf.reduce_sum(tf.pow(proj_feature_a, 2), axis=-1, keepdims=True))+1e-20)
+				proj_feature_a /= feature_a_norm
 
-			if universal_feature_a and universal_feature_b:
-				feature_a = pooled_feature['feature_a'] 
-				feature_a_norm = tf.stop_gradient(tf.sqrt(tf.reduce_sum(tf.pow(feature_a, 2), axis=-1))+1e-20)
-				feature_a /= feature_a_norm
+				feature_b = pooled_feature_dict['feature_b'] 
+				if feature_a_shape[-1] != pretrain_feature_a_shape[-1]:
+					with tf.variable_scope(scope+"/feature_proj", reuse=tf.AUTO_REUSE):
+						proj_feature_b = tf.layers.dense(feature_b, pretrain_feature_a_shape[-1])
+					# with tf.variable_scope(scope+"/feature_rec", reuse=tf.AUTO_REUSE):
+					# 	proj_feature_b_rec = tf.layers.dense(proj_feature_b, feature_a_shape[-1])
+					# loss += tf.reduce_mean(tf.reduce_sum(tf.square(proj_feature_b_rec-feature_b), axis=-1))/float(num_task)
+					tf.logging.info("****** apply auto-encoder for feature compression *******")
+				else:
+					proj_feature_b = feature_b
 
-				feature_b = pooled_feature['feature_b'] 
-				feature_b_norm = tf.stop_gradient(tf.sqrt(tf.reduce_sum(tf.pow(feature_b, 2), axis=-1))+1e-20)
-				feature_b /= feature_b_norm
+				feature_b_norm = tf.stop_gradient(tf.sqrt(tf.reduce_sum(tf.pow(proj_feature_b, 2), axis=-1, keepdims=True))+1e-20)
+				proj_feature_b /= feature_b_norm
 
-				feature_a_distillation = tf.reduce_sum(tf.square(universal_feature_a-feature_a), axis=-1)
-				feature_a_distillation = tf.reduce_sum(tf.square(universal_feature_b-feature_b), axis=-1)
+				feature_a_distillation = tf.reduce_mean(tf.square(universal_feature_a-proj_feature_a), axis=-1)
+				feature_b_distillation = tf.reduce_mean(tf.square(universal_feature_b-proj_feature_b), axis=-1)
 
-				loss += tf.reduce_mean((feature_a_distillation + feature_a_distillation)/2.0)/float(num_task)
-		
+				feature_loss = tf.reduce_mean((feature_a_distillation + feature_b_distillation)/2.0)/float(num_task)
+				loss += feature_loss
+				tf.logging.info("****** apply prertained feature distillation *******")
+
 		if kargs.get("embedding_distillation", True):
-			word_embed = model.word_emb
+			word_embed = model.emb_mat
+			random_embed_shape = bert_utils.get_shape_list(word_embed, expected_rank=[2,3])
+			print("==random_embed_shape==", random_embed_shape)
 			pretrained_embed = kargs.get('pretrained_embed', None)
-			if pretrained_embed:
-				hidden_size = pretrained_embed.get_shape()[-1]
-				with tf.variable_scope(scope+"/embedding_proj", reuse=tf.AUTO_REUSE):
-					proj_embed = tf.layers.dense(word_embed, hidden_size)
-				loss += tf.reduce_mean(tf.reduce_sum(tf.square(proj_embed-word_embed), axis=-1))/float(num_task)
+			if pretrained_embed is None:
+				tf.logging.info("****** not apply prertained feature distillation *******")
+				embed_loss = tf.constant(0.0)
+			else:
+				pretrain_embed_shape = bert_utils.get_shape_list(pretrained_embed, expected_rank=[2,3])
+				print("==pretrain_embed_shape==", pretrain_embed_shape)
+				if random_embed_shape[-1] != pretrain_embed_shape[-1]:
+					with tf.variable_scope(scope+"/embedding_proj", reuse=tf.AUTO_REUSE):
+						proj_embed = tf.layers.dense(word_embed, pretrain_embed_shape[-1])
+				else:
+					proj_embed = word_embed
+				
+				embed_loss = tf.reduce_mean(tf.reduce_mean(tf.square(proj_embed-pretrained_embed), axis=-1))/float(num_task)
+				loss += embed_loss
+				tf.logging.info("****** apply prertained feature distillation *******")
 
 		with tf.variable_scope(scope+"/{}/classifier".format(task_type), reuse=task_layer_reuse):
 			(_, 
@@ -103,9 +149,10 @@ def model_fn_builder(model,
 											label_ids,
 											dropout_prob)
 
-		loss_mask = tf.cast(features["{}_loss_multiplier".format(task_type)], tf.float32)
+		loss_mask = tf.cast(features["{}_loss_multipiler".format(task_type)], tf.float32)
 		masked_per_example_loss = per_example_loss * loss_mask
-		loss += tf.reduce_sum(masked_per_example_loss) / (1e-10+tf.reduce_sum(loss_mask))
+		task_loss = tf.reduce_sum(masked_per_example_loss) / (1e-10+tf.reduce_sum(loss_mask))
+		loss += task_loss
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
 			multi_task_config = kargs.get("multi_task_config", {})
@@ -158,8 +205,6 @@ def model_fn_builder(model,
 				masked_task_loss = tf.reduce_sum(masked_task_example_loss) / (1e-10+tf.reduce_sum(loss_mask))
 				loss += kargs.get("task_adversarial", 1e-2) * masked_task_loss
 
-		model_io_fn = model_io.ModelIO(model_io_config)
-
 		tvars = model_io_fn.get_params(model_config.scope, 
 										not_storage_params=not_storage_params)
 
@@ -200,6 +245,15 @@ def model_fn_builder(model,
 			if multi_task_config[task_type].get("lm_augumentation", False):
 				return_dict["{}_masked_lm_loss".format(task_type)] = masked_lm_loss
 				return_dict["{}_masked_lm_acc".format(task_type)] = lm_acc
+			if kargs.get("embedding_distillation", True):
+				return_dict["embed_loss"] = embed_loss*float(num_task)
+			else:
+				return_dict["embed_loss"] = task_loss
+			if kargs.get("feature_distillation", True):
+				return_dict["feature_loss"] = feature_loss*float(num_task)
+			else:
+				return_dict["feature_loss"] = task_loss
+			return_dict["task_loss"] = task_loss
 			return return_dict
 		elif mode == tf.estimator.ModeKeys.EVAL:
 			eval_dict = {

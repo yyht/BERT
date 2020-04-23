@@ -793,10 +793,11 @@ def transformer_model(input_tensor,
 	Raises:
 		ValueError: A Tensor shape or parameter is invalid.
 	"""
-	if hidden_size % num_attention_heads != 0:
-		raise ValueError(
-				"The hidden size (%d) is not a multiple of the number of attention "
-				"heads (%d)" % (hidden_size, num_attention_heads))
+	if not attention_fixed_size:
+		if hidden_size % num_attention_heads != 0:
+			raise ValueError(
+					"The hidden size (%d) is not a multiple of the number of attention "
+					"heads (%d)" % (hidden_size, num_attention_heads))
 
 	attention_head_size = int(hidden_size / num_attention_heads)
 	input_shape = bert_utils.get_shape_list(input_tensor, expected_rank=3)
