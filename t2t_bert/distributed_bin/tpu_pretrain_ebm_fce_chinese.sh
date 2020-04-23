@@ -35,7 +35,7 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--multi_task_config "./t2t_bert/pretrain_finetuning/multi_model_gs_ebm_fce.json" \
 	--joint_train "1" \
 	--electra_mode "trf_fce" \
-	--sharing_mode "none" \
+	--sharing_mode "all_sharing" \
 	--train_op_type "mlm_nce" \
 	--optimization_type "minxmax" \
 	--gumbel_anneal "vqvae" \
