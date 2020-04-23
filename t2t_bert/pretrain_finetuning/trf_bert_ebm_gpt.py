@@ -76,7 +76,8 @@ def get_train_op(ebm_dist_dict, noise_dist_dict, optimizer_fn, opt_config,
 			tf.logging.info("***** alternate train op for minmax *****")
 			train_op_fn = optimizer_fn.get_alternate_train_op
 		elif kargs.get('train_op_type', 'joint') == 'group':
-			tf.logging.info("***** joint train op for minmax *****")
+			tf.logging.info("***** joint tr
+				ain op for minmax *****")
 			train_op_fn = optimizer_fn.get_group_train_op
 		# elif kargs.get('train_op_type', 'joint') == 'adaptive_alternate':
 		# 	tf.logging.info("***** adaptive alternate train op for minmax *****")

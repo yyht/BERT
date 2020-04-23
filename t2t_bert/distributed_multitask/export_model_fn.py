@@ -32,7 +32,9 @@ def model_fn_builder(
 
 		model_api = model_zoo(model_config)
 		model = model_api(model_config, features, labels,
-							mode, target, reuse=model_reuse, **kargs)
+							mode, target, reuse=model_reuse, 
+							cnn_type='multilayer_textcnn',
+							**kargs)
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
 			dropout_prob = 0.2

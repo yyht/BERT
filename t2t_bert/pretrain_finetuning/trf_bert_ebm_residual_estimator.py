@@ -237,14 +237,25 @@ class EBM_NOISE_NCE(object):
 		tf.logging.info("****** using bert mlm for noise dist sample *******")
 
 		global_step = tf.train.get_or_create_global_step()
+
 		self.noise_sample_ratio = tf.train.polynomial_decay(
 												0.25,
 												global_step,
 												self.opt_config.num_train_steps,
-												end_learning_rate=0.15,
+												end_learning_rate=0.10,
 												power=1.0,
 												cycle=False)
 
+		gap = int(opt_config.num_train_steps / 5)
+
+		boundaries = [gap, 2*gap, 3*gap, 4*gap ] 
+		values =     [0.25, 0.20, 0.15,  0.1, 0.05]
+		tf.logging.info("==piecewise_constant==", boundaries)
+		tf.logging.info("==piecewise_constant==", values)
+		self.noise_sample_ratio = tf.compat.v1.train.piecewise_constant(
+											global_step, 
+											boundaries,
+											values)
 		# self.noise_sample_ratio = 0.2
 	
 		self.mlm_noise_dist_fn = mlm_noise_dist(self.model_config_dict['generator'],
