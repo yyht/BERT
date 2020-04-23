@@ -238,13 +238,13 @@ class EBM_NOISE_NCE(object):
 
 		global_step = tf.train.get_or_create_global_step()
 
-		self.noise_sample_ratio = tf.train.polynomial_decay(
-												0.25,
-												global_step,
-												self.opt_config.num_train_steps,
-												end_learning_rate=0.10,
-												power=1.0,
-												cycle=False)
+		# self.noise_sample_ratio = tf.train.polynomial_decay(
+		# 										0.25,
+		# 										global_step,
+		# 										self.opt_config.num_train_steps,
+		# 										end_learning_rate=0.10,
+		# 										power=1.0,
+		# 										cycle=False)
 
 		gap = int(opt_config.num_train_steps / 5)
 
