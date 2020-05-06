@@ -14,10 +14,11 @@ pai_command="
 pai -name tensorflow1120
 	-Dscript='file://${model_zip}'
 	-DentryFile='./BERT/t2t_bert/offline_debug/run.py'
-	-DgpuRequired=100
 	-Dtags='bert'
 	-DjobName='bert_mrc_pretrain'
-	-DhyperParameters='file:///Users/xuhaotian/Desktop/my_work/BERT/t2t_bert/offline_debug/porn_2'
+	-DautoStrategy='false'
+	-Dcluster='{\"worker\":{\"count\":2, \"gpu\":200}}'
+	-DhyperParameters='file:///Users/xuhaotian/Desktop/my_work/BERT/t2t_bert/offline_debug/abuse_2_albert_base'
 	-Dbuckets='oss://alg-misc/BERT/?role_arn=acs:ram::1265628042679515:role/tianyi&host=cn-hangzhou.oss-internal.aliyun-inc.com';
 "
 echo "${pai_command}"

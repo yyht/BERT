@@ -78,7 +78,11 @@ def model_config_parser(FLAGS):
 		config.scope = FLAGS.model_scope #"bert"
 		tf.logging.info("****** original scope ******* %s", str(config.scope))
 		config.dropout_prob = 0.1
-		config.label_type = "single_label"
+		try:
+			config.label_type = FLAGS.label_type
+		except:
+			config.label_type = "single_label"
+		tf.logging.info("****** label type ******* %s", str(config.label_type))
 		config.model_type = FLAGS.model_type
 		config.ln_type = FLAGS.ln_type
 		if FLAGS.task_type in ['bert_pretrain']:
@@ -96,10 +100,10 @@ def model_config_parser(FLAGS):
 				except:
 					config.init_lr = 1e-4
 			else:
-				try:
-					config.init_lr = FLAGS.init_lr
-				except:
-					config.init_lr = 2e-5
+				# try:
+				config.init_lr = FLAGS.init_lr
+				# except:
+				# 	config.init_lr = 2e-5
 			print('==apply albert finetuning==', config.init_lr)
 		print("===learning rate===", config.init_lr)
 		try:
@@ -110,7 +114,14 @@ def model_config_parser(FLAGS):
 			tf.logging.info("****** normal attention ******* ")
 		tf.logging.info("****** learning rate ******* %s", str(config.init_lr))
 		# config.loss = "dmi_loss"
-		config.loss = "entropy"
+
+		try:
+			config.loss = FLAGS.loss
+		except:
+			config.loss = "entropy"
+		tf.logging.info("****** loss type ******* %s", str(config.loss))
+
+		# config.loss = "focal_loss"
 		config.rule_type_size = 2
 		config.lm_ratio = 1.0
 		config.max_length = FLAGS.max_length

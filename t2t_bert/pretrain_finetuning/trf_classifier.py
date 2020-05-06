@@ -81,10 +81,56 @@ def get_residual_ebm_loss(true_ebm_logits,
 
 	return loss
 
+def get_ebm_mlm_adv_softmax_loss(true_ebm_logits, fake_ebm_logits, **kargs):
+	
+	valid_mask = kargs.get('valid_mask', None)
+
+	if valid_mask is None:
+		tf.logging.info("====ones valid mask ====")
+		shape = bert_utils.get_shape_list(true_data_loss)
+		valid_mask = tf.ones(shape=[shape[0]])
+		if_provided = 0
+	valid_mask = tf.cast(valid_mask, tf.float32)
+	tf.logging.info("====the GAN loss using softmax-GAN ====")
+
+	shape = bert_utils.get_shape_list(true_ebm_logits)
+
+	D_target = 1. / tf.cast(shape[0], tf.float32)
+	G_target = 1. / (tf.cast(shape[0], tf.float32)+tf.reduce_sum(valid_mask))
+
+	valid_fake_ebm_logits = valid_mask*fake_ebm_logits + (1-valid_mask) * -1e10
+
+	normalized_constant = tf.concat([true_ebm_logits, valid_fake_ebm_logits], axis=0)
+	print("===normalized_constant shape==", normalized_constant.get_shape())
+	logZ = tf.reduce_logsumexp(normalized_constant, axis=0)
+
+	D_loss = tf.reduce_sum(D_target * -true_ebm_logits) + logZ
+	G_loss = tf.reduce_sum(G_target * -true_ebm_logits) + tf.reduce_sum(G_target * -fake_ebm_logits * valid_mask) + logZ
+	
+	if not kargs.get('use_tpu', True):
+		tf.logging.info("====logging discriminator global loss ====")
+		tf.summary.scalar('disc_loss', 
+							D_loss)
+		tf.summary.scalar('gen_loss', 
+							G_loss)
+		tf.summary.scalar('logZ', 
+							logZ)
+
+	return D_loss, G_loss
+
 def get_ebm_mlm_adv_loss(true_ebm_logits, fake_ebm_logits, **kargs):
 
 	d_out_real = true_ebm_logits
 	d_out_fake = fake_ebm_logits
+
+	valid_mask = kargs.get('valid_mask', None)
+
+	if valid_mask is None:
+		tf.logging.info("====ones valid mask ====")
+		shape = bert_utils.get_shape_list(true_data_loss)
+		valid_mask = tf.ones(shape=[shape[0]])
+		if_provided = 0
+	valid_mask = tf.cast(valid_mask, tf.float32)
 
 	input_shape_list = bert_utils.get_shape_list(d_out_real, 
 													expected_rank=[1,2,3])
@@ -95,23 +141,39 @@ def get_ebm_mlm_adv_loss(true_ebm_logits, fake_ebm_logits, **kargs):
 		d_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
 			logits=d_out_real, labels=tf.ones_like(d_out_real)
 		))
-		d_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
+		# d_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
+		# 	logits=d_out_fake, labels=tf.zeros_like(d_out_fake)
+		# ))
+		
+		d_loss_fake = tf.nn.sigmoid_cross_entropy_with_logits(
 			logits=d_out_fake, labels=tf.zeros_like(d_out_fake)
-		))
+		)
+		d_loss_fake = tf.reduce_sum(d_loss_fake*valid_mask) / (tf.reduce_sum(valid_mask)+1e-10)
+
 		d_loss = d_loss_real + d_loss_fake
 
-		g_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
+		# g_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
+		# 	logits=d_out_fake, labels=tf.ones_like(d_out_fake)
+		# ))
+		g_loss = tf.nn.sigmoid_cross_entropy_with_logits(
 			logits=d_out_fake, labels=tf.ones_like(d_out_fake)
-		))
+		)
+		g_loss = tf.reduce_sum(g_loss*valid_mask) / (tf.reduce_sum(valid_mask)+1e-10)
 		tf.logging.info("====the non-satuating GAN loss ====")
 
 	elif gan_type == 'JS':  # the vanilla GAN loss
 		d_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
 			logits=d_out_real, labels=tf.ones_like(d_out_real)
 		))
-		d_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
+		# d_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
+		# 	logits=d_out_fake, labels=tf.zeros_like(d_out_fake)
+		# ))
+
+		d_loss_fake = tf.nn.sigmoid_cross_entropy_with_logits(
 			logits=d_out_fake, labels=tf.zeros_like(d_out_fake)
-		))
+		)
+		d_loss_fake = tf.reduce_sum(d_loss_fake*valid_mask) / (tf.reduce_sum(valid_mask)+1e-10)
+
 		d_loss = d_loss_real + d_loss_fake
 
 		g_loss = -d_loss_fake
@@ -121,12 +183,17 @@ def get_ebm_mlm_adv_loss(true_ebm_logits, fake_ebm_logits, **kargs):
 		d_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
 			logits=d_out_real, labels=tf.ones_like(d_out_real)
 		))
-		d_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
+		# d_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
+		# 	logits=d_out_fake, labels=tf.zeros_like(d_out_fake)
+		# ))
+		d_loss_fake = tf.nn.sigmoid_cross_entropy_with_logits(
 			logits=d_out_fake, labels=tf.zeros_like(d_out_fake)
-		))
+		)
+		d_loss_fake = tf.reduce_sum(d_loss_fake*valid_mask) / (tf.reduce_sum(valid_mask)+1e-10)
 		d_loss = d_loss_real + d_loss_fake
 
-		g_loss = tf.reduce_mean(-d_out_fake)
+		# g_loss = tf.reduce_mean(-d_out_fake)
+		g_loss = tf.reduce_sum(-d_out_fake*valid_mask) / (tf.reduce_sum(valid_mask)+1e-10)
 		tf.logging.info("====the GAN loss implicitly minimizing KL-divergence ====")
 
 	elif gan_type == 'hinge':  # the hinge loss

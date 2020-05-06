@@ -14,6 +14,11 @@ def kd(x, y):
 	print(x_prob.get_shape(), y.get_shape(), tf.reduce_sum(x_prob * y, axis=-1).get_shape())
 	return -tf.reduce_sum(x_prob * y, axis=-1) # higher the better
 
+def kd_logits(x, y):
+	x_prob = tf.exp(x)
+	print(x_prob.get_shape(), y.get_shape(), tf.reduce_sum(x_prob * y, axis=-1).get_shape())
+	return -tf.reduce_sum(x_prob * y, axis=-1) # higher the better
+
 def mse(x, y):
 	x = x - tf.reduce_mean(x, axis=-1, keepdims=True)
 	y = y - tf.reduce_mean(y, axis=-1, keepdims=True)

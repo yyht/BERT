@@ -48,7 +48,7 @@ FLAGS = flags.FLAGS
 tf.logging.set_verbosity(tf.logging.INFO)
 
 flags.DEFINE_string("buckets", "", "oss buckets")
-flags.DEFINE_string("autoStrategy", 'true', "job name: worker or ps")
+flags.DEFINE_string("autoStrategy", 'false', "job name: worker or ps")
 flags.DEFINE_string("enableJITDeviceTuning", 'false', "job name: worker or ps")
 flags.DEFINE_string("autoGPUSelect", 'false', "job name: worker or ps")
 flags.DEFINE_integer("task_index", 0, "Worker task index")
@@ -70,6 +70,14 @@ flags.DEFINE_string(
 
 flags.DEFINE_string(
 	"label_id", None,
+	"Input TF example files (can be a glob or comma separated).")
+
+flags.DEFINE_string(
+	"label_type", 'single_label',
+	"Input TF example files (can be a glob or comma separated).")
+
+flags.DEFINE_string(
+	"loss", 'entropy',
 	"Input TF example files (can be a glob or comma separated).")
 
 flags.DEFINE_integer(
@@ -364,6 +372,11 @@ flags.DEFINE_string(
 	"if apply distillation"
 	)
 
+flags.DEFINE_string(
+	"data_prior", "none",
+	"if apply distillation"
+	)
+
 def make_distributed_info_without_evaluator():
 	worker_hosts = FLAGS.worker_hosts.split(",")
 	if len(worker_hosts) > 1:
@@ -458,8 +471,9 @@ def main(_):
 					  log_step_count_steps=100)
 					  # disable_evaluation=True)  # 1.12
 
-	# task_index = run_config.task_id
-	# is_chief = run_config.is_chief
+	if FLAGS.distribution_strategy == "MirroredStrategy":
+		task_index = run_config.task_id
+		is_chief = run_config.is_chief
 
 	print("==worker_count==", worker_count, "==local_rank==", task_index, "==is is_chief==", is_chief,
 		"==numbers of gpus==", FLAGS.num_gpus)

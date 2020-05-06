@@ -193,4 +193,4 @@ def efficient_attention_layer(from_tensor,
 				context_layer,
 				[batch_size, from_seq_length, num_attention_heads * attention_head_size])
 
-	return context_layer, attention_scores
+	return context_layer, attention_scores, value_layer

@@ -63,9 +63,14 @@ class BaseModel(object):
 	def build_emebdder(self, input_ids, input_char_ids, is_training, **kargs):
 
 		reuse = kargs["reuse"]
-		dropout_rate = tf.cond(is_training, 
-							lambda:self.config.dropout_rate,
-							lambda:0.0)
+		if is_training:
+			dropout_rate = self.config.dropout_rate
+		else:
+			dropout_rate = 0.0
+			
+		# dropout_rate = tf.cond(is_training, 
+		# 					lambda:self.config.dropout_rate,
+		# 					lambda:0.0)
 
 		word_emb = self.build_word_embedding(input_ids, **kargs)
 		if self.config.with_char == "char":

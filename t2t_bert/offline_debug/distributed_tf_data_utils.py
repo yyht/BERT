@@ -263,8 +263,6 @@ def all_reduce_multitask_train_batch_input_fn_sample(input_file, _parse_fn, name
 	# choice_dataset = choice_dataset.repeat()  # repeat
 
 	combined_dataset = tf.contrib.data.sample_from_datasets(datasets, data_prior)
-	if if_shard == "1":
-		combined_dataset = combined_dataset.shard(worker_count, task_index)
 	combined_dataset = combined_dataset.map(lambda x:_parse_fn(x, name_to_features),
 					num_parallel_calls=kargs.get("num_parallel_calls", 10))
 	combined_dataset = combined_dataset.batch(params.get("batch_size", 32))

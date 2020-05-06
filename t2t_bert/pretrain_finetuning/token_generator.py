@@ -131,6 +131,10 @@ def random_input_ids_generation(config,
 
 	output_sampled_binary_mask = tf.cast(output_sampled_binary_mask, tf.int32)
 
+	if not kargs.get('use_tpu', True):
+		tf.summary.scalar('mask_ratio', 
+		tf.reduce_sum(tf.cast(output_sampled_binary_mask, tf.float32))/(1e-10+tf.cast(tf.reduce_sum(input_mask), dtype=tf.float32)))
+
 	return [tf.cast(output_input_ids, tf.int32), 
 				output_sampled_binary_mask]
 

@@ -314,9 +314,16 @@ def main(_):
 		print("==cluster==", cluster, "==task_type==", task_type, "==task_index==", task_index)
 		dump_into_tf_config(cluster, task_type, task_index)
 		distribution = tf.contrib.distribute.CollectiveAllReduceStrategy(
-    							num_gpus_per_worker=1,
+    							num_gpus_per_worker=FLAGS.num_gpus,
     							cross_tower_ops_type='horovod')
 		worker_count = len(cluster['chief']) + len(cluster['worker'])
+		if task_type == 'chief':
+			is_chief = 1
+			task_index = 0
+		else:
+			is_chief = 0
+			task_index = FLAGS.task_index
+		print(worker_count, task_type, task_index, FLAGS.task_index)
 	else:
 		cross_tower_ops = cross_tower_ops_lib.AllReduceCrossTowerOps("nccl", 10, 0, 0)
 		distribution = tf.contrib.distribute.MirroredStrategy(num_gpus=FLAGS.num_gpus, 
@@ -337,8 +344,9 @@ def main(_):
 					  log_step_count_steps=100)
 					  # disable_evaluation=True) # tf180
 
-	task_index = run_config.task_id
-	is_chief = run_config.is_chief
+	if FLAGS.distribution_strategy == "MirroredStrategy":
+		task_index = run_config.task_id
+		is_chief = run_config.is_chief
 
 	print("==worker_count==", worker_count, "==local_rank==", task_index, "==is is_chief==", is_chief)
 	cluster = ""

@@ -14,9 +14,13 @@ class TextCNN(base_model.BaseModel):
 
 	def build_encoder(self, input_ids, input_char_ids, is_training, **kargs):
 		reuse = kargs["reuse"]
-		dropout_rate = tf.cond(is_training, 
-							lambda:self.config.dropout_rate,
-							lambda:0.0)
+		if is_training:
+			dropout_rate = self.config.dropout_rate
+		else:
+			dropout_rate = 0.0
+		# dropout_rate = tf.cond(is_training, 
+		# 					lambda:self.config.dropout_rate,
+		# 					lambda:0.0)
 
 		word_emb_dropout = tf.nn.dropout(self.word_emb, 1-dropout_rate)
 		with tf.variable_scope(self.config.scope+"_input_highway", reuse=reuse):

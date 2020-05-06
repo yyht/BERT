@@ -161,7 +161,8 @@ class Bert(object):
 					transformer_model = bert_modules.transformer_model
 
 				[self.all_encoder_layers,
-				self.all_attention_scores] = transformer_model(
+				self.all_attention_scores,
+				self.all_value_outputs] = transformer_model(
 						input_tensor=self.embedding_output,
 						attention_mask=attention_mask,
 						hidden_size=self.config.hidden_size,
@@ -202,6 +203,9 @@ class Bert(object):
 	
 	def get_pooled_output(self):
 		return self.pooled_output
+
+	def get_value_layer(self):
+		return self.all_value_outputs
 
 	def get_embedding_projection_table(self):
 		return None
