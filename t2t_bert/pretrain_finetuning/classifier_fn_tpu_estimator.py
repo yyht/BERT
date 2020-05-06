@@ -11,13 +11,16 @@ except:
 
 import tensorflow as tf
 import numpy as np
-from optimizer import distributed_optimizer as optimizer
+from optimizer import optimizer
 from model_io import model_io
 
 from task_module import classifier
 from task_module import tsa_pretrain
 import tensorflow as tf
 from metric import tf_metrics
+
+from pretrain_finetuning.token_generator import token_generator, random_input_ids_generation
+from pretrain_finetuning.token_generator_hmm import hmm_input_ids_generation, ngram_prob
 
 def train_metric_fn(masked_lm_example_loss, masked_lm_log_probs, 
 					masked_lm_ids,
@@ -38,6 +41,7 @@ def train_metric_fn(masked_lm_example_loss, masked_lm_log_probs,
 
 	masked_lm_mask = kargs.get('masked_lm_mask', None)
 	if masked_lm_mask is not None:
+		masked_lm_mask = tf.reshape(masked_lm_mask, [-1])
 		masked_lm_weights *= tf.cast(masked_lm_mask, tf.float32)
 
 	masked_lm_accuracy = tf.equal(
@@ -80,17 +84,60 @@ def classifier_model_fn_builder(
 						exclude_scope="",
 						not_storage_params=[],
 						target="a",
-						label_lst=None,
-						output_type="sess",
 						**kargs):
 	model_config.tsa = 'exp_schedule'
 	model_config.num_train_steps = opt_config.num_train_steps
 	# opt_config.init_lr /= 2
-	opt_config.grad_clip = None
 
-	def model_fn(features, labels, mode):
+	ngram_list = kargs.get("ngram", [10, 3])
+	mask_prob_list = kargs.get("mask_prob", [0.2, 0.2])
+	ngram_ratio = kargs.get("ngram_ratio", [8, 1])
+	uniform_ratio = kargs.get("uniform_ratio", 0.1)
+	tf.logging.info("****** dynamic ngram: %s, mask_prob: %s, mask_prior: %s, uniform_ratio: %s *******", 
+			str(ngram_list), str(mask_prob_list), str(ngram_ratio), str(uniform_ratio))	
+	tran_prob_list, hmm_tran_prob_list = [], []
+	for ngram_sub, mask_prob_sub in zip(ngram_list, mask_prob_list):
+		tran_prob, hmm_tran_prob = ngram_prob(ngram_sub, mask_prob_sub)
+		tran_prob_list.append(tran_prob)
+		hmm_tran_prob_list.append(hmm_tran_prob)
+	mask_prior = []
+	for ratio in ngram_ratio:
+		actual_ratio = (1 - uniform_ratio) / sum(ngram_ratio) * ratio
+		mask_prior.append(actual_ratio)
+	mask_prior.append(uniform_ratio)
+	mask_prior = np.array(mask_prior).astype(np.float32)
+
+	def model_fn(features, labels, mode, params):
 
 		model_api = model_zoo(model_config)
+
+		input_ori_ids = features.get('input_ori_ids', None)
+		if mode == tf.estimator.ModeKeys.TRAIN:
+			if input_ori_ids is not None:
+				# [output_ids, 
+				# sampled_binary_mask] = random_input_ids_generation(
+				# 							model_config, 
+				# 							input_ori_ids,
+				# 							features['input_mask'],
+				# 							**kargs)
+
+				[output_ids, 
+				sampled_binary_mask] = hmm_input_ids_generation(model_config,
+											features['input_ori_ids'],
+											features['input_mask'],
+											[tf.cast(tf.constant(hmm_tran_prob), tf.float32) for hmm_tran_prob in hmm_tran_prob_list],
+											mask_probability=0.2,
+											replace_probability=0.1,
+											original_probability=0.1,
+											mask_prior=tf.cast(tf.constant(mask_prior), tf.float32),
+											**kargs)
+
+				features['input_ids'] = output_ids
+				tf.logging.info("***** Running random sample input generation *****")
+			else:
+				sampled_binary_mask = None
+		else:
+			sampled_binary_mask = None
 
 		model = model_api(model_config, features, labels,
 							mode, target, reuse=tf.AUTO_REUSE,
@@ -105,10 +152,10 @@ def classifier_model_fn_builder(
 			scope = model_config.scope + "_finetuning"
 		else:
 			scope = model_config.scope
-
+		
 		(nsp_loss, 
-		nsp_per_example_loss, 
-		nsp_log_prob) = pretrain.get_next_sentence_output(model_config,
+		 nsp_per_example_loss, 
+		 nsp_log_prob) = pretrain.get_next_sentence_output(model_config,
 										model.get_pooled_output(),
 										features['next_sentence_labels'],
 										reuse=tf.AUTO_REUSE)
@@ -119,133 +166,100 @@ def classifier_model_fn_builder(
 
 		if model_config.model_type == 'bert':
 			masked_lm_fn = pretrain.get_masked_lm_output
+			seq_masked_lm_fn = pretrain.seq_mask_masked_lm_output
 			print("==apply bert masked lm==")
 		elif model_config.model_type == 'albert':
 			masked_lm_fn = pretrain_albert.get_masked_lm_output
+			seq_masked_lm_fn = pretrain_albert.seq_mask_masked_lm_output
 			print("==apply albert masked lm==")
 		else:
 			masked_lm_fn = pretrain.get_masked_lm_output
+			seq_masked_lm_fn = pretrain_albert.seq_mask_masked_lm_output
 			print("==apply bert masked lm==")
 
-		(masked_lm_loss,
-		masked_lm_example_loss, 
-		masked_lm_log_probs,
-		masked_lm_mask) = masked_lm_fn(
-										model_config, 
+		if sampled_binary_mask is not None:
+			(masked_lm_loss,
+			masked_lm_example_loss, 
+			masked_lm_log_probs,
+			masked_lm_mask) = seq_masked_lm_fn(model_config, 
 										model.get_sequence_output(), 
 										model.get_embedding_table(),
-										masked_lm_positions, 
-										masked_lm_ids, 
-										masked_lm_weights,
+										features['input_mask'], 
+										features['input_ori_ids'], 
+										features['input_ids'],
+										sampled_binary_mask,
 										reuse=tf.AUTO_REUSE,
 										embedding_projection=model.get_embedding_projection_table())
-		print(model_config.lm_ratio, '==mlm lm_ratio==', model_config.nsp_ratio, "===nsp ratio===")
-		tf.logging.info("***** mlm ratio:%s ***** nsp ratio:%s", str(model_config.lm_ratio), str(model_config.nsp_ratio))
-
-		loss = model_config.lm_ratio * masked_lm_loss + model_config.nsp_ratio * nsp_loss
+			masked_lm_ids = input_ori_ids
+		else:
+			(masked_lm_loss,
+			masked_lm_example_loss, 
+			masked_lm_log_probs,
+			masked_lm_mask) = masked_lm_fn(
+											model_config, 
+											model.get_sequence_output(), 
+											model.get_embedding_table(),
+											masked_lm_positions, 
+											masked_lm_ids, 
+											masked_lm_weights,
+											reuse=tf.AUTO_REUSE,
+											embedding_projection=model.get_embedding_projection_table())
+		print(model_config.lm_ratio, '==mlm lm_ratio==')
+		loss = model_config.lm_ratio * masked_lm_loss #+ 0.0 * nsp_loss
 		
 		model_io_fn = model_io.ModelIO(model_io_config)
 
-		if mode == tf.estimator.ModeKeys.TRAIN:
-			pretrained_tvars = model_io_fn.get_params(model_config.scope, 
+		pretrained_tvars = model_io_fn.get_params(model_config.scope, 
 										not_storage_params=not_storage_params)
 
-			lm_pretrain_tvars = model_io_fn.get_params("cls/predictions", 
-										not_storage_params=not_storage_params)
+		lm_pretrain_tvars = model_io_fn.get_params("cls/predictions", 
+									not_storage_params=not_storage_params)
 
-			pretrained_tvars.extend(lm_pretrain_tvars)
+		pretrained_tvars.extend(lm_pretrain_tvars)
 
-			optimizer_fn = optimizer.Optimizer(opt_config)
-			
-			if load_pretrained == "yes":
-				model_io_fn.load_pretrained(pretrained_tvars, 
+		if load_pretrained == "yes":
+			scaffold_fn = model_io_fn.load_pretrained(pretrained_tvars, 
 											init_checkpoint,
-											exclude_scope=exclude_scope)
+											exclude_scope=exclude_scope,
+											use_tpu=1)
+		else:
+			scaffold_fn = None
 
+		if mode == tf.estimator.ModeKeys.TRAIN:
+						
+			optimizer_fn = optimizer.Optimizer(opt_config)
+						
 			tvars = pretrained_tvars
 			model_io_fn.print_params(tvars, string=", trainable params")
 			
 			update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 			with tf.control_dependencies(update_ops):
-				print('==gpu count==', opt_config.get('gpu_count', 1))
-
 				train_op = optimizer_fn.get_train_op(loss, tvars,
 								opt_config.init_lr, 
-								opt_config.num_train_steps)
-
-				model_io_fn.set_saver()
+								opt_config.num_train_steps,
+								use_tpu=opt_config.use_tpu)
 
 				train_metric_dict = train_metric_fn(
 						masked_lm_example_loss, masked_lm_log_probs, 
 						masked_lm_ids,
-						masked_lm_weights, 
+						masked_lm_mask, 
 						nsp_per_example_loss,
 						nsp_log_prob, 
 						features['next_sentence_labels'],
 						masked_lm_mask=masked_lm_mask
 					)
 
-				for key in train_metric_dict:
-					tf.summary.scalar(key, train_metric_dict[key])
-				tf.summary.scalar('learning_rate', optimizer_fn.single_node_learning)
+				# for key in train_metric_dict:
+				# 	tf.summary.scalar(key, train_metric_dict[key])
+				# tf.summary.scalar('learning_rate', optimizer_fn.learning_rate)
 
-				if kargs.get("task_index", 1) == 0 and kargs.get("run_config", None):
-					training_hooks = []
-				elif kargs.get("task_index", 1) == 0:
-					model_io_fn.get_hooks(kargs.get("checkpoint_dir", None), 
-														kargs.get("num_storage_steps", 1000))
+				estimator_spec = tf.contrib.tpu.TPUEstimatorSpec(
+								mode=mode,
+								loss=loss,
+								train_op=train_op,
+								scaffold_fn=scaffold_fn)
 
-					training_hooks = model_io_fn.checkpoint_hook
-				else:
-					training_hooks = []
-
-				if len(optimizer_fn.distributed_hooks) >= 1:
-					training_hooks.extend(optimizer_fn.distributed_hooks)
-				print(training_hooks, "==training_hooks==", "==task_index==", kargs.get("task_index", 1))
-
-				estimator_spec = tf.estimator.EstimatorSpec(mode=mode, 
-								loss=loss, train_op=train_op)
-
-				if output_type == "sess":
-					return {
-						"train":{
-										"loss":loss, 
-										"nsp_log_pro":nsp_log_prob,
-										"train_op":train_op,
-										"masked_lm_loss":masked_lm_loss,
-										"next_sentence_loss":nsp_loss,
-										"masked_lm_log_pro":masked_lm_log_probs
-									},
-						"hooks":training_hooks
-					}
-				elif output_type == "estimator":
-					return estimator_spec
-
-		elif mode == tf.estimator.ModeKeys.PREDICT:
-
-			def prediction_fn(logits):
-
-				predictions = {
-					"nsp_classes": tf.argmax(input=nsp_log_prob, axis=1),
-					"nsp_probabilities": 
-						tf.exp(nsp_log_prob, name="nsp_softmax"),
-					"masked_vocab_classes":tf.argmax(input=masked_lm_log_probs, axis=1),
-					"masked_probabilities":tf.exp(masked_lm_log_probs, name='masked_softmax')
-				}
-				return predictions
-
-			predictions = prediction_fn(logits)
-
-			estimator_spec = tf.estimator.EstimatorSpec(
-									mode=mode,
-									predictions=predictions,
-									export_outputs={
-										"output":tf.estimator.export.PredictOutput(
-													predictions
-												)
-									}
-						)
-			return estimator_spec
+				return estimator_spec
 
 		elif mode == tf.estimator.ModeKeys.EVAL:
 
@@ -284,29 +298,19 @@ def classifier_model_fn_builder(
 					"next_sentence_loss": next_sentence_mean_loss
 					}
 
-			if output_type == "sess":
-				return {
-					"eval":{
-							"nsp_log_prob":nsp_log_prob,
-							"masked_lm_log_prob":masked_lm_log_probs,
-							"nsp_loss":nsp_loss,
-							"masked_lm_loss":masked_lm_loss,
-							"feature":model.get_pooled_output()
-						}
-				}
-			elif output_type == "estimator":
-				eval_metric_ops = metric_fn(masked_lm_example_loss, 
-											masked_lm_log_probs, 
-											masked_lm_ids,
-											masked_lm_weights, 
-											nsp_per_example_loss,
-											nsp_log_prob, 
-											features['next_sentence_labels'])
+			eval_metrics = (metric_fn, [
+			  masked_lm_example_loss, masked_lm_log_probs, masked_lm_ids,
+			  masked_lm_mask, nsp_per_example_loss,
+			  nsp_log_prob, features['next_sentence_labels']
+			])
 
-				estimator_spec = tf.estimator.EstimatorSpec(mode=mode, 
-								loss=loss,
-								eval_metric_ops=eval_metric_ops)
-				return estimator_spec
+			estimator_spec = tf.contrib.tpu.TPUEstimatorSpec(
+						  mode=mode,
+						  loss=loss,
+						  eval_metrics=eval_metrics,
+						  scaffold_fn=scaffold_fn)
+
+			return estimator_spec
 		else:
 			raise NotImplementedError()
 
