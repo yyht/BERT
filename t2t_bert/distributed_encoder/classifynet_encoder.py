@@ -9,9 +9,9 @@ def textcnn_encoder(model_config, features, labels,
 			mode, target, reuse=None, **kargs):
 
 	if mode == tf.estimator.ModeKeys.TRAIN:
-		is_training = tf.constant(True)
+		is_training = True
 	else:
-		is_training = tf.constant(False)
+		is_training = False
 
 	if target:
 		input_ids = features["input_ids_{}".format(target)]
@@ -29,9 +29,9 @@ def textlstm_encoder(model_config, features, labels,
 			mode, target, reuse=None, **kargs):
 
 	if mode == tf.estimator.ModeKeys.TRAIN:
-		is_training = tf.constant(True)
+		is_training = True
 	else:
-		is_training = tf.constant(False)
+		is_training = False
 
 	if target:
 		input_ids = features["input_ids_{}".format(target)]

@@ -74,12 +74,19 @@ def classifier(config, pooled_output,
 		return (loss, per_example_loss, logits)
 	elif config.get("label_type", "single_label") == "multi_label":
 		# logits = tf.log_sigmoid(logits)
-		per_example_loss = tf.nn.sigmoid_cross_entropy_with_logits(
+		if config.get("loss", "entropy") == "entropy":
+			per_example_loss = tf.nn.sigmoid_cross_entropy_with_logits(
 												logits=logits, 
 												labels=tf.stop_gradient(tf.cast(labels,
 																	tf.float32)))
-		per_example_loss = tf.reduce_sum(per_example_loss, axis=-1)
-		loss = tf.reduce_mean(per_example_loss)
+			per_example_loss = tf.reduce_sum(per_example_loss, axis=-1)
+			loss = tf.reduce_mean(per_example_loss)
+		elif config.get("loss", "entropy") == "circle_loss":
+			per_example_loss = loss_utils.multilabel_categorical_crossentropy(
+																tf.stop_gradient(tf.cast(labels, tf.float32)), 
+																logits)
+			loss = tf.reduce_mean(per_example_loss)
+		
 		return (loss, per_example_loss, logits)
 	else:
 		raise NotImplementedError()

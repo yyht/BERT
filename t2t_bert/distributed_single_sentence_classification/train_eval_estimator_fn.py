@@ -128,16 +128,16 @@ def train_eval_fn(FLAGS,
 
 		print(num_train_steps, num_warmup_steps, "=============", kargs.get('num_gpus', 1), '==number of gpus==')
 
-		if worker_count*kargs.get("num_gpus", 1) >= 2:
-			clip_norm_scale = 1.0
-			lr_scale = 0.8
-		else:
-			clip_norm_scale = 1.0
-			lr_scale = 1.0
-		lr = init_lr*worker_count*kargs.get("num_gpus", 1)*lr_scale
-		if lr >= 1e-3:
-			lr = 1e-3
-		
+		# if worker_count*kargs.get("num_gpus", 1) >= 2:
+		# 	clip_norm_scale = 1.0
+		# 	lr_scale = 0.8
+		# else:
+		# 	clip_norm_scale = 1.0
+		# 	lr_scale = 1.0
+		# lr = init_lr*worker_count*kargs.get("num_gpus", 1)*lr_scale
+		# if lr >= 1e-3:
+		# 	lr = 1e-3
+		lr = init_lr
 		opt_config = Bunch({"init_lr":lr, 
 							"num_train_steps":num_train_steps,
 							"num_warmup_steps":num_warmup_steps,
@@ -249,7 +249,21 @@ def train_eval_fn(FLAGS,
 											_decode_batch_record, name_to_features, params, if_shard=FLAGS.if_shard,
 											worker_count=worker_count,
 											task_index=task_index)
-
+			elif kargs.get("parse_type", "parse_single") == "parse_batch_multi_task":
+				data_prior = [float(item) for item in FLAGS.data_prior.split(',')]
+				train_features = lambda: tf_data_utils.all_reduce_multitask_train_batch_input_fn_sample(
+										train_file,
+										_decode_record, 
+										name_to_features, 
+										params, 
+										data_prior=data_prior,
+										if_shard=FLAGS.if_shard,
+										worker_count=worker_count,
+										task_index=task_index)
+				eval_features = lambda: tf_data_utils.all_reduce_eval_batch_input_fn(dev_file,
+											_decode_batch_record, name_to_features, params, if_shard=FLAGS.if_shard,
+											worker_count=worker_count,
+											task_index=task_index)
 		else:
 			train_features = lambda: tf_data_utils.train_input_fn(train_file,
 										_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,
@@ -315,6 +329,7 @@ def train_eval_fn(FLAGS,
 			model_estimator.train(input_fn=train_features,
 							max_steps=num_train_steps,
 							hooks=train_hooks)
+			
 			# tf.estimator.train(model_estimator, train_spec)
 
 			train_end_time = time.time()

@@ -41,6 +41,11 @@ try:
 except:
 	from distillation_model_fn import distillation_model_fn
 
+# try:
+# 	from .distillation_pretrain_model_fn import distillation_model_fn
+# except:
+# 	from distillation_pretrain_model_fn import distillation_model_fn
+
 import numpy as np
 import tensorflow as tf
 from bunch import Bunch
@@ -214,6 +219,15 @@ def train_eval_fn(FLAGS,
 
 		name_to_features = data_interface(FLAGS)
 
+		# name_to_features = {
+		# 			"input_ids":
+		# 					tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+		# 			"input_mask":
+		# 					tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+		# 			"segment_ids":
+		# 					tf.FixedLenFeature([FLAGS.max_length], tf.int64)
+		# 	}
+
 		def _decode_record(record, name_to_features):
 			"""Decodes a record to a TensorFlow example.
 			"""
@@ -326,9 +340,9 @@ def train_eval_fn(FLAGS,
 			eval_spec = tf.estimator.EvalSpec(input_fn=eval_features, 
 											steps=num_eval_steps)
 			
-			# model_estimator.train(input_fn=train_features,
-			# 				max_steps=num_train_steps,
-			# 				hooks=train_hooks)
+			model_estimator.train(input_fn=train_features,
+							max_steps=num_train_steps,
+							hooks=train_hooks)
 			# tf.estimator.train(model_estimator, train_spec)
 
 			train_end_time = time.time()

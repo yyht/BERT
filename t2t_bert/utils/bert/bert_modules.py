@@ -717,7 +717,7 @@ def attention_layer(from_tensor,
 				context_layer,
 				[batch_size, from_seq_length, num_attention_heads * attention_head_size])
 
-	return context_layer, attention_scores
+	return context_layer, attention_scores, value_layer
 
 def transformer_efficient_model(input_tensor,
 						attention_mask=None,
@@ -800,6 +800,7 @@ def transformer_efficient_model(input_tensor,
 
 	all_layer_outputs = []
 	all_attention_scores = []
+	all_value_outputs = []
 
 	for layer_idx in range(num_hidden_layers):
 		with tf.variable_scope("layer_%d" % layer_idx):
@@ -809,7 +810,8 @@ def transformer_efficient_model(input_tensor,
 				attention_heads = []
 				with tf.variable_scope("self"):
 					[attention_head, 
-					attention_scores] = efficient_attention_layer(
+					attention_scores,
+					value_layer] = efficient_attention_layer(
 							from_tensor=layer_input,
 							to_tensor=layer_input,
 							attention_mask=attention_mask,
@@ -824,6 +826,7 @@ def transformer_efficient_model(input_tensor,
 							attention_fixed_size=attention_fixed_size)
 					attention_heads.append(attention_head)
 					all_attention_scores.append(attention_scores)
+					all_value_outputs.append(value_layer)
 
 				attention_output = None
 				if len(attention_heads) == 1:
@@ -867,10 +870,10 @@ def transformer_efficient_model(input_tensor,
 		for layer_output in all_layer_outputs:
 			final_output = bert_utils.reshape_from_matrix(layer_output, input_shape)
 			final_outputs.append(final_output)
-		return final_outputs, all_attention_scores
+		return final_outputs, all_attention_scores, all_value_outputs
 	else:
 		final_output = bert_utils.reshape_from_matrix(prev_output, input_shape)
-		return final_output, all_attention_scores
+		return final_output, all_attention_scores, all_value_outputs
 
  
 def transformer_model(input_tensor,
@@ -955,6 +958,7 @@ def transformer_model(input_tensor,
 
 	all_layer_outputs = []
 	all_attention_scores = []
+	all_value_outputs = []
 
 	for layer_idx in range(num_hidden_layers):
 		with tf.variable_scope("layer_%d" % layer_idx):
@@ -964,7 +968,8 @@ def transformer_model(input_tensor,
 				attention_heads = []
 				with tf.variable_scope("self"):
 					[attention_head, 
-					attention_scores] = attention_layer(
+					attention_scores,
+					value_layer] = attention_layer(
 							from_tensor=layer_input,
 							to_tensor=layer_input,
 							attention_mask=attention_mask,
@@ -979,6 +984,7 @@ def transformer_model(input_tensor,
 							attention_fixed_size=attention_fixed_size)
 					attention_heads.append(attention_head)
 					all_attention_scores.append(attention_scores)
+					all_value_outputs.append(value_layer)
 
 				attention_output = None
 				if len(attention_heads) == 1:
@@ -1022,10 +1028,10 @@ def transformer_model(input_tensor,
 		for layer_output in all_layer_outputs:
 			final_output = bert_utils.reshape_from_matrix(layer_output, input_shape)
 			final_outputs.append(final_output)
-		return final_outputs, all_attention_scores
+		return final_outputs, all_attention_scores, all_value_outputs
 	else:
 		final_output = bert_utils.reshape_from_matrix(prev_output, input_shape)
-		return final_output, all_attention_scores
+		return final_output, all_attention_scores, all_value_outputs
 
 def transformer_rezero_model(input_tensor,
 						attention_mask=None,
@@ -1109,6 +1115,7 @@ def transformer_rezero_model(input_tensor,
 
 	all_layer_outputs = []
 	all_attention_scores = []
+	all_value_outputs = []
 
 	for layer_idx in range(num_hidden_layers):
 		with tf.variable_scope("layer_%d" % layer_idx):
@@ -1120,7 +1127,8 @@ def transformer_rezero_model(input_tensor,
 				attention_heads = []
 				with tf.variable_scope("self"):
 					[attention_head, 
-					attention_scores] = attention_layer(
+					attention_scores,
+					value_layer] = attention_layer(
 							from_tensor=layer_input,
 							to_tensor=layer_input,
 							attention_mask=attention_mask,
@@ -1135,6 +1143,7 @@ def transformer_rezero_model(input_tensor,
 							attention_fixed_size=attention_fixed_size)
 					attention_heads.append(attention_head)
 					all_attention_scores.append(attention_scores)
+					all_value_outputs.append(value_layer)
 
 				attention_output = None
 				if len(attention_heads) == 1:
@@ -1185,10 +1194,10 @@ def transformer_rezero_model(input_tensor,
 		for layer_output in all_layer_outputs:
 			final_output = bert_utils.reshape_from_matrix(layer_output, input_shape)
 			final_outputs.append(final_output)
-		return final_outputs, all_attention_scores
+		return final_outputs, all_attention_scores, all_value_outputs
 	else:
 		final_output = bert_utils.reshape_from_matrix(prev_output, input_shape)
-		return final_output, all_attention_scores
+		return final_output, all_attention_scores, all_value_outputs
 
 def distributed_transformer_model(input_tensor,
 						attention_mask=None,

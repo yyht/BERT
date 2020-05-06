@@ -315,3 +315,20 @@ def macro_soft_f1(logits, label, label_depth):
 	macro_cost = tf.reduce_mean(cost) # average on all labels
 	return macro_cost
 
+def multilabel_categorical_crossentropy(y_true, y_pred):
+	"""
+	y_true = [0,1],
+	1 stands for target class,
+	0 stands for none-target class
+	"""
+	y_pred = (1 - 2 * y_true) * y_pred
+	y_pred_neg = y_pred - y_true * 1e12
+	y_pred_pos = y_pred - (1 - y_true) * 1e12
+
+	zeros = tf.zeros_like(y_pred[..., :1])
+	y_pred_neg = tf.concat([y_pred_neg, zeros], axis=-1)
+	y_pred_pos = tf.concat([y_pred_pos, zeros], axis=-1)
+	neg_loss = tf.reduce_logsumexp(y_pred_neg, axis=-1)
+	pos_loss = tf.reduce_logsumexp(y_pred_pos, axis=-1)
+	return neg_loss + pos_loss
+	

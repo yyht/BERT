@@ -29,7 +29,7 @@
 		"steps":1,
 		"logz_steps":1,
 		"fix_embeddings":false,
-		"ebm_loss_ratio":10
+		"ebm_loss_ratio":1
 	},
 	"teacher_porn":{
 		"task_type":"single_sentence_classification",
@@ -225,7 +225,7 @@
 		"config_file":"./BERT/data/electra_share_embedding/generator/bert_config_tiny.json",
 		"target":"",
 		"not_storage_params":[],
-		"exclude_scope":"",
+		"exclude_scope":"generator",
 		"load_pretrained":"yes",
 		"num_labels":2,
 		"init_checkpoint":"bert_pretrain/open_domain/pretrain_single_random_hard_gan/tiny/bert_tiny_with_single_random_adam_decay_40_mixed_mask/model.ckpt-1145800",

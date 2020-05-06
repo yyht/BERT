@@ -173,6 +173,7 @@ def model_fn_builder(
 			# 							}
 			# 				)
 			if model_config.get('label_type', 'single_label') == 'multi_label':
+				print("==apply multi_label==")
 				prob = tf.nn.sigmoid(logits)
 				estimator_spec = tf.estimator.EstimatorSpec(
 										mode=mode,
@@ -190,6 +191,7 @@ def model_fn_builder(
 										}
 							)
 			elif model_config.get('label_type', 'single_label') == "single_label":
+				print("==apply multi_label==")
 				prob = tf.nn.softmax(logits)
 				estimator_spec = tf.estimator.EstimatorSpec(
 										mode=mode,

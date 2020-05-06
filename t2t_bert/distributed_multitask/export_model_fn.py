@@ -32,14 +32,12 @@ def model_fn_builder(
 
 		model_api = model_zoo(model_config)
 		model = model_api(model_config, features, labels,
-							mode, target, reuse=model_reuse, 
+							tf.estimator.ModeKeys.PREDICT, 
+							target, reuse=model_reuse, 
 							cnn_type='multilayer_textcnn',
 							**kargs)
 
-		if mode == tf.estimator.ModeKeys.TRAIN:
-			dropout_prob = 0.2
-		else:
-			dropout_prob = 0.0
+		dropout_prob = 0.0
 
 		with tf.variable_scope(model_config.scope+"/feature_output", reuse=tf.AUTO_REUSE):
 			hidden_size = bert_utils.get_shape_list(model.get_pooled_output(), expected_rank=2)[-1]
@@ -73,7 +71,7 @@ def model_fn_builder(
 										exclude_scope=exclude_scope)
 
 		estimator_spec = tf.estimator.EstimatorSpec(
-										mode=mode,
+										mode=tf.estimator.ModeKeys.PREDICT,
 										predictions={
 													'sentence_pres':sentence_pres
 										},

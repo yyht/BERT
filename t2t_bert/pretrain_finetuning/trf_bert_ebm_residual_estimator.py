@@ -5,13 +5,29 @@ from utils.bert import bert_utils
 try:
 	from .trf_gpt_noise import model_fn_builder as noise_dist
 	from .trf_ebm_bert import model_fn_builder as ebm_dist
-	from .trf_classifier import get_ebm_loss, get_residual_ebm_loss, get_ebm_mlm_adv_loss, get_noise_loss, ebm_noise_train_metric, ebm_noise_eval_metric, ebm_eval_metric, ebm_train_metric
+	from .trf_classifier import (get_ebm_loss, 
+								get_residual_ebm_loss, 
+								get_ebm_mlm_adv_loss, 
+								get_noise_loss, 
+								ebm_noise_train_metric, 
+								ebm_noise_eval_metric, 
+								ebm_eval_metric, 
+								ebm_train_metric,
+								get_ebm_mlm_adv_softmax_loss)
 	from .trf_ebm_noise_mlm_sample import model_fn_builder as mlm_noise_dist
 except:
 	from trf_gpt_noise import model_fn_builder as noise_dist
 	from trf_ebm_bert import model_fn_builder as ebm_dist
 	from trf_ebm_noise_mlm_sample import model_fn_builder as mlm_noise_dist
-	from trf_classifier import get_ebm_loss, get_residual_ebm_loss, get_ebm_mlm_adv_loss, get_noise_loss, ebm_noise_train_metric, ebm_noise_eval_metric, ebm_eval_metric, ebm_train_metric
+	from trf_classifier import (get_ebm_loss, 
+								get_residual_ebm_loss, 
+								get_ebm_mlm_adv_loss, 
+								get_noise_loss, 
+								ebm_noise_train_metric, 
+								ebm_noise_eval_metric, 
+								ebm_eval_metric, 
+								ebm_train_metric,
+								get_ebm_mlm_adv_softmax_loss)
 
 import tensorflow as tf
 import numpy as np
@@ -189,6 +205,35 @@ def transfer2lm(input_ids, input_mask, finished_index=102, sentence_end_index=10
 	modified_token_seq = tf.cast(input_ids, tf.float32) - float(finished_index) * sequence_mask + sequence_mask * sentence_end_index
 	return tf.cast(modified_token_seq, tf.int32)
 
+
+
+def ebm_gen_distance(ebm_model_dict, gen_model_dict, **kargs):
+	gen_tvars = gen_model_dict['tvars']
+	ebm_tvars = ebm_model_dict['tvars']
+
+	loss = tf.constant(0.0)
+
+	gen_var_dict = {}
+	for var in gen_tvars:
+		if var.name in gen_var_dict:
+			continue
+		else:
+			gen_var_dict[var.name] = var
+	for key in gen_var_dict:
+		print(key, gen_var_dict[key], '==========gen var====')
+	for var in ebm_tvars:
+		print(var, var.name, '==========ebm var====')
+		for name in gen_var_dict:
+			print(name, gen_var_dict[name], '==========gen var====')
+			if var.name in name:
+				loss += tf.reduce_mean(tf.abs(var-gen_var_dict[name]))
+				print(name, '==========gen var match ebm====', var.name)
+				break
+
+	if not kargs.get('use_tpu', False):
+		tf.summary.scalar('ebm_gen_loss_gap', loss)
+
+
 class EBM_NOISE_NCE(object):
 	def __init__(self, model_config_dict,
 						num_labels_dict,
@@ -249,14 +294,14 @@ class EBM_NOISE_NCE(object):
 		gap = int(opt_config.num_train_steps / 5)
 
 		boundaries = [gap, 2*gap, 3*gap, 4*gap ] 
-		values =     [0.25, 0.20, 0.15,  0.1, 0.05]
+		values =     [0.25, 0.20, 0.15,  0.1, 0.1]
 		tf.logging.info("==piecewise_constant==", boundaries)
 		tf.logging.info("==piecewise_constant==", values)
-		self.noise_sample_ratio = tf.compat.v1.train.piecewise_constant(
-											global_step, 
-											boundaries,
-											values)
-		# self.noise_sample_ratio = 0.2
+		# self.noise_sample_ratio = tf.train.piecewise_constant(
+		# 									global_step, 
+		# 									boundaries,
+		# 									values)
+		self.noise_sample_ratio = 0.15
 	
 		self.mlm_noise_dist_fn = mlm_noise_dist(self.model_config_dict['generator'],
 					self.num_labels_dict['generator'],
@@ -350,12 +395,24 @@ class EBM_NOISE_NCE(object):
 		self.gan_type = kargs.get('gan_type', 'JS')
 		tf.logging.info("****** gan type *******", self.gan_type)
 
-		[self.ebm_loss, self.mlm_adv_loss] = get_ebm_mlm_adv_loss(self.true_ebm_dist_dict['logits'], 
+		# [self.ebm_loss, self.mlm_adv_loss] = get_ebm_mlm_adv_loss(self.true_ebm_dist_dict['logits'], 
+		# 													self.fake_ebm_dist_dict['logits'], 
+		# 													gan_type=self.gan_type,
+		# 													use_tpu=kargs.get('use_tpu', False),
+		# 													valid_mask=self.mlm_noise_dist_dict.get('valid_mask', None))
+		
+		[self.ebm_loss, self.mlm_adv_loss] = get_ebm_mlm_adv_softmax_loss(self.true_ebm_dist_dict['logits'], 
 															self.fake_ebm_dist_dict['logits'], 
 															gan_type=self.gan_type,
-															use_tpu=kargs.get('use_tpu', False))
+															use_tpu=kargs.get('use_tpu', False),
+															valid_mask=self.mlm_noise_dist_dict.get('valid_mask', None))
 		
 		self.true_ebm_dist_dict['logz_loss'] = self.ebm_loss
+
+		tf.logging.info("****** logging ebm gen diff *******")
+		ebm_gen_distance(self.true_ebm_dist_dict, 
+						self.mlm_noise_dist_dict, 
+						**kargs)
 
 		if self.model_config_dict['ebm_dist'].get('fix_embeddings', False):
 			tf.logging.info("****** generator parameter *******")
@@ -457,7 +514,7 @@ def classifier_model_fn_builder(
 								features, labels, mode, params,
 								use_tpu=use_tpu,
 								train_op_type=train_op_type,
-								alternate_order=['ebm'])
+								alternate_order=['ebm', 'generator'])
 
 			ebm_noise_fce.load_pretrained_model(**kargs)
 			var_checkpoint_dict_list = ebm_noise_fce.var_checkpoint_dict_list

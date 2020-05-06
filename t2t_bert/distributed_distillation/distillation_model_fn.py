@@ -18,6 +18,24 @@ from metric import tf_metrics
 from distillation import uniform_mapping
 from distillation import cpc_utils
 
+def train_metric_fn(per_example_loss,
+						logits, 
+						label_ids, model_type):
+	"""Computes the loss and accuracy of the model."""
+	sentence_predictions = tf.argmax(
+		logits, axis=-1, output_type=tf.int32)
+	sentence_accuracy = tf.equal(
+						tf.cast(label_ids, tf.int32),
+						tf.cast(sentence_predictions, tf.int32)
+					)
+	sentence_loss = tf.reduce_mean(per_example_loss)
+	
+	train_metric_dict = {
+		model_type+"/acc":tf.reduce_mean(tf.cast(sentence_accuracy, tf.float32)),
+		model_type+"/loss":sentence_loss
+	}
+	return train_metric_dict
+
 def distillation_model_fn(model_config_dict,
 					num_labels_dict,
 					init_checkpoint_dict,
@@ -61,7 +79,7 @@ def distillation_model_fn(model_config_dict,
 					target=target_dict['teacher'],
 					**kargs)
 		ta_dict = ta_model(features, labels, mode)
-
+		hook_dict = {}
 		studnet_logit = st_dict['logits']
 		teacher_logit = ta_dict['logits']
 
@@ -78,7 +96,7 @@ def distillation_model_fn(model_config_dict,
 			distilled_teacher_logit = tf.nn.log_softmax((teacher_logit+1e-10) / temperature) # log_softmax logits
 			distilled_student_logit = tf.nn.log_softmax((studnet_logit+1e-10) / temperature) # log_softmax logits
 
-			kl_distilled_loss = tf.reduce_mean(distillation_utils.kd(distilled_teacher_logit, 
+			kl_distilled_loss = tf.reduce_mean(distillation_utils.kd_logits(distilled_teacher_logit, 
 														distilled_student_logit))
 
 			tf.summary.scalar("kl_logits_loss", kl_distilled_loss)
@@ -86,6 +104,7 @@ def distillation_model_fn(model_config_dict,
 			
 			# kl_distilled_loss *= np.power(temperature, 2)
 			distilled_loss += kl_distilled_loss * distillation_config.get('kl_logits_ratio', 0.9)
+			hook_dict['kl_logits_loss'] = kl_distilled_loss
 			print(distillation_config.get('kl_logits_ratio', 0.9), '===kl_logits_ratio===')
 
 		if 'rkd' in distillation_config.get('distillation_type', ['kl_logits']):
@@ -164,6 +183,28 @@ def distillation_model_fn(model_config_dict,
 			tf.summary.scalar("hidden_wpc_loss", wpc_loss)
 			distilled_loss += wpc_loss + distillation_config.get("wpc_hidden", 0.1)
 
+		if "minilm" in distillation_config.get('distillation_type', ['minilm']):
+			source_attention_score = ta_dict['model'].get_multihead_attention()
+			target_attention_score = st_dict['model'].get_multihead_attention()
+
+			attention_loss = uniform_mapping.minilm_attention_distillation(source_attention_score, 
+																		target_attention_score,
+																		features['input_mask'])
+			source_value_score = ta_dict['model'].get_value_layer()
+			target_value_score = st_dict['model'].get_value_layer()
+
+			value_gram_loss = uniform_mapping.minilm_value_gram_distillation(source_value_score, 
+																		target_value_score,
+																		features['input_mask'])
+
+			hook_dict['minilm_attention_loss'] = attention_loss
+			hook_dict['minilm_value_gram_loss'] = value_gram_loss
+
+			distilled_loss += distillation_config.get('minilm_ratio', 0.1)*attention_loss
+			distilled_loss += distillation_config.get('minilm_ratio', 0.1)*value_gram_loss
+
+			tf.logging.info("***** minilm loss *****")
+
 		total_loss = distilled_loss + original_loss
 
 		tvars = []
@@ -192,9 +233,9 @@ def distillation_model_fn(model_config_dict,
 
 				model_io_fn.set_saver()
 
-				if kargs.get("task_index", 1) == 0 and kargs.get("run_config", None):
+				if kargs.get("task_index", 1) == 1 and kargs.get("run_config", None):
 					training_hooks = []
-				elif kargs.get("task_index", 1) == 0:
+				elif kargs.get("task_index", 1) == 1:
 					model_io_fn.get_hooks(kargs.get("checkpoint_dir", None), 
 														kargs.get("num_storage_steps", 1000))
 
@@ -205,6 +246,26 @@ def distillation_model_fn(model_config_dict,
 				if len(optimizer_fn.distributed_hooks) >= 1:
 					training_hooks.extend(optimizer_fn.distributed_hooks)
 				print(training_hooks, "==training_hooks==", "==task_index==", kargs.get("task_index", 1))
+
+				student_train_dict = train_metric_fn(
+						st_dict['per_example_loss'],
+						st_dict['logits'], 
+						features['label_ids'], 
+						'student')
+				teacher_train_dict = train_metric_fn(
+						ta_dict['per_example_loss'],
+						ta_dict['logits'], 
+						features['label_ids'], 
+						'teacher')
+
+				for key in student_train_dict:
+					hook_dict[key] = student_train_dict[key]
+				for key in teacher_train_dict:
+					hook_dict[key] = teacher_train_dict[key]
+
+				logging_hook = tf.train.LoggingTensorHook(
+					hook_dict, every_n_iter=100)
+				training_hooks.append(logging_hook)
 
 				estimator_spec = tf.estimator.EstimatorSpec(mode=mode, 
 								loss=total_loss, train_op=train_op,

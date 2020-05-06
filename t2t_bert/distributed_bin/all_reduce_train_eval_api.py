@@ -68,6 +68,14 @@ flags.DEFINE_string(
 	"label_id", None,
 	"Input TF example files (can be a glob or comma separated).")
 
+flags.DEFINE_string(
+	"label_type", 'single_label',
+	"Input TF example files (can be a glob or comma separated).")
+
+flags.DEFINE_string(
+	"loss", 'entropy',
+	"Input TF example files (can be a glob or comma separated).")
+
 flags.DEFINE_integer(
 	"max_length", 128,
 	"Input TF example files (can be a glob or comma separated).")
@@ -381,6 +389,11 @@ flags.DEFINE_string(
 	"if apply distillation"
 	)
 
+flags.DEFINE_string(
+	"data_prior", "none",
+	"if apply distillation"
+	)
+
 def main(_):
 
 	print(FLAGS)
@@ -425,7 +438,7 @@ def main(_):
 	run_config = tf.estimator.RunConfig(
 					  keep_checkpoint_max=10,
 					  # model_dir=checkpoint_dir,
-					  # train_distribute=distribution, # tf 1.8
+					  train_distribute=distribution, # tf 1.8
 					  # distribute=distribution,     # tf 1.4
 					  session_config=sess_config,
 					  save_checkpoints_secs=None,

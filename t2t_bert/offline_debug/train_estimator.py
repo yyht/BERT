@@ -126,6 +126,8 @@ def train_eval_fn(FLAGS,
 		
 		num_classes = FLAGS.num_classes
 
+		print("==current task_index==", task_index)
+
 		if FLAGS.opt_type == "hvd" and hvd:
 			checkpoint_dir = checkpoint_dir if task_index == 0 else None
 		elif FLAGS.opt_type == "all_reduce":

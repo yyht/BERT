@@ -2,7 +2,12 @@
 import tensorflow as tf
 import numpy as np
 from utils.bert import bert_utils
-
+import collections
+import copy
+import json
+import math
+import re
+import six
 """
 only implement where to transfer
 what to transfer need:
@@ -52,11 +57,13 @@ def kl_divergence(source_logits, target_logits):
 	return tf.reduce_mean(kl_distance)
 
 def l2_distance(source_prob, target_prob, axis):
-	l2_distance = tf.reduce_sum(tf.pow(source_prob-target_prob, 2.0), axis=(axis))
+	dist = tf.reduce_mean(tf.pow(source_prob-target_prob, 2.0), axis=(-1), keepdims=True)
+	l2_distance = tf.reduce_sum(dist, axis=(axis))
 	return l2_distance
 
 def l1_distance(source_prob, target_prob, axis):
-	l1_distance = tf.reduce_sum(tf.abs(source_prob-target_prob), axis=axis)
+	dist = tf.reduce_mean(tf.abs(source_prob-target_prob), axis=(-1), keepdims=True)
+	l1_distance = tf.reduce_sum(dist, axis=axis)
 	return l1_distance
 
 def attention_score_matching(teacher_score, student_score, 
@@ -106,7 +113,7 @@ def attention_score_matching(teacher_score, student_score,
 			teacher_score_ = tf.nn.log_softmax(teacher_score_)
 			teacher_score_ *= tf.cast(mask, tf.float32)
 			weight = normalized_weights[i,j] # normalized to [0,1]
-			tmp_loss = weight*l1_distance(teacher_score_, student_score_, axis=[0,1,2,3])
+			tmp_loss = weight*l2_distance(teacher_score_, student_score_, axis=[0,1,2,3])
 			tmp_loss /= tf.reduce_sum(tf.cast(mask, tf.float32))
 			loss += tmp_loss
 	loss /= (len(student_score)*len(teacher_score))
@@ -165,7 +172,7 @@ def hidden_matching(teacher_hidden, student_hidden,
 			teacher_hidden_ = tf.nn.l2_normalize(teacher_hidden_, axis=-1)
 			teacher_hidden_ *= tf.cast(mask, tf.float32)
 			weight = normalized_weights[i,j] # normalized to [0,1]
-			tmp_loss = weight*l1_distance(student_hidden_, teacher_hidden_, axis=[0,1,2])
+			tmp_loss = weight*l2_distance(student_hidden_, teacher_hidden_, axis=[0,1,2])
 			tmp_loss /= tf.reduce_sum(tf.cast(mask, tf.float32))
 			loss += tmp_loss
 	loss /= (len(student_hidden)*len(teacher_hidden))
@@ -219,8 +226,81 @@ def hidden_cls_matching(teacher_hidden, student_hidden, match_direction=0):
 			teacher_hidden_ = tf.squeeze(teacher_hidden_, axis=1)
 			teacher_hidden_ = tf.nn.l2_normalize(teacher_hidden_, axis=-1)
 			weight = normalized_weights[i,j] # normalized to [0,1]
-			tmp_loss = weight*l1_distance(student_hidden_, teacher_hidden_, axis=-1)
+			tmp_loss = weight*l2_distance(student_hidden_, teacher_hidden_, axis=-1)
 			loss += tf.reduce_mean(tmp_loss, axis=0)
 	loss /= (len(student_hidden)*len(teacher_hidden))
 	return loss
 
+def minilm_attention_distillation(teacher_score, 
+							student_score,
+							input_mask):
+	# `attention_scores` = [B, N, F, T]
+	teacher_atten_scores = teacher_score[-1]
+	student_atten_scores = student_score[-1]
+
+	teacher_prob = tf.exp(tf.nn.log_softmax(teacher_atten_scores))
+	student_prob = tf.nn.log_softmax(student_atten_scores)
+
+	# [B, F, T]
+	score_mask = create_attention_mask_from_input_mask_v1(input_mask, input_mask)
+	# [B, 1, F, T]
+	score_mask = tf.expand_dims(score_mask, axis=1)
+	# [B, N, F]
+	attention_kl_loss = tf.reduce_sum(teacher_prob*student_prob*score_mask, axis=(-1))
+	print("==attention_kl_loss==", attention_kl_loss.get_shape())
+	# [B, 1, F]
+	score_mask_v1 = tf.expand_dims(tf.cast(input_mask, tf.float32), axis=1)
+	# [N]
+	attention_kl_loss = tf.reduce_sum(attention_kl_loss*score_mask_v1, axis=(0,-1)) / (1e-10+tf.reduce_sum(score_mask_v1))
+	print("==attention_kl_loss==", attention_kl_loss.get_shape())
+	attention_kl_loss = tf.reduce_mean(attention_kl_loss)
+	return -attention_kl_loss
+
+def minilm_value_gram_distillation(teacher_score, 
+									student_score, 
+									input_mask):
+	# `value_layer` = [B, N, T, H]
+	# [B, F, T]
+	score_mask = create_attention_mask_from_input_mask_v1(input_mask, input_mask)
+	# [B, 1, F, T]
+	score_mask = tf.expand_dims(score_mask, axis=1)
+
+	teacher_shape = bert_utils.get_shape_list(teacher_score[-1], expected_rank=[4])
+
+	# `key_layer` = [B, N, T, T]
+	teacher_atten_scores = tf.matmul(teacher_score[-1], 
+									teacher_score[-1], transpose_b=True)
+	teacher_atten_scores = tf.multiply(teacher_atten_scores,
+									1.0 / tf.sqrt(tf.cast(teacher_shape[-1], tf.float32)))
+	
+	adder = (1.0 - tf.cast(score_mask, tf.float32)) * -10000.0
+
+	# Since we are adding it to the raw scores before the softmax, this is
+	# effectively the same as removing these entirely.
+	teacher_atten_scores += adder
+
+	teacher_prob = tf.exp(tf.nn.log_softmax(teacher_atten_scores))
+
+	student_shape = bert_utils.get_shape_list(student_score[-1], expected_rank=[4])
+
+	# `key_layer` = [B, N, T, T]
+	student_atten_scores = tf.matmul(student_score[-1], 
+									student_score[-1], transpose_b=True)
+	student_atten_scores = tf.multiply(student_atten_scores,
+									1.0 / tf.sqrt(tf.cast(student_shape[-1], tf.float32)))
+
+	# Since we are adding it to the raw scores before the softmax, this is
+	# effectively the same as removing these entirely.
+	student_atten_scores += adder
+	student_prob = tf.nn.log_softmax(student_atten_scores)
+
+	# [B, N, T]
+ 	attention_kl_loss = tf.reduce_sum(teacher_prob*student_prob*score_mask, axis=(-1))
+ 	print("==attention_kl_loss==", attention_kl_loss.get_shape())
+ 	# [B, 1, T]
+ 	score_mask_v1 = tf.expand_dims(tf.cast(input_mask, tf.float32), axis=1)
+ 	# [N]
+ 	attention_kl_loss = tf.reduce_sum(attention_kl_loss, axis=(0,-1)) / (1e-10+tf.reduce_sum(score_mask_v1))
+	print("==attention_kl_loss==", attention_kl_loss.get_shape())
+	attention_kl_loss = tf.reduce_mean(attention_kl_loss)
+	return -attention_kl_loss

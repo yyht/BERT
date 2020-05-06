@@ -49,10 +49,10 @@ def model_fn_builder(
 		exclude_scope = ''
 		tf.logging.info("****** generator parameter sharing with discriminator *******")
 
-	ngram_list = kargs.get("ngram", [10, 3])
-	mask_prob_list = kargs.get("mask_prob", [0.15, 0.15])
-	ngram_ratio = kargs.get("ngram_ratio", [8, 1])
-	uniform_ratio = kargs.get("uniform_ratio", 1.0)
+	ngram_list = kargs.get("ngram", [10, 8, 6])
+	mask_prob_list = kargs.get("mask_prob", [0.15, 0.15, 0.15])
+	ngram_ratio = kargs.get("ngram_ratio", [6, 1, 1])
+	uniform_ratio = kargs.get("uniform_ratio", 0.1)
 	tf.logging.info("****** dynamic ngram: %s, mask_prob: %s, mask_prior: %s, uniform_ratio: %s *******", 
 			str(ngram_list), str(mask_prob_list), str(ngram_ratio), str(uniform_ratio))	
 	tran_prob_list, hmm_tran_prob_list = [], []
@@ -65,7 +65,6 @@ def model_fn_builder(
 		actual_ratio = (1 - uniform_ratio) / sum(ngram_ratio) * ratio
 		mask_prior.append(actual_ratio)
 	mask_prior.append(uniform_ratio)
-	tf.logging.info("****** mask prior: %s *******", str(mask_prior))
 	mask_prior = np.array(mask_prior).astype(np.float32)
 	
 	def model_fn(features, labels, mode, params):
@@ -85,7 +84,7 @@ def model_fn_builder(
 		features['input_ids'] = output_ids
 				
 		model = model_api(model_config, features, labels,
-							tf.estimator.ModeKeys.EVAL, target, reuse=tf.AUTO_REUSE,
+							tf.estimator.ModeKeys.TRAIN, target, reuse=tf.AUTO_REUSE,
 							**kargs)
 
 		if model_config.model_type == 'bert':
@@ -114,14 +113,45 @@ def model_fn_builder(
 									reuse=tf.AUTO_REUSE,
 									embedding_projection=model.get_embedding_projection_table())
 
+		if kargs.get('model_resample', True):
+			input_ori_ids = features['input_ori_ids']
+
+			[output_ids, 
+			sampled_binary_mask] = hmm_input_ids_generation(model_config,
+									features['input_ori_ids'],
+									features['input_mask'],
+									[tf.cast(tf.constant(hmm_tran_prob), tf.float32) for hmm_tran_prob in hmm_tran_prob_list],
+									mask_probability=mask_probability,
+									replace_probability=replace_probability,
+									original_probability=original_probability,
+									mask_prior=tf.constant(mask_prior, tf.float32),
+									**kargs)
+
+			resample_features = {}
+			for key in features:
+				resample_features[key] = features[key]
+
+			resample_features['input_ids'] = tf.identity(output_ids)
+			model_resample = model_api(model_config, resample_features, labels,
+							tf.estimator.ModeKeys.EVAL, 
+							target, 
+							reuse=tf.AUTO_REUSE,
+							**kargs)
+			tf.logging.info("****** apply resample *******")
+		else:
+			model_resample = model
+			resample_features = features
+			tf.logging.info("****** not apply resample *******")
+
 		if kargs.get("stop_gradient_mlm", True):
+
 			sampled_ids = token_generator(model_config, 
-										model.get_sequence_output(), 
-										model.get_embedding_table(), 
-										features['input_ids'], 
-										features['input_ori_ids'],
-										features['input_mask'],	
-										embedding_projection=model.get_embedding_projection_table(),
+										model_resample.get_sequence_output(), 
+										model_resample.get_embedding_table(), 
+										resample_features['input_ids'], 
+										resample_features['input_ori_ids'],
+										resample_features['input_mask'],	
+										embedding_projection=model_resample.get_embedding_projection_table(),
 										scope=generator_scope_prefix,
 										mask_method='only_mask',
 										use_tpu=kargs.get('use_tpu', True),
@@ -131,12 +161,12 @@ def model_fn_builder(
 			tf.logging.info("****** stop gradient mlm *******")
 		else:
 			sampled_ids = token_generator_gumbel(model_config, 
-										model.get_sequence_output(), 
-										model.get_embedding_table(), 
-										features['input_ids'], 
-										features['input_ori_ids'],
-										features['input_mask'],	
-										embedding_projection=model.get_embedding_projection_table(),
+										model_resample.get_sequence_output(), 
+										model_resample.get_embedding_table(), 
+										resample_features['input_ids'], 
+										resample_features['input_ori_ids'],
+										resample_features['input_mask'],	
+										embedding_projection=model_resample.get_embedding_projection_table(),
 										scope=generator_scope_prefix,
 										mask_method='only_mask',
 										use_tpu=kargs.get('use_tpu', True),
@@ -191,8 +221,7 @@ def model_fn_builder(
 			scaffold_fn = None
 
 		sampeld_id_shape = bert_utils.get_shape_list(sampled_ids, expected_rank=[2,3])
-		idx = tf.random_shuffle(tf.range(sampeld_id_shape[0]))
-		shuffled_sampled_ids = tf.gather(sampled_ids, idx)
+		shuffled_sampled_ids = sampled_ids
 
 		if len(sampeld_id_shape) == 2:
 			shuffled_sampled_mask = tf.cast(tf.not_equal(shuffled_sampled_ids, 

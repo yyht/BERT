@@ -14,6 +14,17 @@ def data_interface(FLAGS):
 					"label_ids":
 							tf.FixedLenFeature([], tf.int64),
 			}
+		elif FLAGS.task_type == "single_sentence_multilabel_classification":
+			name_to_features = {
+					"input_ids":
+							tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+					"input_mask":
+							tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+					"segment_ids":
+							tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+					"label_ids":
+							tf.FixedLenFeature([FLAGS.num_classes], tf.int64),
+			}
 		elif FLAGS.task_type == "pair_sentence_classification":
 			name_to_features = {
 				"input_ids_a":
@@ -215,6 +226,17 @@ def data_interface_server(FLAGS):
 						tf.placeholder(tf.int32, [None, FLAGS.max_length], name='segment_ids'),
 				"label_ids":
 						tf.placeholder(tf.int32, [None], name='label_ids'),
+			}
+		elif FLAGS.task_type == "single_sentence_multilabel_classification":
+			receiver_tensors = {
+				"input_ids":
+						tf.placeholder(tf.int32, [None, FLAGS.max_length], name='input_ids'),
+				"input_mask":
+						tf.placeholder(tf.int32, [None, FLAGS.max_length], name='input_mask'),
+				"segment_ids":
+						tf.placeholder(tf.int32, [None, FLAGS.max_length], name='segment_ids'),
+				"label_ids":
+						tf.placeholder(tf.int32, [None, FLAGS.num_classes], name='label_ids'),
 			}
 
 		elif FLAGS.task_type == "pair_sentence_classification":
