@@ -5,6 +5,7 @@ from model.bert import albert
 from model.bert import bert_electra_joint
 from model.bert import albert_official_electra_joint
 from model.bert import albert_official
+from model.textcnn import textcnn
 import tensorflow as tf
 import numpy as np
 
@@ -366,5 +367,31 @@ def bert_seq_decoder(model_config, features, labels,
 	model.build_output_logits(reuse=reuse, scope=kargs.get("scope", None))
 	# model.build_pooler(reuse=reuse)
 
+	return model
+
+def gated_cnn_encoder(model_config, features, labels, 
+			mode, target, reuse=None, **kargs):
+
+	if target:
+		input_ids = features["input_ids_{}".format(target)]
+		input_char_ids = features.get("input_char_ids_{}".format(target), None)
+	else:
+		input_ids = features["input_ids"]
+		input_char_ids = features.get("input_char_ids_{}".format(target), None)
+
+	if mode == tf.estimator.ModeKeys.TRAIN:
+		dropout_prob = model_config.dropout_prob
+		is_training = True
+	else:
+		dropout_prob = 0.0
+		is_training = False
+
+	model = textcnn.TextCNN(model_config)
+	model.build_emebdder(input_ids, input_char_ids, is_training, reuse=reuse, **kargs)
+	model.build_encoder(input_ids, input_char_ids, is_training, 
+						reuse=reuse, 
+						cnn_type="dgcnn",
+						**kargs)
+	model.build_output_logits(reuse=reuse)
 	return model
 	

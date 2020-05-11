@@ -1,15 +1,18 @@
 import tensorflow as tf
 import numpy as np
 from utils.qanet import qanet_layers
-
+from utils.bert import bert_utils
 import tensorflow.contrib.layers as layers
+from utils.dsmm.tf_common import nn_module 
 
 def text_cnn(in_val, filter_sizes, scope, 
 	embed_size, num_filters, max_pool_size=2):
 	print(in_val.get_shape(), "===in_val shape===")
 	in_val = tf.expand_dims(in_val, axis=-1)
 	conved_concat = []
-	
+
+	in_val_shape = input_shape = bert_utils.get_shape_list(in_val, expected_rank=[4])
+	sequence_length = in_val_shape[1]
 	for i, filter_size in enumerate(filter_sizes):
 		with tf.variable_scope(scope+'_conv-maxpool-%s' % filter_size):
 
@@ -28,7 +31,14 @@ def text_cnn(in_val, filter_sizes, scope,
 								padding='VALID', name='conv')
 			print(conv.get_shape(), "====conv shape====")
 			h = tf.nn.relu(tf.nn.bias_add(conv, b), name='relu')
-			pooled = tf.reduce_max(h, axis=1)
+			# pooled = tf.reduce_max(h, axis=1)
+
+			pooled = tf.nn.max_pool(
+					h,
+					ksize=[1, sequence_length - filter_size + 1, 1, 1],
+					strides=[1, 1, 1, 1],
+					padding='VALID',
+					name="pool")
 
 			print(pooled.get_shape(), filter_size, "==filter_size==")
 			conved_concat.append(pooled)
@@ -49,6 +59,9 @@ def text_cnn_v1(in_val, filter_sizes, scope,
 
 	# input_mask = tf.cast(tf.expand_dims(input_mask, axis=[2]), tf.float32)
 	# input_mask = tf.expand_dims(input_mask, axis=[3])
+
+	in_val_shape = input_shape = bert_utils.get_shape_list(in_val, expected_rank=[4])
+	sequence_length = in_val_shape[1]
 	
 	for i, filter_size in enumerate(filter_sizes):
 		with tf.variable_scope(scope+'_conv-maxpool-%s' % filter_size):
@@ -68,7 +81,12 @@ def text_cnn_v1(in_val, filter_sizes, scope,
 								padding='VALID', name='conv')
 			print(conv.get_shape(), "====conv shape====")
 			h = tf.nn.relu(tf.nn.bias_add(conv, b), name='relu')
-			pooled = tf.reduce_mean(h, axis=1)
+			# pooled = tf.reduce_mean(h, axis=1)
+
+			pooled = tf.nn.avg_pool(h, 
+									ksize=[1, sequence_length - filter_size + 1, 1, 1],
+									strides=[1, 1, 1, 1], 
+									padding='VALID')
 
 			print(pooled.get_shape(), filter_size, "==filter_size==")
 			conved_concat.append(pooled)
@@ -375,6 +393,106 @@ def self_attn(enc, mask, scope,
 	enc *= mask_
 
 	return enc
+
+def gated_cnn(x, num_layers=2, num_filters=8, filter_sizes=[2, 3], 
+			bn=False, training=False,
+			timedistributed=False, scope_name="textcnn", 
+			reuse=False, activation=tf.nn.relu,
+			gated_conv=False, residual=False):
+	if gated_conv:
+		if residual:
+			conv_op = nn_module.residual_gated_conv1d_op
+			print("==apply gated_conv residual==")
+		else:
+			conv_op = nn_module.gated_conv1d_op
+			print("==apply conv_op==")
+	else:
+		conv_op = tf.layers.conv1d
+		print("==apply conv1d==")
+
+	conv_blocks = []
+	for i, filter_size in enumerate(filter_sizes):
+		filter_scope_name = "filter_size_%s"%(str(filter_size))
+		res_input = x
+		for j in range(num_layers):
+			layer_scope_name = "%s_layer_%s"%(str(scope_name), str(j))
+			with tf.variable_scope(layer_scope_name, reuse=reuse):
+				h = conv_op(
+					inputs=res_input,
+					filters=num_filters,
+					kernel_size=filter_size,
+					padding="same",
+					activation=None,
+					strides=1,
+					reuse=reuse,
+					name=filter_scope_name,
+					kernel_initializer=tf.truncated_normal_initializer(stddev=0.1))
+				bias = tf.get_variable("b-%s" % filter_size, 
+										[num_filters],
+										initializer=tf.constant_initializer(0.1))  # ADD 2017-06-09
+				h = tf.nn.relu(tf.nn.bias_add(h, bias), "relu")  # shape
+				if bn:
+					h = tf.contrib.layers.batch_norm(h, is_training=training, scope='bn')
+				res_input = h
+		conv_blocks.append(h)
+
+	if len(conv_blocks) > 1:
+		z = tf.concat(conv_blocks, axis=-1)
+	else:
+		z = conv_blocks[0]
+
+	return z
+
+def resnet_cnn(x, num_layers=2, num_filters=8, filter_sizes=[2, 3], 
+			bn=False, training=False,
+			timedistributed=False, scope_name="textcnn", 
+			reuse=False, activation=tf.nn.relu,
+			gated_conv=False, residual=False):
+	if gated_conv:
+		if residual:
+			conv_op = nn_module.residual_gated_conv1d_op
+			print("==apply gated_conv residual==")
+		else:
+			conv_op = nn_module.gated_conv1d_op
+			print("==apply conv_op==")
+	else:
+		conv_op = tf.layers.conv1d
+		print("==apply conv1d==")
+
+	conv_blocks = []
+	for i, filter_size in enumerate(filter_sizes):
+		filter_scope_name = "filter_size_%s"%(str(filter_size))
+		res_input = x
+		for j in range(num_layers):
+			layer_scope_name = "%s_layer_%s"%(str(scope_name), str(j))
+			with tf.variable_scope(layer_scope_name, reuse=reuse):
+				h = conv_op(
+					inputs=res_input,
+					filters=num_filters,
+					kernel_size=filter_size,
+					padding="same",
+					activation=None,
+					strides=1,
+					reuse=reuse,
+					name=filter_scope_name,
+					kernel_initializer=tf.truncated_normal_initializer(stddev=0.1))
+				if bn and j < num_layers - 1:
+					bn_scope = filter_scope_name +"_bn"
+					h = tf.contrib.layers.batch_norm(h, is_training=training, scope=bn_scope)
+				if j < num_layers - 1:
+					h = tf.nn.relu(h)
+				res_input = h
+		# h = tf.nn.relu(h + x)
+		h = tf.tanh(h)
+		# h = tf.nn.relu(h)
+		conv_blocks.append(h)
+
+	if len(conv_blocks) > 1:
+		z = tf.concat(conv_blocks, axis=-1)
+	else:
+		z = conv_blocks[0]
+
+	return z
 
 def cnn_multiple_layers(in_val, filter_sizes, scope, 
 	embed_size, num_filters, max_pool_size=2,

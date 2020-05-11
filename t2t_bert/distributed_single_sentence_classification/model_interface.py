@@ -6,6 +6,7 @@ from distributed_encoder.bert_encoder import albert_encoder
 from distributed_encoder.bert_encoder import electra_gumbel_encoder
 from distributed_encoder.bert_encoder import albert_encoder_official
 from distributed_encoder.bert_encoder import electra_gumbel_albert_official_encoder
+from distributed_encoder.bert_encoder import gated_cnn_encoder
 
 from distributed_encoder.classifynet_encoder import textcnn_encoder
 from distributed_encoder.classifynet_encoder import textlstm_encoder
@@ -54,6 +55,9 @@ def model_zoo(model_config):
 		model_interface = electra_gumbel_albert_official_encoder
 	elif model_config.get("model_type", "bert_seq") == "bert_seq":
 		model_interface = bert_seq_decoder
+		tf.logging.info("****** bert seq encoder ******* ")
+	elif model_config.get("model_type", "bert") == "gated_cnn_seq":
+		model_interface = gated_cnn_encoder
 		tf.logging.info("****** bert seq encoder ******* ")
 	return model_interface
 
@@ -285,5 +289,25 @@ def model_config_parser(FLAGS):
 		config = Bunch(config)
 		config.dropout_prob = 0.1
 		config.init_lr = 1e-4
+
+	elif FLAGS.model_type in ["gated_cnn_seq"]:
+
+		config = json.load(open(FLAGS.config_file, "r"))
+		config = Bunch(config)
+		config.token_emb_mat = None
+		config.char_emb_mat = None
+		config.vocab_size = config.vocab_size
+		config.max_length = FLAGS.max_length
+		config.emb_size = config.emb_size
+		config.scope = "textcnn"
+		config.char_dim = config.emb_char_size
+		config.char_vocab_size = config.vocab_size
+		config.char_embedding = None
+		config.model_type = FLAGS.model_type
+		config.dropout_prob = config.dropout_rate
+		config.init_lr = FLAGS.init_lr
+		config.grad_clip = "gloabl_norm"
+		config.clip_norm = 1.0
+		config.max_seq_len = FLAGS.max_length
 
 	return config

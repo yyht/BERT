@@ -29,7 +29,7 @@
 		"data_prior":0.15
 	},
 	"ccks":{
-		"task_type":"cls_task",
+		"task_type":"embed_task",
 		"train_file":"multi_task/data/sentence_pair/ccks/train.txt",
 		"dev_file":"multi_task/data/sentence_pair/ccks/dev.txt",
 		"test_file":"multi_task/data/sentence_pair/ccks/test.txt",
@@ -58,7 +58,7 @@
 		"data_prior":0.1
 	},
 	"afqmc":{
-		"task_type":"cls_task",
+		"task_type":"embed_task",
 		"train_file":"multi_task/data/sentence_pair/ant/train.txt",
 		"dev_file":"multi_task/data/sentence_pair/ant/dev.txt",
 		"test_file":"multi_task/data/sentence_pair/ant/test.txt",
@@ -87,7 +87,7 @@
 		"data_prior":0.1
 	},
 	"lcqmc":{
-		"task_type":"cls_task",
+		"task_type":"embed_task",
 		"train_file":"multi_task/data/sentence_pair/lcqmc/train.txt",
 		"dev_file":"multi_task/data/sentence_pair/lcqmc/dev.txt",
 		"test_file":"multi_task/data/sentence_pair/lcqmc/test.txt",
@@ -116,7 +116,7 @@
 		"data_prior":0.15
 	},
 	"paws":{
-		"task_type":"cls_task",
+		"task_type":"embed_task",
 		"train_file":"multi_task/data/sentence_pair/lcqmc/train.txt",
 		"dev_file":"multi_task/data/sentence_pair/lcqmc/dev.txt",
 		"test_file":"multi_task/data/sentence_pair/lcqmc/test.txt",

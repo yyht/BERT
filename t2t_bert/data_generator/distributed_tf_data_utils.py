@@ -251,8 +251,12 @@ def all_reduce_multitask_train_batch_input_fn_sample(input_file, _parse_fn, name
 	if not data_prior:
 		p = tf.cast(np.array([1.0/len(input_file)]*len(input_file)), tf.float32)
 	else:
-		p = tf.cast(np.array(data_prior), tf.float32)
-		print('===data prior==', data_prior)
+		data_prior_np = np.array(data_prior)
+		if np.sum(data_prior_np) != 1:
+			data_prior_np = data_prior_np / np.sum(data_prior_np)
+
+		p = tf.cast(np.array(data_prior_np), tf.float32)
+		print('===data prior==', data_prior_np)
 	# random choice function
 	def get_random_choice(p):
 		choice = tf.multinomial(tf.log([p]), 1)

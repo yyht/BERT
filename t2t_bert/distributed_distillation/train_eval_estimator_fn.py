@@ -217,7 +217,22 @@ def train_eval_fn(FLAGS,
 					distillation_config=distillation_dict,
 					**kargs)
 
-		name_to_features = data_interface(FLAGS)
+		# name_to_features = data_interface(FLAGS)
+
+		name_to_features = {
+				"input_ids_a":
+						tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+				"input_mask_a":
+						tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+				"segment_ids_a":
+						tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+				"input_ids_b":
+						tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+				"input_mask_b":
+						tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+				"segment_ids_b":
+						tf.FixedLenFeature([FLAGS.max_length], tf.int64)
+				}
 
 		# name_to_features = {
 		# 			"input_ids":

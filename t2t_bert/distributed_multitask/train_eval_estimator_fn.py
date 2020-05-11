@@ -155,14 +155,6 @@ def train_eval_fn(FLAGS,
 			label_dict[task_type] = json.load(tf.gfile.Open(os.path.join(FLAGS.buckets,
 												multi_task_config[task_type]["label_id"])))
 
-		data_prior = []
-		for task_type in FLAGS.multi_task_type.split(","):
-			data_prior.append(multi_task_config[task_type].get("data_prior", None))
-		if None in data_prior:
-			data_prior = None
-		else:
-			print("===task prior===", data_prior)
-
 		model_fn = multitask_model_fn(model_config_dict, num_labels_dict,
 											task_type_dict,
 											init_checkpoint_dict,
@@ -210,6 +202,14 @@ def train_eval_fn(FLAGS,
 		params.epoch = epoch
 		params.batch_size = FLAGS.batch_size
 
+		# data_prior = []
+		# for task_type in FLAGS.multi_task_type.split(","):
+		# 	data_prior.append(multi_task_config[task_type].get("data_prior", None))
+		# if None in data_prior:
+		# 	data_prior = None
+		# else:
+		# 	print("===task prior===", data_prior)
+
 		if kargs.get("parse_type", "parse_single") == "parse_single":
 
 			train_file_lst = [multi_task_config[task_type]["train_result_file"] for task_type in FLAGS.multi_task_type.split(",")]
@@ -223,10 +223,23 @@ def train_eval_fn(FLAGS,
 
 		elif kargs.get("parse_type", "parse_single") == "parse_batch":
 
-			train_file_lst = [multi_task_config[task_type]["train_result_file"] for task_type in FLAGS.multi_task_type.split(",")]
-			train_file_path_lst = [os.path.join(FLAGS.buckets, train_file) for train_file in train_file_lst]
+			train_file_path_lst = []
+			data_prior = []
+			# train_file_lst = [multi_task_config[task_type]["train_result_file"] for task_type in FLAGS.multi_task_type.split(",")]
+			# train_file_path_lst = [os.path.join(FLAGS.buckets, train_file) for train_file in train_file_lst]
 
+			for task_type in  FLAGS.multi_task_type.split(","):
+				task_prior = multi_task_config[task_type].get("data_prior", None)
+				task_path = multi_task_config[task_type]["train_result_file"].split(',')
+				for task_sub_path in task_path:
+					train_file_path_lst.append(os.path.join(FLAGS.buckets, task_sub_path))
+					data_prior.append(task_prior)
+			
 			print(train_file_path_lst)
+			if None in data_prior:
+				data_prior = None
+			else:
+				print("===task prior===", data_prior)
 
 			# train_features = lambda: tf_data_utils.all_reduce_train_batch_input_fn(train_file_path_lst,
 			# 							_decode_batch_record, 

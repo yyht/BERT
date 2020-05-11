@@ -16,9 +16,17 @@ def generate_embedding_mat(dict_size, emb_len, init_mat=None, extra_symbol=None,
 		"""
 		with tf.variable_scope(scope or 'gene_emb_mat', reuse=reuse):
 				if init_mat is None:
-						emb_mat = tf.Variable(tf.random_uniform([dict_size, emb_len], -1.0, 1.0),
-																name="emb_mat",
-																dtype=tf.float32)
+						# emb_mat = tf.Variable(tf.random_uniform([dict_size, emb_len], -1.0, 1.0),
+						# 										name="emb_mat",
+						# 										dtype=tf.float32)
+
+						init_mat = np.random.uniform(-0.1, 0.1, (dict_size, emb_len))
+						emb_mat = tf.get_variable("emb_mat",
+																[dict_size, emb_len],
+																dtype=tf.float32,
+																initializer=tf.constant_initializer(init_mat, 
+																													dtype=tf.float32))
+						
 				else:
 						if extra_symbol:
 							emb_len = init_mat.shape[1]
