@@ -28,7 +28,7 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--decay "decay" \
 	--init_lr 2e-4 \
 	--do_train true \
-	--tpu_name "albert4" \
+	--tpu_name "albert0" \
 	--num_tpu_cores 8 \
 	--mode 'electra' \
 	--multi_task_type "ebm_dist,noise_dist,generator" \
