@@ -105,6 +105,7 @@ def model_config_parser(FLAGS):
 					config.init_lr = 1e-4
 			else:
 				# try:
+				print(FLAGS)
 				config.init_lr = FLAGS.init_lr
 				# except:
 				# 	config.init_lr = 2e-5

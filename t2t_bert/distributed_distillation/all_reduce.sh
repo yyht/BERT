@@ -20,7 +20,7 @@ pai -name tensorflow1120
 	-DgpuRequired=400
 	-Dtags='bert'
 	-DjobName='bert_mrc_pretrain'
-	-DhyperParameters='file:///Users/xuhaotian/Desktop/my_work/BERT/t2t_bert/distributed_distillation/knowledge_distillation_multilingual_sst'
+	-DhyperParameters='file:///Users/xuhaotian/Desktop/my_work/BERT/t2t_bert/distributed_distillation/pretrain_distillation_multilingual_sentence_embedding'
 	-Dbuckets='oss://alg-misc/BERT/?role_arn=acs:ram::1265628042679515:role/tianyi&host=cn-hangzhou.oss-internal.aliyun-inc.com';
 "
 echo "${pai_command}"

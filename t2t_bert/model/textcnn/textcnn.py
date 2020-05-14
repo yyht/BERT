@@ -95,7 +95,7 @@ class TextCNN(base_model.BaseModel):
 				for pooling_method in self.config['pooling_method']:
 					if pooling_method == 'avg':
 						seq_mask = tf.cast(mask, tf.float32)
-						avg_repres = tf.reduce_sum(self.sequence_output*seq_mask, axis=1)/(1e-10+tf.reduce_sum(seq_mask))
+						avg_repres = tf.reduce_sum(self.sequence_output*seq_mask, axis=1)/(1e-10+tf.reduce_sum(seq_mask, axis=1))
 						pooled_output.append(avg_repres)
 						tf.logging.info("***** avg pooling *****")
 					elif pooling_method == 'max':
@@ -119,6 +119,7 @@ class TextCNN(base_model.BaseModel):
 					tf.logging.info("==apply embedding linear projection==")
 
 				self.sequence_output = textcnn_utils.gated_cnn(sent_repres, 
+												input_mask,
 												num_layers=self.config['cnn_num_layers'], 
 												num_filters=self.config['cnn_num_filters'], 
 												filter_sizes=self.config['cnn_filter_sizes'], 
@@ -135,7 +136,7 @@ class TextCNN(base_model.BaseModel):
 				for pooling_method in self.config['pooling_method']:
 					if pooling_method == 'avg':
 						seq_mask = tf.cast(mask, tf.float32)
-						avg_repres = tf.reduce_sum(self.sequence_output*seq_mask, axis=1)/(1e-10+tf.reduce_sum(seq_mask))
+						avg_repres = tf.reduce_sum(self.sequence_output*seq_mask, axis=1)/(1e-10+tf.reduce_sum(seq_mask, axis=1))
 						pooled_output.append(avg_repres)
 						tf.logging.info("***** avg pooling *****")
 					elif pooling_method == 'max':
@@ -158,7 +159,8 @@ class TextCNN(base_model.BaseModel):
 						kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
 					tf.logging.info("==apply embedding linear projection==")
 
-				self.sequence_output = textcnn_utils.resnet_cnn(sent_repres, 
+				self.sequence_output = textcnn_utils.resnet_cnn(sent_repres,
+												input_mask, 
 												num_layers=self.config['cnn_num_layers'], 
 												num_filters=self.config['cnn_num_filters'], 
 												filter_sizes=self.config['cnn_filter_sizes'], 
@@ -175,7 +177,7 @@ class TextCNN(base_model.BaseModel):
 				for pooling_method in self.config['pooling_method']:
 					if pooling_method == 'avg':
 						seq_mask = tf.cast(mask, tf.float32)
-						avg_repres = tf.reduce_sum(self.sequence_output*seq_mask, axis=1)/(1e-10+tf.reduce_sum(seq_mask))
+						avg_repres = tf.reduce_sum(self.sequence_output*seq_mask, axis=1)/(1e-10+tf.reduce_sum(seq_mask, axis=1))
 						pooled_output.append(avg_repres)
 						tf.logging.info("***** avg pooling *****")
 					elif pooling_method == 'max':
@@ -215,11 +217,13 @@ class TextCNN(base_model.BaseModel):
 												)
 
 				print(self.sequence_output.get_shape(), '=====sequence_output shape=====')
+				print(mask.get_shape(), "===mask shape===")
 				pooled_output = []
 				for pooling_method in self.config['pooling_method']:
 					if pooling_method == 'avg':
 						seq_mask = tf.cast(mask, tf.float32)
-						avg_repres = tf.reduce_sum(self.sequence_output*seq_mask, axis=1)/(1e-10+tf.reduce_sum(seq_mask))
+						print(tf.reduce_sum(seq_mask, axis=1).get_shape(), "==avg seq shape")
+						avg_repres = tf.reduce_sum(self.sequence_output*seq_mask, axis=1)/(1e-10+tf.reduce_sum(seq_mask, axis=1))
 						pooled_output.append(avg_repres)
 						tf.logging.info("***** avg pooling *****")
 					elif pooling_method == 'max':

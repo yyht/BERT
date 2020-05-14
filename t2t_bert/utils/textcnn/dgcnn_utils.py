@@ -42,6 +42,7 @@ def residual_gated_conv1d_op(inputs,
 	else:
 		dropout_rate = 0.0
 	conv_gated = tf.nn.sigmoid(tf.nn.dropout(conv_gated, 1-dropout_rate))
+	# conv_gated = tf.nn.sigmoid(conv_gated)
 	conv = residual_inputs * (1. - conv_gated) + conv_linear * conv_gated
 	return conv
 
@@ -88,6 +89,7 @@ def dgcnn(x, input_mask,
 				stride = 1
 			if not is_casual:
 				padding = padding
+				tf.logging.info("==none-casual same padding==")
 			else:
 				left_pad = dilation_rate * (kernel_size - 1)
 				inputs = tf.pad(inputs, [[0, 0, ], [left_pad, 0], [0, 0]])
@@ -111,5 +113,8 @@ def dgcnn(x, input_mask,
 			if padding == 'same':
 				inputs *= input_mask
 			residual_inputs = inputs
-	return inputs
+	if not is_casual:
+		return tf.nn.relu(inputs)
+	else:
+		return inputs
 

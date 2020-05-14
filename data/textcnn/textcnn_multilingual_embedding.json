@@ -41,7 +41,7 @@
 
     "with_moving_average": 0.999,
 
-    "loss":"entropy",
+    "loss":"ce_label_smoothing",
 
     "alpha":0.5,
     "gamma":2.0,
@@ -69,15 +69,16 @@
     "pooling_method":["avg"],
     "cnn_timedistributed":false,
     "cnn_filter_sizes":[1,2,3,5],
-    "cnn_num_filters":32,
+    "cnn_num_filters":64,
     "cnn_gated_conv":false,
     "cnn_residual":false,
     "encode_method":"textcnn",
     "embedding_mask_zero":false,
     "cnn_num_layers":2,
     "bn":true,
-    "grad_clip":"none",
+    "grad_clip":"global_norm",
     "use_pretrained":false,
+    "embedding_dropout":0.1,
 
     "output_folder_name":"textcnn",
     "with_target":false,

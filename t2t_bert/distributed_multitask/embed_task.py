@@ -195,31 +195,39 @@ def model_fn_builder(model,
 
 		if kargs.get('loss', 'contrastive_loss') == 'contrastive_loss':
 
-			# feature_a = tf.nn.l2_normalize(pooled_feature_dict['feature_a'], axis=-1)
-			# feature_b = tf.nn.l2_normalize(pooled_feature_dict['feature_b'], axis=-1)
+			feature_a = tf.nn.l2_normalize(1e-20+pooled_feature_dict['feature_a'], axis=-1)
+			feature_b = tf.nn.l2_normalize(1e-20+pooled_feature_dict['feature_b'], axis=-1)
 
 			# feature_a = pooled_feature_dict['feature_a']
 			# feature_b = pooled_feature_dict['feature_b']
 
 			per_example_loss, logits = loss_utils.contrastive_loss(label_ids, 
-									pooled_feature_dict['feature_a'],
-									pooled_feature_dict['feature_b'],
+									feature_a,
+									feature_b,
 									kargs.get('margin', 1.0))
 			tf.logging.info("****** contrastive_loss *******")
 		elif kargs.get('loss', 'contrastive_loss') == 'exponent_neg_manhattan_distance_mse':
-			# feature_a = tf.nn.l2_normalize(pooled_feature_dict['feature_a'], axis=-1)
-			# feature_b = tf.nn.l2_normalize(pooled_feature_dict['feature_b'], axis=-1)
+			feature_a = tf.nn.l2_normalize(1e-20+pooled_feature_dict['feature_a'], axis=-1)
+			feature_b = tf.nn.l2_normalize(1e-20+pooled_feature_dict['feature_b'], axis=-1)
+
+			# feature_a = pooled_feature_dict['feature_a']
+			# feature_b = pooled_feature_dict['feature_b']
 
 			per_example_loss, logits = loss_utils.exponent_neg_manhattan_distance(label_ids, 
-									pooled_feature_dict['feature_a'],
-									pooled_feature_dict['feature_b'],
+									feature_a,
+									feature_b,
 									'mse')
 			tf.logging.info("****** exponent_neg_manhattan_distance_mse *******")
 		else:
+			feature_a = tf.nn.l2_normalize(1e-20+pooled_feature_dict['feature_a'], axis=-1)
+			feature_b = tf.nn.l2_normalize(1e-20+pooled_feature_dict['feature_b'], axis=-1)
+
+			# feature_a = pooled_feature_dict['feature_a']
+			# feature_b = pooled_feature_dict['feature_b']
 
 			per_example_loss, logits = loss_utils.contrastive_loss(label_ids, 
-									pooled_feature_dict['feature_a'],
-									pooled_feature_dict['feature_b'],
+									feature_a,
+									feature_b,
 									kargs.get('margin', 1.0))
 			tf.logging.info("****** contrastive_loss *******")
 		# loss_mask = tf.cast(features["{}_loss_multipiler".format(task_type)], tf.float32)

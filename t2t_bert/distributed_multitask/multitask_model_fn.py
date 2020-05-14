@@ -85,7 +85,7 @@ def multitask_model_fn(model_config_dict,
 
 				model = model_api(model_config_dict[task_type], features, labels,
 						mode, target_dict[task_type], reuse=reuse,
-													cnn_type='dgcnn')
+													cnn_type='multilayer_resnetcnn')
 				encoder[model_config_dict[task_type].model_type] = model
 
 			print(encoder, "==encode==")

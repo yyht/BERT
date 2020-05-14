@@ -394,7 +394,7 @@ def self_attn(enc, mask, scope,
 
 	return enc
 
-def gated_cnn(x, num_layers=2, num_filters=8, filter_sizes=[2, 3], 
+def gated_cnn(x, input_mask, num_layers=2, num_filters=8, filter_sizes=[2, 3], 
 			bn=False, training=False,
 			timedistributed=False, scope_name="textcnn", 
 			reuse=False, activation=tf.nn.relu,
@@ -410,54 +410,8 @@ def gated_cnn(x, num_layers=2, num_filters=8, filter_sizes=[2, 3],
 		conv_op = tf.layers.conv1d
 		print("==apply conv1d==")
 
-	conv_blocks = []
-	for i, filter_size in enumerate(filter_sizes):
-		filter_scope_name = "filter_size_%s"%(str(filter_size))
-		res_input = x
-		for j in range(num_layers):
-			layer_scope_name = "%s_layer_%s"%(str(scope_name), str(j))
-			with tf.variable_scope(layer_scope_name, reuse=reuse):
-				h = conv_op(
-					inputs=res_input,
-					filters=num_filters,
-					kernel_size=filter_size,
-					padding="same",
-					activation=None,
-					strides=1,
-					reuse=reuse,
-					name=filter_scope_name,
-					kernel_initializer=tf.truncated_normal_initializer(stddev=0.1))
-				bias = tf.get_variable("b-%s" % filter_size, 
-										[num_filters],
-										initializer=tf.constant_initializer(0.1))  # ADD 2017-06-09
-				h = tf.nn.relu(tf.nn.bias_add(h, bias), "relu")  # shape
-				if bn:
-					h = tf.contrib.layers.batch_norm(h, is_training=training, scope='bn')
-				res_input = h
-		conv_blocks.append(h)
-
-	if len(conv_blocks) > 1:
-		z = tf.concat(conv_blocks, axis=-1)
-	else:
-		z = conv_blocks[0]
-
-	return z
-
-def resnet_cnn(x, num_layers=2, num_filters=8, filter_sizes=[2, 3], 
-			bn=False, training=False,
-			timedistributed=False, scope_name="textcnn", 
-			reuse=False, activation=tf.nn.relu,
-			gated_conv=False, residual=False):
-	if gated_conv:
-		if residual:
-			conv_op = nn_module.residual_gated_conv1d_op
-			print("==apply gated_conv residual==")
-		else:
-			conv_op = nn_module.gated_conv1d_op
-			print("==apply conv_op==")
-	else:
-		conv_op = tf.layers.conv1d
-		print("==apply conv1d==")
+	input_mask = tf.cast(input_mask, dtype=tf.float32)
+	input_mask = tf.expand_dims(input_mask, axis=-1)
 
 	conv_blocks = []
 	for i, filter_size in enumerate(filter_sizes):
@@ -481,9 +435,61 @@ def resnet_cnn(x, num_layers=2, num_filters=8, filter_sizes=[2, 3],
 					h = tf.contrib.layers.batch_norm(h, is_training=training, scope=bn_scope)
 				if j < num_layers - 1:
 					h = tf.nn.relu(h)
+				h *= input_mask
 				res_input = h
-		# h = tf.nn.relu(h + x)
-		h = tf.tanh(h)
+		conv_blocks.append(h)
+
+	if len(conv_blocks) > 1:
+		z = tf.concat(conv_blocks, axis=-1)
+	else:
+		z = conv_blocks[0]
+
+	return z
+
+def resnet_cnn(x, input_mask, num_layers=2, num_filters=8, filter_sizes=[2, 3], 
+			bn=False, training=False,
+			timedistributed=False, scope_name="textcnn", 
+			reuse=False, activation=tf.nn.relu,
+			gated_conv=False, residual=False):
+	if gated_conv:
+		if residual:
+			conv_op = nn_module.residual_gated_conv1d_op
+			print("==apply gated_conv residual==")
+		else:
+			conv_op = nn_module.gated_conv1d_op
+			print("==apply conv_op==")
+	else:
+		conv_op = tf.layers.conv1d
+		print("==apply conv1d==")
+
+	input_mask = tf.cast(input_mask, dtype=tf.float32)
+	input_mask = tf.expand_dims(input_mask, axis=-1)
+
+	conv_blocks = []
+	for i, filter_size in enumerate(filter_sizes):
+		filter_scope_name = "filter_size_%s"%(str(filter_size))
+		res_input = x
+		for j in range(num_layers):
+			layer_scope_name = "%s_layer_%s"%(str(scope_name), str(j))
+			with tf.variable_scope(layer_scope_name, reuse=reuse):
+				h = conv_op(
+					inputs=res_input,
+					filters=num_filters,
+					kernel_size=filter_size,
+					padding="same",
+					activation=None,
+					strides=1,
+					reuse=reuse,
+					name=filter_scope_name,
+					kernel_initializer=tf.truncated_normal_initializer(stddev=0.1))
+				if bn and j < num_layers - 1:
+					bn_scope = filter_scope_name +"_bn"
+					h = tf.contrib.layers.batch_norm(h, is_training=training, scope=bn_scope)
+				if j < num_layers - 1:
+					h = tf.nn.relu(h)
+				h *= input_mask
+				res_input = h
+		h = tf.nn.relu(h + x)
 		# h = tf.nn.relu(h)
 		conv_blocks.append(h)
 

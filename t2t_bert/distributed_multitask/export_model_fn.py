@@ -35,7 +35,7 @@ def model_fn_builder(
 		model = model_api(model_config, features, labels,
 							tf.estimator.ModeKeys.PREDICT, 
 							target, reuse=model_reuse, 
-							cnn_type='dgcnn',
+							cnn_type='multilayer_resnetcnn',
 							**kargs)
 
 		dropout_prob = 0.0
@@ -44,6 +44,14 @@ def model_fn_builder(
 		with tf.variable_scope(model_config.scope+"/feature_output", reuse=tf.AUTO_REUSE):
 			hidden_size = bert_utils.get_shape_list(model.get_pooled_output(), expected_rank=2)[-1]
 			sentence_pres = model.get_pooled_output()
+
+			sentence_pres = tf.layers.dense(
+						sentence_pres,
+						128,
+						use_bias=True,
+						activation=tf.tanh,
+						kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
+
 			# sentence_pres = tf.layers.dense(
 			# 				model.get_pooled_output(),
 			# 				hidden_size,
@@ -86,7 +94,7 @@ def model_fn_builder(
 										head_proj_mode='nonlinear',
 										name='head_contrastive')
 
-		l2_sentence_pres = tf.nn.l2_normalize(sentence_pres, axis=-1)
+		l2_sentence_pres = tf.nn.l2_normalize(sentence_pres+1e-20, axis=-1)
 
 		model_io_fn = model_io.ModelIO(model_io_config)
 
@@ -108,13 +116,13 @@ def model_fn_builder(
 										mode=tf.estimator.ModeKeys.PREDICT,
 										predictions={
 													'sentence_pres':l2_sentence_pres,
-													"before_l2":sentence_pres
+													# "before_l2":sentence_pres
 										},
 										export_outputs={
 											"output":tf.estimator.export.PredictOutput(
 														{
 															'sentence_pres':l2_sentence_pres,
-															"before_l2":sentence_pres
+															# "before_l2":sentence_pres
 														}
 													)
 										}

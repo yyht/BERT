@@ -111,6 +111,12 @@ def classifier_model_fn_builder(
 
 		model_api = model_zoo(model_config)
 
+		if target:
+			features['input_ori_ids'] = features['input_ids_{}'.format(target)]
+			features['input_mask'] = features['input_mask_{}'.format(target)]
+			features['segment_ids'] = features['segment_ids_{}'.format(target)]
+			features['input_ids'] = features['input_ids_{}'.format(target)]
+
 		input_ori_ids = features.get('input_ori_ids', None)
 		if mode == tf.estimator.ModeKeys.TRAIN:
 			if input_ori_ids is not None:
@@ -160,9 +166,9 @@ def classifier_model_fn_builder(
 										features['next_sentence_labels'],
 										reuse=tf.AUTO_REUSE)
 
-		masked_lm_positions = features["masked_lm_positions"]
-		masked_lm_ids = features["masked_lm_ids"]
-		masked_lm_weights = features["masked_lm_weights"]
+		# masked_lm_positions = features["masked_lm_positions"]
+		# masked_lm_ids = features["masked_lm_ids"]
+		# masked_lm_weights = features["masked_lm_weights"]
 
 		if model_config.model_type == 'bert':
 			masked_lm_fn = pretrain.get_masked_lm_output
@@ -192,6 +198,11 @@ def classifier_model_fn_builder(
 										embedding_projection=model.get_embedding_projection_table())
 			masked_lm_ids = input_ori_ids
 		else:
+
+			masked_lm_positions = features["masked_lm_positions"]
+			masked_lm_ids = features["masked_lm_ids"]
+			masked_lm_weights = features["masked_lm_weights"]
+
 			(masked_lm_loss,
 			masked_lm_example_loss, 
 			masked_lm_log_probs,

@@ -334,7 +334,7 @@ def multilabel_categorical_crossentropy(y_true, y_pred):
 
 def contrastive_loss(label, feat1, feat2, margin=1.0):
 
-	distance = tf.sqrt(tf.reduce_sum(tf.square(tf.subtract(feat1, feat2)), 1, keep_dims=True))
+	distance = tf.sqrt(1e-20+tf.reduce_sum(tf.pow(feat1-feat2, 2), 1, keep_dims=True))
 	# distance_norm = tf.add(tf.sqrt(tf.reduce_sum(tf.square(feat1), 1, keep_dims=True)), tf.sqrt(tf.reduce_sum(tf.square(feat2), 1, keep_dims=True)))
 	# distance = tf.div(distance, tf.stop_gradient(distance_norm+1e-10))
 	distance = tf.reshape(distance, [-1], name="distance")
@@ -344,9 +344,9 @@ def contrastive_loss(label, feat1, feat2, margin=1.0):
 
 	y = tf.cast(label, tf.float32)
 	 # the smaller is better
-	tmp = y * tf.square(distance)
+	tmp = y * tf.pow(distance, 2)
 	# when distance is larger than margin, then ignore gradient
-	tmp2 = (1-y) *tf.square(tf.maximum((margin - distance), 0.0))
+	tmp2 = (1-y) *tf.pow(tf.maximum((margin - distance), 0.0), 2)
 	per_example_loss = (tmp +tmp2)/2
 	return per_example_loss, distance
 
