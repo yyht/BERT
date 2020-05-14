@@ -159,12 +159,12 @@ def classifier_model_fn_builder(
 		else:
 			scope = model_config.scope
 		
-		(nsp_loss, 
-		 nsp_per_example_loss, 
-		 nsp_log_prob) = pretrain.get_next_sentence_output(model_config,
-										model.get_pooled_output(),
-										features['next_sentence_labels'],
-										reuse=tf.AUTO_REUSE)
+		#(nsp_loss, 
+		# nsp_per_example_loss, 
+		# nsp_log_prob) = pretrain.get_next_sentence_output(model_config,
+		#								model.get_pooled_output(),
+		#								features['next_sentence_labels'],
+		#								reuse=tf.AUTO_REUSE)
 
 		# masked_lm_positions = features["masked_lm_positions"]
 		# masked_lm_ids = features["masked_lm_ids"]
@@ -250,15 +250,15 @@ def classifier_model_fn_builder(
 								opt_config.num_train_steps,
 								use_tpu=opt_config.use_tpu)
 
-				train_metric_dict = train_metric_fn(
-						masked_lm_example_loss, masked_lm_log_probs, 
-						masked_lm_ids,
-						masked_lm_mask, 
-						nsp_per_example_loss,
-						nsp_log_prob, 
-						features['next_sentence_labels'],
-						masked_lm_mask=masked_lm_mask
-					)
+			#	train_metric_dict = train_metric_fn(
+			#			masked_lm_example_loss, masked_lm_log_probs, 
+			#			masked_lm_ids,
+			#			masked_lm_mask, 
+			#			nsp_per_example_loss,
+			#			nsp_log_prob, 
+			#			features['next_sentence_labels'],
+			#			masked_lm_mask=masked_lm_mask
+			#		)
 
 				# for key in train_metric_dict:
 				# 	tf.summary.scalar(key, train_metric_dict[key])

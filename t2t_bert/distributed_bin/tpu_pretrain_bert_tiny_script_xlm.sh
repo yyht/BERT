@@ -20,7 +20,7 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--train_op "adam_decay" \
 	--load_pretrained "no" \
 	--with_char "no_char" \
-	--input_target "" \
+	--input_target "a" \
 	--task_type "bert_pretrain" \
 	--max_predictions_per_seq 78 \
 	--ln_type "postln" \
