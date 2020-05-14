@@ -41,10 +41,10 @@ try:
 except:
 	from distillation_model_fn import distillation_model_fn
 
-# try:
-# 	from .distillation_pretrain_model_fn import distillation_model_fn
-# except:
-# 	from distillation_pretrain_model_fn import distillation_model_fn
+try:
+	from .distillation_pretrain_model_fn import distillation_model_fn
+except:
+	from distillation_pretrain_model_fn import distillation_model_fn
 
 import numpy as np
 import tensorflow as tf
@@ -217,7 +217,22 @@ def train_eval_fn(FLAGS,
 					distillation_config=distillation_dict,
 					**kargs)
 
-		name_to_features = data_interface(FLAGS)
+		# name_to_features = data_interface(FLAGS)
+
+		name_to_features = {
+				"input_ids_a":
+						tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+				"input_mask_a":
+						tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+				"segment_ids_a":
+						tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+				"input_ids_b":
+						tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+				"input_mask_b":
+						tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+				"segment_ids_b":
+						tf.FixedLenFeature([FLAGS.max_length], tf.int64)
+				}
 
 		# name_to_features = {
 		# 			"input_ids":
@@ -273,6 +288,22 @@ def train_eval_fn(FLAGS,
 											_decode_batch_record, name_to_features, params, if_shard=FLAGS.if_shard,
 											worker_count=worker_count,
 											task_index=task_index)
+				eval_features = lambda: tf_data_utils.all_reduce_eval_batch_input_fn(dev_file,
+											_decode_batch_record, name_to_features, params, if_shard=FLAGS.if_shard,
+											worker_count=worker_count,
+											task_index=task_index)
+			elif kargs.get("parse_type", "parse_single") == "parse_batch_multi_task":
+				data_prior = [float(item) for item in FLAGS.data_prior.split(',')]
+				train_features = lambda: tf_data_utils.all_reduce_multitask_train_batch_input_fn_sample(
+										train_file,
+										_decode_record, 
+										name_to_features, 
+										params, 
+										data_prior=data_prior,
+										if_shard=FLAGS.if_shard,
+										worker_count=worker_count,
+										task_index=task_index)
+
 				eval_features = lambda: tf_data_utils.all_reduce_eval_batch_input_fn(dev_file,
 											_decode_batch_record, name_to_features, params, if_shard=FLAGS.if_shard,
 											worker_count=worker_count,

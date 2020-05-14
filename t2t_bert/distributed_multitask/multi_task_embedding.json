@@ -131,7 +131,7 @@
 		"not_storage_params":[],
 		"exclude_scope":"",
 		"load_pretrained":"no",
-		"num_labels":3,
+		"num_labels":2,
 		"init_checkpoint":"chinese_L-12_H-768_A-12/bert_model.ckpt",
 		"max_length":128,
 		"lm_augumentation":false,

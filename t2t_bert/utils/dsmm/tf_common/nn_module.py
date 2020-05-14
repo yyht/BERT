@@ -72,7 +72,8 @@ def fasttext(x):
 
 # Language Modeling with Gated Convolutional Networks
 # https://github.com/anantzoid/Language-Modeling-GatedCNN
-def gated_conv1d_op(inputs, filters=8, kernel_size=3, padding="same", activation=None, strides=1, reuse=False, name=""):
+def gated_conv1d_op(inputs, filters=8, kernel_size=3, padding="same", activation=None, 
+    strides=1, reuse=False, name="", kernel_initializer=None):
     conv_linear = tf.layers.conv1d(
         inputs=inputs,
         filters=filters,
@@ -81,7 +82,8 @@ def gated_conv1d_op(inputs, filters=8, kernel_size=3, padding="same", activation
         activation=None,
         strides=strides,
         reuse=reuse,
-        name=name+"_linear")
+        name=name+"_linear",
+        kernel_initializer=kernel_initializer)
     conv_gated = tf.layers.conv1d(
         inputs=inputs,
         filters=filters,
@@ -90,12 +92,15 @@ def gated_conv1d_op(inputs, filters=8, kernel_size=3, padding="same", activation
         activation=tf.nn.sigmoid,
         strides=strides,
         reuse=reuse,
-        name=name+"_gated")
+        name=name+"_gated",
+        kernel_initializer=kernel_initializer)
     conv = conv_linear * conv_gated
     return conv
 
 
-def residual_gated_conv1d_op(inputs, filters=8, kernel_size=3, padding="same", activation=None, strides=1, reuse=False, name=""):
+def residual_gated_conv1d_op(inputs, filters=8, kernel_size=3, 
+    padding="same", activation=None, strides=1, reuse=False, name="",
+    kernel_initializer=None):
     conv_linear = tf.layers.conv1d(
         inputs=inputs,
         filters=filters,
@@ -104,7 +109,8 @@ def residual_gated_conv1d_op(inputs, filters=8, kernel_size=3, padding="same", a
         activation=None,
         strides=strides,
         reuse=reuse,
-        name=name+"_linear")
+        name=name+"_linear",
+        kernel_initializer=kernel_initializer)
     conv_gated = tf.layers.conv1d(
         inputs=inputs,
         filters=filters,
@@ -113,7 +119,8 @@ def residual_gated_conv1d_op(inputs, filters=8, kernel_size=3, padding="same", a
         activation=tf.nn.sigmoid,
         strides=strides,
         reuse=reuse,
-        name=name+"_gated")
+        name=name+"_gated",
+        kernel_initializer=kernel_initializer)
     conv = inputs * (1. - conv_gated) + conv_linear * conv_gated
     return conv
 
@@ -286,9 +293,13 @@ def encode(x, method, params, input_dim,
     """
     out_list = []
     params["encode_dim"] = 0
-    dropout_rate = tf.cond(training, 
-                            lambda:params.dropout_rate,
-                            lambda:0.0)
+    if training:
+        dropout_rate = params.dropout_rate
+    else:
+        dropout_rate = 0
+    # dropout_rate = tf.cond(training, 
+    #                         lambda:params.dropout_rate,
+    #                         lambda:0.0)
     for m in method.split("+"):
         if m == "fasttext":
             dim_f = input_dim  # params["embedding_dim"]

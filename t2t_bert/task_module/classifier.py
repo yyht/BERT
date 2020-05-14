@@ -44,6 +44,15 @@ def classifier(config, pooled_output,
 			per_example_loss, _ = loss_utils.focal_loss_multi_v1(config,
 														logits=logits, 
 														labels=labels)
+
+		elif config.get("loss", "entropy") == "ce_label_smoothing":
+			print("==ce_label_smoothing==")
+			per_example_loss = loss_utils.ce_label_smoothing(config,
+														logits=logits, 
+														labels=labels,
+														num_classes=num_labels,
+														epsilon=0.1)
+
 		elif config.get("loss", "entropy") == "dmi_loss":
 			tf.logging.info("****** loss type ******* %s", "dmi_loss")
 			loss, per_example_loss = loss_utils.dmi_loss(config,
@@ -58,7 +67,7 @@ def classifier(config, pooled_output,
 			loss = tf.reduce_sum(per_example_loss)
 			print(" == applying weighted loss == ")
 		except:
-			if config.get("loss", "entropy") in ["entropy", "focal_loss"]:
+			if config.get("loss", "entropy") in ["entropy", "focal_loss", "ce_label_smoothing"]:
 				loss = tf.reduce_mean(per_example_loss)
 			elif config.get("loss", "entropy") == "dmi_loss":
 				tf.logging.info("****** dmi loss need no further calculation ******* ")

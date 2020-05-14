@@ -331,4 +331,38 @@ def multilabel_categorical_crossentropy(y_true, y_pred):
 	neg_loss = tf.reduce_logsumexp(y_pred_neg, axis=-1)
 	pos_loss = tf.reduce_logsumexp(y_pred_pos, axis=-1)
 	return neg_loss + pos_loss
-	
+
+def contrastive_loss(label, feat1, feat2, margin=1.0):
+
+	distance = tf.sqrt(1e-20+tf.reduce_sum(tf.pow(feat1-feat2, 2), 1, keep_dims=True))
+	# distance_norm = tf.add(tf.sqrt(tf.reduce_sum(tf.square(feat1), 1, keep_dims=True)), tf.sqrt(tf.reduce_sum(tf.square(feat2), 1, keep_dims=True)))
+	# distance = tf.div(distance, tf.stop_gradient(distance_norm+1e-10))
+	distance = tf.reshape(distance, [-1], name="distance")
+
+	input_shape_list = bert_utils.get_shape_list(feat1, expected_rank=[2])
+	batch_size = input_shape_list[0]
+
+	y = tf.cast(label, tf.float32)
+	 # the smaller is better
+	tmp = y * tf.pow(distance, 2)
+	# when distance is larger than margin, then ignore gradient
+	tmp2 = (1-y) *tf.pow(tf.maximum((margin - distance), 0.0), 2)
+	per_example_loss = (tmp +tmp2)/2
+	return per_example_loss, distance
+
+def exponent_neg_manhattan_distance(label, feat1, feat2, loss_type='mse'):
+	if loss_type == 'mse':
+		# logits or regression on [0,1]
+		# when feat1 and feat2 has label 1, pred_sim close to 1 and pow(1-pred_sim, 2) close to 0
+		# when feat1 and feat2 has label 0, pred_sim close to 0 and pow(0-pred_sim, 2) close to -inifite
+		pred_sim = tf.exp(-tf.reduce_sum(tf.abs(feat1 - feat2), -1))
+		label = tf.cast(label, tf.float32)
+		per_example_loss = tf.square(pred_sim - label)
+	elif loss_type == 'ce':
+		# logits or regression on [0,1]
+		pred_sim = tf.exp(-tf.reduce_sum(tf.abs(feat1 - feat2), -1))
+		per_example_loss = tf.nn.sigmoid_cross_entropy_with_logits(
+			    labels=label,
+			    logits=tf.log(pred_sim+1e-10),
+		)
+	return per_example_loss, pred_sim

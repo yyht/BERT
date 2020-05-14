@@ -1,6 +1,7 @@
 import tensorflow as tf
 
 def data_interface(FLAGS):
+	print(FLAGS.model_type, "===model type===", FLAGS.task_type)
 	if FLAGS.model_type in ["bert","bert_small", "albert", "electra_gumbel_encoder", 
 						"albert_official", "bert_seq"]:
 		if FLAGS.task_type == "single_sentence_classification":
@@ -119,7 +120,7 @@ def data_interface(FLAGS):
 					tf.FixedLenFeature([FLAGS.max_predictions_per_seq], tf.int64),
 				}
 
-	if FLAGS.model_type in ["bert_rule"]:
+	elif FLAGS.model_type in ["bert_rule"]:
 		if FLAGS.task_type == "single_sentence_classification":
 			name_to_features = {
 					"input_ids":
@@ -210,6 +211,13 @@ def data_interface(FLAGS):
 		name_to_features = {
 			"input_ids":tf.FixedLenFeature([FLAGS.max_length], tf.int64)
 		}
+	elif FLAGS.model_type in ["gated_cnn_seq"]:
+		print(FLAGS.model_type, "===model type===", FLAGS.task_type)
+		if FLAGS.task_type in ['gatedcnn_seq_lm']:
+			name_to_features = {
+				"input_ids_a":
+						tf.FixedLenFeature([FLAGS.max_length], tf.int64)
+				}
 
 	return name_to_features
 

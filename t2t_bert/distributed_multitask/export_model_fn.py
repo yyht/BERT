@@ -11,6 +11,7 @@ try:
 	from distributed_single_sentence_classification.model_interface import model_zoo
 except:
 	from distributed_single_sentence_classification.model_interface import model_zoo
+from utils.simclr import simclr_utils
 
 
 def model_fn_builder(
@@ -34,25 +35,66 @@ def model_fn_builder(
 		model = model_api(model_config, features, labels,
 							tf.estimator.ModeKeys.PREDICT, 
 							target, reuse=model_reuse, 
-							cnn_type='multilayer_textcnn',
+							cnn_type='multilayer_resnetcnn',
 							**kargs)
 
 		dropout_prob = 0.0
+		is_training = False
 
 		with tf.variable_scope(model_config.scope+"/feature_output", reuse=tf.AUTO_REUSE):
 			hidden_size = bert_utils.get_shape_list(model.get_pooled_output(), expected_rank=2)[-1]
-			feature_output_a = tf.layers.dense(
-							model.get_pooled_output(),
-							hidden_size,
-							kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
-			feature_output_a = tf.nn.dropout(feature_output_a, keep_prob=1 - dropout_prob)
-			feature_output_a += model.get_pooled_output()
+			sentence_pres = model.get_pooled_output()
+
 			sentence_pres = tf.layers.dense(
-							feature_output_a,
-							hidden_size,
-							kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
-							activation=tf.tanh)
-		sentence_pres = tf.nn.l2_normalize(sentence_pres, axis=-1)
+						sentence_pres,
+						128,
+						use_bias=True,
+						activation=tf.tanh,
+						kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
+
+			# sentence_pres = tf.layers.dense(
+			# 				model.get_pooled_output(),
+			# 				hidden_size,
+			# 				use_bias=None,
+			# 				activation=tf.nn.relu,
+			# 				kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
+			
+			# sentence_pres = tf.layers.dense(
+			# 				sentence_pres,
+			# 				hidden_size,
+			# 				use_bias=None,
+			# 				activation=None,
+			# 				kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
+
+			# hidden_size = bert_utils.get_shape_list(model.get_pooled_output(), expected_rank=2)[-1]
+			# sentence_pres = tf.layers.dense(
+			# 			model.get_pooled_output(),
+			# 			hidden_size,
+			# 			use_bias=True,
+			# 			activation=tf.tanh,
+			# 			kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
+			# feature_output_a = tf.layers.dense(
+			# 				model.get_pooled_output(),
+			# 				hidden_size,
+			# 				kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
+			# feature_output_a = tf.nn.dropout(feature_output_a, keep_prob=1 - dropout_prob)
+			# feature_output_a += model.get_pooled_output()
+			# sentence_pres = tf.layers.dense(
+			# 				feature_output_a,
+			# 				hidden_size,
+			# 				kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
+			# 				activation=tf.tanh)
+
+		if kargs.get('apply_head_proj', False):
+			with tf.variable_scope(model_config.scope+"/head_proj", reuse=tf.AUTO_REUSE):
+				sentence_pres = simclr_utils.projection_head(sentence_pres, 
+										is_training, 
+										head_proj_dim=128,
+										num_nlh_layers=1,
+										head_proj_mode='nonlinear',
+										name='head_contrastive')
+
+		l2_sentence_pres = tf.nn.l2_normalize(sentence_pres+1e-20, axis=-1)
 
 		model_io_fn = model_io.ModelIO(model_io_config)
 
@@ -73,12 +115,14 @@ def model_fn_builder(
 		estimator_spec = tf.estimator.EstimatorSpec(
 										mode=tf.estimator.ModeKeys.PREDICT,
 										predictions={
-													'sentence_pres':sentence_pres
+													'sentence_pres':l2_sentence_pres,
+													# "before_l2":sentence_pres
 										},
 										export_outputs={
 											"output":tf.estimator.export.PredictOutput(
 														{
-															'sentence_pres':sentence_pres
+															'sentence_pres':l2_sentence_pres,
+															# "before_l2":sentence_pres
 														}
 													)
 										}

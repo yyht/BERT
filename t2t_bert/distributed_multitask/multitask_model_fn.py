@@ -8,6 +8,16 @@ try:
 except:
 	from cls_task import model_fn_builder as cls_model_fn
 
+try:
+	from .embed_task import model_fn_builder as embed_model_fn
+except:
+	from embed_task import model_fn_builder as embed_model_fn
+
+try:
+	from .embed_cpc_task import model_fn_builder as embed_cpc_model_fn
+except:
+	from embed_cpc_task import model_fn_builder as embed_cpc_model_fn
+
 from model_io import model_io
 from optimizer import distributed_optimizer as optimizer
 
@@ -69,18 +79,18 @@ def multitask_model_fn(model_config_dict,
 			else:
 				reuse = None
 				model_type_lst.append(model_config_dict[task_type].model_type)
+			
+			if model_config_dict[task_type].model_type not in encoder:
+				model_api = model_zoo(model_config_dict[task_type])
+
+				model = model_api(model_config_dict[task_type], features, labels,
+						mode, target_dict[task_type], reuse=reuse,
+													cnn_type='multilayer_resnetcnn')
+				encoder[model_config_dict[task_type].model_type] = model
+
+			print(encoder, "==encode==")
+
 			if task_type_dict[task_type] == "cls_task":
-
-				if model_config_dict[task_type].model_type not in encoder:
-					model_api = model_zoo(model_config_dict[task_type])
-
-					model = model_api(model_config_dict[task_type], features, labels,
-							mode, target_dict[task_type], reuse=reuse,
-														cnn_type='multilayer_textcnn')
-					encoder[model_config_dict[task_type].model_type] = model
-
-				print(encoder, "==encode==")
-
 				task_model_fn = cls_model_fn(encoder[model_config_dict[task_type].model_type],
 												model_config_dict[task_type],
 												num_labels_dict[task_type],
@@ -100,32 +110,93 @@ def multitask_model_fn(model_config_dict,
 												task_adversarial=1e-2,
 												get_pooled_output='task_output',
 												feature_distillation=False,
-												embedding_distillation=True,
+												embedding_distillation=False,
 												pretrained_embed=pretrained_embed,
 												**kargs)
-				print("==SUCCEEDED IN LODING==", task_type)
-
 				result_dict = task_model_fn(features, labels, mode)
-				logits_dict[task_type] = result_dict["logits"]
-				losses_dict[task_type] = result_dict["loss"] # task loss
-				for key in ["masked_lm_loss", "task_loss", "acc", "task_acc", "masked_lm_acc"]:
-					name = "{}_{}".format(task_type, key)
-					if name in result_dict:
-						hook_dict[name] = result_dict[name]
-				hook_dict["{}_loss".format(task_type)] = result_dict["loss"]
-				hook_dict["{}_num".format(task_type)] = result_dict["task_num"]
-				total_loss += result_dict["loss"]
-				hook_dict['embed_loss'] = result_dict["embed_loss"]
-				hook_dict['feature_loss'] = result_dict["feature_loss"]
-				hook_dict["{}_task_loss".format(task_type)] = result_dict["task_loss"]
-				if mode == tf.estimator.ModeKeys.TRAIN:
-					tvars.extend(result_dict["tvars"])
-					task_num += result_dict["task_num"]
-					task_num_dict[task_type] = result_dict["task_num"]
-				elif mode == tf.estimator.ModeKeys.EVAL:
-					features[task_type] = result_dict["feature"]
+
+			elif task_type_dict[task_type] == "embed_task":
+				task_model_fn = embed_model_fn(encoder[model_config_dict[task_type].model_type],
+												model_config_dict[task_type],
+												num_labels_dict[task_type],
+												init_checkpoint_dict[task_type],
+												reuse,
+												load_pretrained_dict[task_type],
+												model_io_config,
+												opt_config,
+												exclude_scope=exclude_scope_dict[task_type],
+												not_storage_params=not_storage_params_dict[task_type],
+												target=target_dict[task_type],
+												label_lst=None,
+												output_type=output_type,
+												task_layer_reuse=task_layer_reuse,
+												task_type=task_type,
+												num_task=num_task,
+												task_adversarial=1e-2,
+												get_pooled_output='task_output',
+												feature_distillation=False,
+												embedding_distillation=False,
+												pretrained_embed=pretrained_embed,
+												loss='contrastive_loss',
+												apply_head_proj=False,
+												**kargs)
+				result_dict = task_model_fn(features, labels, mode)
+
+				# cpc_model_fn = embed_cpc_model_fn(encoder[model_config_dict[task_type].model_type],
+				# 								model_config_dict[task_type],
+				# 								num_labels_dict[task_type],
+				# 								init_checkpoint_dict[task_type],
+				# 								reuse,
+				# 								load_pretrained_dict[task_type],
+				# 								model_io_config,
+				# 								opt_config,
+				# 								exclude_scope=exclude_scope_dict[task_type],
+				# 								not_storage_params=not_storage_params_dict[task_type],
+				# 								target=target_dict[task_type],
+				# 								label_lst=None,
+				# 								output_type=output_type,
+				# 								task_layer_reuse=task_layer_reuse,
+				# 								task_type=task_type,
+				# 								num_task=num_task,
+				# 								task_adversarial=1e-2,
+				# 								get_pooled_output='task_output',
+				# 								feature_distillation=False,
+				# 								embedding_distillation=False,
+				# 								pretrained_embed=pretrained_embed,
+				# 								loss='contrastive_loss',
+				# 								apply_head_proj=False,
+				# 								**kargs)
+				
+				# cpc_result_dict = cpc_model_fn(features, labels, mode)
+				# result_dict['loss'] += cpc_result_dict['loss']
+				# result_dict['tvars'].extend(cpc_result_dict['tvars'])
+				# hook_dict["{}_all_neg_loss".format(task_type)] = cpc_result_dict['loss']
+				# hook_dict["{}_all_neg_num".format(task_type)] = cpc_result_dict['task_num']
 			else:
 				continue
+			print("==SUCCEEDED IN LODING==", task_type)
+
+			# result_dict = task_model_fn(features, labels, mode)
+			logits_dict[task_type] = result_dict["logits"]
+			losses_dict[task_type] = result_dict["loss"] # task loss
+			for key in ["masked_lm_loss", "task_loss", "acc", "task_acc", "masked_lm_acc"]:
+				name = "{}_{}".format(task_type, key)
+				if name in result_dict:
+					hook_dict[name] = result_dict[name]
+			hook_dict["{}_loss".format(task_type)] = result_dict["loss"]
+			hook_dict["{}_num".format(task_type)] = result_dict["task_num"]
+			total_loss += result_dict["loss"]
+			hook_dict['embed_loss'] = result_dict["embed_loss"]
+			hook_dict['feature_loss'] = result_dict["feature_loss"]
+			hook_dict["{}_task_loss".format(task_type)] = result_dict["task_loss"]
+			if 'positive_label' in result_dict:
+				hook_dict["{}_task_positive_label".format(task_type)] = result_dict["positive_label"]
+			if mode == tf.estimator.ModeKeys.TRAIN:
+				tvars.extend(result_dict["tvars"])
+				task_num += result_dict["task_num"]
+				task_num_dict[task_type] = result_dict["task_num"]
+			elif mode == tf.estimator.ModeKeys.EVAL:
+				features[task_type] = result_dict["feature"]
 
 		hook_dict["total_loss"] = total_loss
 

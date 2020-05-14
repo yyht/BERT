@@ -33,6 +33,11 @@ def export_model(FLAGS,
 		input_fn = tf.estimator.export.build_raw_serving_input_receiver_fn(receiver_features)()
 		return input_fn
 
+	ss = np.random.random((2,10))
+	p = tf.constant(ss)
+	sess = tf.Session()
+	print(sess.run(p), ss)
+
 	model_fn = model_fn_builder(config, 2, init_checkpoint, 
 											model_reuse=None, 
 											load_pretrained=FLAGS.load_pretrained,

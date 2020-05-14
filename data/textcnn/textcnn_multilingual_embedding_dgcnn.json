@@ -1,0 +1,96 @@
+{
+    "max_length": 100,
+    "char_limit": 10,
+    "num_classes":3,
+
+    "with_char": false,
+    "char_embedding":"conv",
+    "char_emb_dim": 20,
+    "char_lstm_dim": 40,
+
+    "batch_size": 32,
+    "max_epochs": 1000,
+    "dropout_rate": 0.2,
+    "learning_rate": 1e-4,
+    "optimizer": "adam",
+    "lambda_l2": 0.0,
+    "grad_clipper": 10.0,
+
+    "context_layer_num": 1,
+    "context_lstm_dim": 100,
+
+    "label_type":"single_label",
+
+    "slstm_layer_num": 5,
+
+    "rnn":"lstm",
+    "random_initialize":false,
+    "step":5,
+    "slstm_hidden_size":300,
+    "weight_decay":1e-5,
+
+    "highway_layer_num": 1,
+    "with_highway": true,
+    "with_match_highway": true,
+    "with_aggregation_highway": true,
+    "highway":"none",
+
+    "use_cudnn": false,
+    "with_center_loss":false,
+
+    "with_moving_average": 0.999,
+
+    "loss":"entropy",
+
+    "alpha":0.5,
+    "gamma":2.0,
+    "name":"focal_loss_multi_v1",
+    "center_gamma":0.001,
+
+    "with_word_drop":false,
+    "word_drop_rate":0.7,
+
+    "scale":30,
+    "margin":0.35,
+
+    "l2_normalization":false,
+
+    "elmo_pca":false,
+
+    "num_filters":32,
+    "max_pool_size":5,
+    "filter_size":[1,2,3,5],
+    "encoder_type":"textcnn",
+    "num_blocks":2,
+    "hidden_units":300,
+    "num_heads":4,
+
+    "pooling_method":["avg", "max"],
+    "cnn_timedistributed":false,
+    "cnn_filter_sizes":[3, 3],
+    "cnn_num_filters":[64, 64],
+    "cnn_dilation_rates":[1, 1],
+    "cnn_strides":[1, 1],
+    "cnn_gated_conv":false,
+    "cnn_residual":false,
+    "encode_method":"textcnn",
+    "embedding_mask_zero":false,
+    "cnn_num_layers":2,
+    "bn":false,
+    "grad_clip":"global_norm",
+    "clip_norm":10,
+    "use_pretrained":false,
+    "is_casual":false,
+    "vocab_size":74890,
+    "emb_size":64,
+    "emb_char_size":64,
+    "scope":"textcnn",
+    "hidden_act": "gelu", 
+    "initializer_range":0.01,
+    "mask_type":"left2right",
+    "padding":"same",
+
+    "output_folder_name":"textcnn",
+    "with_target":false,
+    "trainable_embedding":false
+}

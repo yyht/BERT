@@ -55,8 +55,12 @@ def model_fn_builder(
 	def model_fn(features, labels, mode, params):
 
 		model_api = model_zoo(model_config)
+		if target:
+			features['input_ori_ids'] = features['input_ids_{}'.format(target)]
+			features['input_mask'] = features['input_mask_{}'.format(target)]
+			features['segment_ids'] = features['segment_ids_{}'.format(target)]
+			features['input_ids'] = features['input_ids_{}'.format(target)]
 
-		features['input_ori_ids'] = features['input_ids']
 		input_ori_ids = features.get('input_ori_ids', None)
 		if mode == tf.estimator.ModeKeys.TRAIN:
 			if input_ori_ids is not None:
@@ -80,7 +84,7 @@ def model_fn_builder(
 			sampled_binary_mask = None
 
 		model = model_api(model_config, features, labels,
-							mode, target, reuse=tf.AUTO_REUSE,
+							mode, "", reuse=tf.AUTO_REUSE,
 							**kargs)
 
 		if mode == tf.estimator.ModeKeys.TRAIN:

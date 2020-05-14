@@ -5,7 +5,7 @@ def task_interface(name_to_features, task_type_dict, task_type_lst):
 	for task_type in task_type_lst:
 		if task_type not in task_type_dict:
 			continue
-		if task_type_dict[task_type]["task_type"] == "cls_task":
+		if task_type_dict[task_type]["task_type"] in ["cls_task", "embed_task"]:
 			name_to_features["{}_label_ids".format(task_type)] = tf.FixedLenFeature([], tf.int64)
 			name_to_features["{}_loss_multipiler".format(task_type)] = tf.FixedLenFeature([], tf.float32)
 		if task_type_dict[task_type]["lm_augumentation"]:
@@ -21,10 +21,10 @@ def data_interface_dual_encoder(FLAGS, task_type_dict, task_type_lst):
 					tf.FixedLenFeature([FLAGS.max_length], tf.int64),
 			"input_ids_b":
 					tf.FixedLenFeature([FLAGS.max_length], tf.int64),
-			"input_ids_a_features":
-                tf.FixedLenFeature([512], tf.float32),
-            "input_ids_b_features":
-                tf.FixedLenFeature([512], tf.float32)
+			# "input_ids_a_features":
+   #              tf.FixedLenFeature([512], tf.float32),
+   #          "input_ids_b_features":
+   #              tf.FixedLenFeature([512], tf.float32)
 	}
 	name_to_features = task_interface(name_to_features, task_type_dict, task_type_lst)
 	return name_to_features

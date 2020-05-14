@@ -188,6 +188,7 @@ class Optimizer(object):
 			for grad, var in grads_and_vars:
 				if grad is not None:
 					valid_vars.append(var)
+					print(grad, var, tf.is_nan(grad), '====nan grad====')
 				else:
 					print(var.name, "=====none grad======", grad_name)
 

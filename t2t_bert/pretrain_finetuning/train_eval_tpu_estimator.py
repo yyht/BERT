@@ -117,6 +117,9 @@ def train_eval_fn(FLAGS,
 		elif FLAGS.random_generator == "2":
 			input_fn_builder = tf_data_utils.bert_seq_input_fn_builder
 			tf.logging.info("***** Running bert seq input fn builder *****")
+		elif FLAGS.random_generator == "3":
+			input_fn_builder = tf_data_utils.bert_mnli_input_fn_builder
+			tf.logging.info("***** Running bert seq input fn builder *****")
 		else:
 			input_fn_builder = tf_data_utils.input_fn_builder
 			tf.logging.info("***** Running fixed sample input fn builder *****")

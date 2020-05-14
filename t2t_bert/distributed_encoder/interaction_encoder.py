@@ -7,9 +7,9 @@ def match_pyramid_encoder(model_config, features, labels,
 			mode, target, reuse=None):
 
 	if mode == tf.estimator.ModeKeys.TRAIN:
-		is_training = tf.constant(True)
+		is_training = True
 	else:
-		is_training = tf.constant(False)
+		is_training = False
 
 	input_ids_a = features["input_ids_a"]
 	input_char_ids_a = features.get("input_char_ids_a", None)
@@ -50,9 +50,9 @@ def textcnn_interaction_encoder(model_config, features, labels,
 			mode, target, reuse=None, **kargs):
 
 	if mode == tf.estimator.ModeKeys.TRAIN:
-		is_training = tf.constant(True)
+		is_training = True
 	else:
-		is_training = tf.constant(False)
+		is_training = False
 
 	if mode == tf.estimator.ModeKeys.TRAIN:
 		dropout_prob = 0.2
@@ -72,39 +72,65 @@ def textcnn_interaction_encoder(model_config, features, labels,
 
 	with tf.variable_scope(model_config.scope+"/feature_output", reuse=tf.AUTO_REUSE):
 		hidden_size = bert_utils.get_shape_list(model.get_pooled_output(), expected_rank=2)[-1]
-		feature_output_a = tf.layers.dense(
-						model.get_pooled_output(),
-						hidden_size,
-						kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
-		feature_output_a = tf.nn.dropout(feature_output_a, keep_prob=1 - dropout_prob)
-		feature_output_a += model.get_pooled_output()
+		# input_ids_a_repres = model.get_pooled_output()
 		input_ids_a_repres = tf.layers.dense(
-						feature_output_a,
-						hidden_size,
-						kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
-						activation=tf.tanh)
+						model.get_pooled_output(),
+						128,
+						use_bias=True,
+						activation=tf.tanh,
+						kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
+		# input_ids_a_repres = tf.layers.dense(
+		# 				input_ids_a_repres,
+		# 				hidden_size,
+		# 				use_bias=None,
+		# 				activation=None,
+		# 				kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
+
+		# input_ids_a_repres = tf.nn.dropout(input_ids_a_repres, keep_prob=1 - dropout_prob)
+		# input_ids_a_repres += model.get_pooled_output()
+		# input_ids_a_repres = tf.layers.dense(
+		# 				input_ids_a_repres,
+		# 				hidden_size,
+		# 				kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
+		# 				activation=tf.tanh)
 
 	model.build_emebdder(input_ids_b, input_char_ids_b, is_training, reuse=tf.AUTO_REUSE, **kargs)
 	model.build_encoder(input_ids_b, input_char_ids_b, is_training, reuse=tf.AUTO_REUSE, **kargs)
 
 	with tf.variable_scope(model_config.scope+"/feature_output", reuse=tf.AUTO_REUSE):
 		hidden_size = bert_utils.get_shape_list(model.get_pooled_output(), expected_rank=2)[-1]
-		feature_output_b = tf.layers.dense(
-						model.get_pooled_output(),
-						hidden_size,
-						kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
-		feature_output_b = tf.nn.dropout(feature_output_b, keep_prob=1 - dropout_prob)
-		feature_output_b += model.get_pooled_output()
+		# input_ids_b_repres = model.get_pooled_output()
 		input_ids_b_repres = tf.layers.dense(
-						feature_output_b,
-						hidden_size,
-						kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
-						activation=tf.tanh)
+						model.get_pooled_output(),
+						128,
+						use_bias=True,
+						activation=tf.tanh,
+						kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
+		
+		# input_ids_b_repres = tf.layers.dense(
+		# 				input_ids_b_repres,
+		# 				hidden_size,
+		# 				use_bias=None,
+		# 				activation=None,
+		# 				kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
+
+		# input_ids_b_repres = tf.nn.dropout(input_ids_b_repres, keep_prob=1 - dropout_prob)
+		# input_ids_b_repres += model.get_pooled_output()
+		# input_ids_b_repres = tf.layers.dense(
+		# 				input_ids_b_repres,
+		# 				hidden_size,
+		# 				kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
+		# 				activation=tf.tanh)
 
 	concat_repres = tf.concat([input_ids_a_repres, input_ids_b_repres, 
 								tf.abs(input_ids_a_repres-input_ids_b_repres),
 								input_ids_a_repres*input_ids_b_repres],
 								axis=-1)
+
+	# concat_repres = tf.concat([input_ids_a_repres, input_ids_b_repres, 
+	# 							tf.abs(input_ids_a_repres-input_ids_b_repres),
+	# 							],
+	# 							axis=-1)
 
 	feature = {
 		"feature_a":input_ids_a_repres,

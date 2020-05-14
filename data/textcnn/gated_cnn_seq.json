@@ -1,0 +1,19 @@
+{
+  "vocab_size": 21128,
+  "cnn_num_layers":2,
+  "cnn_filter_sizes":[1,2,3,5],
+  "cnn_timedistributed":false,
+  "cnn_num_filters":32,
+  "cnn_gated_conv":true,
+  "cnn_residual":true,
+  "emb_size":96,
+  "emb_char_size":96,
+  "dropout_rate":0.1,
+  "learning_rate":5e-4,
+  "pooling_method":["avg", "max"],
+  "encode_method":"textcnn",
+  "embedding_mask_zero":false,
+  "cnn_num_layers":2,
+  "use_pretrained":false,
+  "bn":false
+}

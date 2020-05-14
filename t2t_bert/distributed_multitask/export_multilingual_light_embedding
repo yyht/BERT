@@ -1,12 +1,12 @@
 config_file=./BERT/data/textcnn/textcnn_multilingual_embedding.json
-init_checkpoint=sentence_pair/multilingual_task_dual_encoder_1e-3_1_mlcnn/model.ckpt-101556
-vocab_file=sentence_pair/vocab.txt
+init_checkpoint=sentence_pair/pretrain_gatedcnn_lm/multilingual_adamw_paws_cls_textcnn_worddropout/model.ckpt-46864
+vocab_file=sentence_pair/vocab_new.txt
 label_id=./BERT/data/lazada_multilingual/label_dict.json
 max_length=128
 train_file=lazada/new_data/20190415/data/train_tfrecords
 dev_file=lazada/new_data/20190415/data/dev_tfrecords
-model_output=sentence_pair/multilingual_task_dual_encoder_1e-3_1_mlcnn
-export_dir=sentence_pair/multilingual_task_dual_encoder_1e-3_1_mlcnn/export/101556
+model_output=sentence_pair/pretrain_gatedcnn_lm/multilingual_adamw_paws_cls_textcnn_worddropout
+export_dir=sentence_pair/pretrain_gatedcnn_lm/multilingual_adamw_paws_cls_textcnn_worddropout/export/46864
 epoch=100
 num_classes=4
 train_size=1000000

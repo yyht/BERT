@@ -39,7 +39,7 @@ class BaseModel(object):
 							self.config, is_training, reuse)
 		return char_emb
 
-	def build_word_embedding(self, input_ids, **kargs):
+	def build_word_embedding(self, input_ids, is_training=False, **kargs):
 
 		self.emb_mat = integration_func.generate_embedding_mat(self.vocab_size, emb_len=self.emb_size,
                                      init_mat=self.token_emb_mat, 
@@ -47,7 +47,22 @@ class BaseModel(object):
                                      scope=self.scope+'_token_embedding',
                                      reuse=kargs.get("reuse", None),
                                      trainable=not self.config.get('use_pretrained', True))
-		word_emb = tf.nn.embedding_lookup(self.emb_mat, input_ids)
+		
+		if is_training:
+			dropout_rate = self.config.dropout_rate
+		else:
+			dropout_rate = 0.0
+
+		if self.config.get('embedding_dropout', False) and is_training:
+			embedding_matrix = tf.nn.dropout(self.emb_mat, 
+										keep_prob=1-dropout_rate, 
+										noise_shape=[self.vocab_size,1])
+			tf.logging.info("***** word drop out *****")
+		else:
+			embedding_matrix = self.emb_mat
+			tf.logging.info("***** none word drop *****")
+
+		word_emb = tf.nn.embedding_lookup(embedding_matrix, input_ids)
 		if self.config.get("trainable_embedding", False):
 			self.trainable_emb_mat = integration_func.generate_embedding_mat(self.vocab_size, emb_len=self.emb_size,
                                      init_mat=self.token_emb_mat, 
@@ -72,7 +87,7 @@ class BaseModel(object):
 		# 					lambda:self.config.dropout_rate,
 		# 					lambda:0.0)
 
-		word_emb = self.build_word_embedding(input_ids, **kargs)
+		word_emb = self.build_word_embedding(input_ids, is_training, **kargs)
 		if self.config.with_char == "char":
 			char_emb = self.build_char_embedding(input_char_ids, is_training, **kargs)
 			self.word_emb = tf.concat([word_emb, char_emb], axis=-1)
