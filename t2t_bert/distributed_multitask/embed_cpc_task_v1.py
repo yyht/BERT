@@ -1,11 +1,11 @@
 try:
 	from distributed_single_sentence_classification.model_interface import model_zoo
 	from distillation import distillation_utils
-	from loss import loss_utils
+	from loss import loss_utils, triplet_loss_utils
 except:
 	from distributed_single_sentence_classification.model_interface import model_zoo
 	from distillation import distillation_utils
-	from loss import loss_utils
+	from loss import loss_utils, triplet_loss_utils
 
 import tensorflow as tf
 import numpy as np
@@ -56,11 +56,14 @@ def model_fn_builder(model,
 
 	def model_fn(features, labels, mode):
 
-		task_type = 'all_neg'
+		task_type = kargs.get("task_type", "cls")
 		num_task = kargs.get('num_task', 1)
 		temp = kargs.get('temp', 0.1)
 
+		print("==task_type==", task_type)
+
 		model_io_fn = model_io.ModelIO(model_io_config)
+		label_ids = tf.cast(features["{}_label_ids".format(task_type)], dtype=tf.int32)
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
 			dropout_prob = model_config.dropout_prob
@@ -103,41 +106,34 @@ def model_fn_builder(model,
 										name='head_contrastive')
 				pooled_feature_dict['feature_b'] = feature_b
 			tf.logging.info("****** apply contrastive feature projection *******")
+		else:
+			feature_a = pooled_feature_dict['feature_a']
+			feature_b = pooled_feature_dict['feature_b']
+			tf.logging.info("****** not apply projection *******")
 
-		feature_a = tf.nn.l2_normalize(pooled_feature_dict['feature_a'], axis=-1)
-		feature_b = tf.nn.l2_normalize(pooled_feature_dict['feature_b'], axis=-1)
+		feature_a = tf.nn.l2_normalize(feature_a, axis=-1)
+		feature_b = tf.nn.l2_normalize(feature_b, axis=-1)
+		# [batch_size, batch_size]
+		cosine_score = tf.matmul(feature_a, tf.transpose(feature_b)) / model_config.get('temperature', 0.5)
+		print("==cosine_score shape==", cosine_score.get_shape())
+		loss_mask = tf.cast(features["{}_loss_multipiler".format(task_type)], tf.float32)
+		neg_true_mask = tf.cast(triplet_loss_utils._get_anchor_negative_triplet_mask(label_ids), tf.float32)
+		pos_true_mask = (1.0 - neg_true_mask) * tf.expand_dims(loss_mask, axis=-1)
+		neg_true_mask *= tf.expand_dims(loss_mask, axis=-1)
 
-		shape_list = bert_utils.get_shape_list(feature_a, expected_rank=[2])
-		batch_size = shape_list[0]
+		cosine_score_neg = neg_true_mask * cosine_score
+		cosine_score_pos = -pos_true_mask * cosine_score
 
-		input_a = features['input_ids_a']
-		input_b = features['input_ids_b']
+		y_pred_neg = cosine_score_neg - (1 - neg_true_mask) * 1e12
+		y_pred_pos = cosine_score_pos - (1 - pos_true_mask) * 1e12
 
-		not_equal = tf.cast(tf.not_equal(input_a, input_b), tf.int32)
-		not_equal = tf.reduce_sum(not_equal, axis=-1)
-		loss_mask = tf.cast(tf.not_equal(not_equal, tf.zeros_like(not_equal)), tf.float32)
-		cpc_loss_mask += (1-loss_mask) * (-1e10)
+		# add circle-loss without margin and scale-factor
+		joint_neg_loss = tf.reduce_logsumexp(y_pred_neg, axis=-1)
+		joint_pos_loss = tf.reduce_logsumexp(y_pred_pos, axis=-1)
+		logits = tf.nn.softplus(joint_neg_loss+joint_pos_loss)
 
-		# batch_size x batch_size
-		cpc_tensor = tf.einsum("ab,ab->aa", 
-								feature_a, 
-								feature_b)
-
-		joint_sample_mask = tf.eye(batch_size, dtype=tf.float32)
-
-		joint_masked_cpc_tensor = joint_sample_mask * cpc_tensor/temp
-		marginal_masked_cpc_tensor = cpc_tensor/temp
-		marginal_masked_cpc_tensor += cpc_loss_mask
-
-		# got each seq joint term
-		# batch_size
-		joint_term = tf.reduce_sum(joint_masked_cpc_tensor, axis=[-1]) # batch
-		# batch_size
-		marginal_term = tf.reduce_logsumexp(marginal_masked_cpc_tensor, axis=[-1]) # batch x seq
-
-		logits = joint_term - marginal_term
-		loss = -tf.reduce_mean(logits)
-
+		loss = tf.reduce_sum(logits*loss_mask) / (1e-10+tf.reduce_sum(loss_mask))
+		task_loss = loss
 		params_size = model_io_fn.count_params(model_config.scope)
 		print("==total encoder params==", params_size)
 
@@ -290,6 +286,8 @@ def model_fn_builder(model,
 					"loss":loss, 
 					"logits":logits,
 					"task_num":tf.reduce_sum(loss_mask),
+					"{}_pos_num".format(task_type):tf.reduce_sum(pos_true_mask),
+					"{}_neg_num".format(task_type):tf.reduce_sum(neg_true_mask),
 					"tvars":tvars
 				}
 			# return_dict["{}_acc".format(task_type)] = acc

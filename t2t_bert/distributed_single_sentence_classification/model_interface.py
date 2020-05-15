@@ -159,10 +159,11 @@ def model_config_parser(FLAGS):
 		vocab_path = os.path.join(FLAGS.buckets, FLAGS.vocab_file)
 
 		print(w2v_path, vocab_path)
+		config = json.load(open(FLAGS.config_file, "r"))
 
 		[w2v_embed, token2id, 
-		id2token, is_extral_symbol, use_pretrained] = load_w2v.load_pretrained_w2v(vocab_path, w2v_path)
-		config = json.load(open(FLAGS.config_file, "r"))
+		id2token, is_extral_symbol, use_pretrained] = load_w2v.load_pretrained_w2v(vocab_path, w2v_path, config.get('emb_size', 64))
+		
 		config = Bunch(config)
 		config.token_emb_mat = w2v_embed
 		config.char_emb_mat = None

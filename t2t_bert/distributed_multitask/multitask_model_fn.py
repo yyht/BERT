@@ -18,6 +18,11 @@ try:
 except:
 	from embed_cpc_task import model_fn_builder as embed_cpc_model_fn
 
+try:
+	from .embed_cpc_task_v1 import model_fn_builder as embed_cpc_v1_model_fn
+except:
+	from embed_cpc_task_v1 import model_fn_builder as embed_cpc_v1_model_fn
+
 from model_io import model_io
 from optimizer import distributed_optimizer as optimizer
 
@@ -68,10 +73,11 @@ def multitask_model_fn(model_config_dict,
 		w2v_path = os.path.join(flags.buckets, flags.pretrained_w2v_path)
 		vocab_path = os.path.join(flags.buckets, flags.vocab_file)
 
-		[w2v_embed, token2id, 
-		id2token, is_extral_symbol, use_pretrained] = load_w2v.load_pretrained_w2v(vocab_path, w2v_path)
+		# [w2v_embed, token2id, 
+		# id2token, is_extral_symbol, use_pretrained] = load_w2v.load_pretrained_w2v(vocab_path, w2v_path)
 
-		pretrained_embed = tf.cast(tf.constant(w2v_embed), tf.float32)
+		# pretrained_embed = tf.cast(tf.constant(w2v_embed), tf.float32)
+		pretrained_embed = None
 
 		for index, task_type in enumerate(task_type_dict.keys()):
 			if model_config_dict[task_type].model_type in model_type_lst:
@@ -114,7 +120,7 @@ def multitask_model_fn(model_config_dict,
 												pretrained_embed=pretrained_embed,
 												**kargs)
 				result_dict = task_model_fn(features, labels, mode)
-
+				tf.logging.info("****** task: *******", task_type_dict[task_type], task_type)
 			elif task_type_dict[task_type] == "embed_task":
 				task_model_fn = embed_model_fn(encoder[model_config_dict[task_type].model_type],
 												model_config_dict[task_type],
@@ -141,7 +147,7 @@ def multitask_model_fn(model_config_dict,
 												apply_head_proj=False,
 												**kargs)
 				result_dict = task_model_fn(features, labels, mode)
-
+				tf.logging.info("****** task: *******", task_type_dict[task_type], task_type)
 				# cpc_model_fn = embed_cpc_model_fn(encoder[model_config_dict[task_type].model_type],
 				# 								model_config_dict[task_type],
 				# 								num_labels_dict[task_type],
@@ -172,6 +178,34 @@ def multitask_model_fn(model_config_dict,
 				# result_dict['tvars'].extend(cpc_result_dict['tvars'])
 				# hook_dict["{}_all_neg_loss".format(task_type)] = cpc_result_dict['loss']
 				# hook_dict["{}_all_neg_num".format(task_type)] = cpc_result_dict['task_num']
+			
+			elif task_type_dict[task_type] == "cpc_task":
+				task_model_fn = embed_cpc_v1_model_fn(encoder[model_config_dict[task_type].model_type],
+												model_config_dict[task_type],
+												num_labels_dict[task_type],
+												init_checkpoint_dict[task_type],
+												reuse,
+												load_pretrained_dict[task_type],
+												model_io_config,
+												opt_config,
+												exclude_scope=exclude_scope_dict[task_type],
+												not_storage_params=not_storage_params_dict[task_type],
+												target=target_dict[task_type],
+												label_lst=None,
+												output_type=output_type,
+												task_layer_reuse=task_layer_reuse,
+												task_type=task_type,
+												num_task=num_task,
+												task_adversarial=1e-2,
+												get_pooled_output='task_output',
+												feature_distillation=False,
+												embedding_distillation=False,
+												pretrained_embed=pretrained_embed,
+												loss='contrastive_loss',
+												apply_head_proj=True,
+												**kargs)
+				result_dict = task_model_fn(features, labels, mode)
+				tf.logging.info("****** task: *******", task_type_dict[task_type], task_type)
 			else:
 				continue
 			print("==SUCCEEDED IN LODING==", task_type)
@@ -179,7 +213,8 @@ def multitask_model_fn(model_config_dict,
 			# result_dict = task_model_fn(features, labels, mode)
 			logits_dict[task_type] = result_dict["logits"]
 			losses_dict[task_type] = result_dict["loss"] # task loss
-			for key in ["masked_lm_loss", "task_loss", "acc", "task_acc", "masked_lm_acc"]:
+			for key in ["pos_num", "neg_num", "masked_lm_loss", 
+						"task_loss", "acc", "task_acc", "masked_lm_acc"]:
 				name = "{}_{}".format(task_type, key)
 				if name in result_dict:
 					hook_dict[name] = result_dict[name]
