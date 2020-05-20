@@ -160,7 +160,7 @@ def classifier_model_fn_builder(
 			if not kargs.get('use_tpu', False):
 				tf.summary.scalar("loss mask", tf.reduce_mean(sequence_mask))
 
-			# batch x seq_length
+		# batch x seq_length
 		print(model.get_sequence_output_logits().get_shape(), "===logits shape===")
 		seq_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
 						labels=features['input_ori_ids'][:, 1:], 
@@ -168,7 +168,17 @@ def classifier_model_fn_builder(
 
 		per_example_loss = tf.reduce_sum(seq_loss*sequence_mask, axis=-1) / (tf.reduce_sum(sequence_mask, axis=-1)+1e-10)
 		loss = tf.reduce_mean(per_example_loss)
+
+		if model_config.get("cnn_type", "dgcnn") == 'bi_dgcnn':
+			seq_backward_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+						labels=features['input_ori_ids'][:, :-1], 
+						logits=model.get_sequence_backward_output_logits()[:, 1:])
 		
+			per_backward_example_loss = tf.reduce_sum(seq_backward_loss*sequence_mask, axis=-1) / (tf.reduce_sum(sequence_mask, axis=-1)+1e-10)
+			backward_loss = tf.reduce_mean(per_backward_example_loss)
+			loss += backward_loss
+			tf.logging.info("***** using backward loss *****")
+
 		model_io_fn = model_io.ModelIO(model_io_config)
 
 		pretrained_tvars = model_io_fn.get_params(model_config.scope, 

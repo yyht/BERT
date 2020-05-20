@@ -238,6 +238,59 @@ class TextCNN(base_model.BaseModel):
 						tf.logging.info("***** last pooling *****")
 				self.output = tf.concat(pooled_output, axis=-1)
 				tf.logging.info("***** seq-encoder *****")
+			elif kargs.get("cnn_type", 'textcnn') == 'bi_dgcnn':
+				self.sequence_output = dgcnn_utils.dgcnn(
+												sent_repres, 
+												input_mask,
+												num_layers=self.config['cnn_num_layers'], 
+												dilation_rates=self.config.get('cnn_dilation_rates', [1,2]),
+												strides=self.config.get('cnn_dilation_rates', [1,1]),
+												num_filters=self.config.get('cnn_num_filters', [128,128]), 
+												kernel_sizes=self.config.get('cnn_filter_sizes', [3,3]), 
+												is_training=is_training,
+												scope_name="textcnn/forward", 
+												reuse=False, 
+												activation=tf.nn.relu,
+												is_casual=self.config['is_casual'],
+												padding=self.config.get('padding', 'same')
+												)
+				self.sequence_output_backward = dgcnn_utils.backward_dgcnn(
+												sent_repres, 
+												input_mask,
+												num_layers=self.config['cnn_num_layers'], 
+												dilation_rates=self.config.get('cnn_dilation_rates', [1,2]),
+												strides=self.config.get('cnn_dilation_rates', [1,1]),
+												num_filters=self.config.get('cnn_num_filters', [128,128]), 
+												kernel_sizes=self.config.get('cnn_filter_sizes', [3,3]), 
+												is_training=is_training,
+												scope_name="textcnn/backward", 
+												reuse=False, 
+												activation=tf.nn.relu,
+												is_casual=self.config['is_casual'],
+												padding=self.config.get('padding', 'same')
+												)
+				pooled_output = []
+				self.forward_backward_repres = tf.concat([self.sequence_output[:,:-2],
+														self.sequence_output_backward[:,2:]],
+														axis=-1)
+
+				for pooling_method in self.config['pooling_method']:
+					if pooling_method == 'avg':
+						seq_mask = tf.cast(mask[:, 1:-1, :], tf.float32)
+						print(tf.reduce_sum(seq_mask, axis=1).get_shape(), "==avg seq shape")
+						avg_repres = tf.reduce_sum(self.forward_backward_repres*seq_mask, axis=1)/(1e-10+tf.reduce_sum(seq_mask, axis=1))
+						pooled_output.append(avg_repres)
+						tf.logging.info("***** avg pooling *****")
+					elif pooling_method == 'max':
+						seq_mask = tf.cast(mask[:, 1:-1, :], tf.float32)
+						max_avg = tf.reduce_max(qanet_layers.mask_logits(self.forward_backward_repres, seq_mask), axis=1)
+						pooled_output.append(max_avg)
+						tf.logging.info("***** max pooling *****")
+					elif pooling_method == "last":
+						last = esim_utils.last_relevant_output(self.forward_backward_repres, input_len-2)
+						pooled_output.append(last)
+						tf.logging.info("***** last pooling *****")
+				self.output = tf.concat(pooled_output, axis=-1)
 			else:
 				self.sequence_output = None
 				self.output = textcnn_utils.text_cnn_v1(sent_repres, 
@@ -288,6 +341,44 @@ class TextCNN(base_model.BaseModel):
 			logits = tf.einsum("abc,dc->abd", input_tensor, self.emb_mat)
 			self.logits = tf.nn.bias_add(logits, output_bias)
 
+	def build_backward_output_logits(self, **kargs):
+		input_tensor = self.sequence_output_backward
+		input_shape_list = bert_utils.get_shape_list(self.sequence_output_backward, expected_rank=3)
+		batch_size = input_shape_list[0]
+		seq_length = input_shape_list[1]
+		hidden_dims = input_shape_list[2]
+
+		embedding_projection = kargs.get('embedding_projection', None)
+
+		scope = kargs.get('scope', None)
+		if scope:
+			scope = scope + '/' + 'cls/predictions/backward'
+		else:
+			scope = 'cls/predictions/backward'
+
+		tf.logging.info("**** mlm generator scope **** %s", str(scope))
+
+		# with tf.variable_scope("cls/predictions", reuse=tf.AUTO_REUSE):
+		with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
+
+			projection_width = self.config.emb_size
+
+			with tf.variable_scope("transform"):
+				input_tensor = tf.layers.dense(
+						input_tensor,
+						units=projection_width,
+						activation=bert_modules.get_activation(self.config.hidden_act),
+						kernel_initializer=bert_modules.create_initializer(
+								self.config.initializer_range))
+
+			output_bias = tf.get_variable(
+					"output_bias",
+					shape=[self.config.vocab_size],
+					initializer=tf.zeros_initializer())
+			# batch x seq x embedding
+			logits = tf.einsum("abc,dc->abd", input_tensor, self.emb_mat)
+			self.backward_logits = tf.nn.bias_add(logits, output_bias)
+
 	def get_pooled_output(self):
 		return self.output
 
@@ -308,6 +399,9 @@ class TextCNN(base_model.BaseModel):
 
 	def get_sequence_output_logits(self):
 		return self.logits
+
+	def get_sequence_backward_output_logits(self):
+		return self.backward_logits
 
 	
 

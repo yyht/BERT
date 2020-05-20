@@ -386,12 +386,16 @@ def gated_cnn_encoder(model_config, features, labels,
 		dropout_prob = 0.0
 		is_training = False
 
+	cnn_type = model_config.get("cnn_type", 'dgcnn')
+
 	model = textcnn.TextCNN(model_config)
 	model.build_emebdder(input_ids, input_char_ids, is_training, reuse=reuse, **kargs)
 	model.build_encoder(input_ids, input_char_ids, is_training, 
 						reuse=reuse, 
-						cnn_type="dgcnn",
+						cnn_type=cnn_type,
 						**kargs)
 	model.build_output_logits(reuse=reuse)
+	if cnn_type == 'bi_dgcnn':
+		model.build_backward_output_logits(reuse=reuse)
 	return model
 	
