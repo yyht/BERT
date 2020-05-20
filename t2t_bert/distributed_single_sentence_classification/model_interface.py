@@ -178,6 +178,7 @@ def model_config_parser(FLAGS):
 		config.dropout_prob = config.dropout_rate
 		config.init_lr = config.learning_rate
 		config.use_pretrained = use_pretrained
+		config.label_type = FLAGS.label_type
 		if is_extral_symbol == 1:
 			config.extra_symbol = ["<pad>", "<unk>", "<s>", "</s>"]
 			print("==need extra_symbol==")
@@ -309,7 +310,7 @@ def model_config_parser(FLAGS):
 		config.dropout_prob = config.dropout_rate
 		config.init_lr = FLAGS.init_lr
 		config.grad_clip = "gloabl_norm"
-		config.clip_norm = 1.0
+		config.clip_norm = 10.0
 		config.max_seq_len = FLAGS.max_length
 
 	return config

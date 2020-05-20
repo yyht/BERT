@@ -55,10 +55,17 @@ def model_fn_builder(
 	def model_fn(features, labels, mode, params):
 
 		model_api = model_zoo(model_config)
+
+		input_mask = tf.cast(tf.not_equal(features['input_ids_{}'.format(target)], 
+							kargs.get('[PAD]', 0)), tf.int32)
+		segment_ids = tf.zeros_like(input_mask)
+
 		if target:
 			features['input_ori_ids'] = features['input_ids_{}'.format(target)]
-			features['input_mask'] = features['input_mask_{}'.format(target)]
-			features['segment_ids'] = features['segment_ids_{}'.format(target)]
+			features['input_mask'] = input_mask
+			features['segment_ids'] = segment_ids
+			# features['input_mask'] = features['input_mask_{}'.format(target)]
+			# features['segment_ids'] = features['segment_ids_{}'.format(target)]
 			features['input_ids'] = features['input_ids_{}'.format(target)]
 
 		input_ori_ids = features.get('input_ori_ids', None)

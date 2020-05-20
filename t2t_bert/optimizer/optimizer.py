@@ -296,8 +296,8 @@ class Optimizer(object):
 							key_to_grads_and_vars[key].append((grad, var))
 					if not update_for_var:
 						raise ValueError("No learning rate specified for variable", var)
-			  	assignments = []
-			  	for key, key_grads_and_vars in key_to_grads_and_vars.items():
+				assignments = []
+				for key, key_grads_and_vars in key_to_grads_and_vars.items():
 					assignments += opt.apply_gradients(
 						key_grads_and_vars, global_step=self.global_step, 
 										learning_rate=self.learning_rate[key])

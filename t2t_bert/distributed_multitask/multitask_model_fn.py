@@ -23,6 +23,12 @@ try:
 except:
 	from embed_cpc_task_v1 import model_fn_builder as embed_cpc_v1_model_fn
 
+try:
+	from .regression_task import model_fn_builder as regression_model_fn
+except:
+	from regression_task import model_fn_builder as regression_model_fn
+
+
 from model_io import model_io
 from optimizer import distributed_optimizer as optimizer
 
@@ -56,6 +62,7 @@ def multitask_model_fn(model_config_dict,
 		features_dict = {}
 		tvars = []
 		task_num_dict = {}
+		multi_task_config = kargs.get('multi_task_config', {})
 
 		total_loss = tf.constant(0.0)
 
@@ -91,7 +98,7 @@ def multitask_model_fn(model_config_dict,
 
 				model = model_api(model_config_dict[task_type], features, labels,
 						mode, target_dict[task_type], reuse=reuse,
-													cnn_type='multilayer_resnetcnn')
+													cnn_type='dgcnn')
 				encoder[model_config_dict[task_type].model_type] = model
 
 			print(encoder, "==encode==")
@@ -202,7 +209,35 @@ def multitask_model_fn(model_config_dict,
 												embedding_distillation=False,
 												pretrained_embed=pretrained_embed,
 												loss='contrastive_loss',
-												apply_head_proj=True,
+												apply_head_proj=False,
+												**kargs)
+				result_dict = task_model_fn(features, labels, mode)
+				tf.logging.info("****** task: *******", task_type_dict[task_type], task_type)
+
+			elif task_type_dict[task_type] == "regression_task":
+				task_model_fn = regression_model_fn(encoder[model_config_dict[task_type].model_type],
+												model_config_dict[task_type],
+												num_labels_dict[task_type],
+												init_checkpoint_dict[task_type],
+												reuse,
+												load_pretrained_dict[task_type],
+												model_io_config,
+												opt_config,
+												exclude_scope=exclude_scope_dict[task_type],
+												not_storage_params=not_storage_params_dict[task_type],
+												target=target_dict[task_type],
+												label_lst=None,
+												output_type=output_type,
+												task_layer_reuse=task_layer_reuse,
+												task_type=task_type,
+												num_task=num_task,
+												task_adversarial=1e-2,
+												get_pooled_output='task_output',
+												feature_distillation=False,
+												embedding_distillation=False,
+												pretrained_embed=pretrained_embed,
+												loss='contrastive_loss',
+												apply_head_proj=False,
 												**kargs)
 				result_dict = task_model_fn(features, labels, mode)
 				tf.logging.info("****** task: *******", task_type_dict[task_type], task_type)
@@ -220,7 +255,8 @@ def multitask_model_fn(model_config_dict,
 					hook_dict[name] = result_dict[name]
 			hook_dict["{}_loss".format(task_type)] = result_dict["loss"]
 			hook_dict["{}_num".format(task_type)] = result_dict["task_num"]
-			total_loss += result_dict["loss"]
+			print("==loss ratio==", task_type, multi_task_config[task_type].get('loss_ratio', 1.0))
+			total_loss += result_dict["loss"]*multi_task_config[task_type].get('loss_ratio', 1.0)
 			hook_dict['embed_loss'] = result_dict["embed_loss"]
 			hook_dict['feature_loss'] = result_dict["feature_loss"]
 			hook_dict["{}_task_loss".format(task_type)] = result_dict["task_loss"]

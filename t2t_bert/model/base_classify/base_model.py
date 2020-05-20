@@ -16,6 +16,7 @@ class BaseModel(object):
 		self.scope = self.config["scope"]
 		self.char_dim = self.config.get("char_emb_size", 300)
 		self.extra_symbol = self.config.get("extra_symbol", None)
+		self.emb_dropout_count = 0
 
 	def build_char_embedding(self, input_char_ids, is_training, **kargs):
 
@@ -55,7 +56,7 @@ class BaseModel(object):
 
 		if self.config.get('embedding_dropout', False) and is_training:
 			embedding_matrix = tf.nn.dropout(self.emb_mat, 
-										keep_prob=1-dropout_rate, 
+										keep_prob=1-self.config.get('embedding_dropout', 0.01), 
 										noise_shape=[self.vocab_size,1])
 			tf.logging.info("***** word drop out *****")
 		else:

@@ -5,7 +5,7 @@ def task_interface(name_to_features, task_type_dict, task_type_lst):
 	for task_type in task_type_lst:
 		if task_type not in task_type_dict:
 			continue
-		if task_type_dict[task_type]["task_type"] in ["cls_task", "embed_task", "cpc_task"]:
+		if task_type_dict[task_type]["task_type"] in ["cls_task", "embed_task", "cpc_task", "regression_task"]:
 			name_to_features["{}_label_ids".format(task_type)] = tf.FixedLenFeature([], tf.int64)
 			name_to_features["{}_loss_multipiler".format(task_type)] = tf.FixedLenFeature([], tf.float32)
 		if task_type_dict[task_type]["lm_augumentation"]:

@@ -9,6 +9,7 @@ from utils.qanet import qanet_layers
 from utils.qanet.qanet_layers import highway
 from utils.dsmm.tf_common.nn_module import encode, attend, mlp_layer
 from utils.bert import bert_utils
+from utils.esim import esim_utils
 
 class TextCNN(base_model.BaseModel):
 	def __init__(self, config):
@@ -24,7 +25,7 @@ class TextCNN(base_model.BaseModel):
 		# 					lambda:self.config.dropout_rate,
 		# 					lambda:0.0)
 
-		word_emb_dropout = tf.nn.dropout(self.word_emb, 1.0)
+		word_emb_dropout = tf.nn.dropout(self.word_emb, 1)
 		with tf.variable_scope(self.config.scope+"_input_highway", reuse=reuse):
 			input_dim = word_emb_dropout.get_shape()[-1]
 			if self.config.get("highway", "dense_highway") == "dense_highway":
@@ -191,14 +192,14 @@ class TextCNN(base_model.BaseModel):
 				input_shape = bert_utils.get_shape_list(sent_repres, expected_rank=3)
 				hidden_size = self.config['cnn_num_filters'][0]
 				input_width = input_shape[-1]
-				if input_width != hidden_size:
-					sent_repres = tf.layers.dense(
-						sent_repres,
-						hidden_size,
-						use_bias=None,
-						activation=None,
-						kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
-					tf.logging.info("==apply embedding linear projection==")
+				# if input_width != hidden_size:
+				# 	sent_repres = tf.layers.dense(
+				# 		sent_repres,
+				# 		hidden_size,
+				# 		use_bias=None,
+				# 		activation=None,
+				# 		kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
+				# 	tf.logging.info("==apply embedding linear projection==")
 
 				self.sequence_output = dgcnn_utils.dgcnn(
 												sent_repres, 
@@ -231,6 +232,10 @@ class TextCNN(base_model.BaseModel):
 						max_avg = tf.reduce_max(qanet_layers.mask_logits(self.sequence_output, seq_mask), axis=1)
 						pooled_output.append(max_avg)
 						tf.logging.info("***** max pooling *****")
+					elif pooling_method == "last":
+						last = esim_utils.last_relevant_output(self.sequence_output, input_len)
+						pooled_output.append(last)
+						tf.logging.info("***** last pooling *****")
 				self.output = tf.concat(pooled_output, axis=-1)
 				tf.logging.info("***** seq-encoder *****")
 			else:

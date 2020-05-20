@@ -15,5 +15,7 @@
   "pooler_size_per_head": 128,
   "pooler_type": "first_token_transform",
   "type_vocab_size": 2,
-  "vocab_size": 74890
+  "vocab_size": 119547,
+  "embedding_size":64,
+  "embedding":"factorized"
 }

@@ -115,10 +115,10 @@ def classifier_model_fn_builder(
 
 		if target:
 			features['input_ori_ids'] = features['input_ids_{}'.format(target)]
-			sequence_mask = tf.cast(tf.not_equal(features['input_ori_ids'], 
-													kargs.get('[PAD]', 0)), tf.int32)
-			features['input_mask'] = sequence_mask
 			features['input_ids'] = features['input_ids_{}'.format(target)]
+		sequence_mask = tf.cast(tf.not_equal(features['input_ori_ids'], 
+													kargs.get('[PAD]', 0)), tf.int32)
+		features['input_mask'] = sequence_mask
 		
 		seq_features = {}
 		for key in features:
@@ -348,7 +348,7 @@ def classifier_model_fn_builder(
 												'token':features['input_ids'][:, 1:],
 												"logits":output_id_logits,
 												'perplexity':perplexity,
-												"all_logits":output_logits
+												# "all_logits":output_logits
 									},
 									export_outputs={
 										"output":tf.estimator.export.PredictOutput(
@@ -356,7 +356,7 @@ def classifier_model_fn_builder(
 														'token':features['input_ids'][:,1:],
 														"logits":output_id_logits,
 														'perplexity':perplexity,
-														"all_logits":output_logits
+														# "all_logits":output_logits
 													}
 												)
 									}

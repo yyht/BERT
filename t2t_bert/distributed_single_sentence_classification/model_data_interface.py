@@ -146,6 +146,11 @@ def data_interface(FLAGS):
 				"input_ids_a":tf.FixedLenFeature([FLAGS.max_length], tf.int64),
 				"label_ids":tf.FixedLenFeature([FLAGS.num_classes], tf.int64)
 			}
+		elif FLAGS.task_type == "single_sentence_multilabel_classification_bert":
+			name_to_features = {
+				"input_ids":tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+				"label_ids":tf.FixedLenFeature([FLAGS.num_classes], tf.int64)
+			}
 		elif FLAGS.task_type  == 'embed_sentence_classification':
 			name_to_features = {
 				"input_ids_a":tf.FixedLenFeature([FLAGS.max_length], tf.int64),
@@ -215,7 +220,7 @@ def data_interface(FLAGS):
 		print(FLAGS.model_type, "===model type===", FLAGS.task_type)
 		if FLAGS.task_type in ['gatedcnn_seq_lm']:
 			name_to_features = {
-				"input_ids_a":
+				"input_ids_b":
 						tf.FixedLenFeature([FLAGS.max_length], tf.int64)
 				}
 

@@ -3,7 +3,39 @@ import numpy as np
 from utils.qanet import qanet_layers
 from utils.bert import bert_utils
 import tensorflow.contrib.layers as layers
-from utils.dsmm.tf_common import nn_module 
+from utils.dsmm.tf_common import nn_module
+
+initializer = lambda: tf.contrib.layers.variance_scaling_initializer(factor=1.0,
+															 mode='FAN_AVG',
+															 uniform=True,
+															 dtype=tf.float32)
+initializer_relu = lambda: tf.contrib.layers.variance_scaling_initializer(factor=2.0,
+															 mode='FAN_IN',
+															 uniform=False,
+															 dtype=tf.float32)
+regularizer = tf.contrib.layers.l2_regularizer(scale = 3e-7)
+
+def layer_norm_compute_python(x, epsilon, scale, bias):
+	"""Layer norm raw computation."""
+	mean = tf.reduce_mean(x, axis=[-1], keep_dims=True)
+	variance = tf.reduce_mean(tf.square(x - mean), axis=[-1], keep_dims=True)
+	norm_x = (x - mean) * tf.rsqrt(variance + epsilon)
+	return norm_x * scale + bias
+
+def layer_norm(x, filters=None, epsilon=1e-6, scope=None, reuse=None):
+	"""Layer normalize the tensor x, averaging over the last dimension."""
+	if filters is None:
+		filters = x.get_shape()[-1]
+	with tf.variable_scope(scope, default_name="layer_norm", values=[x], reuse=reuse):
+		scale = tf.get_variable(
+			"layer_norm_scale", [filters], regularizer = regularizer, initializer=tf.ones_initializer())
+		bias = tf.get_variable(
+			"layer_norm_bias", [filters], regularizer = regularizer, initializer=tf.zeros_initializer())
+		result = layer_norm_compute_python(x, epsilon, scale, bias)
+		return result
+
+norm_fn = layer_norm#tf.contrib.layers.layer_norm #tf.contrib.layers.layer_norm or noam_norm
+
 
 def text_cnn(in_val, filter_sizes, scope, 
 	embed_size, num_filters, max_pool_size=2):
@@ -482,9 +514,12 @@ def resnet_cnn(x, input_mask, num_layers=2, num_filters=8, filter_sizes=[2, 3],
 					reuse=reuse,
 					name=filter_scope_name,
 					kernel_initializer=tf.truncated_normal_initializer(stddev=0.1))
-				if bn and j < num_layers - 1:
+				if bn == 'bn' and j < num_layers - 1:
 					bn_scope = filter_scope_name +"_bn"
 					h = tf.contrib.layers.batch_norm(h, is_training=training, scope=bn_scope)
+				elif bn == 'layer_norm' and j < num_layers - 1:
+					bn_scope = filter_scope_name +"_layer_norm"
+					h = norm_fn(outputs, scope=bn_scope, reuse=reuse)
 				if j < num_layers - 1:
 					h = tf.nn.relu(h)
 				h *= input_mask

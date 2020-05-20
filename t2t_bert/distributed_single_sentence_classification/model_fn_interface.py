@@ -39,7 +39,9 @@ import tensorflow as tf
 
 def model_fn_interface(FLAGS):
 	print("==apply {} {} model fn builder==".format(FLAGS.task_type, FLAGS.distillation))
-	if FLAGS.task_type in ["single_sentence_classification", "single_sentence_multilabel_classification"]:
+	if FLAGS.task_type in ["single_sentence_classification", 
+							"single_sentence_multilabel_classification",
+							"single_sentence_multilabel_classification_bert"]:
 		if FLAGS.distillation == "distillation":
 			return model_distillation_builder_fn
 		elif FLAGS.distillation == "normal":

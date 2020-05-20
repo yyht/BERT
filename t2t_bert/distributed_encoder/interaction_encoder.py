@@ -72,9 +72,10 @@ def textcnn_interaction_encoder(model_config, features, labels,
 
 	with tf.variable_scope(model_config.scope+"/feature_output", reuse=tf.AUTO_REUSE):
 		hidden_size = bert_utils.get_shape_list(model.get_pooled_output(), expected_rank=2)[-1]
-		# input_ids_a_repres = model.get_pooled_output()
+		input_ids_a_repres = model.get_pooled_output()
+		# input_ids_a_repres = tf.nn.dropout(model.get_pooled_output(), 1-dropout_prob)
 		input_ids_a_repres = tf.layers.dense(
-						model.get_pooled_output(),
+						input_ids_a_repres,
 						128,
 						use_bias=True,
 						activation=tf.tanh,
@@ -99,9 +100,10 @@ def textcnn_interaction_encoder(model_config, features, labels,
 
 	with tf.variable_scope(model_config.scope+"/feature_output", reuse=tf.AUTO_REUSE):
 		hidden_size = bert_utils.get_shape_list(model.get_pooled_output(), expected_rank=2)[-1]
-		# input_ids_b_repres = model.get_pooled_output()
+		input_ids_b_repres = model.get_pooled_output()
+		# input_ids_b_repres = tf.nn.dropout(model.get_pooled_output(), 1-dropout_prob)
 		input_ids_b_repres = tf.layers.dense(
-						model.get_pooled_output(),
+						input_ids_b_repres,
 						128,
 						use_bias=True,
 						activation=tf.tanh,

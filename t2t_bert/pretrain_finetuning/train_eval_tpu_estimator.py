@@ -14,9 +14,11 @@ except:
 try:
 	from .classifier_fn_tpu_estimator import classifier_model_fn_builder
 	from .classifier_fn_tpu_bert_seq_estimator import classifier_model_fn_builder as classifier_seq_model_fn_builder
+	from .classifier_fn_tpu_gatedcnn_estimator import classifier_model_fn_builder as gatedcnn_model_fn_builder
 except:
 	from classifier_fn_tpu_estimator import classifier_model_fn_builder
 	from classifier_fn_tpu_bert_seq_estimator import classifier_model_fn_builder as classifier_seq_model_fn_builder
+	from classifier_fn_tpu_gatedcnn_estimator import classifier_model_fn_builder as gatedcnn_model_fn_builder
 
 import numpy as np
 import tensorflow as tf
@@ -84,6 +86,9 @@ def train_eval_fn(FLAGS,
 		elif FLAGS.model_type == 'bert_seq':
 			model_fn_builder = classifier_seq_model_fn_builder
 			tf.logging.info("****** bert seq as gpt ******")
+		elif FLAGS.model_type == 'gated_cnn_seq':
+			model_fn_builder = gatedcnn_model_fn_builder
+			tf.logging.info("****** gated cnn seq ******")
 		else:
 			model_fn_builder = classifier_model_fn_builder
 			tf.logging.info("****** bert mlm ******")
@@ -120,6 +125,9 @@ def train_eval_fn(FLAGS,
 		elif FLAGS.random_generator == "3":
 			input_fn_builder = tf_data_utils.bert_mnli_input_fn_builder
 			tf.logging.info("***** Running bert seq input fn builder *****")
+		elif FLAGS.random_generator == "4":
+			input_fn_builder = tf_data_utils.gatedcnn_pretrain_input_fn_builder
+			tf.logging.info("***** Running gatedcnn input fn builder *****")
 		else:
 			input_fn_builder = tf_data_utils.input_fn_builder
 			tf.logging.info("***** Running fixed sample input fn builder *****")
