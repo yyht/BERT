@@ -10,6 +10,10 @@ https://github.com/allenai/bilm-tf/blob/master/bilm/model.py
 https://github.com/allenai/allennlp/blob/master/allennlp/modules/seq2seq_encoders/gated_cnn_encoder.py
 """
 
+def create_initializer(initializer_range=0.02):
+	"""Creates a `truncated_normal_initializer` with the given range."""
+	return tf.truncated_normal_initializer(stddev=initializer_range)
+
 def gated_conv1d_op(inputs, 
 				filters=8, 
 				kernel_size=3, 
@@ -104,7 +108,7 @@ def dgcnn(x, input_mask,
 	# input_mask: batch_size, seq
 
 	# initializer = tf.glorot_uniform_initializer()
-	initializer = tf.truncated_normal_initializer(stddev=0.1),
+	initializer = create_initializer(initializer_range=0.02)
 
 	input_mask = tf.cast(input_mask, dtype=tf.float32)
 	input_mask = tf.expand_dims(input_mask, axis=-1)
@@ -192,7 +196,8 @@ def backward_dgcnn(x, input_mask,
 	# input_mask: batch_size, seq
 
 	# initializer = tf.glorot_uniform_initializer()
-	initializer = tf.truncated_normal_initializer(stddev=0.1)
+	# initializer = tf.truncated_normal_initializer(stddev=0.1)
+	initializer = create_initializer(initializer_range=0.02)
 	input_len = tf.reduce_sum(tf.cast(input_mask, tf.int32), axis=-1)
 
 	# inverse_mask = tf.reverse_sequence(input_mask, input_len, seq_axis=1, batch_axis=0)
