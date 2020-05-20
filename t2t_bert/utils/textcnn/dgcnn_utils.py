@@ -103,7 +103,8 @@ def dgcnn(x, input_mask,
 
 	# input_mask: batch_size, seq
 
-	initializer = tf.glorot_uniform_initializer()
+	# initializer = tf.glorot_uniform_initializer()
+	initializer = tf.truncated_normal_initializer(stddev=0.1),
 
 	input_mask = tf.cast(input_mask, dtype=tf.float32)
 	input_mask = tf.expand_dims(input_mask, axis=-1)
@@ -190,7 +191,8 @@ def backward_dgcnn(x, input_mask,
 
 	# input_mask: batch_size, seq
 
-	initializer = tf.glorot_uniform_initializer()
+	# initializer = tf.glorot_uniform_initializer()
+	initializer = tf.truncated_normal_initializer(stddev=0.1)
 	input_len = tf.reduce_sum(tf.cast(input_mask, tf.int32), axis=-1)
 
 	# inverse_mask = tf.reverse_sequence(input_mask, input_len, seq_axis=1, batch_axis=0)
