@@ -4,6 +4,12 @@ from utils.qanet import qanet_layers
 from utils.bert import bert_utils
 import tensorflow.contrib.layers as layers
 
+"""
+https://github.com/tensorflow/tensorflow/blob/v2.2.0/tensorflow/python/ops/rnn.py#L360-L514
+https://github.com/allenai/bilm-tf/blob/master/bilm/model.py
+https://github.com/allenai/allennlp/blob/master/allennlp/modules/seq2seq_encoders/gated_cnn_encoder.py
+"""
+
 def gated_conv1d_op(inputs, 
 				filters=8, 
 				kernel_size=3, 

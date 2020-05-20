@@ -352,9 +352,9 @@ class TextCNN(base_model.BaseModel):
 
 		scope = kargs.get('scope', None)
 		if scope:
-			scope = scope + '/' + 'cls/predictions/backward'
+			scope = scope + '/' + 'cls/predictions'
 		else:
-			scope = 'cls/predictions/backward'
+			scope = 'cls/predictions'
 
 		tf.logging.info("**** mlm generator scope **** %s", str(scope))
 
