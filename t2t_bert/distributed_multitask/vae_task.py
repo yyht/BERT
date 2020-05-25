@@ -9,7 +9,7 @@ except:
 
 import tensorflow as tf
 import numpy as np
-
+from utils.textcnn import textcnn_utils, dgcnn_utils
 from model_io import model_io
 from task_module import classifier
 import tensorflow as tf
@@ -18,35 +18,36 @@ from task_module import pretrain
 from utils.bert import bert_utils
 from utils.simclr import simclr_utils
 from optimizer import distributed_optimizer as optimizer
+from utils.vae import vae_utils
+from model_io import model_io_utils
 
-def get_labels_of_similarity(query_input_ids, anchor_query_ids):
-	idxs_1 = tf.expand_dims(query_input_ids, axis=1) # batch 1 seq
-	idxs_2 = tf.expand_dims(anchor_query_ids, axis=0) # 1 batch seq
-	# batch x batch x seq
-	labels = tf.cast(tf.not_equal(idxs_1, idxs_2), tf.float32) # not equal:1, equal:0
-	equal_num = tf.reduce_sum(labels, axis=-1) # [batch, batch]
-	not_equal_label = tf.cast(tf.not_equal(equal_num, 0), tf.float32)
-	not_equal_label_shape = bert_utils.get_shape_list(not_equal_label, expected_rank=[2,3])
-	not_equal_label *= tf.cast(1 - tf.eye(not_equal_label_shape[0]), tf.float32) 
-	return not_equal_label
+def train_metric(input_ids, predicted_logits, **kargs):
+	labels = input_ids[:, 1:] # <S>,1,2,3,<T>,<PAD>, <PAD>
+	logits = predicted_logits[:, :-1] # 1,2,3,<T>, xxx, xxx
 
-def build_accuracy(logits, labels, mask, loss_type):
-	mask = tf.cast(mask, tf.float32)
-	if loss_type == 'contrastive_loss':
-		temp_sim = tf.subtract(tf.ones_like(logits), tf.rint(logits), name="temp_sim") #auto threshold 0.5
-		correct = tf.equal(
-							tf.cast(temp_sim, tf.float32),
-							tf.cast(labels, tf.float32)
-		)
-		accuracy = tf.reduce_sum(tf.cast(correct, tf.float32)*mask)/(1e-10+tf.reduce_sum(mask))
-	elif loss_type == 'exponent_neg_manhattan_distance_mse':
-		temp_sim = tf.rint(logits)
-		correct = tf.equal(
-							tf.cast(temp_sim, tf.float32),
-							tf.cast(labels, tf.float32)
-		)
-		accuracy = tf.reduce_sum(tf.cast(correct, tf.float32)*mask)/(1e-10+tf.reduce_sum(mask))
-	return accuracy
+	input_id_logits = tf.nn.sparse_softmax_cross_entropy_with_logits(
+										labels=labels, 
+										logits=logits)
+
+	sequence_mask = tf.to_float(tf.not_equal(input_ids[:, 1:], 
+													kargs.get('[PAD]', 0)))
+
+	per_example_perplexity = tf.reduce_sum(input_id_logits * sequence_mask, axis=-1) # batch
+	per_example_perplexity /= (1e-10+tf.reduce_sum(sequence_mask, axis=-1)) # batch
+
+	perplexity = tf.reduce_mean(tf.exp(per_example_perplexity))
+
+	lm_token_accuracy = tf.equal(
+						tf.cast(labels, tf.int32),
+						tf.cast(tf.argmax(logits, axis=-1), tf.int32))
+
+	lm_token_accuracy = tf.reduce_sum(tf.cast(lm_token_accuracy, tf.float32) * sequence_mask, axis=-1)
+	lm_token_accuracy /= (1e-10+tf.reduce_sum(sequence_mask, axis=-1)) # batch
+
+	return {
+		"perplexity": perplexity,
+		"token_acc": tf.reduce_mean(lm_token_accuracy)
+		}
 
 
 def model_fn_builder(model,
@@ -122,76 +123,88 @@ def model_fn_builder(model,
 			feature_b = pooled_feature_dict['feature_b']
 			tf.logging.info("****** not apply projection *******")
 
-		# feature_a = tf.nn.l2_normalize(feature_a, axis=-1)
-		# feature_b = tf.nn.l2_normalize(feature_b, axis=-1)
-		# [batch_size, batch_size]
-		if kargs.get("task_seperate_proj", False):
-			if task_type == 'xquad' or task_type == 'wsdm':
-				# for passage representation
-				with tf.variable_scope(scope+"/{}/feature_output_b".format(task_type), reuse=tf.AUTO_REUSE):
-					feature_b = tf.layers.dense(
-							feature_b,
-							128,
-							use_bias=True,
-							activation=tf.tanh,
-							kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
-				tf.logging.info("****** apply passage projection *******")
-			if task_type == 'afqmc':
-				# for anchor representation
-				with tf.variable_scope(scope+"/{}/feature_output_a".format(task_type), reuse=tf.AUTO_REUSE):
-					feature_a = tf.layers.dense(
-							feature_a,
-							128,
-							use_bias=True,
-							activation=tf.tanh,
-							kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
-				# for successor representation
-				with tf.variable_scope(scope+"/{}/feature_output_b".format(task_type), reuse=tf.AUTO_REUSE):
-					feature_b = tf.layers.dense(
-							feature_b,
-							128,
-							use_bias=True,
-							activation=tf.tanh,
-							kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
-				tf.logging.info("****** apply cpc anchor, successor projection *******")
-		
-		cosine_score = tf.matmul(feature_a, tf.transpose(feature_b)) / model_config.get('temperature', 0.5)
-		print("==cosine_score shape==", cosine_score.get_shape())
 		loss_mask = tf.cast(features["{}_loss_multipiler".format(task_type)], tf.float32)
 		
-		if task_type == 'xquad':
-			neg_true_mask = tf.cast(triplet_loss_utils._get_anchor_negative_triplet_mask(label_ids), tf.float32)
-			pos_true_mask = (1.0 - neg_true_mask) * tf.expand_dims(loss_mask, axis=-1) * tf.expand_dims(loss_mask, axis=0)
-			neg_true_mask = neg_true_mask * tf.expand_dims(loss_mask, axis=-1) * tf.expand_dims(loss_mask, axis=0)
-		elif task_type == 'wsdm':
-			pos_label_mask = tf.cast(features["{}_label_ids".format(task_type)], dtype=tf.float32)
-			loss_mask *= pos_label_mask
-			pos_label_mask = tf.expand_dims(pos_label_mask, axis=-1) # batch x batch
-			score_shape = bert_utils.get_shape_list(cosine_score, expected_rank=[2,3])
-			pos_true_mask = pos_label_mask * tf.eye(score_shape[0]) 
-			neg_true_mask = tf.ones_like(cosine_score) - pos_true_mask
-			pos_true_mask = pos_true_mask * tf.expand_dims(loss_mask, axis=-1) * tf.expand_dims(loss_mask, axis=0)
-			neg_true_mask = neg_true_mask * tf.expand_dims(loss_mask, axis=-1) * tf.expand_dims(loss_mask, axis=0)
-		elif task_type == 'afqmc':
-			score_shape = bert_utils.get_shape_list(cosine_score, expected_rank=[2,3])
-			not_equal_mask = get_labels_of_similarity(
-									features['input_ids_a'], 
-									features['input_ids_b'])
-			pos_true_mask = tf.expand_dims(loss_mask, axis=-1) * tf.eye(score_shape[0]) 
-			neg_true_mask = not_equal_mask * tf.expand_dims(loss_mask, axis=-1) * tf.expand_dims(loss_mask, axis=0)
+		if kargs.get('merge_mode', 'all') == 'all':
+			input_ids = tf.concat([features['input_ids_a'], features['input_ids_b']], axis=0)
+			hidden_repres = tf.concat([feature_a, feature_b], axis=0)
+			sent_repres = tf.concat([pooled_feature_dict['sent_repres_a'], pooled_feature_dict['sent_repres_b']], axis=0)
+			tf.logging.info("****** double batch *******")
+		else:
+			input_ids = features['input_ids_b']
+			hidden_repres = feature_b
+			sent_repres = pooled_feature_dict['sent_repres_b']
+			tf.logging.info("****** single batch b *******")
+		sequence_mask = tf.to_float(tf.not_equal(input_ids, 
+											kargs.get('[PAD]', 0)))
 
-		cosine_score_neg = neg_true_mask * cosine_score
-		cosine_score_pos = -pos_true_mask * cosine_score
+		with tf.variable_scope("vae/connect", reuse=tf.AUTO_REUSE):
+			with tf.variable_scope("z_mean"):
+				z_mean = tf.layers.dense(
+							hidden_repres,
+							128,
+							use_bias=None,
+							activation=None,
+							kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
+				bn_z_mean = vae_utils.mean_normalize_scale(z_mean, 
+												is_training, 
+												"bn_mean", 
+												tau=0.5,
+												reuse=tf.AUTO_REUSE,
+												**kargs)
 
-		y_pred_neg = cosine_score_neg - (1 - neg_true_mask) * 1e12
-		y_pred_pos = cosine_score_pos - (1 - pos_true_mask) * 1e12
+			with tf.variable_scope("z_std"):
+				z_std = tf.layers.dense(
+							hidden_repres,
+							128,
+							use_bias=True,
+							activation=tf.nn.relu,
+							kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))	
+				bn_z_std = vae_utils.std_normalize_scale(z_std, 
+							is_training, 
+							"bn_std", 
+							tau=0.5,
+							reuse=tf.AUTO_REUSE,
+							**kargs)
 
-		# add circle-loss without margin and scale-factor
-		joint_neg_loss = tf.reduce_logsumexp(y_pred_neg, axis=-1)
-		joint_pos_loss = tf.reduce_logsumexp(y_pred_pos, axis=-1)
-		logits = tf.nn.softplus(joint_neg_loss+joint_pos_loss)
+			gaussian_noise = vae_utils.hidden_sampling(bn_z_mean, bn_z_std, **kargs)
+			sent_repres_shape = bert_utils.get_shape_list(sent_repres, expected_rank=[3])
+			with tf.variable_scope("vae/projection"):
+				gaussian_noise = tf.layers.dense(
+							gaussian_noise,
+							sent_repres_shape[-1],
+							use_bias=None,
+							activation=None,
+							kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
+			sent_repres += tf.expand_dims(gaussian_noise, axis=1)
 
-		loss = tf.reduce_sum(logits*loss_mask) / (1e-10+tf.reduce_sum(loss_mask))
+		with tf.variable_scope("vae/decoder", reuse=tf.AUTO_REUSE):
+			sequence_output = dgcnn_utils.dgcnn(
+												sent_repres, 
+												sequence_mask,
+												num_layers=model_config['cnn_num_layers'], 
+												dilation_rates=model_config.get('cnn_dilation_rates', [1,2]),
+												strides=model_config.get('cnn_dilation_rates', [1,1]),
+												num_filters=model_config.get('cnn_num_filters', [128,128]), 
+												kernel_sizes=model_config.get('cnn_filter_sizes', [3,3]), 
+												is_training=is_training,
+												scope_name="textcnn_encoder/textcnn/forward", 
+												reuse=tf.AUTO_REUSE, 
+												activation=tf.nn.relu,
+												is_casual=model_config['is_casual'],
+												padding=model_config.get('padding', 'same')
+												)
+			sequence_output_logits = model.build_other_output_logits(sequence_output, reuse=tf.AUTO_REUSE)
+		resc_loss = vae_utils.reconstruction_loss(sequence_output_logits, 
+												input_ids,
+												name="decoder_resc",
+												use_tpu=False)
+		kl_loss = vae_utils.kl_loss(bn_z_mean, bn_z_std, 
+									opt_config.get('num_train_steps', 10000), 
+									name="kl_div",
+									use_tpu=False,
+									kl_anneal="kl_anneal")
+		loss = resc_loss + kl_loss
 		task_loss = loss
 		params_size = model_io_fn.count_params(model_config.scope)
 		print("==total encoder params==", params_size)
@@ -314,6 +327,8 @@ def model_fn_builder(model,
 
 		tvars = model_io_fn.get_params(model_config.scope, 
 										not_storage_params=not_storage_params)
+		vae_tvars = model_io_fn.get_params("vae", 
+										not_storage_params=not_storage_params)
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
 			multi_task_config = kargs.get("multi_task_config", {})
@@ -330,26 +345,35 @@ def model_fn_builder(model,
 			print("==not count params==")
 		# print(tvars)
 		if load_pretrained == "yes":
-			model_io_fn.load_pretrained(tvars, 
-										init_checkpoint,
-										exclude_scope=exclude_scope)
+
+			[assignment_map, 
+			initialized_variable_names] = model_io_utils.get_assigment_map_from_checkpoint(
+															tvars, 
+															init_checkpoint,
+															exclude_scope="")
+			[assignment_map_vae, 
+			initialized_variable_names_vae] = model_io_utils.get_assigment_map_from_checkpoint(
+															vae_tvars, 
+															init_checkpoint,
+															exclude_scope="vae/decoder")
+			assignment_map.update(assignment_map_vae)
+			initialized_variable_names.update(initialized_variable_names_vae)
+
+			model_io_utils.init_pretrained(assignment_map, initialized_variable_names,
+										tvars+vae_tvars, init_checkpoint)
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
 
-			# acc = build_accuracy(logits, 
-			# 					label_ids, 
-			# 					loss_mask,
-			# 					loss_type=kargs.get('loss', 'contrastive_loss'))
-
+			train_metric_dict = train_metric(input_ids, 
+											sequence_output_logits,
+												**kargs)
 			return_dict = {
 					"loss":loss, 
-					"logits":logits,
-					"task_num":tf.reduce_sum(loss_mask),
-					"{}_pos_num".format(task_type):tf.reduce_sum(pos_true_mask),
-					"{}_neg_num".format(task_type):tf.reduce_sum(neg_true_mask),
-					"tvars":tvars
+					"tvars":tvars+vae_tvars
 				}
-			# return_dict["{}_acc".format(task_type)] = acc
+			return_dict["perplexity"] = train_metric_dict['perplexity']
+			return_dict["token_acc"] = train_metric_dict['token_acc']
+			return_dict["kl_div"] = kl_loss
 			if kargs.get("task_invariant", "no") == "yes":
 				return_dict["{}_task_loss".format(task_type)] = masked_task_loss
 				task_acc = build_accuracy(task_logits, features["task_id"], loss_mask)

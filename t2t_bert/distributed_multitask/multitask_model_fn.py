@@ -28,6 +28,11 @@ try:
 except:
 	from regression_task import model_fn_builder as regression_model_fn
 
+try:
+	from .vae_task import model_fn_builder as vae_model_fn
+except:
+	from vae_task import model_fn_builder as vae_model_fn
+
 
 from model_io import model_io
 from optimizer import distributed_optimizer as optimizer
@@ -98,9 +103,37 @@ def multitask_model_fn(model_config_dict,
 
 				model = model_api(model_config_dict[task_type], features, labels,
 						mode, target_dict[task_type], reuse=reuse,
-													cnn_type='dgcnn')
+													cnn_type=model_config_dict[task_type].get('cnn_type', 'bi_dgcnn'))
 				encoder[model_config_dict[task_type].model_type] = model
 
+				# vae_kl_model = vae_model_fn(encoder[model_config_dict[task_type].model_type],
+				# 			model_config_dict[task_type],
+				# 			num_labels_dict[task_type],
+				# 			init_checkpoint_dict[task_type],
+				# 			reuse,
+				# 			load_pretrained_dict[task_type],
+				# 			model_io_config,
+				# 			opt_config,
+				# 			exclude_scope=exclude_scope_dict[task_type],
+				# 			not_storage_params=not_storage_params_dict[task_type],
+				# 			target=target_dict[task_type],
+				# 			label_lst=None,
+				# 			output_type=output_type,
+				# 			task_layer_reuse=task_layer_reuse,
+				# 			task_type=task_type,
+				# 			num_task=num_task,
+				# 			task_adversarial=1e-2,
+				# 			get_pooled_output='task_output',
+				# 			feature_distillation=False,
+				# 			embedding_distillation=False,
+				# 			pretrained_embed=pretrained_embed,
+				# 			**kargs)
+				# vae_result_dict = vae_kl_model(features, labels, mode)
+				# tvars.extend(vae_result_dict['tvars'])
+				# total_loss += vae_result_dict["loss"]
+				# for key in vae_result_dict:
+				# 	if key in ['perplexity', 'token_acc', 'kl_div']:
+				# 		hook_dict[key] = vae_result_dict[key]
 			print(encoder, "==encode==")
 
 			if task_type_dict[task_type] == "cls_task":
@@ -210,6 +243,7 @@ def multitask_model_fn(model_config_dict,
 												pretrained_embed=pretrained_embed,
 												loss='contrastive_loss',
 												apply_head_proj=False,
+												task_seperate_proj=True,
 												**kargs)
 				result_dict = task_model_fn(features, labels, mode)
 				tf.logging.info("****** task: *******", task_type_dict[task_type], task_type)
@@ -269,6 +303,7 @@ def multitask_model_fn(model_config_dict,
 			elif mode == tf.estimator.ModeKeys.EVAL:
 				features[task_type] = result_dict["feature"]
 
+		
 		hook_dict["total_loss"] = total_loss
 
 		if mode == tf.estimator.ModeKeys.TRAIN:

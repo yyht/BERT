@@ -16,7 +16,7 @@
 		"exclude_scope":"",
 		"load_pretrained":"yes",
 		"num_labels":2,
-		"init_checkpoint":"sentence_pair/gatedcnn_pretrain_v2/model.ckpt-50000",
+		"init_checkpoint":"bert_pretrain/open_domain/pretrained_model/gatedcnn/gatedcnn_multilingual/model.ckpt-1171850",
 		"max_length":256,
 		"lm_augumentation":false,
 		"masked_lm_prob":0.2,
@@ -26,7 +26,38 @@
 		"short_seq_prob":0.2,
 		"vocab_file":"sentence_pair/vocab_mbert.txt",
 		"do_lower_case":true,
-		"data_prior":0.4
+		"data_prior":0.4,
+		"label_type":"single_label"
+	},
+	"afqmc":{
+		"task_type":"cpc_task",
+		"train_file":"multi_task/data/sentence_pair/ant/train.txt",
+		"dev_file":"multi_task/data/sentence_pair/ant/dev.txt",
+		"test_file":"multi_task/data/sentence_pair/ant/test.txt",
+		"label_id":"multi_task/data/sentence_pair/ant/label_dict.json",
+		"train_result_file":"sentence_pair/modified_quick_thought/wiki_book_corpus.txt.256.tfrecords,sentence_pair/modified_quick_thought/wiki_zh_pretrain.txt.256.tfrecords",
+		"test_result_file":"sentence_pair/modified_quick_thought/multitask_afqmc_dev_new.tfrecords",
+		"dev_result_file":"sentence_pair/modified_quick_thought/multitask_afqmc_dev_new.tfrecords",
+		"data_type":"sentence_pair",
+		"model_type":"textcnn_interaction",
+		"config_file":"./BERT/data/textcnn/textcnn_multilingual_embedding_dgcnn.json",
+		"target":"a,b",
+		"not_storage_params":[],
+		"exclude_scope":"",
+		"load_pretrained":"yes",
+		"num_labels":2,
+		"init_checkpoint":"bert_pretrain/open_domain/pretrained_model/gatedcnn/gatedcnn_multilingual/model.ckpt-1171850",
+		"max_length":256,
+		"lm_augumentation":false,
+		"masked_lm_prob":0.2,
+		"max_predictions_per_seq":3,
+		"masked_lm_loss_ratio":0.1,
+		"dupe_factor":5,
+		"short_seq_prob":0.2,
+		"vocab_file":"sentence_pair/vocab_mbert.txt",
+		"do_lower_case":true,
+		"data_prior":2.5,
+		"label_type":"single_label"
 	},
 	"wsdm":{
 		"task_type":"cpc_task",
@@ -45,7 +76,7 @@
 		"exclude_scope":"",
 		"load_pretrained":"yes",
 		"num_labels":2,
-		"init_checkpoint":"sentence_pair/gatedcnn_pretrain_v2/model.ckpt-50000",
+		"init_checkpoint":"bert_pretrain/open_domain/pretrained_model/gatedcnn/gatedcnn_multilingual/model.ckpt-1171850",
 		"max_length":256,
 		"lm_augumentation":false,
 		"masked_lm_prob":0.2,
@@ -55,7 +86,8 @@
 		"short_seq_prob":0.2,
 		"vocab_file":"sentence_pair/vocab_mbert.txt",
 		"do_lower_case":true,
-		"data_prior":0.4
+		"data_prior":2.5,
+		"label_type":"single_label"
 	},
 	"mnli":{
 		"task_type":"cls_task",
@@ -75,7 +107,7 @@
 		"exclude_scope":"",
 		"load_pretrained":"yes",
 		"num_labels":3,
-		"init_checkpoint":"sentence_pair/gatedcnn_pretrain_v2/model.ckpt-50000",
+		"init_checkpoint":"bert_pretrain/open_domain/pretrained_model/gatedcnn/gatedcnn_multilingual/model.ckpt-1171850",
 		"max_length":256,
 		"lm_augumentation":false,
 		"masked_lm_prob":0.2,
@@ -86,7 +118,8 @@
 		"vocab_file":"sentence_pair/vocab_mbert.txt",
 		"do_lower_case":true,
 		"data_prior":0.4,
-		"loss_ratio":1.0
+		"loss_ratio":1.0,
+		"label_type":"single_label"
 	},
 	"xquad":{
 		"task_type":"cpc_task",
@@ -106,7 +139,7 @@
 		"exclude_scope":"",
 		"load_pretrained":"yes",
 		"num_labels":3,
-		"init_checkpoint":"sentence_pair/gatedcnn_pretrain_v2/model.ckpt-50000",
+		"init_checkpoint":"bert_pretrain/open_domain/pretrained_model/gatedcnn/gatedcnn_multilingual/model.ckpt-1171850",
 		"max_length":256,
 		"lm_augumentation":false,
 		"masked_lm_prob":0.2,
@@ -117,6 +150,7 @@
 		"vocab_file":"sentence_pair/vocab_mbert.txt",
 		"do_lower_case":true,
 		"data_prior":0.4,
-		"loss_ratio":1.0
+		"loss_ratio":1.0,
+		"label_type":"single_label"
 	}
 }

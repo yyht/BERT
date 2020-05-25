@@ -56,6 +56,10 @@ flags.DEFINE_string(
 	"label_id", None,
 	"Input TF example files (can be a glob or comma separated).")
 
+flags.DEFINE_string(
+	"label_type", "single_label",
+	"Input TF example files (can be a glob or comma separated).")
+
 flags.DEFINE_integer(
 	"max_length", 128,
 	"Input TF example files (can be a glob or comma separated).")

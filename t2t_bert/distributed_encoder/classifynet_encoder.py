@@ -23,11 +23,11 @@ def textcnn_encoder(model_config, features, labels,
 	model = textcnn.TextCNN(model_config)
 	model.build_emebdder(input_ids, input_char_ids, is_training, 
 						reuse=reuse, 
-						cnn_type='dgcnn',
+						# cnn_type='dgcnn',
 						**kargs)
 	model.build_encoder(input_ids, input_char_ids, is_training, 
 						reuse=reuse, 
-						cnn_type='dgcnn',
+						# cnn_type='dgcnn',
 						 **kargs)
 	return model
 
@@ -70,3 +70,5 @@ def dan_encoder(model_config, features, labels,
 	model.build_emebdder(input_ids, input_char_ids, is_training, reuse=reuse, **kargs)
 	model.build_encoder(input_ids, input_char_ids, is_training, reuse=reuse, **kargs)
 	return model
+
+# def nvdm_dan_encoder()

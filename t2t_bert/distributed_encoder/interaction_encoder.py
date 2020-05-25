@@ -67,8 +67,12 @@ def textcnn_interaction_encoder(model_config, features, labels,
 
 	model = textcnn.TextCNN(model_config)
 
+	print(kargs.get('cnn_type', "None"), '==cnn type==')
+
 	model.build_emebdder(input_ids_a, input_char_ids_a, is_training, reuse=tf.AUTO_REUSE, **kargs)
 	model.build_encoder(input_ids_a, input_char_ids_a, is_training, reuse=tf.AUTO_REUSE, **kargs)
+
+	sent_repres_a = model.sent_repres
 
 	with tf.variable_scope(model_config.scope+"/feature_output", reuse=tf.AUTO_REUSE):
 		hidden_size = bert_utils.get_shape_list(model.get_pooled_output(), expected_rank=2)[-1]
@@ -98,6 +102,8 @@ def textcnn_interaction_encoder(model_config, features, labels,
 	model.build_emebdder(input_ids_b, input_char_ids_b, is_training, reuse=tf.AUTO_REUSE, **kargs)
 	model.build_encoder(input_ids_b, input_char_ids_b, is_training, reuse=tf.AUTO_REUSE, **kargs)
 
+	sent_repres_b = model.sent_repres
+
 	with tf.variable_scope(model_config.scope+"/feature_output", reuse=tf.AUTO_REUSE):
 		hidden_size = bert_utils.get_shape_list(model.get_pooled_output(), expected_rank=2)[-1]
 		input_ids_b_repres = model.get_pooled_output()
@@ -108,6 +114,7 @@ def textcnn_interaction_encoder(model_config, features, labels,
 						use_bias=True,
 						activation=tf.tanh,
 						kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
+		
 		
 		# input_ids_b_repres = tf.layers.dense(
 		# 				input_ids_b_repres,
@@ -137,7 +144,9 @@ def textcnn_interaction_encoder(model_config, features, labels,
 	feature = {
 		"feature_a":input_ids_a_repres,
 		"feature_b":input_ids_b_repres,
-		"pooled_feature":concat_repres
+		"pooled_feature":concat_repres,
+		"sent_repres_a":sent_repres_a,
+		"sent_repres_b":sent_repres_b
 	}
 
 	model.put_task_output(feature)
