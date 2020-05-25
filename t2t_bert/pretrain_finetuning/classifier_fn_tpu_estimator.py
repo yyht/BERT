@@ -111,6 +111,20 @@ def classifier_model_fn_builder(
 
 		model_api = model_zoo(model_config)
 
+		if 'input_mask' not in features:
+			input_mask = tf.cast(tf.not_equal(features['input_ori_ids'], 
+												kargs.get('[PAD]', 0)), tf.int32)
+			if target:
+				features['input_mask_{}'.format(target)] = input_mask
+			else:
+				features['input_mask'] = input_mask
+		if 'segment_ids' not in features:
+			segment_ids = tf.zeros_like(input_mask)
+			if target:
+				features['segment_ids_{}'.format(target)] = segment_ids
+			else:
+				features['segment_ids'] = segment_ids
+
 		if target:
 			features['input_ori_ids'] = features['input_ids_{}'.format(target)]
 			features['input_mask'] = features['input_mask_{}'.format(target)]
