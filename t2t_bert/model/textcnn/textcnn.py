@@ -41,7 +41,7 @@ class TextCNN(base_model.BaseModel):
 			else:
 				sent_repres = word_emb_dropout
 
-		input_mask = tf.cast(input_ids, tf.bool)
+		input_mask = tf.cast(tf.not_equal(input_ids, kargs.get('[PAD]', 0)), tf.int32)
 		input_len = tf.reduce_sum(tf.cast(input_mask, tf.int32), -1)
 
 		mask = tf.expand_dims(input_mask, -1)

@@ -126,7 +126,7 @@ def train_eval_fn(FLAGS,
 			input_fn_builder = tf_data_utils.bert_mnli_input_fn_builder
 			tf.logging.info("***** Running bert seq input fn builder *****")
 		elif FLAGS.random_generator == "4":
-			input_fn_builder = tf_data_utils.gatedcnn_pretrain_input_fn_builder
+			input_fn_builder = tf_data_utils.gatedcnn_pretrain_input_fn_builder_v1
 			tf.logging.info("***** Running gatedcnn input fn builder *****")
 		else:
 			input_fn_builder = tf_data_utils.input_fn_builder

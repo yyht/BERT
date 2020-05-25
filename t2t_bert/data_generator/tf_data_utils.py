@@ -426,6 +426,66 @@ def gatedcnn_pretrain_input_fn_builder(input_files,
 
 	return input_fn
 
+def gatedcnn_pretrain_input_fn_builder_v1(input_files,
+					 max_seq_length,
+					 max_predictions_per_seq,
+					 is_training,
+					 num_cpu_threads=4):
+	"""Creates an `input_fn` closure to be passed to TPUEstimator."""
+
+	def input_fn(params):
+		"""The actual input function."""
+		batch_size = params["batch_size"]
+		name_to_features = {
+				"input_ids_a":
+						tf.FixedLenFeature([max_seq_length], tf.int64),
+				"input_ids_b":
+						tf.FixedLenFeature([max_seq_length], tf.int64)
+		}
+
+		# For training, we want a lot of parallel reading and shuffling.
+		# For eval, we want no shuffling and parallel reading doesn't matter.
+		if is_training:
+			dataset_list []
+			for input_file in input_files:
+				tmp_dataset = tf.data.TFRecordDataset(input_file) 
+				tmp_dataset.repeat()
+				tmp_dataset.shuffle(buffer_size=1024)
+				dataset_list,append(tmp_dataset)
+
+			# `cycle_length` is the number of parallel files that get read.
+			# cycle_length = min(num_cpu_threads, len(input_files))
+
+			# # `sloppy` mode means that the interleaving is not exact. This adds
+			# # even more randomness to the training pipeline.
+			# d = d.apply(
+			# 		tf.contrib.data.parallel_interleave(
+			# 				tf.data.TFRecordDataset,
+			# 				sloppy=is_training,
+			# 				cycle_length=cycle_length))
+			# d = d.shuffle(buffer_size=100)
+			dset_weights = [1/len(dataset_list) for i in range(len(dataset_list))]
+			d = tf.data.experimental.sample_from_datasets(dataset_list, dset_weights)
+		else:
+			d = tf.data.TFRecordDataset(input_files)
+			# Since we evaluate for a fixed number of steps we don't want to encounter
+			# out-of-range exceptions.
+			d = d.repeat()
+
+		# We must `drop_remainder` on training because the TPU requires fixed
+		# size dimensions. For eval, we assume we are evaluating on the CPU or GPU
+		# and we *don't* want to drop the remainder, otherwise we wont cover
+		# every sample.
+		d = d.apply(
+				tf.contrib.data.map_and_batch(
+						lambda record: _decode_record(record, name_to_features),
+						batch_size=batch_size,
+						num_parallel_batches=num_cpu_threads,
+						drop_remainder=True))
+		return d
+
+	return input_fn
+
 def _improve_answer_span(doc_tokens, input_start, input_end, tokenizer,
 												 orig_answer_text):
 	"""Returns tokenized answer spans that better match the annotated answer."""
