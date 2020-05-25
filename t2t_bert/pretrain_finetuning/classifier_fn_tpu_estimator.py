@@ -113,7 +113,8 @@ def classifier_model_fn_builder(
 
 		if 'input_mask' not in features:
 			input_mask = tf.cast(tf.not_equal(features['input_ids_{}'.format(target)], 
-												kargs.get('[PAD]', 0)), tf.int32)
+                                                                            kargs.get('[PAD]', 0)), tf.int32)
+
 			if target:
 				features['input_mask_{}'.format(target)] = input_mask
 			else:
