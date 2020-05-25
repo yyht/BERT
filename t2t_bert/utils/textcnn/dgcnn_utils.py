@@ -3,6 +3,12 @@ import numpy as np
 from utils.qanet import qanet_layers
 from utils.bert import bert_utils
 import tensorflow.contrib.layers as layers
+from utils.biblosa import cnn, nn, context_fusion, general, rnn, self_attn
+from utils.qanet import qanet_layers
+from utils.qanet.qanet_layers import highway
+from utils.dsmm.tf_common.nn_module import encode, attend, mlp_layer
+from utils.bert import bert_utils
+from utils.esim import esim_utils
 
 """
 https://github.com/tensorflow/tensorflow/blob/v2.2.0/tensorflow/python/ops/rnn.py#L360-L514
@@ -272,3 +278,49 @@ def backward_dgcnn(x, input_mask,
 			residual_inputs = inputs
 	inverse_x = tf.reverse_sequence(inputs, input_len, seq_axis=1, batch_axis=0)
 	return inputs
+
+def mean_pooling(tensor, mask):
+	mask = tf.expand_dims(tf.cast(mask, tf.float32), axis=-1)
+	avg_out = tf.reduce_sum(tensor*mask, axis=1)/(1e-10+tf.reduce_sum(mask, axis=1))
+	return avg_out
+
+def last_pooling(tensor, mask):
+	input_len = tf.reduce_sum(mask, axis=-1)
+	last_out = esim_utils.last_relevant_output(tensor, input_len)
+	return last_out
+
+def max_pooling(tensor, mask):
+	mask = tf.expand_dims(tf.cast(mask, tf.float32), axis=-1)
+	max_out = tf.reduce_max(qanet_layers.mask_logits(tensor, mask), axis=1)
+	return max_out
+
+def multidim_attention_pooling(tensor, mask, is_training, scope=None):
+	output_shape = bert_utils.get_shape_list(tensor, expected_rank=3)
+	hidden_dim = output_shape[-1]
+	mask = tf.expand_dims(tf.cast(mask, tf.float32), axis=-1)
+	if is_training:
+		dropout_rate = 0.1
+	else:
+		dropout_rate = 0.0
+	with tf.variable_scope(scope or 'multi_dimensional_attention'):
+		map1 = tf.layers.dense(
+						tensor,
+						hidden_dim,
+						use_bias=True,
+						activation=tf.tanh,
+						kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))		
+		# map1 = tf.nn.dropout(map1, 1-dropout_rate)
+		map2 = tf.layers.dense(
+						map1,
+						hidden_dim,
+						use_bias=None,
+						activation=None,
+						kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))		
+
+		map2_masked = qanet_layers.mask_logits(map2, mask)
+
+		soft = tf.nn.softmax(map2_masked, axis=1)  # bs,sl,vec
+		attn_output = tf.reduce_sum(soft * tensor, 1)  # bs, vec
+		return attn_output
+	
+						

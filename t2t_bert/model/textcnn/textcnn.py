@@ -46,6 +46,7 @@ class TextCNN(base_model.BaseModel):
 
 		mask = tf.expand_dims(input_mask, -1)
 		sent_repres *= tf.cast(mask, tf.float32)
+		self.sent_repres = sent_repres
 
 		with tf.variable_scope(self.config.scope+"_encoder", reuse=reuse):
 			if kargs.get("cnn_type", 'textcnn') == 'textcnn':
@@ -270,26 +271,61 @@ class TextCNN(base_model.BaseModel):
 												padding=self.config.get('padding', 'same')
 												)
 				pooled_output = []
-				self.forward_backward_repres = tf.concat([self.sequence_output[:,:-2],
+				if self.config.get('is_casual', True):
+					self.forward_backward_repres = tf.concat([self.sequence_output[:,:-2],
 														self.sequence_output_backward[:,2:]],
 														axis=-1)
+					seq_mask = tf.cast(input_mask[:, 2:], dtype=tf.int32)
+					tf.logging.info("***** casual concat *****")
+				else:
+					self.forward_backward_repres = tf.concat([self.sequence_output,
+														self.sequence_output_backward],
+														axis=-1)
+					tf.logging.info("***** none-casual concat *****")
+					seq_mask = tf.cast(input_mask, dtype=tf.int32)
 
+				# for pooling_method in self.config['pooling_method']:
+				# 	if pooling_method == 'avg':
+				# 		seq_mask = tf.cast(mask[:, 1:-1, :], tf.float32)
+				# 		print(tf.reduce_sum(seq_mask, axis=1).get_shape(), "==avg seq shape")
+				# 		avg_repres = tf.reduce_sum(self.forward_backward_repres*seq_mask, axis=1)/(1e-10+tf.reduce_sum(seq_mask, axis=1))
+				# 		pooled_output.append(avg_repres)
+				# 		tf.logging.info("***** avg pooling *****")
+				# 	elif pooling_method == 'max':
+				# 		seq_mask = tf.cast(mask[:, 1:-1, :], tf.float32)
+				# 		max_avg = tf.reduce_max(qanet_layers.mask_logits(self.forward_backward_repres, seq_mask), axis=1)
+				# 		pooled_output.append(max_avg)
+				# 		tf.logging.info("***** max pooling *****")
+				# 	elif pooling_method == "last":
+				# 		last = esim_utils.last_relevant_output(self.forward_backward_repres, input_len-2)
+				# 		pooled_output.append(last)
+				# 		tf.logging.info("***** last pooling *****")
+
+				input_mask = tf.cast(input_mask, tf.float32)
 				for pooling_method in self.config['pooling_method']:
 					if pooling_method == 'avg':
-						seq_mask = tf.cast(mask[:, 1:-1, :], tf.float32)
-						print(tf.reduce_sum(seq_mask, axis=1).get_shape(), "==avg seq shape")
-						avg_repres = tf.reduce_sum(self.forward_backward_repres*seq_mask, axis=1)/(1e-10+tf.reduce_sum(seq_mask, axis=1))
+						avg_repres = dgcnn_utils.mean_pooling(self.forward_backward_repres, 
+																seq_mask)
 						pooled_output.append(avg_repres)
 						tf.logging.info("***** avg pooling *****")
 					elif pooling_method == 'max':
-						seq_mask = tf.cast(mask[:, 1:-1, :], tf.float32)
-						max_avg = tf.reduce_max(qanet_layers.mask_logits(self.forward_backward_repres, seq_mask), axis=1)
-						pooled_output.append(max_avg)
+						max_repres = dgcnn_utils.max_pooling(self.forward_backward_repres, 
+																seq_mask)
+						pooled_output.append(max_repres)
 						tf.logging.info("***** max pooling *****")
-					elif pooling_method == "last":
-						last = esim_utils.last_relevant_output(self.forward_backward_repres, input_len-2)
-						pooled_output.append(last)
+					elif pooling_method == 'last':
+						last_repres = dgcnn_utils.last_pooling(self.forward_backward_repres, 
+																seq_mask)
+						pooled_output.append(last_repres)
 						tf.logging.info("***** last pooling *****")
+					elif pooling_method == 'multidim_atten':
+						multidim_repres = dgcnn_utils.multidim_attention_pooling(
+																self.forward_backward_repres, 
+																seq_mask, 
+																is_training, 
+																scope=None)
+						pooled_output.append(multidim_repres)
+						tf.logging.info("***** multidim_atten pooling *****")
 				self.output = tf.concat(pooled_output, axis=-1)
 			else:
 				self.sequence_output = None
@@ -340,6 +376,45 @@ class TextCNN(base_model.BaseModel):
 			# batch x seq x embedding
 			logits = tf.einsum("abc,dc->abd", input_tensor, self.emb_mat)
 			self.logits = tf.nn.bias_add(logits, output_bias)
+
+	def build_other_output_logits(self, sequence_output, **kargs):
+		input_tensor = sequence_output
+		input_shape_list = bert_utils.get_shape_list(sequence_output, expected_rank=3)
+		batch_size = input_shape_list[0]
+		seq_length = input_shape_list[1]
+		hidden_dims = input_shape_list[2]
+
+		embedding_projection = kargs.get('embedding_projection', None)
+
+		scope = kargs.get('scope', None)
+		if scope:
+			scope = scope + '/' + 'cls/predictions'
+		else:
+			scope = 'cls/predictions'
+
+		tf.logging.info("**** mlm generator scope **** %s", str(scope))
+
+		# with tf.variable_scope("cls/predictions", reuse=tf.AUTO_REUSE):
+		with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
+
+			projection_width = self.config.emb_size
+
+			with tf.variable_scope("transform"):
+				input_tensor = tf.layers.dense(
+						input_tensor,
+						units=projection_width,
+						activation=bert_modules.get_activation(self.config.hidden_act),
+						kernel_initializer=bert_modules.create_initializer(
+								self.config.initializer_range))
+
+			output_bias = tf.get_variable(
+					"output_bias",
+					shape=[self.config.vocab_size],
+					initializer=tf.zeros_initializer())
+			# batch x seq x embedding
+			logits = tf.einsum("abc,dc->abd", input_tensor, self.emb_mat)
+			logits = tf.nn.bias_add(logits, output_bias)
+			return logits
 
 	def build_backward_output_logits(self, **kargs):
 		input_tensor = self.sequence_output_backward
