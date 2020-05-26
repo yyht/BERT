@@ -2,6 +2,7 @@ import tensorflow as tf
 import numpy as np
 
 from optimizer import distributed_optimizer
+
 from task_module import pretrain, classifier, pretrain_albert
 import tensorflow as tf
 
@@ -20,6 +21,10 @@ from task_module import classifier
 from task_module import tsa_pretrain
 import tensorflow as tf
 from metric import tf_metrics
+
+from pretrain_finetuning.token_generator import token_generator, random_input_ids_generation
+from pretrain_finetuning.token_generator_hmm import hmm_input_ids_generation, ngram_prob
+
 
 def train_metric(input_ids, predicted_logits, features, **kargs):
 	labels = input_ids[:, 1:] # <S>,1,2,3,<T>,<PAD>, <PAD>
@@ -109,6 +114,24 @@ def classifier_model_fn_builder(
 						target="a",
 						**kargs):
 
+	ngram_list = kargs.get("ngram", [10, 3])
+	mask_prob_list = kargs.get("mask_prob", [0.2, 0.2])
+	ngram_ratio = kargs.get("ngram_ratio", [8, 1])
+	uniform_ratio = kargs.get("uniform_ratio", 0.1)
+	tf.logging.info("****** dynamic ngram: %s, mask_prob: %s, mask_prior: %s, uniform_ratio: %s *******", 
+			str(ngram_list), str(mask_prob_list), str(ngram_ratio), str(uniform_ratio))	
+	tran_prob_list, hmm_tran_prob_list = [], []
+	for ngram_sub, mask_prob_sub in zip(ngram_list, mask_prob_list):
+		tran_prob, hmm_tran_prob = ngram_prob(ngram_sub, mask_prob_sub)
+		tran_prob_list.append(tran_prob)
+		hmm_tran_prob_list.append(hmm_tran_prob)
+	mask_prior = []
+	for ratio in ngram_ratio:
+		actual_ratio = (1 - uniform_ratio) / sum(ngram_ratio) * ratio
+		mask_prior.append(actual_ratio)
+	mask_prior.append(uniform_ratio)
+	mask_prior = np.array(mask_prior).astype(np.float32)
+
 	def model_fn(features, labels, mode, params):
 
 		model_api = model_zoo(model_config)
@@ -134,6 +157,23 @@ def classifier_model_fn_builder(
 		
 		if not kargs.get('use_tpu', False):
 			tf.summary.scalar('loss_mask', tf.reduce_sum(loss_mask))
+
+		casual_flag = model_config.get('is_casual', True)
+		tf.logging.info("***** is casual flag *****", str(casual_flag))
+
+		if not casual_flag:
+			[output_ids, 
+			sampled_binary_mask] = hmm_input_ids_generation(model_config,
+										features['input_ori_ids'],
+										features['input_mask'],
+										[tf.cast(tf.constant(hmm_tran_prob), tf.float32) for hmm_tran_prob in hmm_tran_prob_list],
+										mask_probability=0.2,
+										replace_probability=0.1,
+										original_probability=0.1,
+										mask_prior=tf.cast(tf.constant(mask_prior), tf.float32),
+										**kargs)
+			tf.logging.info("***** apply random sampling *****")
+			seq_features['input_ids'] = output_ids
 
 		model = model_api(model_config, seq_features, labels,
 							mode, "", reuse=tf.AUTO_REUSE,
@@ -161,24 +201,40 @@ def classifier_model_fn_builder(
 				tf.summary.scalar("loss mask", tf.reduce_mean(sequence_mask))
 
 		# batch x seq_length
-		print(model.get_sequence_output_logits().get_shape(), "===logits shape===")
-		seq_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-						labels=features['input_ori_ids'][:, 1:], 
-						logits=model.get_sequence_output_logits()[:, :-1])
+		if casual_flag:
+			print(model.get_sequence_output_logits().get_shape(), "===logits shape===")
+			seq_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+							labels=features['input_ori_ids'][:, 1:], 
+							logits=model.get_sequence_output_logits()[:, :-1])
 
-		per_example_loss = tf.reduce_sum(seq_loss*sequence_mask, axis=-1) / (tf.reduce_sum(sequence_mask, axis=-1)+1e-10)
-		loss = tf.reduce_mean(per_example_loss)
+			per_example_loss = tf.reduce_sum(seq_loss*sequence_mask, axis=-1) / (tf.reduce_sum(sequence_mask, axis=-1)+1e-10)
+			loss = tf.reduce_mean(per_example_loss)
 
-		if model_config.get("cnn_type", "dgcnn") == 'bi_dgcnn':
-			seq_backward_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-						labels=features['input_ori_ids'][:, :-1], 
-						logits=model.get_sequence_backward_output_logits()[:, 1:])
-		
-			per_backward_example_loss = tf.reduce_sum(seq_backward_loss*sequence_mask, axis=-1) / (tf.reduce_sum(sequence_mask, axis=-1)+1e-10)
-			backward_loss = tf.reduce_mean(per_backward_example_loss)
-			loss += backward_loss
-			tf.logging.info("***** using backward loss *****")
-
+			if model_config.get("cnn_type", "dgcnn") in ['bi_dgcnn', 'bi_light_dgcnn']:
+				seq_backward_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+							labels=features['input_ori_ids'][:, :-1], 
+							logits=model.get_sequence_backward_output_logits()[:, 1:])
+			
+				per_backward_example_loss = tf.reduce_sum(seq_backward_loss*sequence_mask, axis=-1) / (tf.reduce_sum(sequence_mask, axis=-1)+1e-10)
+				backward_loss = tf.reduce_mean(per_backward_example_loss)
+				loss += backward_loss
+				tf.logging.info("***** using backward loss *****")
+		else:
+			(masked_lm_loss,
+			masked_lm_example_loss, 
+			masked_lm_log_probs,
+			masked_lm_mask) = pretrain.seq_mask_masked_lm_output(
+										model_config, 
+										model.get_sequence_output(), 
+										model.get_embedding_table(),
+										seq_features['input_mask'], 
+										seq_features['input_ori_ids'], 
+										seq_features['input_ids'],
+										sampled_binary_mask,
+										reuse=tf.AUTO_REUSE,
+										embedding_projection=model.get_embedding_projection_table())
+			loss = masked_lm_loss
+			tf.logging.info("***** using masked lm loss *****")
 		model_io_fn = model_io.ModelIO(model_io_config)
 
 		pretrained_tvars = model_io_fn.get_params(model_config.scope, 

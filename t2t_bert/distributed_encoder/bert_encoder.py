@@ -395,9 +395,12 @@ def gated_cnn_encoder(model_config, features, labels,
 						reuse=reuse, 
 						cnn_type=cnn_type,
 						**kargs)
-	model.build_output_logits(reuse=reuse)
-	if cnn_type == 'bi_dgcnn':
-		model.build_backward_output_logits(reuse=reuse)
+	if model_config.get('is_casual', True):
+		model.build_output_logits(reuse=reuse)
+		tf.logging.info(" build seq-lm logits ")
+		if cnn_type in ['bi_dgcnn', 'light_dgcnn']:
+			tf.logging.info(" build seq-lm-backward logits ")
+			model.build_backward_output_logits(reuse=reuse)
 	return model
 
 # def gated_cnn_encoder_decoder(model_config, features, labels, 

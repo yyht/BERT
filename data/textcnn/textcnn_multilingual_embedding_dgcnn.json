@@ -83,7 +83,7 @@
     "is_casual":true,
     "vocab_size":119547,
     "emb_size":128,
-    "emb_char_size":64,
+    "emb_char_size":128,
     "scope":"textcnn",
     "hidden_act": "gelu", 
     "initializer_range":0.01,

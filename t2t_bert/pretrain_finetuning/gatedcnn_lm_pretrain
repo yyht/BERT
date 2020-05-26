@@ -1,4 +1,4 @@
-config_file=./BERT/data/textcnn/textcnn_multilingual_embedding_dgcnn.json
+config_file=./BERT/data/textcnn/textcnn_multilingual_embedding_light_dgcnn_v1.json
 init_checkpoint="bert_pretrain/open_domain/pretrained_model/roberta/roberta_tiny_312/model.ckpt-1145800"
 vocab_file=./BERT/data/roberta_zh_l12/vocab.txt
 label_id=./BERT/data/lcqmc/label_dict.json
