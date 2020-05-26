@@ -1,6 +1,6 @@
 nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--buckets "gs://yyht_source/pretrain" \
-	--config_file "./data/textcnn/textcnn_multilingual_embedding_dgcnn.json" \
+	--config_file "./data/textcnn/textcnn_multilingual_embedding_light_dgcnn.json" \
 	--init_checkpoint "model/tiny/bert_tiny_with_single_random_adam_decay_40_mixed_mask/model.ckpt-1145800" \
 	--vocab_file "./data/chinese_L-12_H-768_A-12/vocab.txt" \
 	--label_id "./data/lcqmc/label_dict.json" \
@@ -30,7 +30,7 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--init_lr 5e-4 \
 	--do_train true \
 	--num_tpu_cores 8 \
-	--tpu_name "albert1" \
+	--tpu_name "albert3" \
 	--mode "pretrain" \
 	--seq_type "seq2seq" \
 	--mask_type "left2right" \
