@@ -77,7 +77,7 @@
     "cnn_residual":false,
     "encode_method":"textcnn",
     "embedding_mask_zero":false,
-    "cnn_num_layers":2,
+    "cnn_num_layers":3,
     "bn":false,
     "grad_clip":"global_norm",
     "clip_norm":10,
