@@ -1,13 +1,13 @@
 nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--buckets "gs://yyht_source/pretrain" \
-	--config_file "./data/multi_cased_L-12_H-768_A-12/bert_config_tiny.json" \
+	--config_file "./data/multi_cased_L-12_H-768_A-12/bert_config_tiny_embedding.json" \
 	--init_checkpoint "model/tiny/bert_tiny_with_single_random_adam_decay_40_mixed_mask/model.ckpt-1145800" \
 	--vocab_file "./data/chinese_L-12_H-768_A-12/vocab.txt" \
 	--label_id "./data/lcqmc/label_dict.json" \
 	--max_length 256 \
 	--train_file "mnli_pretrain/wiki_book_corpus.txt.256.tfrecords,mnli_pretrain/wiki_zh_pretrain.txt.256.tfrecords,mnli_pretrain/multinli.train.ar.tsv.256.tfrecords,mnli_pretrain/multinli.train.bg.tsv.256.tfrecords,mnli_pretrain/multinli.train.de.tsv.256.tfrecords,mnli_pretrain/multinli.train.el.tsv.256.tfrecords,mnli_pretrain/multinli.train.en.tsv.256.tfrecords,mnli_pretrain/multinli.train.es.tsv.256.tfrecords,mnli_pretrain/multinli.train.fr.tsv.256.tfrecords,mnli_pretrain/multinli.train.hi.tsv.256.tfrecords,mnli_pretrain/multinli.train.ru.tsv.256.tfrecords,mnli_pretrain/multinli.train.sw.tsv.256.tfrecords,mnli_pretrain/multinli.train.th.tsv.256.tfrecords,mnli_pretrain/multinli.train.tr.tsv.256.tfrecords,mnli_pretrain/multinli.train.ur.tsv.256.tfrecords,mnli_pretrain/multinli.train.vi.tsv.256.tfrecords,mnli_pretrain/multinli.train.zh.tsv.256.tfrecords,mnli_pretrain/train.json.256.tfrecords.not_selected,mnli_pretrain/train.json.256.tfrecords.selected,mnli_pretrain/xquad.ar.json.256.tfrecords,mnli_pretrain/xquad.de.json.256.tfrecords,mnli_pretrain/xquad.el.json.256.tfrecords,mnli_pretrain/xquad.en.json.256.tfrecords,mnli_pretrain/xquad.es.json.256.tfrecords,mnli_pretrain/xquad.hi.json.256.tfrecords,mnli_pretrain/xquad.ru.json.256.tfrecords,mnli_pretrain/xquad.th.json.256.tfrecords,mnli_pretrain/xquad.tr.json.256.tfrecords,mnli_pretrain/xquad.vi.json.256.tfrecords,mnli_pretrain/xquad.zh.json.256.tfrecords,mnli_pretrain/xquad.zh1.json.256.tfrecords" \
 	--dev_file "data_single_hard_gan/chunk_18.tfrecords,data_single_hard_gan/chunk_19.tfrecords" \
-	--model_output "model/roberta_xlm_tiny/roberta_xlm_tiny" \
+	--model_output "model/roberta_xlm_tiny/roberta_xlm_tiny_v2" \
 	--epoch 50 \
 	--num_classes 2 \
 	--train_size 6000000 \
