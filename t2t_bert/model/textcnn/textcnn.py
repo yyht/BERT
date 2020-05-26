@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 from utils.bert import bert_modules
-from utils.textcnn import textcnn_utils, dgcnn_utils
+from utils.textcnn import textcnn_utils, dgcnn_utils, light_conv_utils
 from utils.bimpm import match_utils
 from utils.embed import integration_func
 from model.base_classify import base_model
@@ -256,6 +256,94 @@ class TextCNN(base_model.BaseModel):
 												padding=self.config.get('padding', 'same')
 												)
 				self.sequence_output_backward = dgcnn_utils.backward_dgcnn(
+												sent_repres, 
+												input_mask,
+												num_layers=self.config['cnn_num_layers'], 
+												dilation_rates=self.config.get('cnn_dilation_rates', [1,2]),
+												strides=self.config.get('cnn_dilation_rates', [1,1]),
+												num_filters=self.config.get('cnn_num_filters', [128,128]), 
+												kernel_sizes=self.config.get('cnn_filter_sizes', [3,3]), 
+												is_training=is_training,
+												scope_name="textcnn/backward", 
+												reuse=False, 
+												activation=tf.nn.relu,
+												is_casual=self.config['is_casual'],
+												padding=self.config.get('padding', 'same')
+												)
+				pooled_output = []
+				if self.config.get('is_casual', True):
+					self.forward_backward_repres = tf.concat([self.sequence_output[:,:-2],
+														self.sequence_output_backward[:,2:]],
+														axis=-1)
+					seq_mask = tf.cast(input_mask[:, 2:], dtype=tf.int32)
+					tf.logging.info("***** casual concat *****")
+				else:
+					self.forward_backward_repres = tf.concat([self.sequence_output,
+														self.sequence_output_backward],
+														axis=-1)
+					tf.logging.info("***** none-casual concat *****")
+					seq_mask = tf.cast(input_mask, dtype=tf.int32)
+
+				# for pooling_method in self.config['pooling_method']:
+				# 	if pooling_method == 'avg':
+				# 		seq_mask = tf.cast(mask[:, 1:-1, :], tf.float32)
+				# 		print(tf.reduce_sum(seq_mask, axis=1).get_shape(), "==avg seq shape")
+				# 		avg_repres = tf.reduce_sum(self.forward_backward_repres*seq_mask, axis=1)/(1e-10+tf.reduce_sum(seq_mask, axis=1))
+				# 		pooled_output.append(avg_repres)
+				# 		tf.logging.info("***** avg pooling *****")
+				# 	elif pooling_method == 'max':
+				# 		seq_mask = tf.cast(mask[:, 1:-1, :], tf.float32)
+				# 		max_avg = tf.reduce_max(qanet_layers.mask_logits(self.forward_backward_repres, seq_mask), axis=1)
+				# 		pooled_output.append(max_avg)
+				# 		tf.logging.info("***** max pooling *****")
+				# 	elif pooling_method == "last":
+				# 		last = esim_utils.last_relevant_output(self.forward_backward_repres, input_len-2)
+				# 		pooled_output.append(last)
+				# 		tf.logging.info("***** last pooling *****")
+
+				input_mask = tf.cast(input_mask, tf.float32)
+				for pooling_method in self.config['pooling_method']:
+					if pooling_method == 'avg':
+						avg_repres = dgcnn_utils.mean_pooling(self.forward_backward_repres, 
+																seq_mask)
+						pooled_output.append(avg_repres)
+						tf.logging.info("***** avg pooling *****")
+					elif pooling_method == 'max':
+						max_repres = dgcnn_utils.max_pooling(self.forward_backward_repres, 
+																seq_mask)
+						pooled_output.append(max_repres)
+						tf.logging.info("***** max pooling *****")
+					elif pooling_method == 'last':
+						last_repres = dgcnn_utils.last_pooling(self.forward_backward_repres, 
+																seq_mask)
+						pooled_output.append(last_repres)
+						tf.logging.info("***** last pooling *****")
+					elif pooling_method == 'multidim_atten':
+						multidim_repres = dgcnn_utils.multidim_attention_pooling(
+																self.forward_backward_repres, 
+																seq_mask, 
+																is_training, 
+																scope=None)
+						pooled_output.append(multidim_repres)
+						tf.logging.info("***** multidim_atten pooling *****")
+				self.output = tf.concat(pooled_output, axis=-1)
+			elif kargs.get("cnn_type", 'textcnn') == 'bi_light_dgcnn':
+				self.sequence_output = light_conv_utils.dgcnn(
+												sent_repres, 
+												input_mask,
+												num_layers=self.config['cnn_num_layers'], 
+												dilation_rates=self.config.get('cnn_dilation_rates', [1,2]),
+												strides=self.config.get('cnn_dilation_rates', [1,1]),
+												num_filters=self.config.get('cnn_num_filters', [128,128]), 
+												kernel_sizes=self.config.get('cnn_filter_sizes', [3,3]), 
+												is_training=is_training,
+												scope_name="textcnn/forward", 
+												reuse=False, 
+												activation=tf.nn.relu,
+												is_casual=self.config['is_casual'],
+												padding=self.config.get('padding', 'same')
+												)
+				self.sequence_output_backward = light_conv_utils.backward_dgcnn(
 												sent_repres, 
 												input_mask,
 												num_layers=self.config['cnn_num_layers'], 
