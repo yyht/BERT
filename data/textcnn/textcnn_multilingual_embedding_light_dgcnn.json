@@ -90,7 +90,7 @@
     "mask_type":"left2right",
     "padding":"VALID",
     "embedding_dropout":0.0,
-    "cnn_type":"light_dgcnn",
+    "cnn_type":"bi_light_dgcnn",
 
     "output_folder_name":"textcnn",
     "with_target":false,
