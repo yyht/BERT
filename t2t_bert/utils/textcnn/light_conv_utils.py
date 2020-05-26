@@ -29,9 +29,9 @@ def layer_norm(x, filters=None, epsilon=1e-6, scope=None, reuse=None):
 		filters = x.get_shape()[-1]
 	with tf.variable_scope(scope, default_name="layer_norm", values=[x], reuse=reuse):
 		scale = tf.get_variable(
-			"layer_norm_scale", [filters], regularizer = regularizer, initializer=tf.ones_initializer())
+			"layer_norm_scale", [filters], initializer=tf.ones_initializer())
 		bias = tf.get_variable(
-			"layer_norm_bias", [filters], regularizer = regularizer, initializer=tf.zeros_initializer())
+			"layer_norm_bias", [filters], initializer=tf.zeros_initializer())
 		result = layer_norm_compute_python(x, epsilon, scale, bias)
 		return result
 
