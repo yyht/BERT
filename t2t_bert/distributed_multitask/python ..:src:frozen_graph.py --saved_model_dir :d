@@ -1,0 +1,1 @@
+python ../src/frozen_graph.py --saved_model_dir /data/xuht/0/1590476397/ --output_dir /data/xuht/0/1590476397/frozen_model --signature_def serving_default
