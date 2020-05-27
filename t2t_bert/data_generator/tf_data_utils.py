@@ -452,7 +452,6 @@ def gatedcnn_pretrain_input_fn_builder_v1(input_files,
 				tmp_dataset.repeat()
 				dataset_list.append(tmp_dataset)
 				print(input_file, "==input file==")
-				dataset_list.append(tmp_dataset)
 
 			# `cycle_length` is the number of parallel files that get read.
 			# cycle_length = min(num_cpu_threads, len(input_files))
@@ -465,12 +464,14 @@ def gatedcnn_pretrain_input_fn_builder_v1(input_files,
 			# 				sloppy=is_training,
 			# 				cycle_length=cycle_length))
 			# d = d.shuffle(buffer_size=100)
+                        print(len(dataset_list),"==length of dataset==", len(dataset_list))
+                        print("==sample from dataset==")
 			dset_weights = [1.0/len(dataset_list) for i in range(len(dataset_list))]
 			# dset_weights = tf.cast(np.array(dset_weights), tf.float32)
 
 			d = tf.contrib.data.sample_from_datasets(dataset_list, dset_weights)
 			d = d.shuffle(buffer_size=256)
-
+                        d = d.repeat()
 		else:
 			d = tf.data.TFRecordDataset(input_files)
 			# Since we evaluate for a fixed number of steps we don't want to encounter
