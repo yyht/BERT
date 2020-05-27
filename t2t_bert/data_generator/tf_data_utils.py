@@ -451,6 +451,7 @@ def gatedcnn_pretrain_input_fn_builder_v1(input_files,
 				tmp_dataset = tf.data.TFRecordDataset(input_file) 
 				tmp_dataset.repeat()
 				print(input_file, "==input file==")
+				dataset_list.append(tmp_dataset)
 
 			# `cycle_length` is the number of parallel files that get read.
 			# cycle_length = min(num_cpu_threads, len(input_files))
