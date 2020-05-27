@@ -463,8 +463,8 @@ def gatedcnn_pretrain_input_fn_builder_v1(input_files,
 			# 				sloppy=is_training,
 			# 				cycle_length=cycle_length))
 			# d = d.shuffle(buffer_size=100)
-						print(len(dataset_list),"==length of dataset==", len(dataset_list))
-						print("==sample from dataset==")
+			print(len(dataset_list),"==length of dataset==", len(dataset_list))
+			print("==sample from dataset==")
 			dset_weights = [1.0/len(dataset_list) for i in range(len(dataset_list))]
 			# dset_weights = tf.cast(np.array(dset_weights), tf.float32)
 
