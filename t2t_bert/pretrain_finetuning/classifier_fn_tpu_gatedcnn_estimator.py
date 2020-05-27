@@ -277,17 +277,17 @@ def classifier_model_fn_builder(
 								opt_config.num_train_steps,
 								use_tpu=use_tpu)
 
-				train_metric_dict = train_metric(features['input_ori_ids'], 
-												model.get_sequence_output_logits(),
-												seq_features,
-												**kargs)
+				# train_metric_dict = train_metric(features['input_ori_ids'], 
+				# 								model.get_sequence_output_logits(),
+				# 								seq_features,
+				# 								**kargs)
 
-				if not kargs.get('use_tpu', False):
-					for key in train_metric_dict:
-						tf.summary.scalar(key, train_metric_dict[key])
-					tf.summary.scalar('learning_rate', optimizer_fn.learning_rate)
-					tf.logging.info("***** logging metric *****")
-					tf.summary.scalar("causal_attenion_mask_length", tf.reduce_sum(sequence_mask))
+				# if not kargs.get('use_tpu', False):
+				# 	for key in train_metric_dict:
+				# 		tf.summary.scalar(key, train_metric_dict[key])
+				# 	tf.summary.scalar('learning_rate', optimizer_fn.learning_rate)
+				# 	tf.logging.info("***** logging metric *****")
+				# 	tf.summary.scalar("causal_attenion_mask_length", tf.reduce_sum(sequence_mask))
 					# tf.summary.scalar("bi_attenion_mask_length", tf.reduce_sum(model.bi_attention_mask))
 
 				if kargs.get('use_tpu', False):
