@@ -450,7 +450,6 @@ def gatedcnn_pretrain_input_fn_builder_v1(input_files,
 			for input_file in input_files:
 				tmp_dataset = tf.data.TFRecordDataset(input_file) 
 				tmp_dataset.repeat()
-				dataset_list.append(tmp_dataset)
 				print(input_file, "==input file==")
 				dataset_list.append(tmp_dataset)
 
@@ -470,7 +469,7 @@ def gatedcnn_pretrain_input_fn_builder_v1(input_files,
 
 			d = tf.contrib.data.sample_from_datasets(dataset_list, dset_weights)
 			d = d.shuffle(buffer_size=256)
-
+			d = d.repeat()
 		else:
 			d = tf.data.TFRecordDataset(input_files)
 			# Since we evaluate for a fixed number of steps we don't want to encounter
