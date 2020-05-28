@@ -204,6 +204,9 @@ class Bert(object):
 	def get_pooled_output(self):
 		return self.pooled_output
 
+	def put_task_output(self, input_repres):
+		self.task_repres = input_repres
+
 	def get_value_layer(self):
 		return self.all_value_outputs
 

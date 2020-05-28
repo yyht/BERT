@@ -181,6 +181,7 @@ def train_eval_fn(FLAGS,
 		# 	print("==apply normal model==")
 
 		model_fn_builder = model_fn_interface(FLAGS)
+		print("==use-tpu==", FLAGS.use_tpu)
 
 		model_fn = 	model_fn_builder(config, num_classes, init_checkpoint, 
 									model_reuse=None, 
@@ -196,6 +197,7 @@ def train_eval_fn(FLAGS,
 									num_storage_steps=num_storage_steps,
 									task_index=task_index,
 									anneal_config=anneal_config,
+									use_tpu=FLAGS.use_tpu,
 									**kargs)
 
 		name_to_features = data_interface(FLAGS)
