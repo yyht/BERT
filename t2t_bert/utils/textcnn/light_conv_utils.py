@@ -64,7 +64,7 @@ def depthwise_separable_convolution(inputs, kernel_size, num_filters,
 		outputs = tf.nn.separable_conv2d(outputs,
 										depthwise_filter,
 										pointwise_filter,
-										strides = (1,strides,1,1),
+										strides = (1, strides, 1, 1),
 										padding = padding,
 										rate = (dilation_rate, 1))
 		if bias:
