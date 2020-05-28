@@ -167,7 +167,7 @@ def classifier_model_fn_builder(
 										features['input_ori_ids'],
 										features['input_mask'],
 										[tf.cast(tf.constant(hmm_tran_prob), tf.float32) for hmm_tran_prob in hmm_tran_prob_list],
-										mask_probability=0.0,
+										mask_probability=0.1,
 										replace_probability=0.1,
 										original_probability=0.1,
 										mask_prior=tf.cast(tf.constant(mask_prior), tf.float32),
@@ -236,6 +236,23 @@ def classifier_model_fn_builder(
 			loss = masked_lm_loss
 			tf.logging.info("***** using masked lm loss *****")
 		if kargs.get("unigram_disc", True):
+			[output_ids, 
+			sampled_binary_mask] = hmm_input_ids_generation(model_config,
+										features['input_ori_ids'],
+										features['input_mask'],
+										[tf.cast(tf.constant(hmm_tran_prob), tf.float32) for hmm_tran_prob in hmm_tran_prob_list],
+										mask_probability=0.1,
+										replace_probability=0.1,
+										original_probability=0.1,
+										mask_prior=tf.cast(tf.constant(mask_prior), tf.float32),
+										**kargs)
+			tf.logging.info("***** apply random sampling *****")
+			seq_features['input_ids'] = output_ids
+
+			model = model_api(model_config, seq_features, labels,
+								mode, "", reuse=tf.AUTO_REUSE,
+								**kargs)
+
 			with tf.variable_scope('cls/discriminator_predictions', reuse=tf.AUTO_REUSE):
 				(disc_loss, 
 				logits, 
