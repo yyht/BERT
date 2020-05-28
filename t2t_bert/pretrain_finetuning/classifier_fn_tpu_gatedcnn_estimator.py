@@ -266,7 +266,7 @@ def classifier_model_fn_builder(
 										dropout_prob,
 										use_tpu=kargs.get('use_tpu', True),
 										sampled_binary_mask=sampled_binary_mask)
-			loss += disc_loss
+			loss += 50.0*disc_loss
 			disc_pretrain_tvars = model_io_fn.get_params("cls/discriminator_predictions", 
 										not_storage_params=not_storage_params)
 			print(disc_pretrain_tvars, '===disc params==')
