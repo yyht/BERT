@@ -16,9 +16,9 @@ import numpy as np
 from optimizer import optimizer
 from model_io import model_io
 from utils.bert import bert_seq_utils, bert_seq_sample_utils
-
 from task_module import classifier
 from task_module import tsa_pretrain
+from pretrain_finetuning.token_discriminator import classifier as disc_classifier
 import tensorflow as tf
 from metric import tf_metrics
 
@@ -167,9 +167,9 @@ def classifier_model_fn_builder(
 										features['input_ori_ids'],
 										features['input_mask'],
 										[tf.cast(tf.constant(hmm_tran_prob), tf.float32) for hmm_tran_prob in hmm_tran_prob_list],
-										mask_probability=0.1,
-										replace_probability=0.01,
-										original_probability=0.01,
+										mask_probability=0.0,
+										replace_probability=0.1,
+										original_probability=0.1,
 										mask_prior=tf.cast(tf.constant(mask_prior), tf.float32),
 										**kargs)
 			tf.logging.info("***** apply random sampling *****")
@@ -235,6 +235,25 @@ def classifier_model_fn_builder(
 										embedding_projection=model.get_embedding_projection_table())
 			loss = masked_lm_loss
 			tf.logging.info("***** using masked lm loss *****")
+		if kargs.get("unigram_disc", True):
+			with tf.variable_scope('cls/discriminator_predictions', reuse=tf.AUTO_REUSE):
+				(disc_loss, 
+				logits, 
+				per_example_loss) = disc_classifier(model_config, 
+										model.get_sequence_output(),
+										features['input_ori_ids'],
+										features['input_ids'],
+										features['input_mask'],
+										2,
+										dropout_prob,
+										use_tpu=kargs.get('use_tpu', True),
+										sampled_binary_mask=sampled_binary_mask)
+			loss += disc_loss
+			disc_pretrain_tvars = model_io_fn.get_params("cls/discriminator_predictions", 
+										not_storage_params=not_storage_params)
+			tf.logging.info("***** using discriminator_predictions loss *****")
+		else:
+			disc_pretrain_tvars = []
 		model_io_fn = model_io.ModelIO(model_io_config)
 
 		pretrained_tvars = model_io_fn.get_params(model_config.scope, 
@@ -244,6 +263,7 @@ def classifier_model_fn_builder(
 									not_storage_params=not_storage_params)
 
 		pretrained_tvars.extend(lm_pretrain_tvars)
+		lm_pretrain_tvars.extend(disc_pretrain_tvars)
 
 		use_tpu = 1 if kargs.get('use_tpu', False) else 0
 

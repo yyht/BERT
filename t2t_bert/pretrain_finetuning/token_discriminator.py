@@ -64,9 +64,9 @@ def classifier(config, seq_output,
 	hidden = tf.layers.dense(
 		  seq_output,
 		  units=config.hidden_size,
-		  activation=bert_modules.get_activation(config.hidden_act),
+		  activation=bert_modules.get_activation('gelu'),
 		  kernel_initializer=bert_modules.create_initializer(
-							config.initializer_range))
+							0.02))
 	logits = tf.layers.dense(hidden, units=2) # batch x seq x 2
 
 	# output_weights = tf.get_variable(
