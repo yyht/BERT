@@ -33,8 +33,7 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--tpu_name "albert1" \
 	--mode "pretrain" \
 	--seq_type "seq2seq" \
-	--mask_type "left2right" \
-	--random_generator "2"
+	--mask_type "left2right"
 
 
 
