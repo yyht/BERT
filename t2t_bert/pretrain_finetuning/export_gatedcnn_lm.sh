@@ -1,11 +1,11 @@
 CUDA_VISIBLE_DEVICES="" python ./t2t_bert/pretrain_finetuning/export_api.py \
  --buckets "/data/xuht" \
- --config_file "/data/xuht/gatedcnn/textcnn_multilingual_embedding_dgcnn.json" \
- --model_dir "gatedcnn/export" \
- --init_checkpoint "gatedcnn/model.ckpt-160000" \
- --model_output "gatedcnn/model.ckpt-160000" \
+ --config_file "/data/xuht/light_conv_multilingual/textcnn_multilingual_embedding_light_dgcnn_v1.json" \
+ --model_dir "light_conv_multilingual/export" \
+ --init_checkpoint "light_conv_multilingual/model.ckpt-120000" \
+ --model_output "light_conv_multilingual/model.ckpt-120000" \
  --max_length 256 \
- --export_dir "gatedcnn/export" \
+ --export_dir "light_conv_multilingual/export" \
  --num_classes 2 \
  --input_target "" \
  --model_scope "textcnn" \
