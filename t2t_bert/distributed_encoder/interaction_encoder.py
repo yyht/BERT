@@ -2,6 +2,17 @@ from model.match_pyramid import match_pyramid
 import tensorflow as tf
 from model.textcnn import textcnn
 from utils.bert import bert_utils
+from model.bert import bert
+from model.bert import bert_rule
+from model.bert import bert_seq
+from model.bert import albert
+from model.bert import bert_electra_joint
+from model.bert import albert_official_electra_joint
+from model.bert import albert_official
+from model.textcnn import textcnn
+import tensorflow as tf
+from utils.vae import vae_utils
+import numpy as np
 
 def match_pyramid_encoder(model_config, features, labels, 
 			mode, target, reuse=None):
@@ -72,7 +83,8 @@ def textcnn_interaction_encoder(model_config, features, labels,
 	model.build_emebdder(input_ids_a, input_char_ids_a, is_training, reuse=tf.AUTO_REUSE, **kargs)
 	model.build_encoder(input_ids_a, input_char_ids_a, is_training, reuse=tf.AUTO_REUSE, **kargs)
 
-	sent_repres_a = model.sent_repres
+	# sent_repres_a = model.sent_repres
+	sent_repres_a = model.get_pooled_output()
 
 	with tf.variable_scope(model_config.scope+"/feature_output", reuse=tf.AUTO_REUSE):
 		hidden_size = bert_utils.get_shape_list(model.get_pooled_output(), expected_rank=2)[-1]
@@ -102,7 +114,8 @@ def textcnn_interaction_encoder(model_config, features, labels,
 	model.build_emebdder(input_ids_b, input_char_ids_b, is_training, reuse=tf.AUTO_REUSE, **kargs)
 	model.build_encoder(input_ids_b, input_char_ids_b, is_training, reuse=tf.AUTO_REUSE, **kargs)
 
-	sent_repres_b = model.sent_repres
+	# sent_repres_b = model.sent_repres
+	sent_repres_b = model.get_pooled_output()
 
 	with tf.variable_scope(model_config.scope+"/feature_output", reuse=tf.AUTO_REUSE):
 		hidden_size = bert_utils.get_shape_list(model.get_pooled_output(), expected_rank=2)[-1]
@@ -189,6 +202,8 @@ def bert_interaction_encoder(model_config, features, labels,
 	else:
 		tf.logging.info(" not use token type ")
 
+	reuse = tf.AUTO_REUSE
+
 	model = bert.Bert(model_config)
 	model.build_embedder(input_ids_a, 
 						segment_ids_a,
@@ -203,7 +218,7 @@ def bert_interaction_encoder(model_config, features, labels,
 						reuse=reuse,
 						attention_type=kargs.get('attention_type', 'normal_attention'))
 	model.build_pooler(reuse=reuse)
-
+	sent_repres_a = model.get_pooled_output()
 	with tf.variable_scope(model_config.scope+"/feature_output", reuse=tf.AUTO_REUSE):
 		hidden_size = bert_utils.get_shape_list(model.get_pooled_output(), expected_rank=2)[-1]
 		input_ids_a_repres = model.get_pooled_output()
@@ -228,7 +243,7 @@ def bert_interaction_encoder(model_config, features, labels,
 						reuse=reuse,
 						attention_type=kargs.get('attention_type', 'normal_attention'))
 	model.build_pooler(reuse=reuse)
-
+	sent_repres_b = model.get_pooled_output()
 	with tf.variable_scope(model_config.scope+"/feature_output", reuse=tf.AUTO_REUSE):
 		hidden_size = bert_utils.get_shape_list(model.get_pooled_output(), expected_rank=2)[-1]
 		input_ids_b_repres = model.get_pooled_output()

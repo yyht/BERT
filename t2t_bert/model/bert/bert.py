@@ -207,6 +207,9 @@ class Bert(object):
 	def put_task_output(self, input_repres):
 		self.task_repres = input_repres
 
+	def get_task_output(self):
+		return self.task_repres
+
 	def get_value_layer(self):
 		return self.all_value_outputs
 

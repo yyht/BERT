@@ -65,7 +65,7 @@ def hidden_sampling(z_mean, z_std, **kargs):
 	noise = tf.random_normal(shape=tf.shape(z_mean))
 	return z_mean + z_std * noise
 
-def reconstruction_loss(decoder_outputs, input_ids, name="",
+def sequence_reconstruction_loss(decoder_outputs, input_ids, name="",
 						**kargs):
 
 	sequence_mask = tf.to_float(tf.not_equal(input_ids[:, 1:], 
@@ -107,7 +107,7 @@ def kl_loss(z_mean, z_std, anneal_steps, name="",
 	logvars = tf.log(tf.pow(z_std, 2)+1e-20)
 
 	per_example_kl_loss = -0.5 * (logvars - tf.pow(z_mean, 2) -
-        						tf.pow(z_std, 2) + 1.0)
+								tf.pow(z_std, 2) + 1.0)
 	per_example_kl_loss = tf.reduce_sum(per_example_kl_loss, axis=-1)
 	kl_loss = tf.reduce_mean(per_example_kl_loss*kl_anneal_ratio)
 
@@ -119,14 +119,71 @@ def kl_loss(z_mean, z_std, anneal_steps, name="",
 
 	return kl_loss
 
-def tokenid2tf(input_ids, vocab_size):
+def tokenid2tf(input_ids, vocab_size, **kargs):
+	input_mask = tf.cast(tf.not_equal(input_ids, kargs.get('[PAD]', 0)), 
+						tf.float32)
+	input_mask = tf.expand_dims(input_mask, axis=-1)
+	# one_hot_input_ids = tf.one_hot(input_ids, depth=vocab_size)
 	if input_ids.shape.ndims == 2:
 		input_ids = tf.expand_dims(input_ids, axis=[-1])
+	input_shape = bert_utils.get_shape_list(input_ids)
 	flat_input_ids = tf.reshape(input_ids, [-1])
 	one_hot_input_ids = tf.one_hot(flat_input_ids, depth=vocab_size)
-	input_shape = bert_utils.get_shape_list(input_ids)
+	one_hot_input_ids = tf.reshape(one_hot_input_ids,
+				input_shape[0:-1] + [input_shape[-1] * vocab_size])
 
-	output = tf.reshape(one_hot_input_ids,
-						input_shape[0:-1] + [input_shape[-1] * vocab_size])
-	term_tf = tf.reduce_sum(output, axis=1) # [batch, vocab_size]
-	return term_tf
+	# [batch, seq, vocab_size]
+	output = tf.cast(one_hot_input_ids, tf.float32) * input_mask
+	# [batch, vocab_size]
+	term_count = tf.reduce_sum(output, axis=1)
+	# [batch, vocab_size]
+	term_binary = tf.minimum(tf.reduce_sum(output, 1), 1)
+	term_freq = tf.reduce_sum(output, axis=1) / (1e-10+tf.reduce_sum(output, axis=(1, 2), keepdims=True))
+	return term_count, term_binary, term_freq
+
+def bow_loss(input_ids, latent_variables, 
+			bow_size, vocab_size, is_training,
+			name,
+			**kargs):
+
+	term_count, term_binary, term_freq = tokenid2tf(input_ids, vocab_size, **kargs)
+
+	bow_h = tf.layers.dense(latent_variables, 
+							bow_size, 
+							activation=tf.tanh)
+	if is_training:
+		dropout = 0.1
+	else:
+		dropout = 0.0
+	bow_h = tf.nn.dropout(bow_h, 1 - dropout)
+	bow_logits = tf.layers.dense(bow_h, vocab_size, name="bow_logits")
+
+	if kargs.get('bow_loss', "term_binary") == 'term_binary':
+		logits = tf.log(tf.nn.sigmoid(bow_logits)+1e-10)
+		bow_loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=term_binary, logits=bow_logits)
+		bow_loss = tf.reduce_mean(tf.reduce_sum(bow_loss, -1))
+		tf.logging.info("****** term_binary_bow_loss ******")
+	elif kargs.get('bow_loss', "term_binary") == 'term_count':
+		logits = tf.nn.log_softmax(bow_logits)
+		bow_loss = -tf.matmul(logits, term_count)
+		bow_loss = tf.reduce_mean(tf.reduce_sum(bow_loss, -1))
+		tf.logging.info("****** term_count_bow_loss ******")
+	elif kargs.get('bow_loss', "term_binary") == 'term_freq':
+		logits = tf.nn.log_softmax(bow_logits)
+		if kargs.get('bow_loss_type', "mse") == 'mse':
+			bow_loss = tf.power(logits - term_freq, 2)
+		elif kargs.get('bow_loss_type', "mse") == 'l1':
+			bow_loss = tf.abs(logits - term_freq)
+		else:
+			bow_loss = tf.power(logits - term_freq, 2)
+		bow_loss = tf.reduce_mean(tf.reduce_sum(bow_loss, -1))
+	else:
+		logits = tf.log(tf.nn.sigmoid(bow_logits)+1e-10)
+		bow_loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=term_binary, logits=bow_logits)
+		bow_loss = tf.reduce_mean(tf.reduce_sum(bow_loss, -1))
+		tf.logging.info("****** term_binary_bow_loss ******")
+	use_tpu = 1 if kargs.get('use_tpu', False) else 0		
+	if not use_tpu:
+		tf.summary.scalar(name+"/bow_loss", bow_loss)
+		tf.logging.info("****** vae-kl-summary ******")
+	return bow_loss, logits
