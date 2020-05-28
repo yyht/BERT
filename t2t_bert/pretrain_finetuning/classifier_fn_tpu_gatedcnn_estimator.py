@@ -282,7 +282,7 @@ def classifier_model_fn_builder(
 									not_storage_params=not_storage_params)
 
 		pretrained_tvars.extend(lm_pretrain_tvars)
-		lm_pretrain_tvars.extend(disc_pretrain_tvars)
+		pretrained_tvars.extend(disc_pretrain_tvars)
 
 		use_tpu = 1 if kargs.get('use_tpu', False) else 0
 
