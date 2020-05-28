@@ -1,7 +1,7 @@
 nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--buckets "gs://yyht_source/pretrain" \
 	--config_file "./data/uncased_L-12_H-768_A-12/bert_config_tiny.json" \
-	--init_checkpoint "" \
+	--init_checkpoint "model/tiny/english/bert_tiny_with_single_random_adam_decay_40_mixed_mask_uncased/model.ckpt-1145800" \
 	--vocab_file "./data/uncased_L-12_H-768_A-12/vocab.txt" \
 	--label_id "./data/lcqmc/label_dict.json" \
 	--max_length 512 \
@@ -15,6 +15,7 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--batch_size 384 \
 	--model_type "bert" \
 	--model_type "bert_seq" \
+	--load_pretrained "yes" \
 	--if_shard 1 \
 	--is_debug 1 \
 	--profiler "no" \
