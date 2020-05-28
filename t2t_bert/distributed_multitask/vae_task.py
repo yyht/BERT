@@ -168,43 +168,49 @@ def model_fn_builder(model,
 							**kargs)
 
 			gaussian_noise = vae_utils.hidden_sampling(bn_z_mean, bn_z_std, **kargs)
-			sent_repres_shape = bert_utils.get_shape_list(sent_repres, expected_rank=[3])
-			with tf.variable_scope("vae/projection"):
-				gaussian_noise = tf.layers.dense(
-							gaussian_noise,
-							sent_repres_shape[-1],
-							use_bias=None,
-							activation=None,
-							kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
-			sent_repres += tf.expand_dims(gaussian_noise, axis=1)
+			# sent_repres_shape = bert_utils.get_shape_list(sent_repres, expected_rank=[2,3])
+			# with tf.variable_scope("vae/projection"):
+			# 	gaussian_noise = tf.layers.dense(
+			# 				gaussian_noise,
+			# 				sent_repres_shape[-1],
+			# 				use_bias=None,
+			# 				activation=None,
+			# 				kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
 
-		with tf.variable_scope("vae/decoder", reuse=tf.AUTO_REUSE):
-			sequence_output = dgcnn_utils.dgcnn(
-												sent_repres, 
-												sequence_mask,
-												num_layers=model_config['cnn_num_layers'], 
-												dilation_rates=model_config.get('cnn_dilation_rates', [1,2]),
-												strides=model_config.get('cnn_dilation_rates', [1,1]),
-												num_filters=model_config.get('cnn_num_filters', [128,128]), 
-												kernel_sizes=model_config.get('cnn_filter_sizes', [3,3]), 
-												is_training=is_training,
-												scope_name="textcnn_encoder/textcnn/forward", 
-												reuse=tf.AUTO_REUSE, 
-												activation=tf.nn.relu,
-												is_casual=model_config['is_casual'],
-												padding=model_config.get('padding', 'same')
-												)
-			sequence_output_logits = model.build_other_output_logits(sequence_output, reuse=tf.AUTO_REUSE)
-		resc_loss = vae_utils.reconstruction_loss(sequence_output_logits, 
-												input_ids,
-												name="decoder_resc",
-												use_tpu=False)
+		# with tf.variable_scope("vae/decoder", reuse=tf.AUTO_REUSE):
+		# 	sequence_output = dgcnn_utils.dgcnn(
+		# 										sent_repres, 
+		# 										sequence_mask,
+		# 										num_layers=model_config['cnn_num_layers'], 
+		# 										dilation_rates=model_config.get('cnn_dilation_rates', [1,2]),
+		# 										strides=model_config.get('cnn_dilation_rates', [1,1]),
+		# 										num_filters=model_config.get('cnn_num_filters', [128,128]), 
+		# 										kernel_sizes=model_config.get('cnn_filter_sizes', [3,3]), 
+		# 										is_training=is_training,
+		# 										scope_name="textcnn_encoder/textcnn/forward", 
+		# 										reuse=tf.AUTO_REUSE, 
+		# 										activation=tf.nn.relu,
+		# 										is_casual=model_config['is_casual'],
+		# 										padding=model_config.get('padding', 'same')
+		# 										)
+		# 	sequence_output_logits = model.build_other_output_logits(sequence_output, reuse=tf.AUTO_REUSE)
+		# resc_loss = vae_utils.reconstruction_loss(sequence_output_logits, 
+		# 										input_ids,
+		# 										name="decoder_resc",
+		# 										use_tpu=False)
+		with tf.variable_scope("vae/bow_resc", reuse=tf.AUTO_REUSE):
+			bow_loss, bow_logits = vae_utils.bow_loss(input_ids, gaussian_noise, 
+				128, model_config.vocab_size, is_training, 
+				bow_loss="term_binary",
+				name="vae_bow",
+				use_tpu=False)
+		
 		kl_loss = vae_utils.kl_loss(bn_z_mean, bn_z_std, 
 									opt_config.get('num_train_steps', 10000), 
 									name="kl_div",
 									use_tpu=False,
 									kl_anneal="kl_anneal")
-		loss = resc_loss + kl_loss
+		loss = bow_loss + kl_loss
 		task_loss = loss
 		params_size = model_io_fn.count_params(model_config.scope)
 		print("==total encoder params==", params_size)
@@ -364,16 +370,17 @@ def model_fn_builder(model,
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
 
-			train_metric_dict = train_metric(input_ids, 
-											sequence_output_logits,
-												**kargs)
+			# train_metric_dict = train_metric(input_ids, 
+			# 								sequence_output_logits,
+			# 									**kargs)
 			return_dict = {
 					"loss":loss, 
 					"tvars":tvars+vae_tvars
 				}
-			return_dict["perplexity"] = train_metric_dict['perplexity']
-			return_dict["token_acc"] = train_metric_dict['token_acc']
+			# return_dict["perplexity"] = train_metric_dict['perplexity']
+			# return_dict["token_acc"] = train_metric_dict['token_acc']
 			return_dict["kl_div"] = kl_loss
+			return_dict["kl_bow"] = bow_loss
 			if kargs.get("task_invariant", "no") == "yes":
 				return_dict["{}_task_loss".format(task_type)] = masked_task_loss
 				task_acc = build_accuracy(task_logits, features["task_id"], loss_mask)

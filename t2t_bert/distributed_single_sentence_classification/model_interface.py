@@ -12,6 +12,7 @@ from distributed_encoder.classifynet_encoder import textcnn_encoder
 from distributed_encoder.classifynet_encoder import textlstm_encoder
 from distributed_encoder.interaction_encoder import match_pyramid_encoder
 from distributed_encoder.interaction_encoder import textcnn_interaction_encoder
+from distributed_encoder.interaction_encoder import bert_interaction_encoder
 from distributed_encoder.classifynet_encoder import dan_encoder
 
 import tensorflow as tf
@@ -59,6 +60,9 @@ def model_zoo(model_config):
 	elif model_config.get("model_type", "bert") == "gated_cnn_seq":
 		model_interface = gated_cnn_encoder
 		tf.logging.info("****** bert seq encoder ******* ")
+	elif model_config.get("model_type", "bert") == "bert_interaction":
+		model_interface = bert_interaction_encoder
+		tf.logging.info("****** bert seq encoder ******* ")
 	return model_interface
 
 def model_config_parser(FLAGS):
@@ -67,7 +71,7 @@ def model_config_parser(FLAGS):
 
 	if FLAGS.model_type in ["bert", "bert_rule", "albert", "electra_gumbel_encoder", 
 					"albert_official", "electra_gumbel_albert_official_encoder",
-					"bert_seq"]:
+					"bert_seq", "bert_interaction"]:
 		config = json.load(open(FLAGS.config_file, "r"))
 		print(config, '==model config==')
 		config = Bunch(config)
