@@ -178,6 +178,7 @@ def classifier_model_fn_builder(
 		model = model_api(model_config, seq_features, labels,
 							mode, "", reuse=tf.AUTO_REUSE,
 							**kargs)
+		model_io_fn = model_io.ModelIO(model_io_config)
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
 			dropout_prob = model_config.dropout_prob
@@ -271,7 +272,7 @@ def classifier_model_fn_builder(
 			tf.logging.info("***** using discriminator_predictions loss *****")
 		else:
 			disc_pretrain_tvars = []
-		model_io_fn = model_io.ModelIO(model_io_config)
+		
 
 		pretrained_tvars = model_io_fn.get_params(model_config.scope, 
 										not_storage_params=not_storage_params)
