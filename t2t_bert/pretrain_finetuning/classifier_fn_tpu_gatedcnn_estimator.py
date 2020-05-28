@@ -264,7 +264,7 @@ def classifier_model_fn_builder(
 										seq_features['input_mask'],
 										2,
 										dropout_prob,
-										use_tpu=kargs.get('use_tpu', True),
+										use_tpu=kargs.get('use_tpu', False),
 										sampled_binary_mask=sampled_binary_mask)
 			loss += 50.0*disc_loss
 			disc_pretrain_tvars = model_io_fn.get_params("cls/discriminator_predictions", 

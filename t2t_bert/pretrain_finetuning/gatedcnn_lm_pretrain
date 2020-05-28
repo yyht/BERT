@@ -1,11 +1,11 @@
-config_file=./BERT/data/textcnn/textcnn_multilingual_embedding_light_dgcnn_v1.json
+config_file=./BERT/data/textcnn/textcnn_multilingual_embedding_light_dgcnn_v1_bi.json
 init_checkpoint="bert_pretrain/open_domain/pretrained_model/roberta/roberta_tiny_312/model.ckpt-1145800"
 vocab_file=./BERT/data/roberta_zh_l12/vocab.txt
 label_id=./BERT/data/lcqmc/label_dict.json
 max_length=256
 train_file=sentence_pair/XNLI-MT-1.0/multinli.train.ar.tsv.256.tfrecords,sentence_pair/XNLI-MT-1.0/multinli.train.bg.tsv.256.tfrecords,sentence_pair/XNLI-MT-1.0/multinli.train.de.tsv.256.tfrecords,sentence_pair/XNLI-MT-1.0/multinli.train.el.tsv.256.tfrecords,sentence_pair/XNLI-MT-1.0/multinli.train.en.tsv.256.tfrecords,sentence_pair/XNLI-MT-1.0/multinli.train.es.tsv.256.tfrecords,sentence_pair/XNLI-MT-1.0/multinli.train.fr.tsv.256.tfrecords,sentence_pair/XNLI-MT-1.0/multinli.train.hi.tsv.256.tfrecords,sentence_pair/XNLI-MT-1.0/multinli.train.ru.tsv.256.tfrecords,sentence_pair/XNLI-MT-1.0/multinli.train.sw.tsv.256.tfrecords,sentence_pair/XNLI-MT-1.0/multinli.train.th.tsv.256.tfrecords,sentence_pair/XNLI-MT-1.0/multinli.train.tr.tsv.256.tfrecords,sentence_pair/XNLI-MT-1.0/multinli.train.ur.tsv.256.tfrecords,sentence_pair/XNLI-MT-1.0/multinli.train.vi.tsv.256.tfrecords,sentence_pair/XNLI-MT-1.0/multinli.train.zh.tsv.256.tfrecords,sentence_pair/uc_mrc/train.json.256.tfrecords.not_selected,sentence_pair/uc_mrc/train.json.256.tfrecords.selected,sentence_pair/xquad/xquad.ar.json.256.tfrecords,sentence_pair/xquad/xquad.de.json.256.tfrecords,sentence_pair/xquad/xquad.el.json.256.tfrecords,sentence_pair/xquad/xquad.en.json.256.tfrecords,sentence_pair/xquad/xquad.es.json.256.tfrecords,sentence_pair/xquad/xquad.hi.json.256.tfrecords,sentence_pair/xquad/xquad.ru.json.256.tfrecords,sentence_pair/xquad/xquad.th.json.256.tfrecords,sentence_pair/xquad/xquad.tr.json.256.tfrecords,sentence_pair/xquad/xquad.vi.json.256.tfrecords,sentence_pair/xquad/xquad.zh.json.256.tfrecords,sentence_pair/xquad/xquad.zh1.json.256.tfrecords
 dev_file=sentence_pair/paws_x_final/zh_new_train.tfrecords
-model_output=sentence_pair/bi_gatedcnn_pretrain_v2
+model_output=sentence_pair/bi_gatedcnn_pretrain_none_casual_v1
 epoch=100
 num_classes=2
 train_size=6000000

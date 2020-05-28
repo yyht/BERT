@@ -107,7 +107,8 @@ def classifier(config, seq_output,
 
 	if sampled_binary_mask is not None:
 		tf.logging.info("****** loss mask using masked token mask for masked tokens *******")
-		loss_mask = sampled_binary_mask
+		# loss_mask = sampled_binary_mask
+		loss_mask = input_mask
 	else:
 		tf.logging.info("****** loss mask using input_mask for all tokens *******")
 		loss_mask = input_mask
@@ -190,6 +191,25 @@ def classifier(config, seq_output,
 
 		tf.summary.scalar('loss_decomposition', 
 							loss - (equal_loss+not_equal_loss)/(1e-10 + tf.reduce_sum(tf.cast(loss_mask, tf.float32))))
+
+	if not kargs.get('use_tpu', True):
+		sampled_not_equal_id = tf.not_equal(
+			tf.cast(tmp_sampled_ids, tf.int32),
+			tf.cast(input_ids, tf.int32)
+			)
+		sampled_not_equal = tf.cast(sampled_not_equal_id, tf.float32) * tf.cast(input_mask, tf.float32)
+
+		sampled_equal_id = tf.equal(
+			tf.cast(tmp_sampled_ids, tf.int32),
+			tf.cast(input_ids, tf.int32)
+		)
+
+		label_diff_ids = tf.cast(sampled_binary_mask, tf.float32)
+
+		sampled_not_equal = 1 - tf.reduce_sum(sampled_not_equal) / (1e-10 + tf.reduce_sum(tf.cast(label_diff_ids, tf.float32)))
+
+		tf.summary.scalar('generator_sample_acc', 
+						sampled_not_equal)
 
 	return (loss, logits, per_example_loss)
 
