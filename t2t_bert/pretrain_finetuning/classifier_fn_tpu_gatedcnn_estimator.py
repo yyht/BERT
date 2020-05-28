@@ -269,6 +269,7 @@ def classifier_model_fn_builder(
 			loss += disc_loss
 			disc_pretrain_tvars = model_io_fn.get_params("cls/discriminator_predictions", 
 										not_storage_params=not_storage_params)
+			print(disc_pretrain_tvars, '===disc params==')
 			tf.logging.info("***** using discriminator_predictions loss *****")
 		else:
 			disc_pretrain_tvars = []
