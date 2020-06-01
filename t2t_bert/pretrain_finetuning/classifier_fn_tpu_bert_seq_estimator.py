@@ -225,18 +225,19 @@ def classifier_model_fn_builder(
 				sequence_mask = tf.to_float(features['segment_ids'][:, 1:])
 				if not kargs.get('use_tpu', False):
 					tf.summary.scalar("loss mask", tf.reduce_mean(sequence_mask))
-		if not kargs.get('use_tpu', False):
-			tf.summary.scalar("loss mask", tf.reduce_mean(sequence_mask))
+			if not kargs.get('use_tpu', False):
+				tf.summary.scalar("loss mask", tf.reduce_mean(sequence_mask))
 
-			gpu_eval_metrics = eval_metric(features['input_ori_ids'],
-										model.get_sequence_output_logits(),
-										sequence_mask,
-										mask_type=kargs.get('mask_type', 'left2right'))
-			tpu_eval_metrics = (eval_metric, [
-										features['input_ori_ids'],
-										model.get_sequence_output_logits(),
-										sequence_mask,
-										kargs.get('mask_type', 'left2right')
+				gpu_eval_metrics = eval_metric(features['input_ori_ids'],
+											model.get_sequence_output_logits(),
+											sequence_mask,
+											mask_type=kargs.get('mask_type', 'left2right'))
+			else:
+				tpu_eval_metrics = (eval_metric, [
+											features['input_ori_ids'],
+											model.get_sequence_output_logits(),
+											sequence_mask,
+											kargs.get('mask_type', 'left2right')
 									])
 			print(tpu_eval_metrics)
 
