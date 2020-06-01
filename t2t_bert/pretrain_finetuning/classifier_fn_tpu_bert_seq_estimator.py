@@ -59,7 +59,7 @@ def train_metric(input_ids, predicted_logits, features, **kargs):
 		"token_acc": tf.reduce_mean(lm_token_accuracy)
 		}
 
-def eval_metric(input_ids, predicted_logits, sequence_mask, mask_type):
+def eval_metric(input_ids, predicted_logits, sequence_mask):
 	labels = input_ids[:, 1:] # <S>,1,2,3,<T>,<PAD>, <PAD>
 	logits = predicted_logits[:, :-1] # 1,2,3,<T>, xxx, xxx
 
@@ -236,10 +236,9 @@ def classifier_model_fn_builder(
 				tpu_eval_metrics = (eval_metric, [
 											features['input_ori_ids'],
 											model.get_sequence_output_logits(),
-											sequence_mask,
-											kargs.get('mask_type', 'left2right')
+											sequence_mask
 									])
-			print(tpu_eval_metrics)
+				print(tpu_eval_metrics)
 
 			if kargs.get('use_tpu', False):
 				estimator_spec = tf.contrib.tpu.TPUEstimatorSpec(
