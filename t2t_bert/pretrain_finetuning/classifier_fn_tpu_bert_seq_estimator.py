@@ -73,7 +73,7 @@ def eval_metric(input_ids, predicted_logits, features, mask_type):
 	if mask_type == 'left2right':
 		tf.logging.info("***** using left2right mask and loss *****")
 		sequence_mask = tf.to_float(tf.not_equal(features['input_ori_ids'][:, 1:], 
-													kargs.get('[PAD]', 0)))
+													0))
 	elif mask_type == 'seq2seq':
 		tf.logging.info("***** using seq2seq mask and loss *****")
 		sequence_mask = tf.to_float(features['segment_ids'][:, 1:])
@@ -234,8 +234,9 @@ def classifier_model_fn_builder(
 										features['input_ori_ids'],
 										model.get_sequence_output_logits(),
 										seq_features,
-										mask_type=kargs.get('mask_type', 'left2right')
-									])	
+										kargs.get('mask_type', 'left2right')
+									])
+                        print(tpu_eval_metrics, "=====tpu eval metric=====")
 
 			if kargs.get('use_tpu', False):
 				estimator_spec = tf.contrib.tpu.TPUEstimatorSpec(
