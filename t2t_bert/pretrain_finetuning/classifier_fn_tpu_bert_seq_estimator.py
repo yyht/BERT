@@ -59,7 +59,7 @@ def train_metric(input_ids, predicted_logits, features, **kargs):
 		"token_acc": tf.reduce_mean(lm_token_accuracy)
 		}
 
-def eval_metric(input_ids, predicted_logits, features, mask_type):
+def eval_metric(input_ids, predicted_logits, sequence_mask, mask_type):
 	labels = input_ids[:, 1:] # <S>,1,2,3,<T>,<PAD>, <PAD>
 	logits = predicted_logits[:, :-1] # 1,2,3,<T>, xxx, xxx
 
@@ -69,16 +69,6 @@ def eval_metric(input_ids, predicted_logits, features, mask_type):
 
 	# sequence_mask = tf.to_float(tf.not_equal(labels, 
 	# 							kargs.get('[PAD]', 0)))
-
-	if mask_type == 'left2right':
-		tf.logging.info("***** using left2right mask and loss *****")
-		sequence_mask = tf.to_float(tf.not_equal(features['input_ori_ids'][:, 1:], 
-													0))
-	elif mask_type == 'seq2seq':
-		tf.logging.info("***** using seq2seq mask and loss *****")
-		sequence_mask = tf.to_float(features['segment_ids'][:, 1:])
-		if not kargs.get('use_tpu', False):
-			tf.summary.scalar("loss mask", tf.reduce_mean(sequence_mask))
 
 	per_example_perplexity = tf.reduce_sum(input_id_logits * sequence_mask, axis=-1) # batch
 	per_example_perplexity /= tf.reduce_sum(sequence_mask, axis=-1) # batch
@@ -226,17 +216,30 @@ def classifier_model_fn_builder(
 
 		elif mode == tf.estimator.ModeKeys.EVAL:
 
+			if kargs.get('mask_type', 'left2right') == 'left2right':
+				tf.logging.info("***** using left2right mask and loss *****")
+				sequence_mask = tf.to_float(tf.not_equal(features['input_ori_ids'][:, 1:], 
+															kargs.get('[PAD]', 0)))
+			elif kargs.get('mask_type', 'left2right') == 'seq2seq':
+				tf.logging.info("***** using seq2seq mask and loss *****")
+				sequence_mask = tf.to_float(features['segment_ids'][:, 1:])
+				if not kargs.get('use_tpu', False):
+					tf.summary.scalar("loss mask", tf.reduce_mean(sequence_mask))
+		if not kargs.get('use_tpu', False):
+			tf.summary.scalar("loss mask", tf.reduce_mean(sequence_mask))
+
 			gpu_eval_metrics = eval_metric(features['input_ori_ids'],
 										model.get_sequence_output_logits(),
-										seq_features,
+										sequence_mask,
 										mask_type=kargs.get('mask_type', 'left2right'))
 			tpu_eval_metrics = (eval_metric, [
 										features['input_ori_ids'],
 										model.get_sequence_output_logits(),
-										seq_features,
+										sequence_mask,
 										kargs.get('mask_type', 'left2right')
 									])
-                        print(tpu_eval_metrics, "=====tpu eval metric=====")
+			print(tpu_eval_metrics)
+
 
 			if kargs.get('use_tpu', False):
 				estimator_spec = tf.contrib.tpu.TPUEstimatorSpec(
