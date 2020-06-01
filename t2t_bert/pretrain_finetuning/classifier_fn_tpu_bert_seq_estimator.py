@@ -239,7 +239,7 @@ def classifier_model_fn_builder(
 											sequence_mask,
 											kargs.get('mask_type', 'left2right')
 									])
-			print(tpu_eval_metrics)
+			        print("===tpu metric==", tpu_eval_metrics, "==tpu metric++")
 
 
 			if kargs.get('use_tpu', False):
