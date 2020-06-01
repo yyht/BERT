@@ -29,7 +29,6 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--decay "decay" \
 	--init_lr 2e-4 \
 	--num_tpu_cores 8 \
-	--do_train true \
 	--tpu_name "albert1" \
 	--mode "pretrain" \
 	--seq_type "seq2seq" \
