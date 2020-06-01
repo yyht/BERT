@@ -222,10 +222,21 @@ def model_fn_builder(model,
 		except:
 			print("==not count params==")
 		# print(tvars)
+		# if load_pretrained == "yes":
+		# 	model_io_fn.load_pretrained(tvars, 
+		# 								init_checkpoint,
+		# 								exclude_scope=exclude_scope)
+
+		use_tpu = 1 if kargs.get('use_tpu', False) else 0
+
 		if load_pretrained == "yes":
-			model_io_fn.load_pretrained(tvars, 
-										init_checkpoint,
-										exclude_scope=exclude_scope)
+			use_tpu = 1 if kargs.get('use_tpu', False) else 0
+			scaffold_fn = model_io_fn.load_pretrained(pretrained_tvars, 
+											init_checkpoint,
+											exclude_scope=exclude_scope,
+											use_tpu=use_tpu)
+		else:
+			scaffold_fn = None
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
 

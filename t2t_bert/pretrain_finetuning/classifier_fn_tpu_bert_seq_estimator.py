@@ -59,7 +59,7 @@ def train_metric(input_ids, predicted_logits, features, **kargs):
 		"token_acc": tf.reduce_mean(lm_token_accuracy)
 		}
 
-def eval_metric(input_ids, predicted_logits, features, **kargs):
+def eval_metric(input_ids, predicted_logits, features, mask_type):
 	labels = input_ids[:, 1:] # <S>,1,2,3,<T>,<PAD>, <PAD>
 	logits = predicted_logits[:, :-1] # 1,2,3,<T>, xxx, xxx
 
@@ -70,11 +70,11 @@ def eval_metric(input_ids, predicted_logits, features, **kargs):
 	# sequence_mask = tf.to_float(tf.not_equal(labels, 
 	# 							kargs.get('[PAD]', 0)))
 
-	if kargs.get('mask_type', 'left2right') == 'left2right':
+	if mask_type == 'left2right':
 		tf.logging.info("***** using left2right mask and loss *****")
 		sequence_mask = tf.to_float(tf.not_equal(features['input_ori_ids'][:, 1:], 
 													kargs.get('[PAD]', 0)))
-	elif kargs.get('mask_type', 'left2right') == 'seq2seq':
+	elif mask_type == 'seq2seq':
 		tf.logging.info("***** using seq2seq mask and loss *****")
 		sequence_mask = tf.to_float(features['segment_ids'][:, 1:])
 		if not kargs.get('use_tpu', False):
@@ -229,12 +229,12 @@ def classifier_model_fn_builder(
 			gpu_eval_metrics = eval_metric(features['input_ori_ids'],
 										model.get_sequence_output_logits(),
 										seq_features,
-										**kargs)
+										mask_type=kargs.get('mask_type', 'left2right'))
 			tpu_eval_metrics = (eval_metric, [
 										features['input_ori_ids'],
 										model.get_sequence_output_logits(),
 										seq_features,
-										kargs.get('mask_type', 'left2right')
+										mask_type=kargs.get('mask_type', 'left2right')
 									])	
 
 			if kargs.get('use_tpu', False):

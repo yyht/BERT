@@ -152,6 +152,11 @@ flags.DEFINE_string(
 	)
 
 flags.DEFINE_string(
+	"apply_cpc", 'none',
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
 	"parse_type", "parse_single", 
 	"the required num_gpus"
 	)
