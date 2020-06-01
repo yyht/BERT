@@ -332,6 +332,11 @@ flags.DEFINE_float(
 	"if apply distillation"
 	)
 
+flags.DEFINE_string(
+	"apply_cpc", "none",
+	"if apply distillation"
+	)
+
 def main(_):
 
 	print(FLAGS)

@@ -1,0 +1,16 @@
+CUDA_VISIBLE_DEVICES="" python ./t2t_bert/pretrain_finetuning/export_api.py \
+ --buckets "/data/xuht" \
+ --config_file "/data/xuht/english_uncased_tiny/bert_config_tiny.json" \
+ --model_dir "english_uncased_tiny/export" \
+ --init_checkpoint "english_uncased_tiny/model.ckpt-572900" \
+ --model_output "english_uncased_tiny/model.ckpt-572900" \
+ --max_length 128 \
+ --export_dir "english_uncased_tiny/export/infer_inputs_128" \
+ --num_classes 2 \
+ --input_target "" \
+ --model_scope "bert" \
+ --model_type "bert_seq" \
+ --task_type "bert_seq_lm"  \
+ --export_model_type "bert_seq_lm" \
+ --seq_type "seq2seq" \
+ --mask_type "left2right"

@@ -298,6 +298,11 @@ flags.DEFINE_string(
 	"if apply distillation"
 	)
 
+flags.DEFINE_string(
+	"apply_cpc", 'none',
+	"if apply distillation"
+	)
+
 flags.DEFINE_bool(
 	"use_tpu", False,
 	"if apply distillation"

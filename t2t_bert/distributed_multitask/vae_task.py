@@ -351,7 +351,7 @@ def model_fn_builder(model,
 			print("==not count params==")
 		# print(tvars)
 		if load_pretrained == "yes":
-
+			use_tpu = 1 if kargs.get('use_tpu', False) else 0
 			[assignment_map, 
 			initialized_variable_names] = model_io_utils.get_assigment_map_from_checkpoint(
 															tvars, 
@@ -364,9 +364,16 @@ def model_fn_builder(model,
 															exclude_scope="vae/decoder")
 			assignment_map.update(assignment_map_vae)
 			initialized_variable_names.update(initialized_variable_names_vae)
-
-			model_io_utils.init_pretrained(assignment_map, initialized_variable_names,
+			if use_tpu == 0:
+				model_io_utils.init_pretrained(assignment_map, initialized_variable_names,
 										tvars+vae_tvars, init_checkpoint)
+			else:
+				tf.logging.info(" initializing parameter from init checkpoint ")
+				def tpu_scaffold():
+					model_io_utils.init_pretrained(assignment_map, initialized_variable_names,
+										tvars+vae_tvars, init_checkpoint)
+					return tf.train.Scaffold()
+				scaffold_fn = tpu_scaffold
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
 

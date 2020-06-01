@@ -93,6 +93,7 @@ def model_config_parser(FLAGS):
 		tf.logging.info("****** label type ******* %s", str(config.label_type))
 		config.model_type = FLAGS.model_type
 		config.ln_type = FLAGS.ln_type
+		config.apply_cpc = FLAGS.apply_cpc
 		if FLAGS.task_type in ['bert_pretrain']:
 			if FLAGS.load_pretrained == "yes":
 				config.init_lr = FLAGS.init_lr

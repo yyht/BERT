@@ -6,7 +6,7 @@ except:
 import tensorflow as tf
 import numpy as np
 from utils.bert import bert_utils
-
+from loss import loss_utils, triplet_loss_utils
 
 from model_io import model_io
 from task_module import classifier
@@ -15,6 +15,18 @@ from metric import tf_metrics
 
 from optimizer import distributed_optimizer as optimizer
 from model_io import model_io
+
+def get_labels_of_similarity(query_input_ids, anchor_query_ids):
+	idxs_1 = tf.expand_dims(query_input_ids, axis=1) # batch 1 seq
+	idxs_2 = tf.expand_dims(anchor_query_ids, axis=0) # 1 batch seq
+	# batch x batch x seq
+	labels = tf.cast(tf.not_equal(idxs_1, idxs_2), tf.float32) # not equal:1, equal:0
+	equal_num = tf.reduce_sum(labels, axis=-1) # [batch, batch]
+	not_equal_label = tf.cast(tf.not_equal(equal_num, 0), tf.float32)
+	not_equal_label_shape = bert_utils.get_shape_list(not_equal_label, expected_rank=[2,3])
+	not_equal_label *= tf.cast(1 - tf.eye(not_equal_label_shape[0]), tf.float32) 
+	equal_label = (1 - not_equal_label) - tf.eye(not_equal_label_shape[0])
+	return equal_label, not_equal_label
 
 def get_finised_pos_v1(token_seq, finished_index, max_length): 
 	token_seq = tf.cast(token_seq, tf.int32)
@@ -86,6 +98,31 @@ def model_fn_builder(
 											num_labels,
 											label_ids,
 											dropout_prob)
+
+		cpc_flag = model_config.get('apply_cpc', 'none')
+		if model_config.get("label_type", "single_label") == "multi_label":
+			pos_true_mask, neg_true_mask = get_labels_of_similarity(label_ids, label_ids)
+		else:
+			label_shape = bert_utils.get_shape_list(label_ids, expected_rank=[1, 2,3])
+			neg_true_mask = tf.cast(triplet_loss_utils._get_anchor_negative_triplet_mask(label_ids), tf.float32)
+			pos_true_mask = (1.0 - neg_true_mask)*(1.0-tf.eye(label_shape[0], dtype=tf.float32))
+		if cpc_flag == 'apply':
+			loss_mask = tf.minimum(tf.reduce_sum(pos_true_mask, axis=-1), 1)
+			feat = model.get_pooled_output()
+			feat = tf.nn.l2_normalize(feat, axis=-1)
+			cosine_score = tf.matmul(feat, tf.transpose(feat))*30.0
+			cosine_score_neg = neg_true_mask * cosine_score
+			cosine_score_pos = -pos_true_mask * cosine_score
+
+			y_pred_neg = cosine_score_neg - (1 - neg_true_mask) * 1e12
+			y_pred_pos = cosine_score_pos - (1 - pos_true_mask) * 1e12
+
+			# add circle-loss without margin and scale-factor
+			joint_neg_loss = tf.reduce_logsumexp(y_pred_neg, axis=-1)
+			joint_pos_loss = tf.reduce_logsumexp(y_pred_pos, axis=-1)
+			cpc_loss = tf.reduce_sum(tf.nn.softplus(joint_neg_loss+joint_pos_loss)*loss_mask)/tf.reduce_sum(loss_mask+1e-10)
+			loss += cpc_loss
+			tf.logging.info("****** apply cpc-loss *******")
 
 		model_io_fn = model_io.ModelIO(model_io_config)
 
