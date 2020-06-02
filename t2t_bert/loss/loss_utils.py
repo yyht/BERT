@@ -366,3 +366,11 @@ def exponent_neg_manhattan_distance(label, feat1, feat2, loss_type='mse'):
 			    logits=tf.log(pred_sim+1e-10),
 		)
 	return per_example_loss, pred_sim
+
+def xbm(feat_cache, label_cache, feat, label):
+	current_feat = feat_cache[1:, :]
+	current_label = label_cache[1:, :]
+	cosine_score = tf.matmul(feat, current_feat)
+
+	feat_cache 
+	tf.add_to_collection(tf.GraphKeys.UPDATE_OPS, centers_update_op)
