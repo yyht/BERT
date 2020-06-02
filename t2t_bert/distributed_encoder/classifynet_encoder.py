@@ -20,6 +20,12 @@ def textcnn_encoder(model_config, features, labels,
 		input_ids = features["input_ids"]
 		input_char_ids = features.get("input_char_ids_{}".format(target), None)
 
+	# if mode == tf.estimator.ModeKeys.PREDICT:
+	# 	input_mask = tf.cast(tf.not_equal(input_ids, kargs.get('[PAD]', 0)), tf.int32)
+	# 	input_len = tf.reduce_sum(tf.cast(input_mask, tf.int32), -1)
+	# 	max_len = tf.reduce_max(input_len, axis=-1)
+	# 	input_ids = input_ids[:, :max_len]
+
 	model = textcnn.TextCNN(model_config)
 	model.build_emebdder(input_ids, input_char_ids, is_training, 
 						reuse=reuse, 

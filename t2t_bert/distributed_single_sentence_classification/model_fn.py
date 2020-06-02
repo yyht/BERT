@@ -15,6 +15,7 @@ from metric import tf_metrics
 
 from optimizer import distributed_optimizer as optimizer
 from model_io import model_io
+from utils.simclr import simclr_utils
 
 def get_labels_of_similarity(query_input_ids, anchor_query_ids):
 	idxs_1 = tf.expand_dims(query_input_ids, axis=1) # batch 1 seq
@@ -82,8 +83,10 @@ def model_fn_builder(
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
 			dropout_prob = model_config.dropout_prob
+			is_training = True
 		else:
 			dropout_prob = 0.0
+			is_training = False
 
 		if model_io_config.fix_lm == True:
 			scope = model_config.scope + "_finetuning"
@@ -98,7 +101,9 @@ def model_fn_builder(
 											num_labels,
 											label_ids,
 											dropout_prob)
-
+		if not kargs.get('use_tpu'):
+			tf.summary.scalar("classifier_loss", loss)
+				
 		cpc_flag = model_config.get('apply_cpc', 'none')
 		if model_config.get("label_type", "single_label") == "multi_label":
 			pos_true_mask, neg_true_mask = get_labels_of_similarity(label_ids, label_ids)
@@ -109,8 +114,21 @@ def model_fn_builder(
 		if cpc_flag == 'apply':
 			loss_mask = tf.minimum(tf.reduce_sum(pos_true_mask, axis=-1), 1)
 			feat = model.get_pooled_output()
-			feat = tf.nn.l2_normalize(feat, axis=-1)
-			cosine_score = tf.matmul(feat, tf.transpose(feat))*30.0
+
+			if kargs.get("apply_feat_projection", True):
+				with tf.variable_scope(scope+"/head_proj", reuse=tf.AUTO_REUSE):
+					feat = simclr_utils.projection_head(feat, 
+											is_training, 
+											head_proj_dim=128,
+											num_nlh_layers=1,
+											head_proj_mode='nonlinear',
+											name='head_contrastive')
+				feat = tf.nn.l2_normalize(feat, axis=-1)
+				cosine_score = tf.matmul(feat, tf.transpose(feat)) / 0.5
+				tf.logging.info("****** apply simclr projection and. l2 normalize *******")
+			else:
+				cosine_score = tf.matmul(feat, tf.transpose(feat))
+				tf.logging.info("****** apply raw feat *******")
 			cosine_score_neg = neg_true_mask * cosine_score
 			cosine_score_pos = -pos_true_mask * cosine_score
 
@@ -122,6 +140,9 @@ def model_fn_builder(
 			joint_pos_loss = tf.reduce_logsumexp(y_pred_pos, axis=-1)
 			cpc_loss = tf.reduce_sum(tf.nn.softplus(joint_neg_loss+joint_pos_loss)*loss_mask)/tf.reduce_sum(loss_mask+1e-10)
 			loss += cpc_loss
+			if not kargs.get('use_tpu'):
+				tf.summary.scalar("cpc_loss", cpc_loss)
+				tf.summary.scalar("cpc_mask", tf.reduce_mean(tf.reduce_sum(loss_mask, axis=-1)))
 			tf.logging.info("****** apply cpc-loss *******")
 
 		model_io_fn = model_io.ModelIO(model_io_config)

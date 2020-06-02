@@ -181,6 +181,8 @@ def dgcnn(x, input_mask,
 			padding='SAME'
 			):
 
+	print(num_filters, '===num_filters===')
+
 	# input_mask: batch_size, seq
 
 	# initializer = tf.glorot_uniform_initializer()
@@ -189,13 +191,20 @@ def dgcnn(x, input_mask,
 	input_mask = tf.cast(input_mask, dtype=tf.float32)
 	input_mask = tf.expand_dims(input_mask, axis=-1)
 
+	padding_type = padding
+
 	if is_casual:
 		left_pad = dilation_rates[0] * (kernel_sizes[0] - 1)
-		inputs = tf.pad(x, [[0, 0, ], [left_pad, 0], [0, 0]])
+		inputs = tf.pad(x, [[0, 0], [left_pad, 0], [0, 0]])
 		padding = 'VALID'
 		tf.logging.info("==casual valid padding==")
 	else:
 		inputs = x
+		# left_pad = int(dilation_rates[0] * (kernel_sizes[0] - 1) / 2)
+		# right_pad = int(dilation_rates[0] * (kernel_sizes[0] - 1) / 2)
+		# print(left_pad, right_pad, '===projection===')
+		# inputs = tf.pad(x, [[0, 0], [left_pad, right_pad], [0, 0]])
+		# padding = 'VALID'
 		padding = 'SAME'
 
 	if is_training:
@@ -215,7 +224,7 @@ def dgcnn(x, input_mask,
 						name="gated_conv",
 						kernel_initializer=initializer, #tf.truncated_normal_initializer(stddev=0.1),
 						is_training=is_training)
-		if padding == 'SAME':
+		if padding_type == 'SAME':
 			inputs *= input_mask
 		residual_inputs = inputs
 
@@ -235,7 +244,12 @@ def dgcnn(x, input_mask,
 				stride = 1
 			if not is_casual:
 				padding = padding
-				tf.logging.info("==none-casual same padding==")
+				# padding = 'VALID'
+				# left_pad = int(dilation_rate * (kernel_sizes[0] - 1) / 2)
+				# right_pad = int(dilation_rate * (kernel_sizes[0] - 1) / 2)
+				# inputs = tf.pad(inputs, [[0, 0, ], [left_pad, right_pad], [0, 0]])
+				# tf.logging.info("==none-casual same padding==")
+				# print(left_pad, right_pad, '===projection===')
 			else:
 				left_pad = dilation_rate * (kernel_size - 1)
 				inputs = tf.pad(inputs, [[0, 0, ], [left_pad, 0], [0, 0]])
@@ -275,7 +289,7 @@ def dgcnn(x, input_mask,
 			layer_output = tf.nn.dropout(layer_output, 1-dropout_rate)
 			inputs = layer_norm(layer_output + gatedcnn_outputs)
 
-			if padding == 'SAME':
+			if padding_type == 'SAME':
 				inputs *= input_mask
 			residual_inputs = inputs
 	
@@ -298,6 +312,9 @@ def backward_dgcnn(x, input_mask,
 
 	# initializer = tf.glorot_uniform_initializer()
 	# initializer = tf.truncated_normal_initializer(stddev=0.1)
+
+	padding_type = padding
+
 	initializer = create_initializer(initializer_range=0.02)
 	input_len = tf.reduce_sum(tf.cast(input_mask, tf.int32), axis=-1)
 
@@ -316,6 +333,13 @@ def backward_dgcnn(x, input_mask,
 		inputs = inverse_x
 		padding = 'SAME'
 
+		# inputs = inverse_x
+		# left_pad = int(dilation_rates[0] * (kernel_sizes[0] - 1) / 2)
+		# right_pad = int(dilation_rates[0] * (kernel_sizes[0] - 1) / 2)
+		# inputs = tf.pad(inputs, [[0, 0, ], [left_pad, right_pad], [0, 0]])
+		# padding = 'VALID'
+		print(left_pad, right_pad, '===projection===')
+
 	with tf.variable_scope(scope_name, reuse=reuse):
 		inputs = gated_conv1d_op(inputs,
 						filters=num_filters[0],
@@ -328,7 +352,7 @@ def backward_dgcnn(x, input_mask,
 						name="gated_conv",
 						kernel_initializer=initializer, #tf.truncated_normal_initializer(stddev=0.1),
 						is_training=is_training)
-		if padding == 'SAME':
+		if padding_type == 'SAME':
 			inputs *= input_mask
 		residual_inputs = inputs
 
@@ -349,6 +373,13 @@ def backward_dgcnn(x, input_mask,
 			if not is_casual:
 				padding = padding
 				tf.logging.info("==none-casual same padding==")
+				padding = padding
+				# padding = 'VALID'
+				# left_pad = int(dilation_rate * (kernel_sizes[0] - 1) / 2)
+				# right_pad = int(dilation_rate * (kernel_sizes[0] - 1) / 2)
+				# inputs = tf.pad(inputs, [[0, 0, ], [left_pad, right_pad], [0, 0]])
+				# tf.logging.info("==none-casual same padding==")
+				# print(left_pad, right_pad, '===projection===')
 			else:
 				left_pad = dilation_rate * (kernel_size - 1)
 				inputs = tf.pad(inputs, [[0, 0, ], [left_pad, 0], [0, 0]])
@@ -388,7 +419,7 @@ def backward_dgcnn(x, input_mask,
 			layer_output = tf.nn.dropout(layer_output, 1-dropout_rate)
 			inputs = layer_norm(layer_output + gatedcnn_outputs)
 
-			if padding == 'SAME':
+			if padding_type == 'SAME':
 				inputs *= input_mask
 			residual_inputs = inputs
 
