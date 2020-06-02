@@ -192,6 +192,11 @@ flags.DEFINE_string(
 	"if apply distillation"
 	)
 
+flags.DEFINE_string(
+	"apply_cpc", "normal",
+	"if apply distillation"
+	)
+
 flags.DEFINE_integer(
 	"num_hidden_layers", 12,
 	"if apply distillation"

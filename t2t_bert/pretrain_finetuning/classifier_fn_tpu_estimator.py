@@ -19,6 +19,7 @@ from task_module import tsa_pretrain
 import tensorflow as tf
 from metric import tf_metrics
 
+from pretrain_finetuning.token_discriminator import classifier as disc_classifier
 from pretrain_finetuning.token_generator import token_generator, random_input_ids_generation
 from pretrain_finetuning.token_generator_hmm import hmm_input_ids_generation, ngram_prob
 
@@ -230,6 +231,41 @@ def classifier_model_fn_builder(
 											masked_lm_weights,
 											reuse=tf.AUTO_REUSE,
 											embedding_projection=model.get_embedding_projection_table())
+		
+		if kargs.get("unigram_disc", True):
+			[output_ids, 
+			sampled_binary_mask] = hmm_input_ids_generation(model_config,
+										features['input_ori_ids'],
+										features['input_mask'],
+										[tf.cast(tf.constant(hmm_tran_prob), tf.float32) for hmm_tran_prob in hmm_tran_prob_list],
+										mask_probability=0.0,
+										replace_probability=1.0,
+										original_probability=0.0,
+										mask_prior=tf.cast(tf.constant(mask_prior), tf.float32),
+										**kargs)
+			tf.logging.info("***** apply random sampling *****")
+			features['input_ids'] = output_ids
+
+			model = model_api(model_config, features, labels,
+							mode, target, reuse=tf.AUTO_REUSE,
+							**kargs)
+
+			with tf.variable_scope('cls/discriminator_predictions', reuse=tf.AUTO_REUSE):
+				(disc_loss, 
+				logits, 
+				per_example_loss) = disc_classifier(model_config, 
+										model.get_sequence_output(),
+										features['input_ori_ids'],
+										features['input_ids'],
+										features['input_mask'],
+										2,
+										dropout_prob,
+										use_tpu=kargs.get('use_tpu', False),
+										sampled_binary_mask=sampled_binary_mask)
+			loss += 50.0*disc_loss
+			disc_pretrain_tvars = model_io_fn.get_params("cls/discriminator_predictions", 
+										not_storage_params=not_storage_params)
+
 		print(model_config.lm_ratio, '==mlm lm_ratio==')
 		loss = model_config.lm_ratio * masked_lm_loss #+ 0.0 * nsp_loss
 		
