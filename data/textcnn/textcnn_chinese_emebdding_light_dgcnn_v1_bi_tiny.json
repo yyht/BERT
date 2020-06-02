@@ -70,7 +70,7 @@
     "cnn_filter_sizes":[3, 3, 3, 3],
     "cnn_num_filters":[256, 256, 256, 256],
     "hidden_size":128,
-    "embedding_size":64,
+    "embedding_size":312,
     "embedding":"factorized",
     "initializer_range":0.02,
     "cnn_dilation_rates":[1, 2, 4, 8],
