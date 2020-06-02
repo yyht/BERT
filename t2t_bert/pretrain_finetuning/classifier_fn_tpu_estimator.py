@@ -232,6 +232,19 @@ def classifier_model_fn_builder(
 											reuse=tf.AUTO_REUSE,
 											embedding_projection=model.get_embedding_projection_table())
 		
+		print(model_config.lm_ratio, '==mlm lm_ratio==')
+		loss = model_config.lm_ratio * masked_lm_loss #+ 0.0 * nsp_loss
+
+		model_io_fn = model_io.ModelIO(model_io_config)
+
+		pretrained_tvars = model_io_fn.get_params(model_config.scope, 
+										not_storage_params=not_storage_params)
+
+		lm_pretrain_tvars = model_io_fn.get_params("cls/predictions", 
+									not_storage_params=not_storage_params)
+
+		pretrained_tvars.extend(lm_pretrain_tvars)
+
 		if kargs.get("unigram_disc", True):
 			[output_ids, 
 			sampled_binary_mask] = hmm_input_ids_generation(model_config,
@@ -265,20 +278,8 @@ def classifier_model_fn_builder(
 			loss += 50.0*disc_loss
 			disc_pretrain_tvars = model_io_fn.get_params("cls/discriminator_predictions", 
 										not_storage_params=not_storage_params)
-
-		print(model_config.lm_ratio, '==mlm lm_ratio==')
-		loss = model_config.lm_ratio * masked_lm_loss #+ 0.0 * nsp_loss
+			pretrained_tvars.extend(disc_pretrain_tvars)
 		
-		model_io_fn = model_io.ModelIO(model_io_config)
-
-		pretrained_tvars = model_io_fn.get_params(model_config.scope, 
-										not_storage_params=not_storage_params)
-
-		lm_pretrain_tvars = model_io_fn.get_params("cls/predictions", 
-									not_storage_params=not_storage_params)
-
-		pretrained_tvars.extend(lm_pretrain_tvars)
-
 		if load_pretrained == "yes":
 			scaffold_fn = model_io_fn.load_pretrained(pretrained_tvars, 
 											init_checkpoint,
