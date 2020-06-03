@@ -175,12 +175,12 @@ def classifier_model_fn_builder(
 		else:
 			scope = model_config.scope
 
-		#(nsp_loss, 
+		# (nsp_loss, 
 		# nsp_per_example_loss, 
 		# nsp_log_prob) = pretrain.get_next_sentence_output(model_config,
-		#								model.get_pooled_output(),
-		#								features['next_sentence_labels'],
-		#								reuse=tf.AUTO_REUSE)
+		# 								model.get_pooled_output(),
+		# 								features['next_sentence_labels'],
+		# 								reuse=tf.AUTO_REUSE)
 
 		# masked_lm_positions = features["masked_lm_positions"]
 		# masked_lm_ids = features["masked_lm_ids"]
@@ -361,10 +361,31 @@ def classifier_model_fn_builder(
 					"next_sentence_loss": next_sentence_mean_loss
 					}
 
-			eval_metrics = (metric_fn, [
+			def metric_fn_v1(masked_lm_example_loss, masked_lm_log_probs, masked_lm_ids,
+					masked_lm_weights):
+				"""Computes the loss and accuracy of the model."""
+				masked_lm_log_probs = tf.reshape(masked_lm_log_probs,
+												 [-1, masked_lm_log_probs.shape[-1]])
+				masked_lm_predictions = tf.argmax(
+					masked_lm_log_probs, axis=-1, output_type=tf.int32)
+				masked_lm_example_loss = tf.reshape(masked_lm_example_loss, [-1])
+				masked_lm_ids = tf.reshape(masked_lm_ids, [-1])
+				masked_lm_weights = tf.reshape(masked_lm_weights, [-1])
+				masked_lm_accuracy = tf.metrics.accuracy(
+					labels=masked_lm_ids,
+					predictions=masked_lm_predictions,
+					weights=masked_lm_weights)
+				masked_lm_mean_loss = tf.metrics.mean(
+					values=masked_lm_example_loss, weights=masked_lm_weights)
+
+				return {
+					"masked_lm_accuracy": masked_lm_accuracy,
+					"masked_lm_loss": masked_lm_mean_loss
+					}
+
+			eval_metrics = (metric_fn_v1, [
 			  masked_lm_example_loss, masked_lm_log_probs, masked_lm_ids,
-			  masked_lm_mask, nsp_per_example_loss,
-			  nsp_log_prob, features['next_sentence_labels']
+			  masked_lm_mask
 			])
 
 			estimator_spec = tf.contrib.tpu.TPUEstimatorSpec(
