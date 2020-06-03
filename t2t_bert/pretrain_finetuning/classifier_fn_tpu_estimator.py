@@ -251,7 +251,7 @@ def classifier_model_fn_builder(
 										features['input_ori_ids'],
 										features['input_mask'],
 										[tf.cast(tf.constant(hmm_tran_prob), tf.float32) for hmm_tran_prob in hmm_tran_prob_list],
-										mask_probability=0.0,
+										mask_probability=0.2,
 										replace_probability=1.0,
 										original_probability=0.0,
 										mask_prior=tf.cast(tf.constant(mask_prior), tf.float32),

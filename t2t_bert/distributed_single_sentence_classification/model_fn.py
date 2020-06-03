@@ -115,7 +115,7 @@ def model_fn_builder(
 			loss_mask = tf.minimum(tf.reduce_sum(pos_true_mask, axis=-1), 1)
 			feat = model.get_pooled_output()
 
-			if kargs.get("apply_feat_projection", True):
+			if kargs.get("apply_feat_projection", False):
 				with tf.variable_scope(scope+"/head_proj", reuse=tf.AUTO_REUSE):
 					feat = simclr_utils.projection_head(feat, 
 											is_training, 
@@ -123,8 +123,8 @@ def model_fn_builder(
 											num_nlh_layers=1,
 											head_proj_mode='nonlinear',
 											name='head_contrastive')
-				feat = tf.nn.l2_normalize(feat, axis=-1)
-				cosine_score = tf.matmul(feat, tf.transpose(feat)) / 0.5
+				feat = tf.nn.l2_normalize(feat+1e-20, axis=-1)
+				cosine_score = tf.matmul(feat, tf.transpose(feat)) / 0.1
 				tf.logging.info("****** apply simclr projection and. l2 normalize *******")
 			else:
 				cosine_score = tf.matmul(feat, tf.transpose(feat))
