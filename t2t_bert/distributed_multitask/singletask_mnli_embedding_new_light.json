@@ -67,7 +67,7 @@
 		"dev_file":"multi_task/data/sentence_pair/wsdm/dev.txt",
 		"test_file":"multi_task/data/sentence_pair/wsdm/test.txt",
 		"label_id":"multi_task/data/sentence_pair/wsdm/label_dict.json",
-		"train_result_file":"sentence_pair/uc_mrc/train.json.256.tfrecords.selected,sentence_pair/uc_mrc/train.json.256.tfrecords.not_selected",
+		"train_result_file":"sentence_pair/uc_mrc/train.json.256.hard.tfrecordsselected,sentence_pair/uc_mrc/train.json.256.hard.tfrecordsnot_selected",
 		"test_result_file":"sentence_pair/wsdm/multitask_wsdm_train_new.tfrecords",
 		"dev_result_file":"sentence_pair/wsdm/multitask_wsdm_train_new.tfrecords",
 		"data_type":"sentence_pair",

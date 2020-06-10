@@ -146,26 +146,28 @@ def model_fn_builder(model,
 							use_bias=None,
 							activation=None,
 							kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
-				bn_z_mean = vae_utils.mean_normalize_scale(z_mean, 
-												is_training, 
-												"bn_mean", 
-												tau=0.5,
-												reuse=tf.AUTO_REUSE,
-												**kargs)
+			bn_z_mean = vae_utils.mean_normalize_scale_v1(z_mean, 
+											is_training, 
+											"vae_bn", 
+											tau=0.5,
+											reuse=tf.AUTO_REUSE,
+											**kargs)
 
 			with tf.variable_scope("z_std"):
-				z_std = tf.layers.dense(
+				logz_var = tf.layers.dense(
 							hidden_repres,
 							128,
-							use_bias=True,
-							activation=tf.nn.relu,
+							use_bias=None,
+							activation=None,
 							kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))	
-				bn_z_std = vae_utils.std_normalize_scale(z_std, 
-							is_training, 
-							"bn_std", 
-							tau=0.5,
-							reuse=tf.AUTO_REUSE,
-							**kargs)
+
+			bn_z_std = tf.clip_by_value(tf.sqrt(tf.exp(logz_var)+1e-10), 1e-10, 10.0)
+			# bn_z_std = vae_utils.std_normalize_scale(z_std, 
+			# 								is_training, 
+			# 								"vae_bn", 
+			# 								tau=0.5,
+			# 								reuse=tf.AUTO_REUSE,
+			# 								**kargs)
 
 			gaussian_noise = vae_utils.hidden_sampling(bn_z_mean, bn_z_std, **kargs)
 			# sent_repres_shape = bert_utils.get_shape_list(sent_repres, expected_rank=[2,3])
@@ -198,15 +200,21 @@ def model_fn_builder(model,
 		# 										input_ids,
 		# 										name="decoder_resc",
 		# 										use_tpu=False)
+
 		with tf.variable_scope("vae/bow_resc", reuse=tf.AUTO_REUSE):
 			bow_loss, bow_logits = vae_utils.bow_loss(input_ids, gaussian_noise, 
-				128, model_config.vocab_size, is_training, 
-				bow_loss="term_binary",
+				128, model_config.vocab_size, is_training,
+				scope="hidden_topic",
+				bow_loss="term_count",
+				model_type="topic",
+				embedding_size=model_config.embedding_size,
+				embedding_matrix=model.get_embedding_table(),
 				name="vae_bow",
+				reuse=None,
 				use_tpu=False)
 		
 		kl_loss = vae_utils.kl_loss(bn_z_mean, bn_z_std, 
-									opt_config.get('num_train_steps', 10000), 
+									opt_config.get('num_warmup_steps', 10000), 
 									name="kl_div",
 									use_tpu=False,
 									kl_anneal="kl_anneal")

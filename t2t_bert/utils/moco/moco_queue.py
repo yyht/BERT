@@ -1,15 +1,22 @@
 import tensorflow as tf
 
 def update_model_via_ema(
-    model, ema_model, momentum, just_trainable_vars=False
-):
-    iterable = (
-        zip(model.trainable_variables, ema_model.trainable_variables)
-        if just_trainable_vars
-        else zip(model.variables, ema_model.variables)
-    )
-    for p, p2 in iterable:
-        p2.assign(momentum * p2 + (1.0 - momentum) * p)
+	model_params, 
+	model_trainable_params, 
+	ema_model_params, 
+	ema_model_trainable_params,
+	momentum, just_trainable_vars=False
+	):
+	iterable = (
+		zip(model_params, ema_model_params)
+		if just_trainable_vars
+		else zip(ema_model_params, ema_model_trainable_params)
+	)
+	assignments = []
+	for p, p2 in iterable:
+		assignments.extend(
+					[p2.assign(momentum * p2 + (1.0 - momentum) * p)])
+	return tf.group(*assignments, name=name)
 
 class MoCoQueue:
 	def __init__(self, embedding_dim, max_queue_length):

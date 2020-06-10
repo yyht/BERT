@@ -29,7 +29,7 @@ class ModelIO(object):
 				else:
 					tvars = var_list
 				params_averages_op = self.ema.apply(tvars)
-			return tf.group(train_op, params_averages_op), None
+			return params_averages_op, None
 			# tf.add_to_collection(tf.GraphKeys.UPDATE_OPS, tf.group(params_averages_op))
 		elif mode == tf.estimator.ModeKeys.EVAL or tf.estimator.ModeKeys.PREDICT:
 			hooks = model_io_utils.RestoreParametersAverageValues(self.ema)

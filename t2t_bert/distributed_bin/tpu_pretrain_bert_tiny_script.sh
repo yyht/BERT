@@ -1,7 +1,7 @@
 nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--buckets "gs://yyht_source/pretrain" \
 	--config_file "./data/roberta_zh_l12/bert_config_tiny_fixed_attention_size.json" \
-	--init_checkpoint "" \
+	--init_checkpoint "model/tiny/bert_tiny_with_single_random_adam_decay_40_mixed_mask/model.ckpt-1145800" \
 	--vocab_file "./data/chinese_L-12_H-768_A-12/vocab.txt" \
 	--label_id "./data/lcqmc/label_dict.json" \
 	--max_length 512 \
@@ -18,7 +18,7 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--is_debug 1 \
 	--profiler "no" \
 	--train_op "adam_decay" \
-	--load_pretrained "no" \
+	--load_pretrained "yes" \
 	--with_char "no_char" \
 	--input_target "" \
 	--task_type "bert_pretrain" \
@@ -29,7 +29,7 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--init_lr 2e-4 \
 	--num_tpu_cores 8 \
 	--do_train true \
-	--tpu_name "albert0" \
+	--tpu_name "albert3" \
 	--mode "pretrain" \
 
 

@@ -26,9 +26,10 @@ def get_labels_of_similarity(query_input_ids, anchor_query_ids):
 	labels = tf.cast(tf.not_equal(idxs_1, idxs_2), tf.float32) # not equal:1, equal:0
 	equal_num = tf.reduce_sum(labels, axis=-1) # [batch, batch]
 	not_equal_label = tf.cast(tf.not_equal(equal_num, 0), tf.float32)
+	equal_label = tf.cast(tf.equal(equal_num, 0), tf.float32)
 	not_equal_label_shape = bert_utils.get_shape_list(not_equal_label, expected_rank=[2,3])
 	not_equal_label *= tf.cast(1 - tf.eye(not_equal_label_shape[0]), tf.float32) 
-	return not_equal_label
+	return not_equal_label, equal_label
 
 def build_accuracy(logits, labels, mask, loss_type):
 	mask = tf.cast(mask, tf.float32)
@@ -154,8 +155,14 @@ def model_fn_builder(model,
 							activation=tf.tanh,
 							kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
 				tf.logging.info("****** apply cpc anchor, successor projection *******")
-		
-		cosine_score = tf.matmul(feature_a, tf.transpose(feature_b)) / model_config.get('temperature', 0.5)
+			
+		if kargs.get("apply_l2_normalize", True):
+			feature_a = tf.nn.l2_normalize(feature_a+1e-20, axis=-1)
+			feature_b = tf.nn.l2_normalize(feature_b+1e-20, axis=-1)
+			tf.logging.info("****** apply normalization *******")
+
+		cosine_score = tf.matmul(feature_a, tf.transpose(feature_b)) # / model_config.get('temperature', 1.0)
+		tf.logging.info("****** temperature *******", str(model_config.get('temperature', 1.0)))
 		print("==cosine_score shape==", cosine_score.get_shape())
 		loss_mask = tf.cast(features["{}_loss_multipiler".format(task_type)], tf.float32)
 		
@@ -165,31 +172,46 @@ def model_fn_builder(model,
 			neg_true_mask = neg_true_mask * tf.expand_dims(loss_mask, axis=-1) * tf.expand_dims(loss_mask, axis=0)
 		elif task_type == 'wsdm':
 			pos_label_mask = tf.cast(features["{}_label_ids".format(task_type)], dtype=tf.float32)
-			loss_mask *= pos_label_mask
-			pos_label_mask = tf.expand_dims(pos_label_mask, axis=-1) # batch x batch
+			pos_label_mask = tf.expand_dims(pos_label_mask, axis=0)  #* tf.expand_dims(pos_label_mask, axis=0)
+			[not_equal_mask, equal_mask] = get_labels_of_similarity(
+									features['input_ids_a'], 
+									features['input_ids_a'])
+			pos_label_mask *= equal_mask
+			pos_true_mask = pos_label_mask
+			label_mask_ = tf.minimum(tf.reduce_sum(pos_true_mask, axis=-1), 1.0)
+			loss_mask *= label_mask_ # remove none-positive part
 			score_shape = bert_utils.get_shape_list(cosine_score, expected_rank=[2,3])
-			pos_true_mask = pos_label_mask * tf.eye(score_shape[0]) 
 			neg_true_mask = tf.ones_like(cosine_score) - pos_true_mask
 			pos_true_mask = pos_true_mask * tf.expand_dims(loss_mask, axis=-1) * tf.expand_dims(loss_mask, axis=0)
 			neg_true_mask = neg_true_mask * tf.expand_dims(loss_mask, axis=-1) * tf.expand_dims(loss_mask, axis=0)
 		elif task_type == 'afqmc':
 			score_shape = bert_utils.get_shape_list(cosine_score, expected_rank=[2,3])
-			not_equal_mask = get_labels_of_similarity(
+			[not_equal_mask, equal_mask] = get_labels_of_similarity(
 									features['input_ids_a'], 
 									features['input_ids_b'])
 			pos_true_mask = tf.expand_dims(loss_mask, axis=-1) * tf.eye(score_shape[0]) 
 			neg_true_mask = not_equal_mask * tf.expand_dims(loss_mask, axis=-1) * tf.expand_dims(loss_mask, axis=0)
 
-		cosine_score_neg = neg_true_mask * cosine_score
-		cosine_score_pos = -pos_true_mask * cosine_score
+		if kargs.get('if_apply_circle_loss', True):
+			logits = loss_utils.circle_loss(cosine_score, 
+									pos_true_mask, 
+									neg_true_mask,
+									margin=0.25,
+									gamma=64)
+			tf.logging.info("****** apply actual-circle loss *******")
+		else:
+			cosine_score_neg = neg_true_mask * cosine_score
+			cosine_score_pos = -pos_true_mask * cosine_score
 
-		y_pred_neg = cosine_score_neg - (1 - neg_true_mask) * 1e12
-		y_pred_pos = cosine_score_pos - (1 - pos_true_mask) * 1e12
+			y_pred_neg = cosine_score_neg - (1 - neg_true_mask) * 1e12
+			y_pred_pos = cosine_score_pos - (1 - pos_true_mask) * 1e12
 
-		# add circle-loss without margin and scale-factor
-		joint_neg_loss = tf.reduce_logsumexp(y_pred_neg, axis=-1)
-		joint_pos_loss = tf.reduce_logsumexp(y_pred_pos, axis=-1)
-		logits = tf.nn.softplus(joint_neg_loss+joint_pos_loss)
+			# add circle-loss without margin and scale-factor
+			joint_neg_loss = tf.reduce_logsumexp(y_pred_neg, axis=-1)
+			joint_pos_loss = tf.reduce_logsumexp(y_pred_pos, axis=-1)
+			logits = tf.nn.softplus(joint_neg_loss+joint_pos_loss)
+
+			tf.logging.info("****** apply normal-circle loss *******")
 
 		loss = tf.reduce_sum(logits*loss_mask) / (1e-10+tf.reduce_sum(loss_mask))
 		task_loss = loss
@@ -338,7 +360,7 @@ def model_fn_builder(model,
 
 		if load_pretrained == "yes":
 			use_tpu = 1 if kargs.get('use_tpu', False) else 0
-			scaffold_fn = model_io_fn.load_pretrained(pretrained_tvars, 
+			scaffold_fn = model_io_fn.load_pretrained(tvars, 
 											init_checkpoint,
 											exclude_scope=exclude_scope,
 											use_tpu=use_tpu)

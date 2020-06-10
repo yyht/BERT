@@ -106,34 +106,36 @@ def multitask_model_fn(model_config_dict,
 													cnn_type=model_config_dict[task_type].get('cnn_type', 'bi_dgcnn'))
 				encoder[model_config_dict[task_type].model_type] = model
 
-				# vae_kl_model = vae_model_fn(encoder[model_config_dict[task_type].model_type],
-				# 			model_config_dict[task_type],
-				# 			num_labels_dict[task_type],
-				# 			init_checkpoint_dict[task_type],
-				# 			reuse,
-				# 			load_pretrained_dict[task_type],
-				# 			model_io_config,
-				# 			opt_config,
-				# 			exclude_scope=exclude_scope_dict[task_type],
-				# 			not_storage_params=not_storage_params_dict[task_type],
-				# 			target=target_dict[task_type],
-				# 			label_lst=None,
-				# 			output_type=output_type,
-				# 			task_layer_reuse=task_layer_reuse,
-				# 			task_type=task_type,
-				# 			num_task=num_task,
-				# 			task_adversarial=1e-2,
-				# 			get_pooled_output='task_output',
-				# 			feature_distillation=False,
-				# 			embedding_distillation=False,
-				# 			pretrained_embed=pretrained_embed,
-				# 			**kargs)
-				# vae_result_dict = vae_kl_model(features, labels, mode)
-				# tvars.extend(vae_result_dict['tvars'])
-				# total_loss += vae_result_dict["loss"]
-				# for key in vae_result_dict:
-				# 	if key in ['perplexity', 'token_acc', 'kl_div']:
-				# 		hook_dict[key] = vae_result_dict[key]
+				vae_kl_model = vae_model_fn(encoder[model_config_dict[task_type].model_type],
+							model_config_dict[task_type],
+							num_labels_dict[task_type],
+							init_checkpoint_dict[task_type],
+							reuse,
+							load_pretrained_dict[task_type],
+							model_io_config,
+							opt_config,
+							exclude_scope=exclude_scope_dict[task_type],
+							not_storage_params=not_storage_params_dict[task_type],
+							target=target_dict[task_type],
+							label_lst=None,
+							output_type=output_type,
+							task_layer_reuse=task_layer_reuse,
+							task_type=task_type,
+							num_task=num_task,
+							task_adversarial=1e-2,
+							get_pooled_output='task_output',
+							feature_distillation=False,
+							embedding_distillation=False,
+							merge_mode="all",
+							pretrained_embed=pretrained_embed,
+							bow_loss="term_count",
+							**kargs)
+				vae_result_dict = vae_kl_model(features, labels, mode)
+				tvars.extend(vae_result_dict['tvars'])
+				total_loss += vae_result_dict["loss"]
+				for key in vae_result_dict:
+					if key in ['perplexity', 'token_acc', 'kl_div', 'kl_bow']:
+						hook_dict[key] = vae_result_dict[key]
 			print(encoder, "==encode==")
 
 			if task_type_dict[task_type] == "cls_task":
@@ -243,7 +245,9 @@ def multitask_model_fn(model_config_dict,
 												pretrained_embed=pretrained_embed,
 												loss='contrastive_loss',
 												apply_head_proj=False,
-												task_seperate_proj=True,
+												task_seperate_proj=False,
+												apply_l2_normalize=True,
+												if_apply_circle_loss=True,
 												**kargs)
 				result_dict = task_model_fn(features, labels, mode)
 				tf.logging.info("****** task: *******", task_type_dict[task_type], task_type)
