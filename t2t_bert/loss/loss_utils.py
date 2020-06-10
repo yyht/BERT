@@ -362,10 +362,34 @@ def exponent_neg_manhattan_distance(label, feat1, feat2, loss_type='mse'):
 		# logits or regression on [0,1]
 		pred_sim = tf.exp(-tf.reduce_sum(tf.abs(feat1 - feat2), -1))
 		per_example_loss = tf.nn.sigmoid_cross_entropy_with_logits(
-			    labels=label,
-			    logits=tf.log(pred_sim+1e-10),
+				labels=label,
+				logits=tf.log(pred_sim+1e-10),
 		)
 	return per_example_loss, pred_sim
+
+def circle_loss(pair_wise_cosine_matrix, pred_true_mask, 
+				pred_neg_mask,
+				margin=0.25,
+				gamma=64):
+	O_p = 1 + margin
+	O_n = -margin
+
+	Delta_p = 1 - margin
+	Delta_n = margin
+
+	ap = tf.nn.relu(-tf.stop_gradient(pair_wise_cosine_matrix*pred_true_mask) + 1 + margin)
+	an = tf.nn.relu(tf.stop_gradient(pair_wise_cosine_matrix*pred_neg_mask) + margin)
+
+	logit_p = -ap * (pair_wise_cosine_matrix - Delta_p) * gamma * pred_true_mask
+	logit_n = an * (pair_wise_cosine_matrix - Delta_n) * gamma * pred_neg_mask
+
+	logit_p = logit_p -  (1 - pred_true_mask) * 1e12
+	logit_n = logit_n - (1 - pred_neg_mask) * 1e12
+
+	joint_neg_loss = tf.reduce_logsumexp(logit_n, axis=-1)
+	joint_pos_loss = tf.reduce_logsumexp(logit_p, axis=-1)
+	logits = tf.nn.softplus(joint_neg_loss+joint_pos_loss)
+	return logits
 
 # def xbm(feat_cache, label_cache, feat, label):
 # 	current_feat = feat_cache[1:, :]
