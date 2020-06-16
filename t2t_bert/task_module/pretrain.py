@@ -239,7 +239,7 @@ def seq_mask_masked_lm_output(config, input_tensor, output_weights,
 
 			# output_weights is embedding_matrix
 			gp = tf.reduce_sum(tf.gradients(loss, [output_weights])[0]**2)
-			loss += 10.0 * kargs.get('epsilon', 1.0) * gp
+			loss += 1.0 * kargs.get('epsilon', 1.0) * gp
 			tf.logging.info("**** normal mlm loss with gradient penalty ****")
 		else:
 			per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
