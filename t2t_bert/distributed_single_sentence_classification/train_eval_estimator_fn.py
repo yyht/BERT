@@ -98,7 +98,7 @@ def train_eval_fn(FLAGS,
 
 		init_lr = config.init_lr
 
-		label_dict = json.load(tf.gfile.Open(FLAGS.label_id))
+		# label_dict = json.load(tf.gfile.Open(FLAGS.label_id))
 
 		warmup_ratio = config.get('warmup', 0.1)
 

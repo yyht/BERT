@@ -36,9 +36,15 @@ def classifier(config, pooled_output,
 		if config.get("loss", "entropy") == "entropy":
 			print("==standard cross entropy==")
 			tf.logging.info("****** loss type ******* %s", "entropy")
-			per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-												logits=logits, 
-												labels=tf.stop_gradient(labels))
+			# per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+			# 									logits=logits, 
+			# 									labels=tf.stop_gradient(labels))
+			one_hot_labels = tf.one_hot(labels, num_labels)
+			per_example_loss = tf.nn.softmax_cross_entropy_with_logits(
+										logits=logits,
+										labels=tf.stop_gradient(one_hot_labels),
+										)
+
 		elif config.get("loss", "entropy") == "focal_loss":
 			print("==multi_label focal loss==")
 			per_example_loss, _ = loss_utils.focal_loss_multi_v1(config,
@@ -131,9 +137,15 @@ def multi_choice_classifier(config, pooled_output,
 		per_example_loss = loss_utils.focal_loss_multi_v1(logits=logits, 
 													labels=labels)
 	else:
-		per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-												logits=logits, 
-												labels=tf.stop_gradient(labels))
+		one_hot_labels = tf.one_hot(labels, num_labels)
+		per_example_loss = tf.nn.softmax_cross_entropy_with_logits(
+									logits=logits,
+									labels=tf.stop_gradient(one_hot_labels),
+									)
+
+		# per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+		# 										logits=logits, 
+		# 										labels=tf.stop_gradient(labels))
 	loss = tf.reduce_mean(per_example_loss)
 
 	return (loss, per_example_loss, logits)
@@ -169,9 +181,14 @@ def span_extraction_classifier(config, sequence_output,
 
 	def compute_loss(logits, positions):
 
-		loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-												logits=logits, 
-												labels=tf.stop_gradient(positions))
+		one_hot_labels = tf.one_hot(positions, seq_length)
+		loss = tf.nn.softmax_cross_entropy_with_logits(
+									logits=logits,
+									labels=tf.stop_gradient(one_hot_labels),
+									)
+		# loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+		# 										logits=logits, 
+		# 										labels=tf.stop_gradient(positions))
 		loss = tf.reduce_mean(loss)
 		return loss
 		
@@ -208,11 +225,18 @@ def seq_label_classifier(config, sequence_output,
 	# batch x seq , num_labels
 	logits = tf.reshape(logits, [batch_size, seq_length, num_labels])
 
-	per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-												logits=logits,
-												labels=tf.stop_gradient(labels))
-	losses *= label_weights
-	loss = tf.reduce_mean(losses)
+	# labels: [batch, seq]
+	one_hot_labels = tf.one_hot(labels, num_labels)
+	per_example_loss = tf.nn.softmax_cross_entropy_with_logits(
+								logits=logits,
+								labels=tf.stop_gradient(one_hot_labels),
+								)
+
+	# per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+	# 											logits=logits,
+	# 											labels=tf.stop_gradient(labels))
+	losses = per_example_loss * label_weights
+	loss = tf.reduce_sum(losses) / (tf.reduce_sum(label_weights, axis=-1)+1e-10)
 
 	return (loss, logits, per_example_loss)
 
@@ -248,9 +272,15 @@ def interaction_classifier(config, output_lst,
 
 	if config.get("label_type", "single_label") == "single_label":
 		if config.get("loss", "entropy") == "entropy":
-			per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-												logits=logits, 
-												labels=tf.stop_gradient(labels))
+			# per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+			# 									logits=logits, 
+			# 									labels=tf.stop_gradient(labels))
+
+			one_hot_labels = tf.one_hot(labels, num_labels)
+			per_example_loss = tf.nn.softmax_cross_entropy_with_logits(
+								logits=logits,
+								labels=tf.stop_gradient(one_hot_labels),
+								)
 
 		elif config.get("loss", "entropy") == "focal_loss":
 			per_example_loss = loss_utils.focal_loss_multi_v1(config,
@@ -299,9 +329,15 @@ def order_classifier(config, output_lst,
 	if config.get("label_type", "single_label") == "single_label":
 		if config.get("loss", "entropy") == "entropy":
 			print("==apply entropy loss==")
-			per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-												logits=logits, 
-												labels=tf.stop_gradient(labels))
+			# per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+			# 									logits=logits, 
+			# 									labels=tf.stop_gradient(labels))
+
+			one_hot_labels = tf.one_hot(labels, num_labels)
+			per_example_loss = tf.nn.softmax_cross_entropy_with_logits(
+								logits=logits,
+								labels=tf.stop_gradient(one_hot_labels),
+								)
 
 		elif config.get("loss", "entropy") == "focal_loss":
 			tf.logging.info("===apply multi-class focal loss===")
@@ -355,9 +391,15 @@ def order_classifier_v1(config, output_lst,
 
 	if config.get("label_type", "single_label") == "single_label":
 		if config.get("loss", "entropy") == "entropy":
-			per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-												logits=logits, 
-												labels=tf.stop_gradient(labels))
+			# per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+			# 									logits=logits, 
+			# 									labels=tf.stop_gradient(labels))
+
+			one_hot_labels = tf.one_hot(labels, num_labels)
+			per_example_loss = tf.nn.softmax_cross_entropy_with_logits(
+								logits=logits,
+								labels=tf.stop_gradient(one_hot_labels),
+								)
 
 		elif config.get("loss", "entropy") == "focal_loss":
 			tf.logging.info("===apply multi-class focal loss===")
@@ -398,9 +440,16 @@ def distributed_classifier(config, pooled_output,
 
 	if config.get("label_type", "single_label") == "single_label":
 		if config.get("loss", "entropy") == "entropy":
-			per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-												logits=logits, 
-												labels=tf.stop_gradient(labels))
+			# per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+			# 									logits=logits, 
+			# 									labels=tf.stop_gradient(labels))
+
+			one_hot_labels = tf.one_hot(labels, num_labels)
+			per_example_loss = tf.nn.softmax_cross_entropy_with_logits(
+								logits=logits,
+								labels=tf.stop_gradient(one_hot_labels),
+								)
+			
 		elif config.get("loss", "entropy") == "focal_loss":
 			per_example_loss = loss_utils.focal_loss_multi_v1(config,
 														logits=logits, 
@@ -409,7 +458,7 @@ def distributed_classifier(config, pooled_output,
 
 		return (loss, per_example_loss, logits)
 	elif config.get("label_type", "single_label") == "multi_label":
-		logits = tf.log_sigmoid(logits)
+		# logits = tf.log_sigmoid(logits)
 		per_example_loss = tf.nn.sigmoid_cross_entropy_with_logits(
 												logits=logits, 
 												labels=tf.stop_gradient(labels))
@@ -447,9 +496,16 @@ def siamese_classifier(config, pooled_output, num_labels,
 
 		if config.get("label_type", "single_label") == "single_label":
 			if config.get("loss", "entropy") == "entropy":
-				per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-													logits=logits, 
-													labels=tf.stop_gradient(labels))
+				# per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+				# 									logits=logits, 
+				# 									labels=tf.stop_gradient(labels))
+
+				one_hot_labels = tf.one_hot(labels, num_labels)
+				per_example_loss = tf.nn.softmax_cross_entropy_with_logits(
+								logits=logits,
+								labels=tf.stop_gradient(one_hot_labels),
+								)
+
 			elif config.get("loss", "entropy") == "focal_loss":
 				per_example_loss, _ = loss_utils.focal_loss_multi_v1(config,
 															logits=logits, 
@@ -459,7 +515,7 @@ def siamese_classifier(config, pooled_output, num_labels,
 
 			return (loss, per_example_loss, logits)
 		elif config.get("label_type", "single_label") == "multi_label":
-			logits = tf.log_sigmoid(logits)
+			# logits = tf.log_sigmoid(logits)
 			per_example_loss = tf.nn.sigmoid_cross_entropy_with_logits(
 													logits=logits, 
 													labels=tf.stop_gradient(labels))

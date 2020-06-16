@@ -5,6 +5,7 @@ except:
 
 import tensorflow as tf
 import numpy as np
+from loss import loss_utils, triplet_loss_utils
 
 from model_io import model_io
 from task_module import classifier
@@ -63,6 +64,7 @@ def model_fn_builder(
 		assert len(target.split(",")) == 2
 		target_name_lst = target.split(",")
 		print(target_name_lst)
+		model_config.use_one_hot_embeddings = True
 		for index, name in enumerate(target_name_lst):
 			if index > 0:
 				reuse = True
@@ -100,25 +102,32 @@ def model_fn_builder(
 								num_labels, label_ids,
 								dropout_prob, ratio_weight=None)
 
+		if kargs.get('apply_gp', False):
+			gp_loss = loss_utils.gradient_penalty_loss(loss, model_lst[0].get_embedding_table(), 
+											epsilon=1.0)
+			loss += gp_loss
+			tf.logging.info("****** apply gradient penalty *******")
+
 		if mode == tf.estimator.ModeKeys.TRAIN:
-			print(kargs.get("temperature", 0.5), kargs.get("distillation_ratio", 0.5), "==distillation hyparameter==")
+			if kargs.get('distillation', 'normal') == 'distillation':
+				print(kargs.get("temperature", 0.5), kargs.get("distillation_ratio", 0.5), "==distillation hyparameter==")
 
-			# anneal_fn = anneal_strategy.AnnealStrategy(kargs.get("anneal_config", {}))
+				# anneal_fn = anneal_strategy.AnnealStrategy(kargs.get("anneal_config", {}))
 
-			# get teacher logits
-			teacher_logit = tf.log(features["label_probs"]+1e-10)/kargs.get("temperature", 2.0) # log_softmax logits
-			student_logit = tf.nn.log_softmax(logits /kargs.get("temperature", 2.0)) # log_softmax logits
+				# get teacher logits
+				teacher_logit = tf.log(features["label_probs"]+1e-10)/kargs.get("temperature", 2.0) # log_softmax logits
+				student_logit = tf.nn.log_softmax(logits /kargs.get("temperature", 2.0)) # log_softmax logits
 
-			distillation_loss = kd_distance(teacher_logit, student_logit, kargs.get("distillation_distance", "kd")) 
-			distillation_loss *= features["distillation_ratio"]
-			distillation_loss = tf.reduce_sum(distillation_loss) / (1e-10+tf.reduce_sum(features["distillation_ratio"]))
+				distillation_loss = kd_distance(teacher_logit, student_logit, kargs.get("distillation_distance", "kd")) 
+				distillation_loss *= features["distillation_ratio"]
+				distillation_loss = tf.reduce_sum(distillation_loss) / (1e-10+tf.reduce_sum(features["distillation_ratio"]))
 
-			label_loss = tf.reduce_sum(per_example_loss * features["label_ratio"]) / (1e-10+tf.reduce_sum(features["label_ratio"]))
-		
-			print("==distillation loss ratio==", kargs.get("distillation_ratio", 0.9)*tf.pow(kargs.get("temperature", 2.0), 2))
+				label_loss = tf.reduce_sum(per_example_loss * features["label_ratio"]) / (1e-10+tf.reduce_sum(features["label_ratio"]))
+			
+				print("==distillation loss ratio==", kargs.get("distillation_ratio", 0.9)*tf.pow(kargs.get("temperature", 2.0), 2))
 
-			# loss = label_loss + kargs.get("distillation_ratio", 0.9)*tf.pow(kargs.get("temperature", 2.0), 2)*distillation_loss
-			loss = (1-kargs.get("distillation_ratio", 0.9))*label_loss + tf.pow(kargs.get("temperature", 2.0), 2)*kargs.get("distillation_ratio", 0.9) * distillation_loss
+				# loss = label_loss + kargs.get("distillation_ratio", 0.9)*tf.pow(kargs.get("temperature", 2.0), 2)*distillation_loss
+				loss = (1-kargs.get("distillation_ratio", 0.9))*label_loss + tf.pow(kargs.get("temperature", 2.0), 2)*kargs.get("distillation_ratio", 0.9) * distillation_loss
 
 		model_io_fn = model_io.ModelIO(model_io_config)
 

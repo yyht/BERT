@@ -211,7 +211,8 @@ def classifier_model_fn_builder(
 										features['input_ids'],
 										sampled_binary_mask,
 										reuse=tf.AUTO_REUSE,
-										embedding_projection=model.get_embedding_projection_table())
+										embedding_projection=model.get_embedding_projection_table(),
+										pretrain_loss_type="gradient_penalty")
 			masked_lm_ids = input_ori_ids
 		else:
 
@@ -230,7 +231,8 @@ def classifier_model_fn_builder(
 											masked_lm_ids, 
 											masked_lm_weights,
 											reuse=tf.AUTO_REUSE,
-											embedding_projection=model.get_embedding_projection_table())
+											embedding_projection=model.get_embedding_projection_table(),
+											pretrain_loss_type="gradient_penalty")
 		
 		print(model_config.lm_ratio, '==mlm lm_ratio==')
 		loss = model_config.lm_ratio * masked_lm_loss #+ 0.0 * nsp_loss
@@ -245,7 +247,7 @@ def classifier_model_fn_builder(
 
 		pretrained_tvars.extend(lm_pretrain_tvars)
 
-		if kargs.get("unigram_disc", True):
+		if kargs.get("unigram_disc", False):
 			[output_ids, 
 			sampled_binary_mask] = hmm_input_ids_generation(model_config,
 										features['input_ori_ids'],

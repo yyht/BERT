@@ -1,0 +1,1 @@
+/notebooks/source/MNN/build/MNNConvert -f TF --modelFile /data/xuht/1590476397/frozen_model/frozen_graph.pb --MNNModel /data/xuht/1590476397/mnn_model/frozen_graph.mnn --bizCode sentence_embedding
