@@ -371,6 +371,9 @@ def circle_loss(pair_wise_cosine_matrix, pred_true_mask,
 				pred_neg_mask,
 				margin=0.25,
 				gamma=64):
+	"""
+	https://github.com/zhen8838/Circle-Loss/blob/master/circle_loss.py
+	"""
 	O_p = 1 + margin
 	O_n = -margin
 
@@ -390,6 +393,12 @@ def circle_loss(pair_wise_cosine_matrix, pred_true_mask,
 	joint_pos_loss = tf.reduce_logsumexp(logit_p, axis=-1)
 	logits = tf.nn.softplus(joint_neg_loss+joint_pos_loss)
 	return logits
+
+def gradient_penalty_loss(loss, embeding_matrix, **kargs):
+	# output_weights is embedding_matrix
+	gp = tf.reduce_sum(tf.gradients(loss, [embeding_matrix])[0]**2)
+	gp_loss = 0.5 * kargs.get('epsilon', 1.0) * gp
+	return gp_loss
 
 # def xbm(feat_cache, label_cache, feat, label):
 # 	current_feat = feat_cache[1:, :]

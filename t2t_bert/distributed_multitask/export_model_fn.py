@@ -34,8 +34,7 @@ def model_fn_builder(
 		model_api = model_zoo(model_config)
 		model = model_api(model_config, features, labels,
 							tf.estimator.ModeKeys.PREDICT, 
-							target, reuse=model_reuse, 
-							cnn_type=model_config.get('cnn_type', 'bi_dgcnn'),
+							target, reuse=model_reuse,
 							**kargs)
 
 		dropout_prob = 0.0

@@ -242,7 +242,7 @@ def classifier_model_fn_builder(
 										embedding_projection=model.get_embedding_projection_table())
 			loss = masked_lm_loss
 			tf.logging.info("***** using masked lm loss *****")
-		if kargs.get("unigram_disc", True):
+		if kargs.get("unigram_disc", False):
 			[output_ids, 
 			sampled_binary_mask] = hmm_input_ids_generation(model_config,
 										features['input_ori_ids'],

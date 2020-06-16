@@ -101,6 +101,7 @@ def model_fn_builder(
 											num_labels,
 											label_ids,
 											dropout_prob)
+
 		if not kargs.get('use_tpu'):
 			tf.summary.scalar("classifier_loss", loss)
 				
@@ -144,6 +145,12 @@ def model_fn_builder(
 				tf.summary.scalar("cpc_loss", cpc_loss)
 				tf.summary.scalar("cpc_mask", tf.reduce_mean(tf.reduce_sum(loss_mask, axis=-1)))
 			tf.logging.info("****** apply cpc-loss *******")
+
+		if kargs.get('apply_gp', False):
+			gp_loss = loss_utils.gradient_penalty_loss(loss, model.get_embedding_table(), 
+											epsilon=1.0)
+			loss += gp_loss
+			tf.logging.info("****** apply gradient penalty *******")
 
 		model_io_fn = model_io.ModelIO(model_io_config)
 

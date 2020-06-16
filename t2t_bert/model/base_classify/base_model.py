@@ -1,6 +1,6 @@
 import tensorflow as tf
 import numpy as np
-
+from utils.bert import bert_utils
 from utils.embed import integration_func
 from loss.loss_utils import focal_loss_multi_v1, center_loss_v2
 
@@ -63,7 +63,20 @@ class BaseModel(object):
 			embedding_matrix = self.emb_mat
 			tf.logging.info("***** none word drop *****")
 
-		word_emb = tf.nn.embedding_lookup(embedding_matrix, input_ids)
+		# word_emb = tf.nn.embedding_lookup(embedding_matrix, input_ids)
+
+		if self.config.get("use_one_hot_embeddings", False):
+			input_ids = tf.expand_dims(input_ids, axis=[-1])
+			flat_input_ids = tf.reshape(input_ids, [-1])
+			one_hot_input_ids = tf.one_hot(flat_input_ids, depth=self.vocab_size)
+			output = tf.matmul(one_hot_input_ids, embedding_matrix)
+			input_shape = bert_utils.get_shape_list(input_ids)
+			word_emb = tf.reshape(output, input_shape[0:-1] + [input_shape[-1] * self.emb_size])
+			tf.logging.info("***** apply onehot embedding *****")
+		else:
+			word_emb = tf.nn.embedding_lookup(embedding_matrix, input_ids)
+			tf.logging.info("***** apply embedding lookup *****")
+
 		if self.config.get("trainable_embedding", False):
 			self.trainable_emb_mat = integration_func.generate_embedding_mat(self.vocab_size, emb_len=self.emb_size,
                                      init_mat=self.token_emb_mat, 

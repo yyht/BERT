@@ -26,14 +26,16 @@ def textcnn_encoder(model_config, features, labels,
 	# 	max_len = tf.reduce_max(input_len, axis=-1)
 	# 	input_ids = input_ids[:, :max_len]
 
+	cnn_type = model_config.get("cnn_type", 'dgcnn')
+
 	model = textcnn.TextCNN(model_config)
 	model.build_emebdder(input_ids, input_char_ids, is_training, 
 						reuse=reuse, 
-						# cnn_type='dgcnn',
+						cnn_type=cnn_type,
 						**kargs)
 	model.build_encoder(input_ids, input_char_ids, is_training, 
 						reuse=reuse, 
-						# cnn_type='dgcnn',
+						cnn_type=cnn_type,
 						 **kargs)
 	return model
 

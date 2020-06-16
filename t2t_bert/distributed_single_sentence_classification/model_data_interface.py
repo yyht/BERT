@@ -161,6 +161,10 @@ def data_interface(FLAGS):
 			if FLAGS.task_type == "pair_sentence_classification":
 				name_to_features["input_char_ids_b"] = tf.FixedLenFeature([FLAGS.max_length], tf.int64)
 		if FLAGS.task_type == "pair_sentence_classification":
+			name_to_features = {
+				"input_ids_a":tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+				"label_ids":tf.FixedLenFeature([], tf.int64)
+			}
 			name_to_features["input_ids_b"] = tf.FixedLenFeature([FLAGS.max_length], tf.int64)
 
 	elif FLAGS.model_type in ["textcnn_distillation", "textlstm_distillation", "dan_distillation"]:
@@ -227,6 +231,7 @@ def data_interface(FLAGS):
 	return name_to_features
 
 def data_interface_server(FLAGS):
+	print(FLAGS.model_type, "==export==", FLAGS.task_type)
 	if FLAGS.model_type in ["bert", "bert_rule", "bert_small", "albert"]:
 		if FLAGS.task_type == "single_sentence_classification":
 
@@ -335,7 +340,11 @@ def data_interface_server(FLAGS):
 				"input_ids_a":tf.placeholder(tf.int32, [None, FLAGS.max_length], name='input_ids_a'),
 				"label_ids":tf.placeholder(tf.int32, [None, FLAGS.num_classes], name='label_ids')
 			}
-
+		elif FLAGS.task_type == "single_sentence_multilabel_classification_bert":
+			receiver_tensors = {
+				"input_ids":tf.placeholder(tf.int32, [None, FLAGS.max_length], name='input_ids_a'),
+				"label_ids":tf.placeholder(tf.int32, [None, FLAGS.num_classes], name='label_ids')
+			}
 		elif FLAGS.task_type == "embed_sentence_classification":
 			receiver_tensors = {
 				"input_ids_a":tf.placeholder(tf.int32, [None, FLAGS.max_length], name='input_ids_a'),

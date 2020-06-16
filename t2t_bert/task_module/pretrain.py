@@ -73,10 +73,10 @@ def get_masked_lm_output(config, input_tensor, output_weights, positions,
 		one_hot_labels = tf.one_hot(
 				label_ids, depth=config.vocab_size, dtype=tf.float32)
 
-		per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-													labels=tf.stop_gradient(label_ids),
-													logits=logits)
-		# per_example_loss = -tf.reduce_sum(log_probs * one_hot_labels, axis=[-1])
+		# per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+		# 											labels=tf.stop_gradient(label_ids),
+		# 											logits=logits)
+		per_example_loss = -tf.reduce_sum(log_probs * one_hot_labels, axis=[-1])
 
 		numerator = tf.reduce_sum(label_weights * per_example_loss)
 		denominator = tf.reduce_sum(label_weights) + 1e-5
@@ -89,6 +89,11 @@ def get_masked_lm_output(config, input_tensor, output_weights, positions,
 		# numerator = tf.reduce_sum(label_weights * per_example_loss)
 		# denominator = tf.reduce_sum(label_weights) + 1e-5
 		loss = numerator / denominator
+		if kargs.get("pretrain_loss_type", "normal") == "gradient_penalty":
+			# output_weights is embedding_matrix
+			gp = tf.reduce_sum(tf.gradients(loss, [output_weights])[0]**2)
+			loss += 0.5 * kargs.get('epsilon', 1.0) * gp
+			tf.logging.info("**** normal mlm loss with gradient penalty ****")
 
 	return (loss, per_example_loss, log_probs, label_weights)
 
@@ -201,12 +206,48 @@ def seq_mask_masked_lm_output(config, input_tensor, output_weights,
 
 		sampled_binary_mask *= input_mask
 
-		per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-												logits=logits,
-												labels=tf.stop_gradient(input_ori_ids),
-												)
-		per_example_loss *= sampled_binary_mask
-		loss = tf.reduce_sum(per_example_loss) / (1e-10 + tf.reduce_sum(sampled_binary_mask))
+		if kargs.get("pretrain_loss_type", "normal") == "normal":
+			per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+													logits=logits,
+													labels=tf.stop_gradient(input_ori_ids),
+													)
+			per_example_loss *= sampled_binary_mask
+			loss = tf.reduce_sum(per_example_loss) / (1e-10 + tf.reduce_sum(sampled_binary_mask))
+			tf.logging.info("**** normal mlm loss ****")
+		elif kargs.get("pretrain_loss_type", "normal") == "gradient_penalty":
+			log_probs = tf.nn.log_softmax(logits, axis=-1)
+
+			# [batch_size*seq_len]
+			label_ids = tf.reshape(input_ori_ids, [-1])
+			# [batch_size*seq_len]
+			label_weights = tf.reshape(sampled_binary_mask, [-1])
+			# [batch_size*seq_len, vocab_size]
+			log_probs = tf.reshape(log_probs, [-1, config.vocab_size])
+
+			# [batch_size*seq_len, vocab_size]
+			one_hot_labels = tf.one_hot(
+				label_ids, depth=config.vocab_size, dtype=tf.float32)
+
+			# The `positions` tensor might be zero-padded (if the sequence is too
+			# short to have the maximum number of predictions). The `label_weights`
+			# tensor has a value of 1.0 for every real prediction and 0.0 for the
+			# padding predictions.
+			per_example_loss = -tf.reduce_sum(log_probs * one_hot_labels, axis=[-1])
+			numerator = tf.reduce_sum(label_weights * per_example_loss)
+			denominator = tf.reduce_sum(label_weights) + 1e-5
+			loss = numerator / denominator
+
+			# output_weights is embedding_matrix
+			gp = tf.reduce_sum(tf.gradients(loss, [output_weights])[0]**2)
+			loss += 0.5 * kargs.get('epsilon', 1.0) * gp
+			tf.logging.info("**** normal mlm loss with gradient penalty ****")
+		else:
+			per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+													logits=logits,
+													labels=tf.stop_gradient(input_ori_ids),
+													)
+			per_example_loss *= sampled_binary_mask
+			tf.logging.info("**** normal mlm loss ****")
 
 		return (loss, per_example_loss, logits, sampled_binary_mask)
 
