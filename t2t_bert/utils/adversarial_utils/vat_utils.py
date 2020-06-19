@@ -155,7 +155,7 @@ def generate_virtual_adversarial_perturbation(model_config,
 		else:
 			dist = tf.reduce_mean(dist)
 
-		delta_grad = tf.gradients(dist, [noise], aggregation_method=2)[0]
+		delta_grad = tf.gradients(dist, [noise])[0]
 		# add small scale for d update
 		delta_grad = tf.stop_gradient(delta_grad)
 		noise = adv_project(delta_grad, 
@@ -179,6 +179,7 @@ def virtual_adversarial_loss(model_config,
 							noise_gamma=1e-6,
 							is_training=True,
 							project_norm_type="l2",
+							pretrain_loss_type="normal",
 							**kargs):
 	"""
 	https://github.com/namisan/mt-dnn/blob/master/alum/adv_masked_lm.py
@@ -199,6 +200,7 @@ def virtual_adversarial_loss(model_config,
 								num_power_iterations=num_power_iterations,
 								is_training=is_training,
 								project_norm_type=project_norm_type,
+								pretrain_loss_type=pretrain_loss_type,
 								**kargs)
 
 	adv_logits = get_pretrain_logits(
