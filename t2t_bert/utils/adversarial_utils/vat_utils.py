@@ -214,8 +214,8 @@ def virtual_adversarial_loss(model_config,
 								is_training=is_training, 
 								**kargs)
 
-	dist_b = kl_divergence_with_logit(tf.stop_gradients(logits), adv_logits)
-	dist_f = kl_divergence_with_logit(tf.stop_gradients(adv_logits), logits)
+	dist_b = kl_divergence_with_logit(tf.stop_gradient(logits), adv_logits)
+	dist_f = kl_divergence_with_logit(tf.stop_gradient(adv_logits), logits)
 	if sampled_binary_mask is not None:
 		dist_b = tf.reduce_sum(dist_b * tf.cast(sampled_binary_mask, tf.float32)) / tf.reduce_sum(1e-10+tf.cast(sampled_binary_mask, tf.float32))
 		dist_f = tf.reduce_sum(dist_f * tf.cast(sampled_binary_mask, tf.float32)) / tf.reduce_sum(1e-10+tf.cast(sampled_binary_mask, tf.float32))
