@@ -124,6 +124,7 @@ def generate_virtual_adversarial_perturbation(model_config,
 											logits,
 											mode,
 											target,
+											embedding_table,
 											sampled_binary_mask=None,
 											noise_var=1e-5,
 											step_size=1e-5,
@@ -132,7 +133,7 @@ def generate_virtual_adversarial_perturbation(model_config,
 											is_training=True,
 											project_norm_type="l2", 
 											**kargs):
-	input_shape = bert_utils.get_shape_list(model.get_embedding_table())
+	input_shape = bert_utils.get_shape_list(embedding_table)
 	noise = tf.random_normal(shape=input_shape) * noise_var
 
 	for _ in range(num_power_iterations):
@@ -154,7 +155,7 @@ def generate_virtual_adversarial_perturbation(model_config,
 			dist = tf.reduce_sum(dist * tf.cast(sampled_binary_mask, tf.float32)) / tf.reduce_sum(1e-10+tf.cast(sampled_binary_mask, tf.float32))
 		else:
 			dist = tf.reduce_mean(dist)
-			
+
 		delta_grad = tf.gradients(dist, [noise], aggregation_method=2)[0]
 		# add small scale for d update
 		delta_grad = tf.stop_gradient(delta_grad)
