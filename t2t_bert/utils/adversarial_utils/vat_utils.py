@@ -107,13 +107,16 @@ def adv_project(grad, norm_type='inf', eps=1e-6):
 	if norm_type == 'l2':
 		grad_norm = tf.sqrt(tf.reduce_sum(tf.pow(grad, 2.0), range(1, len(input_shape)), keep_dims=True))
 		direction = grad / (grad_norm + eps)
+		tf.logging.info("***** apply l2-adv *****")
 	elif norm_type == 'l1':
 		direction = tf.sign(grad)
+		tf.logging.info("***** apply l1-adv *****")
 	else:
 		grad_max = tf.reduce_max(tf.abs(grad), 
 								axis=range(1, len(input_shape)),
 								keep_dims=True)
 		direction = grad / (grad_max + eps)
+		tf.logging.info("***** apply inf-adv *****")
 	return direction
 
 def generate_virtual_adversarial_perturbation(model_config,
@@ -130,8 +133,10 @@ def generate_virtual_adversarial_perturbation(model_config,
 											noise_gamma=1e-6,
 											num_power_iterations=1,
 											is_training=True,
-											project_norm_type="l2", 
+											project_norm_type="l2",
+											pretrain_loss_type="normal",
 											**kargs):
+
 	input_shape = bert_utils.get_shape_list(embedding_table)
 	noise = tf.random_normal(shape=input_shape) * noise_var
 
@@ -147,6 +152,7 @@ def generate_virtual_adversarial_perturbation(model_config,
 									embedding_table_adv=noise,
 									sampled_binary_mask=sampled_binary_mask,
 									is_training=is_training,
+									pretrain_loss_type=pretrain_loss_type, 
 									**kargs)
 		
 		dist = kl_divergence_with_logit(logits, adv_logits)
@@ -213,7 +219,8 @@ def virtual_adversarial_loss(model_config,
 								target=target,
 								embedding_table_adv=r_vadv,
 								sampled_binary_mask=sampled_binary_mask,
-								is_training=is_training, 
+								is_training=is_training,
+								pretrain_loss_type=pretrain_loss_type,
 								**kargs)
 
 	dist_b = kl_divergence_with_logit(tf.stop_gradient(logits), adv_logits)
