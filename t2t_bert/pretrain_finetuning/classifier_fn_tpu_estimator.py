@@ -250,6 +250,7 @@ def classifier_model_fn_builder(
 							masked_lm_log_probs,
 							mode,
 							target,
+							embedding_table=model.get_embedding_table(),
 							sampled_binary_mask=sampled_binary_mask,
 							num_power_iterations=1,
 							noise_var=1e-5,
