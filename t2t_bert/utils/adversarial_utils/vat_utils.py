@@ -103,6 +103,7 @@ def adv_project(grad, norm_type='inf', eps=1e-6):
         return direction
 
 	"""
+	input_shape = bert_utils.get_shape_list(grad)
 	if norm_type == 'l2':
 		grad_norm = tf.norm(grad, 
 							axis=range(1, len(input_shape)),
