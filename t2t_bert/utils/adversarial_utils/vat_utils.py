@@ -151,7 +151,7 @@ def generate_virtual_adversarial_perturbation(model_config,
 									**kargs)
 		
 		dist = kl_divergence_with_logit(logits, adv_logits)
-		if sampled_binary_mask:
+		if sampled_binary_mask is not None:
 			dist = tf.reduce_sum(dist * tf.cast(sampled_binary_mask, tf.float32)) / tf.reduce_sum(1e-10+tf.cast(sampled_binary_mask, tf.float32))
 		else:
 			dist = tf.reduce_mean(dist)
@@ -172,6 +172,7 @@ def virtual_adversarial_loss(model_config,
 							logits,
 							mode,
 							target,
+							embedding_table,
 							sampled_binary_mask=None,
 							num_power_iterations=1,
 							noise_var=1e-5,
@@ -191,6 +192,7 @@ def virtual_adversarial_loss(model_config,
 								logits=logits,
 								mode=mode,
 								target=target,
+								embedding_table=embedding_table,
 								sampled_binary_mask=sampled_binary_mask,
 								noise_var=noise_var,
 								step_size=step_size,
@@ -215,7 +217,7 @@ def virtual_adversarial_loss(model_config,
 
 	dist_b = kl_divergence_with_logit(tf.stop_gradients(logits), adv_logits)
 	dist_f = kl_divergence_with_logit(tf.stop_gradients(adv_logits), logits)
-	if sampled_binary_mask:
+	if sampled_binary_mask is not None:
 		dist_b = tf.reduce_sum(dist_b * tf.cast(sampled_binary_mask, tf.float32)) / tf.reduce_sum(1e-10+tf.cast(sampled_binary_mask, tf.float32))
 		dist_f = tf.reduce_sum(dist_f * tf.cast(sampled_binary_mask, tf.float32)) / tf.reduce_sum(1e-10+tf.cast(sampled_binary_mask, tf.float32))
 		
