@@ -150,7 +150,7 @@ def embedding_lookup(input_ids,
 			shape=[vocab_size, embedding_size],
 			initializer=create_initializer(initializer_range))
 
-	if embedding_table_adv:
+	if embedding_table_adv is not None:
 		embedding_table_adv += embedding_table
 		tf.logging.info("==apply adv embedding==")
 	else:
@@ -239,7 +239,7 @@ def gumbel_embedding_lookup(input_ids,
 			shape=[vocab_size, embedding_size],
 			initializer=create_initializer(initializer_range))
 	
-	if embedding_table_adv:
+	if embedding_table_adv is not None:
 		embedding_table_adv += embedding_table
 		tf.logging.info("==apply adv embedding==")
 	else:
