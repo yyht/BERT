@@ -258,6 +258,7 @@ def classifier_model_fn_builder(
 							noise_gamma=1e-6,
 							is_training=is_training,
 							pretrain_loss_type='normal',
+							project_norm_type="l2",
 							**kargs)
 
 			loss += kargs.get("vat_ratio", 10.0) * vat_loss
