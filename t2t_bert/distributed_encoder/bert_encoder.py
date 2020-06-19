@@ -74,7 +74,8 @@ def bert_encoder(model_config, features, labels,
 						hidden_dropout_prob,
 						attention_probs_dropout_prob,
 						use_token_type=kargs.get('use_token_type', True),
-						reuse=reuse)
+						reuse=reuse,
+						embedding_table_adv=kargs.get('embedding_table_adv', None))
 	model.build_encoder(input_ids,
 						input_mask,
 						hidden_dropout_prob, 
@@ -120,7 +121,8 @@ def bert_rule_encoder(model_config, features, labels,
 						rule_ids,
 						hidden_dropout_prob,
 						attention_probs_dropout_prob,
-						reuse=reuse)
+						reuse=reuse,
+						embedding_table_adv=kargs.get('embedding_table_adv', None))
 	model.build_encoder(input_ids,
 						input_mask,
 						hidden_dropout_prob, 
@@ -165,7 +167,8 @@ def albert_encoder(model_config, features, labels,
 						hidden_dropout_prob,
 						attention_probs_dropout_prob,
 						reuse=reuse,
-						input_positions=position_ids)
+						input_positions=position_ids,
+						embedding_table_adv=kargs.get('embedding_table_adv', None))
 	model.build_encoder(input_ids,
 						input_mask,
 						hidden_dropout_prob, 
@@ -209,7 +212,8 @@ def electra_gumbel_encoder(model_config, features, labels,
 						hidden_dropout_prob,
 						attention_probs_dropout_prob,
 						reuse=reuse,
-						input_positions=position_ids)
+						input_positions=position_ids,
+						embedding_table_adv=kargs.get('embedding_table_adv', None))
 	model.build_encoder(input_ids,
 						input_mask,
 						hidden_dropout_prob, 
@@ -255,7 +259,8 @@ def albert_encoder_official(model_config, features, labels,
 						hidden_dropout_prob,
 						attention_probs_dropout_prob,
 						reuse=reuse,
-						input_positions=position_ids)
+						input_positions=position_ids,
+						embedding_table_adv=kargs.get('embedding_table_adv', None))
 	model.build_encoder(input_ids,
 						input_mask,
 						hidden_dropout_prob, 
@@ -299,7 +304,8 @@ def electra_gumbel_albert_official_encoder(model_config, features, labels,
 						hidden_dropout_prob,
 						attention_probs_dropout_prob,
 						reuse=reuse,
-						input_positions=position_ids)
+						input_positions=position_ids,
+						embedding_table_adv=kargs.get('embedding_table_adv', None))
 	model.build_encoder(input_ids,
 						input_mask,
 						hidden_dropout_prob, 
@@ -350,7 +356,8 @@ def bert_seq_decoder(model_config, features, labels,
 						attention_probs_dropout_prob,
 						reuse=reuse,
 						past=features.get("past", None),
-						decode_loop_step=kargs.get("decode_loop_step", None))
+						decode_loop_step=kargs.get("decode_loop_step", None),
+						embedding_table_adv=kargs.get('embedding_table_adv', None))
 	model.build_encoder(input_ids,
 						input_mask,
 						hidden_dropout_prob, 

@@ -33,6 +33,9 @@ class Albert(object):
 		batch_size = input_shape[0]
 		seq_length = input_shape[1]
 
+		embedding_table_adv = kargs.get('embedding_table_adv', None)
+		print(embedding_table_adv, "==embedding-adv")
+		
 		if token_type_ids is None:
 			token_type_ids = tf.zeros(shape=[batch_size, seq_length], dtype=tf.int32)
 
@@ -54,11 +57,12 @@ class Albert(object):
 						embedding_size=self.config.embedding_size,
 						initializer_range=self.config.initializer_range,
 						word_embedding_name="word_embeddings",
-						use_one_hot_embeddings=self.config.use_one_hot_embeddings)
+						use_one_hot_embeddings=self.config.use_one_hot_embeddings,
+						embedding_table_adv=embedding_table_adv)
 
-				if kargs.get("perturbation", None):
-					self.embedding_output_word += kargs["perturbation"]
-					tf.logging.info(" add word pertubation for robust learning ")
+				# if kargs.get("perturbation", None):
+				# 	self.embedding_output_word += kargs["perturbation"]
+				# 	tf.logging.info(" add word pertubation for robust learning ")
 
 		with tf.variable_scope(other_embedding_scope, reuse=reuse):
 			with tf.variable_scope("embeddings"):

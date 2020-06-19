@@ -20,6 +20,9 @@ class Bert(object):
 
 		reuse = kargs["reuse"]
 
+		embedding_table_adv = kargs.get('embedding_table_adv', None)
+		print(embedding_table_adv, "==embedding-adv")
+
 		if self.config.get("embedding", "none_factorized") == "none_factorized":
 			projection_width = self.config.hidden_size
 			tf.logging.info("==not using embedding factorized==")
@@ -49,7 +52,8 @@ class Bert(object):
 							embedding_size=projection_width,
 							initializer_range=self.config.initializer_range,
 							word_embedding_name="word_embeddings",
-							use_one_hot_embeddings=self.config.use_one_hot_embeddings)
+							use_one_hot_embeddings=self.config.use_one_hot_embeddings,
+							embedding_table_adv=embedding_table_adv)
 				elif len(input_shape) == 2:
 					(self.embedding_output_word, self.embedding_table) = bert_modules.embedding_lookup(
 						input_ids=input_ids,
@@ -57,7 +61,8 @@ class Bert(object):
 						embedding_size=projection_width,
 						initializer_range=self.config.initializer_range,
 						word_embedding_name="word_embeddings",
-						use_one_hot_embeddings=self.config.use_one_hot_embeddings)
+						use_one_hot_embeddings=self.config.use_one_hot_embeddings,
+						embedding_table_adv=embedding_table_adv)
 				else:
 					(self.embedding_output_word, self.embedding_table) = bert_modules.embedding_lookup(
 						input_ids=input_ids,
@@ -65,11 +70,12 @@ class Bert(object):
 						embedding_size=projection_width,
 						initializer_range=self.config.initializer_range,
 						word_embedding_name="word_embeddings",
-						use_one_hot_embeddings=self.config.use_one_hot_embeddings)
+						use_one_hot_embeddings=self.config.use_one_hot_embeddings,
+						embedding_table_adv=embedding_table_adv)
 
-				if kargs.get("perturbation", None):
-					self.embedding_output_word += kargs["perturbation"]
-					tf.logging.info(" add word pertubation for robust learning ")
+				# if kargs.get("perturbation", None):
+				# 	self.embedding_output_word += kargs["perturbation"]
+				# 	tf.logging.info(" add word pertubation for robust learning ")
 
 		with tf.variable_scope(other_embedding_scope, reuse=reuse):
 			with tf.variable_scope("embeddings"):

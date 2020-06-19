@@ -115,7 +115,8 @@ def embedding_lookup(input_ids,
 										 embedding_size=128,
 										 initializer_range=0.02,
 										 word_embedding_name="word_embeddings",
-										 use_one_hot_embeddings=False):
+										 use_one_hot_embeddings=False,
+										 embedding_table_adv=None):
 	"""Looks up words embeddings for id tensor.
 
 	Args:
@@ -139,18 +140,25 @@ def embedding_lookup(input_ids,
 	# reshape to [batch_size, seq_length, 1].
 	if input_ids.shape.ndims == 2:
 		input_ids = tf.expand_dims(input_ids, axis=[-1])
-
+	
 	embedding_table = tf.get_variable(
-			name=word_embedding_name,
-			shape=[vocab_size, embedding_size],
-			initializer=create_initializer(initializer_range))
+		name=word_embedding_name,
+		shape=[vocab_size, embedding_size],
+		initializer=create_initializer(initializer_range))
+
+	if embedding_table_adv:
+		embedding_table_adv += embedding_table
+		tf.logging.info("==apply adv embedding==")
+	else:
+		embedding_table_adv = embedding_table
+		tf.logging.info("==apply normal embedding==")
 
 	if use_one_hot_embeddings:
 		flat_input_ids = tf.reshape(input_ids, [-1])
 		one_hot_input_ids = tf.one_hot(flat_input_ids, depth=vocab_size)
-		output = tf.matmul(one_hot_input_ids, embedding_table)
+		output = tf.matmul(one_hot_input_ids, embedding_table_adv)
 	else:
-		output = tf.nn.embedding_lookup(embedding_table, input_ids)
+		output = tf.nn.embedding_lookup(embedding_table_adv, input_ids)
 
 	input_shape = bert_utils.get_shape_list(input_ids)
 
@@ -164,7 +172,8 @@ def embedding_lookup_factorized(input_ids, # Factorized embedding parameterizati
 					 embedding_size=128,
 					 initializer_range=0.02,
 					 word_embedding_name="word_embeddings",
-					 use_one_hot_embeddings=False):
+					 use_one_hot_embeddings=False,
+					  embedding_table_adv=None):
 	"""Looks up words embeddings for id tensor, but in a factorized style followed by albert. it is used to reduce much percentage of parameters previous exists.
 	   Check "Factorized embedding parameterization" session in the paper.
 	 Args:
@@ -195,12 +204,19 @@ def embedding_lookup_factorized(input_ids, # Factorized embedding parameterizati
 		shape=[vocab_size, embedding_size],
 		initializer=create_initializer(initializer_range))
 
+	if embedding_table_adv:
+		embedding_table_adv += embedding_table
+		tf.logging.info("==apply adv embedding==")
+	else:
+		embedding_table_adv = embedding_table
+		tf.logging.info("==apply normal embedding==")
+
 	flat_input_ids = tf.reshape(input_ids, [-1])  # one rank. shape as (batch_size * sequence_length,)
 	if use_one_hot_embeddings:
 		one_hot_input_ids = tf.one_hot(flat_input_ids,depth=vocab_size)  # one_hot_input_ids=[batch_size * sequence_length,vocab_size]
-		output_middle = tf.matmul(one_hot_input_ids, embedding_table)  # output=[batch_size * sequence_length,embedding_size]
+		output_middle = tf.matmul(one_hot_input_ids, embedding_table_adv)  # output=[batch_size * sequence_length,embedding_size]
 	else:
-		output_middle = tf.gather(embedding_table,flat_input_ids)  # [vocab_size, embedding_size]*[batch_size * sequence_length,]--->[batch_size * sequence_length,embedding_size]
+		output_middle = tf.gather(embedding_table_adv, flat_input_ids)  # [vocab_size, embedding_size]*[batch_size * sequence_length,]--->[batch_size * sequence_length,embedding_size]
 
 	if hidden_size != embedding_size:
 		# 2. project vector(output_middle) to the hidden space
