@@ -19,6 +19,10 @@ class Bert(object):
 									**kargs):
 
 		reuse = kargs["reuse"]
+
+		embedding_table_adv = kargs.get('embedding_table_adv', None)
+		print(embedding_table_adv, "==embedding-adv")
+		
 		with tf.variable_scope(self.config.get("scope", "bert"), reuse=reuse):
 			with tf.variable_scope("embeddings"):
 				# Perform embedding lookup on the word ids.
@@ -31,7 +35,8 @@ class Bert(object):
 							embedding_size=self.config.embedding_size,
 							initializer_range=self.config.initializer_range,
 							word_embedding_name="word_embeddings",
-							use_one_hot_embeddings=self.config.use_one_hot_embeddings)
+							use_one_hot_embeddings=self.config.use_one_hot_embeddings,
+							embedding_table_adv=embedding_table_adv)
 				else:
 					(self.embedding_output_word, self.embedding_table) = albert_modules.embedding_lookup(
 						input_ids=input_ids,
@@ -39,12 +44,13 @@ class Bert(object):
 						embedding_size=self.config.embedding_size,
 						initializer_range=self.config.initializer_range,
 						word_embedding_name="word_embeddings",
-						use_one_hot_embeddings=self.config.use_one_hot_embeddings)
+						use_one_hot_embeddings=self.config.use_one_hot_embeddings,
+						embedding_table_adv=embedding_table_adv)
 					self.project_variable = None
 
-				if kargs.get("perturbation", None):
-					self.embedding_output_word += kargs["perturbation"]
-					tf.logging.info(" add word pertubation for robust learning ")
+				# if kargs.get("perturbation", None):
+				# 	self.embedding_output_word += kargs["perturbation"]
+				# 	tf.logging.info(" add word pertubation for robust learning ")
 
 				# Add positional embeddings and token type embeddings, then layer
 				# normalize and perform dropout.

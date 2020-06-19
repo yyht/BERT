@@ -120,7 +120,7 @@ def embedding_lookup(input_ids,
 										 initializer_range=0.02,
 										 word_embedding_name="word_embeddings",
 										 use_one_hot_embeddings=False,
-										 embedding_table=None):
+										 embedding_table_adv=None):
 	"""Looks up words embeddings for id tensor.
 
 	Args:
@@ -150,12 +150,19 @@ def embedding_lookup(input_ids,
 			shape=[vocab_size, embedding_size],
 			initializer=create_initializer(initializer_range))
 
+	if embedding_table_adv:
+		embedding_table_adv += embedding_table
+		tf.logging.info("==apply adv embedding==")
+	else:
+		embedding_table_adv = embedding_table
+		tf.logging.info("==apply normal embedding==")
+
 	if use_one_hot_embeddings:
 		flat_input_ids = tf.reshape(input_ids, [-1])
 		one_hot_input_ids = tf.one_hot(flat_input_ids, depth=vocab_size)
-		output = tf.matmul(one_hot_input_ids, embedding_table)
+		output = tf.matmul(one_hot_input_ids, embedding_table_adv)
 	else:
-		output = tf.nn.embedding_lookup(embedding_table, input_ids)
+		output = tf.nn.embedding_lookup(embedding_table_adv, input_ids)
 
 	input_shape = bert_utils.get_shape_list(input_ids)
 
@@ -202,7 +209,8 @@ def gumbel_embedding_lookup(input_ids,
 										 embedding_size=128,
 										 initializer_range=0.02,
 										 word_embedding_name="word_embeddings",
-										 use_one_hot_embeddings=False):
+										 use_one_hot_embeddings=False,
+										 embedding_table_adv=None):
 	"""Looks up words embeddings for id tensor.
 
 	Args:
@@ -226,13 +234,19 @@ def gumbel_embedding_lookup(input_ids,
 	# reshape to [batch_size, seq_length, 1].
 
 	input_shape = bert_utils.get_shape_list(input_ids, expected_rank=[3])
-
 	embedding_table = tf.get_variable(
 			name=word_embedding_name,
 			shape=[vocab_size, embedding_size],
 			initializer=create_initializer(initializer_range))
+	
+	if embedding_table_adv:
+		embedding_table_adv += embedding_table
+		tf.logging.info("==apply adv embedding==")
+	else:
+		embedding_table_adv = embedding_table
+		tf.logging.info("==apply normal embedding==")
 		
-	output = tf.einsum("abc,cd->abd", tf.cast(input_ids, tf.float32), embedding_table)
+	output = tf.einsum("abc,cd->abd", tf.cast(input_ids, tf.float32), embedding_table_adv)
 	
 	return (output, embedding_table)
 

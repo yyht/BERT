@@ -36,6 +36,9 @@ class Bert(object):
 			other_embedding_scope = self.config.get("scope", "bert")
 			tf.logging.info("==using embedding scope of original model_config.embedding_scope: %s, other_embedding_scope:%s ==", embedding_scope, other_embedding_scope)
 
+		embedding_table_adv = kargs.get('embedding_table_adv', None)
+		print(embedding_table_adv, "==embedding-adv")
+
 		with tf.variable_scope(embedding_scope, reuse=reuse):
 			with tf.variable_scope("embeddings"):
 				# Perform embedding lookup on the word ids.
@@ -60,7 +63,8 @@ class Bert(object):
 							embedding_size=projection_width,
 							initializer_range=self.config.initializer_range,
 							word_embedding_name="word_embeddings",
-							use_one_hot_embeddings=self.config.use_one_hot_embeddings)
+							use_one_hot_embeddings=self.config.use_one_hot_embeddings,
+							embedding_table_adv=embedding_table_adv)
 				elif len(input_shape) == 2:
 					(self.embedding_output_word, self.embedding_table) = bert_modules.embedding_lookup(
 						input_ids=input_ids,
@@ -68,7 +72,8 @@ class Bert(object):
 						embedding_size=projection_width,
 						initializer_range=self.config.initializer_range,
 						word_embedding_name="word_embeddings",
-						use_one_hot_embeddings=self.config.use_one_hot_embeddings)
+						use_one_hot_embeddings=self.config.use_one_hot_embeddings,
+						embedding_table_adv=embedding_table_adv)
 				else:
 					(self.embedding_output_word, self.embedding_table) = bert_modules.embedding_lookup(
 						input_ids=input_ids,
@@ -76,7 +81,8 @@ class Bert(object):
 						embedding_size=projection_width,
 						initializer_range=self.config.initializer_range,
 						word_embedding_name="word_embeddings",
-						use_one_hot_embeddings=self.config.use_one_hot_embeddings)
+						use_one_hot_embeddings=self.config.use_one_hot_embeddings,
+						embedding_table_adv=embedding_table_adv)
 
 		with tf.variable_scope(other_embedding_scope, reuse=reuse):
 			with tf.variable_scope("embeddings"):
