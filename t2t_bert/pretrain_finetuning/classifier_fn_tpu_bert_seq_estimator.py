@@ -238,7 +238,7 @@ def classifier_model_fn_builder(
 											model.get_sequence_output_logits(),
 											sequence_mask
 									])
-				print(tpu_eval_metrics)
+			        print("===tpu metric==", tpu_eval_metrics, "==tpu metric++")
 
 			if kargs.get('use_tpu', False):
 				estimator_spec = tf.contrib.tpu.TPUEstimatorSpec(

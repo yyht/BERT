@@ -241,7 +241,7 @@ def classifier_model_fn_builder(
 		print(model_config.lm_ratio, '==mlm lm_ratio==')
 		loss = model_config.lm_ratio * masked_lm_loss #+ 0.0 * nsp_loss
 
-		if kargs.get("apply_vat", False):
+		if kargs.get("apply_vat", True):
 			vat_loss = vat_utils.virtual_adversarial_loss(
 							model_config,
 							model_api, 
