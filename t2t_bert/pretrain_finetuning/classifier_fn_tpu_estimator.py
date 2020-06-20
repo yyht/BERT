@@ -254,11 +254,11 @@ def classifier_model_fn_builder(
 							sampled_binary_mask=sampled_binary_mask,
 							num_power_iterations=1,
 							noise_var=1e-5,
-							step_size=1e-5,
-							noise_gamma=1e-6,
+							step_size=1e-3,
+							noise_gamma=1e-5,
 							is_training=is_training,
 							pretrain_loss_type='normal',
-							project_norm_type="l2",
+							project_norm_type="inf",
 							**kargs)
 
 			loss += kargs.get("vat_ratio", 10.0) * vat_loss
