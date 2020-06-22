@@ -18,7 +18,8 @@ def efficient_attention_layer(from_tensor,
 										batch_size=None,
 										from_seq_length=None,
 										to_seq_length=None,
-										attention_fixed_size=None):
+										attention_fixed_size=None,
+										dropout_name=None):
 	"""Performs multi-headed attention from `from_tensor` to `to_tensor`.
 
 	This is an implementation of multi-headed attention based on "Attention

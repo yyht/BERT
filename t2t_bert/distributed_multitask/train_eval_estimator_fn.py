@@ -145,7 +145,8 @@ def train_eval_fn(FLAGS,
 			multi_task_config[task_type]['buckets'] = FLAGS.buckets
 			multi_task_config[task_type]['w2v_path'] = FLAGS.w2v_path
 			multi_task_config[task_type]['ln_type'] = FLAGS.ln_type
-			multi_task_config[task_type]['init_lr'] = FLAGS.ln_type
+			multi_task_config[task_type]['init_lr'] = FLAGS.init_lr
+			multi_task_config[task_type]['apply_cpc'] = FLAGS.apply_cpc
 			model_config_dict[task_type] = model_config_parser(Bunch(multi_task_config[task_type]))
 			num_labels_dict[task_type] = multi_task_config[task_type]["num_labels"]
 			init_checkpoint_dict[task_type] = os.path.join(FLAGS.buckets, multi_task_config[task_type]["init_checkpoint"])

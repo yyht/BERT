@@ -14,7 +14,10 @@ import numpy as np
 from utils.bert import bert_utils
 from utils.bert import layer_norm_utils
 from utils.bert import bert_modules
+from utils.bert import dropout_utils
 from tensorflow.python.ops import inplace_ops
+
+stable_dropout = dropout_utils.ReuseDropout()
 
 def gelu(input_tensor):
 	"""Gaussian Error Linear Unit.
@@ -68,7 +71,24 @@ def get_activation(activation_string):
 	else:
 		raise ValueError("Unsupported activation: %s" % act)
 
-def dropout(input_tensor, dropout_prob):
+# def dropout(input_tensor, dropout_prob):
+# 	"""Perform dropout.
+
+# 	Args:
+# 		input_tensor: float Tensor.
+# 		dropout_prob: Python float. The probability of dropping out a value (NOT of
+# 			*keeping* a dimension as in `tf.nn.dropout`).
+
+# 	Returns:
+# 		A version of `input_tensor` with dropout applied.
+# 	"""
+# 	if dropout_prob is None or dropout_prob == 0.0:
+# 		return input_tensor
+
+# 	output = tf.nn.dropout(input_tensor, 1.0 - dropout_prob)
+# 	return output
+
+def dropout(input_tensor, dropout_prob, dropout_name=None):
 	"""Perform dropout.
 
 	Args:
@@ -81,8 +101,10 @@ def dropout(input_tensor, dropout_prob):
 	"""
 	if dropout_prob is None or dropout_prob == 0.0:
 		return input_tensor
-
-	output = tf.nn.dropout(input_tensor, 1.0 - dropout_prob)
+	if dropout_name:
+		output = dropout.dropout(input_tensor, dropout_prob, dropout_name)
+	else:
+		output = tf.nn.dropout(input_tensor, 1.0 - dropout_prob)
 	return output
 
 
@@ -94,10 +116,16 @@ def layer_norm(input_tensor, name=None):
 	# 		inputs=input_tensor, begin_norm_axis=-1, begin_params_axis=-1, scope=name)
 
 
-def layer_norm_and_dropout(input_tensor, dropout_prob, name=None):
+# def layer_norm_and_dropout(input_tensor, dropout_prob, name=None):
+# 	"""Runs layer normalization followed by dropout."""
+# 	output_tensor = layer_norm(input_tensor, name)
+# 	output_tensor = dropout(output_tensor, dropout_prob)
+# 	return output_tensor
+
+def layer_norm_and_dropout(input_tensor, dropout_prob, name=None, dropout_name=None):
 	"""Runs layer normalization followed by dropout."""
 	output_tensor = layer_norm(input_tensor, name)
-	output_tensor = dropout(output_tensor, dropout_prob)
+	output_tensor = dropout(output_tensor, dropout_prob, dropout_name=dropout_name)
 	return output_tensor
 
 
@@ -172,17 +200,18 @@ def embedding_lookup(input_ids,
 	return (output, embedding_table)
 
 def embedding_postprocessor(input_tensor,
-														use_token_type=False,
-														token_type_ids=None,
-														token_type_vocab_size=16,
-														token_type_embedding_name="token_type_embeddings",
-														use_position_embeddings=True,
-														position_embedding_name="position_embeddings",
-														initializer_range=0.02,
-														max_position_embeddings=512,
-														dropout_prob=0.1,
-														token_type_ratio=1.0,
-														position_offset=0):
+							use_token_type=False,
+							token_type_ids=None,
+							token_type_vocab_size=16,
+							token_type_embedding_name="token_type_embeddings",
+							use_position_embeddings=True,
+							position_embedding_name="position_embeddings",
+							initializer_range=0.02,
+							max_position_embeddings=512,
+							dropout_prob=0.1,
+							token_type_ratio=1.0,
+							position_offset=0,
+							dropout_name=None):
 	"""Performs various post-processing on a word embedding tensor.
 
 	Args:
@@ -297,23 +326,24 @@ def embedding_postprocessor(input_tensor,
 																		 position_broadcast_shape)
 		output += position_embeddings
 
-	output = layer_norm_and_dropout(output, dropout_prob)
+	output = layer_norm_and_dropout(output, dropout_prob, dropout_name=dropout_name)
 	return output
 
 def embedding_rule_type_postprocessor(input_tensor,
-														use_token_type=False,
-														token_type_ids=None,
-														rule_type_ids=None,
-														token_type_vocab_size=16,
-														rule_type_size=2,
-														token_type_embedding_name="token_type_embeddings",
-														use_position_embeddings=True,
-														position_embedding_name="position_embeddings",
-														rule_type_embedding_name="rule_type_embedding",
-														use_rule_type_embeddings=True,
-														initializer_range=0.02,
-														max_position_embeddings=512,
-														dropout_prob=0.1):
+									use_token_type=False,
+									token_type_ids=None,
+									rule_type_ids=None,
+									token_type_vocab_size=16,
+									rule_type_size=2,
+									token_type_embedding_name="token_type_embeddings",
+									use_position_embeddings=True,
+									position_embedding_name="position_embeddings",
+									rule_type_embedding_name="rule_type_embedding",
+									use_rule_type_embeddings=True,
+									initializer_range=0.02,
+									max_position_embeddings=512,
+									dropout_prob=0.1,
+									dropout_name=None):
 	"""Performs various post-processing on a word embedding tensor.
 
 	Args:
@@ -440,7 +470,7 @@ def embedding_rule_type_postprocessor(input_tensor,
 																			 [batch_size, seq_length, width])
 		output += rule_type_embeddings
 
-	output = layer_norm_and_dropout(output, dropout_prob)
+	output = layer_norm_and_dropout(output, dropout_prob, dropout_name=dropout_name)
 	return output
 
 
@@ -499,7 +529,8 @@ def attention_layer(from_tensor,
 					decode_loop_step=None,
 					if_bp=False,
 					if_cache_decode=None,
-					attention_fixed_size=None):
+					attention_fixed_size=None,
+					dropout_name=None):
 	"""Performs multi-headed attention from `from_tensor` to `to_tensor`.
 
 	This is an implementation of multi-headed attention based on "Attention
@@ -712,7 +743,7 @@ def attention_layer(from_tensor,
 
 	# This is actually dropping out entire tokens to attend to, which might
 	# seem a bit unusual, but is taken from the original Transformer paper.
-	attention_probs = dropout(attention_probs, attention_probs_dropout_prob)
+	attention_probs = dropout(attention_probs, attention_probs_dropout_prob, dropout_name=dropout_name)
 
 	# # `value_layer` = [B, T, N, H]
 	# value_layer = tf.reshape(
@@ -763,7 +794,8 @@ def transformer_model(input_tensor,
 						decode_loop_step=None,
 						if_bp=False,
 						if_cache_decode=None,
-						attention_fixed_size=None):
+						attention_fixed_size=None,
+						dropout_name=None):
 	"""Multi-headed, multi-layer Transformer from "Attention is All You Need".
 
 	This is almost an exact implementation of the original Transformer encoder.
@@ -844,6 +876,12 @@ def transformer_model(input_tensor,
 			with tf.variable_scope("attention"):
 				attention_heads = []
 				with tf.variable_scope("self"):
+
+					if dropout_name:
+						attention_dropout_name = dropout_name + "/layer_%d/attention/self" % layer_idx
+					else:
+						attention_dropout_name = None
+
 					[attention_head, 
 					present, 
 					attention_scores,
@@ -863,7 +901,8 @@ def transformer_model(input_tensor,
 							decode_loop_step=decode_loop_step,
 							if_bp=if_bp,
 							if_cache_decode=if_cache_decode,
-							attention_fixed_size=attention_fixed_size)
+							attention_fixed_size=attention_fixed_size,
+							dropout_name=attention_dropout_name)
 					attention_heads.append(attention_head)
 					all_present.append(present)
 					all_attention_scores.append(attention_scores)
@@ -880,11 +919,17 @@ def transformer_model(input_tensor,
 				# Run a linear projection of `hidden_size` then add a residual
 				# with `layer_input`.
 				with tf.variable_scope("output"):
+
+					if dropout_name:
+						output_dropout_name = dropout_name + "/layer_%d/attention/output" % layer_idx
+					else:
+						output_dropout_name = None
+
 					attention_output = tf.layers.dense(
 							attention_output,
 							hidden_size,
 							kernel_initializer=create_initializer(initializer_range))
-					attention_output = dropout(attention_output, hidden_dropout_prob)
+					attention_output = dropout(attention_output, hidden_dropout_prob, dropout_name=output_dropout_name)
 					attention_output = layer_norm(attention_output + layer_input)
 
 			# The activation is only applied to the "intermediate" hidden layer.
@@ -897,11 +942,17 @@ def transformer_model(input_tensor,
 
 			# Down-project back to `hidden_size` then add the residual.
 			with tf.variable_scope("output"):
+
+				if dropout_name:
+					output_dropout_name = dropout_name + "/layer_%d/output" % layer_idx
+				else:
+					output_dropout_name = None
+
 				layer_output = tf.layers.dense(
 						intermediate_output,
 						hidden_size,
 						kernel_initializer=create_initializer(initializer_range))
-				layer_output = dropout(layer_output, hidden_dropout_prob)
+				layer_output = dropout(layer_output, hidden_dropout_prob, dropout_name=output_dropout_name)
 				layer_output = layer_norm(layer_output + attention_output)
 				prev_output = layer_output
 				all_layer_outputs.append(layer_output)
@@ -931,7 +982,8 @@ def transformer_rezero_model(input_tensor,
 						decode_loop_step=None,
 						if_bp=False,
 						if_cache_decode=None,
-						attention_fixed_size=None):
+						attention_fixed_size=None,
+						dropout_name=None):
 	"""Multi-headed, multi-layer Transformer from "Attention is All You Need".
 
 	This is almost an exact implementation of the original Transformer encoder.
@@ -1013,6 +1065,12 @@ def transformer_rezero_model(input_tensor,
 			with tf.variable_scope("attention"):
 				attention_heads = []
 				with tf.variable_scope("self"):
+
+					if dropout_name:
+						attention_dropout_name = dropout_name + "/layer_%d/attention/self" % layer_idx
+					else:
+						attention_dropout_name = None
+
 					[attention_head, 
 					present, 
 					attention_scores,
@@ -1032,7 +1090,8 @@ def transformer_rezero_model(input_tensor,
 							decode_loop_step=decode_loop_step,
 							if_bp=if_bp,
 							if_cache_decode=if_cache_decode,
-							attention_fixed_size=attention_fixed_size)
+							attention_fixed_size=attention_fixed_size,
+							dropout_name=attention_dropout_name)
 					attention_heads.append(attention_head)
 					all_present.append(present)
 					all_attention_scores.append(attention_scores)
@@ -1049,6 +1108,12 @@ def transformer_rezero_model(input_tensor,
 				# Run a linear projection of `hidden_size` then add a residual
 				# with `layer_input`.
 				with tf.variable_scope("output"):
+
+					if dropout_name:
+						output_dropout_name = dropout_name + "/layer_%d/attention/output" % layer_idx
+					else:
+						output_dropout_name = None
+
 					attention_output = tf.layers.dense(
 							attention_output,
 							hidden_size,
@@ -1056,7 +1121,7 @@ def transformer_rezero_model(input_tensor,
 					# attention_output = dropout(attention_output, hidden_dropout_prob)
 					# attention_output = layer_norm(attention_output + layer_input)
 
-					attention_output = dropout(attention_output, hidden_dropout_prob)
+					attention_output = dropout(attention_output, hidden_dropout_prob, dropout_name=output_dropout_name)
 					attention_output = layer_input + reweight * attention_output
 
 			# The activation is only applied to the "intermediate" hidden layer.
@@ -1069,6 +1134,12 @@ def transformer_rezero_model(input_tensor,
 
 			# Down-project back to `hidden_size` then add the residual.
 			with tf.variable_scope("output"):
+
+				if dropout_name:
+					output_dropout_name = dropout_name + "/layer_%d/output" % layer_idx
+				else:
+					output_dropout_name = None
+
 				layer_output = tf.layers.dense(
 						intermediate_output,
 						hidden_size,
@@ -1076,7 +1147,7 @@ def transformer_rezero_model(input_tensor,
 				# layer_output = dropout(layer_output, hidden_dropout_prob)
 				# layer_output = layer_norm(layer_output + attention_output)
 
-				layer_output = dropout(layer_output, hidden_dropout_prob)
+				layer_output = dropout(layer_output, hidden_dropout_prob, dropout_name=output_dropout_name)
 				layer_output = attention_output + reweight * layer_output
 
 				prev_output = layer_output
@@ -1106,7 +1177,8 @@ def transformer_model_ml(input_tensor,
 						past=None,
 						decode_loop_step=None,
 						if_bp=False,
-						if_cache_decode=None):
+						if_cache_decode=None,
+						dropout_name=None):
 	"""Multi-headed, multi-layer Transformer from "Attention is All You Need".
 
 	This is almost an exact implementation of the original Transformer encoder.
@@ -1186,6 +1258,12 @@ def transformer_model_ml(input_tensor,
 			with tf.variable_scope("attention"):
 				attention_heads = []
 				with tf.variable_scope("self"):
+
+					if dropout_name:
+						attention_dropout_name = dropout_name + "/layer_%d/attention/self" % layer_idx
+					else:
+						attention_dropout_name = None
+
 					[attention_head, 
 					present, 
 					attention_scores,
@@ -1204,7 +1282,8 @@ def transformer_model_ml(input_tensor,
 							past=pasts[layer_idx],
 							decode_loop_step=decode_loop_step,
 							if_bp=if_bp,
-							if_cache_decode=if_cache_decode)
+							if_cache_decode=if_cache_decode,
+							dropout_name=attention_dropout_name)
 					attention_heads.append(attention_head)
 					all_present.append(present)
 					all_attention_scores.append(attention_scores)
@@ -1221,11 +1300,17 @@ def transformer_model_ml(input_tensor,
 				# Run a linear projection of `hidden_size` then add a residual
 				# with `layer_input`.
 				with tf.variable_scope("output"):
+
+					if dropout_name:
+						output_dropout_name = dropout_name + "/layer_%d/attention/output" % layer_idx
+					else:
+						output_dropout_name = None
+
 					attention_output = tf.layers.dense(
 							attention_output,
 							hidden_size,
 							kernel_initializer=create_initializer(initializer_range))
-					attention_output = dropout(attention_output, hidden_dropout_prob)
+					attention_output = dropout(attention_output, hidden_dropout_prob, dropout_name=output_dropout_name)
 					# attention_output = layer_norm(attention_output + layer_input)
 					attention_output = attention_output + layer_input # attention+input
 
@@ -1240,11 +1325,17 @@ def transformer_model_ml(input_tensor,
 
 			# Down-project back to `hidden_size` then add the residual.
 			with tf.variable_scope("output"):
+
+				if dropout_name:
+					output_dropout_name = dropout_name + "/layer_%d/output" % layer_idx
+				else:
+					output_dropout_name = None
+
 				layer_output = tf.layers.dense(
 						intermediate_output,
 						hidden_size,
 						kernel_initializer=create_initializer(initializer_range))
-				layer_output = dropout(layer_output, hidden_dropout_prob)
+				layer_output = dropout(layer_output, hidden_dropout_prob, dropout_name=output_dropout_name)
 				layer_output = layer_norm(layer_output + attention_output)
 				prev_output = layer_output
 				all_layer_outputs.append(layer_output)

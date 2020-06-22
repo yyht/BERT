@@ -35,7 +35,7 @@ class Albert(object):
 
 		embedding_table_adv = kargs.get('embedding_table_adv', None)
 		print(embedding_table_adv, "==embedding-adv")
-		
+
 		if token_type_ids is None:
 			token_type_ids = tf.zeros(shape=[batch_size, seq_length], dtype=tf.int32)
 
@@ -107,6 +107,7 @@ class Albert(object):
 	def build_encoder(self, input_ids, input_mask, 
 									hidden_dropout_prob, 
 									attention_probs_dropout_prob,
+									embedding_output=None,
 									**kargs):
 		reuse = kargs["reuse"]
 		input_shape = albert_utils_official.get_shape_list(input_ids, expected_rank=[2,3])

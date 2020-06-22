@@ -14,6 +14,8 @@ import numpy as np
 from utils.bert import bert_utils
 from utils.bert import layer_norm_utils
 from utils.bert import bert_adapter_modules
+from utils.bert import dropout_utils
+
 
 def gelu(input_tensor):
 	"""Gaussian Error Linear Unit.

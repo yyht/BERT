@@ -80,6 +80,12 @@ class Bert(object):
 		with tf.variable_scope(other_embedding_scope, reuse=reuse):
 			with tf.variable_scope("embeddings"):
 
+				if kargs.get("reuse_mask", False):
+					dropout_name = other_embedding_scope + "/embeddings"
+					tf.logging.info("****** reuse mask: %s *******".format(dropout_name))
+				else:
+					dropout_name = None
+
 				# Add positional embeddings and token type embeddings, then layer
 				# normalize and perform dropout.
 				tf.logging.info("==using segment type embedding ratio: %s==", str(self.config.get("token_type_ratio", 1.0)))
@@ -94,11 +100,13 @@ class Bert(object):
 						initializer_range=self.config.initializer_range,
 						max_position_embeddings=self.config.max_position_embeddings,
 						dropout_prob=hidden_dropout_prob,
-						token_type_ratio=self.config.get("token_type_ratio", 1.0))
+						token_type_ratio=self.config.get("token_type_ratio", 1.0),
+						dropout_name=dropout_name)
 
 	def build_encoder(self, input_ids, input_mask, 
 									hidden_dropout_prob, 
 									attention_probs_dropout_prob,
+									embedding_output=None,
 									**kargs):
 		reuse = kargs["reuse"]
 		input_shape = bert_utils.get_shape_list(input_ids, expected_rank=[2,3])
@@ -151,6 +159,12 @@ class Bert(object):
 					tf.logging.info("****** normal attention *******")
 					transformer_model = bert_modules.transformer_model
 
+				if kargs.get("reuse_mask", False):
+					dropout_name = self.config.get("scope", "bert") + "/encoder"
+					tf.logging.info("****** reuse mask: %s *******".format(dropout_name))
+				else:
+					dropout_name = None
+
 				# Run the stacked transformer.
 				# `sequence_output` shape = [batch_size, seq_length, hidden_size].
 				[self.all_encoder_layers,
@@ -167,7 +181,8 @@ class Bert(object):
 						attention_probs_dropout_prob=attention_probs_dropout_prob,
 						initializer_range=self.config.initializer_range,
 						do_return_all_layers=True,
-						attention_fixed_size=self.config.get('attention_fixed_size', None))
+						attention_fixed_size=self.config.get('attention_fixed_size', None),
+						dropout_name=dropout_name)
 
 	def build_pooler(self, *args,**kargs):
 		reuse = kargs["reuse"]
@@ -214,6 +229,9 @@ class Bert(object):
 
 	def get_all_encoder_layers(self):
 		return self.all_encoder_layers
+
+	def get_embedding_output(self):
+		return self.embedding_output_word
 
 	def get_embedding_table(self):
 		return self.embedding_table

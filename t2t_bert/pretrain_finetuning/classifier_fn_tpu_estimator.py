@@ -242,6 +242,14 @@ def classifier_model_fn_builder(
 		loss = model_config.lm_ratio * masked_lm_loss #+ 0.0 * nsp_loss
 
 		if kargs.get("apply_vat", True):
+
+			unk_mask = tf.cast(tf.math.equal(features['input_ids'], 100), tf.float32) # not replace unk
+			cls_mask =  tf.cast(tf.math.equal(features['input_ids'], 101), tf.float32) # not replace cls
+			sep_mask = tf.cast(tf.math.equal(features['input_ids'], 102), tf.float32) # not replace sep
+			none_replace_mask =  unk_mask + cls_mask + sep_mask
+			noise_mask = tf.cast(features['input_mask'], tf.float32) * (1-none_replace_mask)
+			noise_mask = tf.expand_dims(noise_mask, axis=-1)
+
 			vat_loss = vat_utils.virtual_adversarial_loss(
 							model_config,
 							model_api, 
@@ -251,17 +259,22 @@ def classifier_model_fn_builder(
 							mode,
 							target,
 							embedding_table=model.get_embedding_table(),
+							noise_mask=noise_mask,
+							embedding_seq_output=model.get_embedding_output(),
 							sampled_binary_mask=sampled_binary_mask,
 							num_power_iterations=1,
-							noise_var=1e-5,
-							step_size=1e-3,
+							noise_var=10.0,
+							step_size=1.0,
 							noise_gamma=1e-5,
 							is_training=is_training,
 							pretrain_loss_type='normal',
-							project_norm_type="inf",
+							project_norm_type="l2",
+							vat_type="vat",
+							adv_type="embedding_seq_output",
+							stop_gradient=False,
 							**kargs)
 
-			loss += kargs.get("vat_ratio", 10.0) * vat_loss
+			loss += kargs.get("vat_ratio", 1.0) * vat_loss
 			tf.logging.info("***** apply vat loss *****")
 		
 		model_io_fn = model_io.ModelIO(model_io_config)

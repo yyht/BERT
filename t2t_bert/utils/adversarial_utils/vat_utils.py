@@ -31,6 +31,8 @@ def get_pretrain_logits(model_config,
 						mode,
 						target,
 						embedding_table_adv=None,
+						embedding_seq_adv=None,
+						stop_gradient=False,
 						sampled_binary_mask=None,
 						is_training=True,
 						pretrain_loss_type="normal", 
@@ -38,6 +40,8 @@ def get_pretrain_logits(model_config,
 	model = model_api(model_config, features, labels,
 					mode, target, reuse=tf.AUTO_REUSE,
 					embedding_table_adv=embedding_table_adv,
+					embedding_seq_adv=embedding_seq_adv,
+					stop_gradient=stop_gradient,
 					**kargs)
 
 	if model_config.model_type == 'bert':
@@ -94,13 +98,13 @@ def adv_project(grad, norm_type='inf', eps=1e-6):
 	input_shape = bert_utils.get_shape_list(d)
 
 	def adv_project(self, grad, norm_type='inf', eps=1e-6):
-        if norm_type == 'l2':
-            direction = grad / (torch.norm(grad, dim=-1, keepdim=True) + eps)
-        elif norm_type == 'l1':
-            direction = grad.sign()
-        else:
-            direction = grad / (grad.abs().max(-1, keepdim=True)[0] + eps)
-        return direction
+				if norm_type == 'l2':
+						direction = grad / (torch.norm(grad, dim=-1, keepdim=True) + eps)
+				elif norm_type == 'l1':
+						direction = grad.sign()
+				else:
+						direction = grad / (grad.abs().max(-1, keepdim=True)[0] + eps)
+				return direction
 
 	"""
 	input_shape = bert_utils.get_shape_list(grad)
@@ -127,6 +131,8 @@ def generate_virtual_adversarial_perturbation(model_config,
 											mode,
 											target,
 											embedding_table,
+											noise_mask=None,
+											embedding_seq_output=None,
 											sampled_binary_mask=None,
 											noise_var=1e-5,
 											step_size=1e-3,
@@ -135,12 +141,59 @@ def generate_virtual_adversarial_perturbation(model_config,
 											is_training=True,
 											project_norm_type="l2",
 											pretrain_loss_type="normal",
+											adv_type="embedding_seq_output",
+											vat_type="vat",
 											**kargs):
 
-	input_shape = bert_utils.get_shape_list(embedding_table)
-	noise = tf.random_normal(shape=input_shape)
+	"""
+	for alum:
+		noise_var=1e-5,
+		step_size=1e-3,
+		noise_gamma=1e-5,
+	for vat:
+		noise_var=1e-1,
+		step_size=5.0,
+		noise_gamma=1e-5,
+	"""
+
+	if kargs.get("adv_type", 'embedding_table') == 'embedding_table':
+		input_shape = bert_utils.get_shape_list(embedding_table)
+		noise = tf.random_normal(shape=input_shape)
+	elif kargs.get("adv_type", 'embedding_table') == 'embedding_seq_output':
+		input_shape = bert_utils.get_shape_list(embedding_seq_output)
+		noise = tf.random_normal(shape=input_shape)
+		noise *= noise_mask
+
+	if kargs.get("vat_type", "vat") == "vat":
+		noise_var =1e-1 # small_constant_for_finite_diff
+		step_size = 5.0 # perturb_norm_length
+		noise_gamma = 1e-5
+		tf.logging.info("***** vat hyparameter: noise_var: %s, step_size: %s, noise_gamma: %s" % (str(noise_var), str(step_size), str(noise_gamma)))
+	elif kargs.get("vat_type", "alum") == "alum":
+		noise_var = 1e-5
+		step_size = 1e-3
+		noise_gamma = 1e-5
+		tf.logging.info("***** alum hyparameter: noise_var: %s, step_size: %s, noise_gamma: %s" % (str(noise_var), str(step_size), str(noise_gamma)))
+
 	for _ in range(num_power_iterations):
-		noise *= noise_gamma
+		if kargs.get("vat_type", "alum") == "alum":
+			noise *= noise_var
+			tf.logging.info("***** apply alum *****")
+		elif kargs.get("vat_type", "vat") == "vat":
+			noise = adv_project(noise, 
+						norm_type="l2", 
+						eps=noise_gamma)
+			noise *= noise_var
+			tf.logging.info("***** apply vat *****")
+
+		if kargs.get("adv_type", 'embedding_table') == 'embedding_table':
+			embedding_table_adv = noise
+			embedding_seq_adv = None
+			stop_gradient = False
+		elif kargs.get("adv_type", 'embedding_table') == 'embedding_seq_output'::
+			embedding_table_adv = None
+			embedding_seq_adv = noise
+
 		adv_logits = get_pretrain_logits(
 									model_config=model_config,
 									model_api=model_api, 
@@ -149,13 +202,15 @@ def generate_virtual_adversarial_perturbation(model_config,
 									logits=logits,
 									mode=mode,
 									target=target,
-									embedding_table_adv=noise,
+									embedding_table_adv=embedding_table_adv,
+									embedding_seq_adv=embedding_seq_adv,
+									stop_gradient=stop_gradient,
 									sampled_binary_mask=sampled_binary_mask,
 									is_training=is_training,
 									pretrain_loss_type=pretrain_loss_type, 
 									**kargs)
 		
-		dist = kl_divergence_with_logit(logits, adv_logits)
+		dist = kl_divergence_with_logit(tf.stop_gradient(logits), adv_logits)
 		if sampled_binary_mask is not None:
 			dist = tf.reduce_sum(dist * tf.cast(sampled_binary_mask, tf.float32)) / tf.reduce_sum(1e-10+tf.cast(sampled_binary_mask, tf.float32))
 		else:
@@ -178,6 +233,8 @@ def virtual_adversarial_loss(model_config,
 							mode,
 							target,
 							embedding_table,
+							noise_mask=None,
+							embedding_seq_output=None,
 							sampled_binary_mask=None,
 							num_power_iterations=1,
 							noise_var=1e-5,
@@ -186,6 +243,9 @@ def virtual_adversarial_loss(model_config,
 							is_training=True,
 							project_norm_type="l2",
 							pretrain_loss_type="normal",
+							vat_type="vat",
+							adv_type="embedding_seq_output",
+							stop_gradient=False,
 							**kargs):
 	"""
 	https://github.com/namisan/mt-dnn/blob/master/alum/adv_masked_lm.py
@@ -199,6 +259,9 @@ def virtual_adversarial_loss(model_config,
 								mode=mode,
 								target=target,
 								embedding_table=embedding_table,
+								noise_mask=noise_mask,
+								embedding_seq_output=embedding_seq_output,
+								stop_gradient=stop_gradient,
 								sampled_binary_mask=sampled_binary_mask,
 								noise_var=noise_var,
 								step_size=step_size,
@@ -207,14 +270,22 @@ def virtual_adversarial_loss(model_config,
 								is_training=is_training,
 								project_norm_type=project_norm_type,
 								pretrain_loss_type=pretrain_loss_type,
+								vat_type=vat_type,
+								adv_type=adv_type,
 								**kargs)
 
-	if kargs.get("no_embed_bp_adv", False):
-		embedding_table_adv = r_vadv
-		tf.logging.info("***** embed_bp_adv *****")
-	else:
-		embedding_table_adv = r_vadv+tf.stop_gradient(embedding_table)-embedding_table
-		tf.logging.info("***** no_embed_bp_adv *****")
+	if kargs.get("adv_type", 'embedding_table') == 'embedding_table':
+		if kargs.get("no_embed_bp_adv", False):
+			embedding_table_adv = r_vadv
+			tf.logging.info("***** embed_bp_adv *****")
+		else:
+			embedding_table_adv = r_vadv+tf.stop_gradient(embedding_table)-embedding_table
+			tf.logging.info("***** no_embed_bp_adv *****")
+		embedding_seq_adv = None
+	elif kargs.get("adv_type", 'embedding_table') == 'embedding_seq_output':
+		embedding_table_adv = None
+		embedding_seq_adv = r_vadv 
+
 	adv_logits = get_pretrain_logits(
 								model_config=model_config,
 								model_api=model_api, 
@@ -224,6 +295,8 @@ def virtual_adversarial_loss(model_config,
 								mode=mode,
 								target=target,
 								embedding_table_adv=embedding_table_adv,
+								embedding_seq_adv=embedding_seq_adv,
+								stop_gradient=stop_gradient,
 								sampled_binary_mask=sampled_binary_mask,
 								is_training=is_training,
 								pretrain_loss_type=pretrain_loss_type,

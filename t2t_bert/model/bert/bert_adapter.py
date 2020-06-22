@@ -20,7 +20,7 @@ class Bert(object):
 		reuse = kargs["reuse"]
 		embedding_table_adv = kargs.get('embedding_table_adv', None)
 		print(embedding_table_adv, "==embedding-adv")
-		
+
 		with tf.variable_scope(self.config.get("scope", "bert"), reuse=reuse):
 			with tf.variable_scope("embeddings"):
 				# Perform embedding lookup on the word ids.
@@ -54,6 +54,7 @@ class Bert(object):
 	def build_encoder(self, input_ids, input_mask, 
 									hidden_dropout_prob, 
 									attention_probs_dropout_prob,
+									embedding_output=None,
 									**kargs):
 		reuse = kargs["reuse"]
 		with tf.variable_scope(self.config.get("scope", "bert"), reuse=reuse):
@@ -116,6 +117,9 @@ class Bert(object):
 
 	def get_all_encoder_layers(self):
 		return self.all_encoder_layers
+
+	def get_embedding_output(self):
+		return self.embedding_output_word
 
 	def get_embedding_table(self):
 		return self.embedding_table

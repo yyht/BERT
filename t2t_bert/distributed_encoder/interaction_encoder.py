@@ -210,13 +210,15 @@ def bert_interaction_encoder(model_config, features, labels,
 						hidden_dropout_prob,
 						attention_probs_dropout_prob,
 						use_token_type=kargs.get('use_token_type', True),
-						reuse=reuse)
+						reuse=reuse,
+						reuse_mask=kargs.get("reuse_mask", True))
 	model.build_encoder(input_ids_a,
 						input_mask_a,
 						hidden_dropout_prob, 
 						attention_probs_dropout_prob,
 						reuse=reuse,
-						attention_type=kargs.get('attention_type', 'normal_attention'))
+						attention_type=kargs.get('attention_type', 'normal_attention'),
+						reuse_mask=kargs.get("reuse_mask", True))
 	model.build_pooler(reuse=reuse)
 	sent_repres_a = model.get_pooled_output()
 	with tf.variable_scope(model_config.scope+"/feature_output", reuse=tf.AUTO_REUSE):
@@ -235,13 +237,15 @@ def bert_interaction_encoder(model_config, features, labels,
 						hidden_dropout_prob,
 						attention_probs_dropout_prob,
 						use_token_type=kargs.get('use_token_type', True),
-						reuse=reuse)
+						reuse=reuse,
+						reuse_mask=kargs.get("reuse_mask", True))
 	model.build_encoder(input_ids_b,
 						input_mask_b,
 						hidden_dropout_prob, 
 						attention_probs_dropout_prob,
 						reuse=reuse,
-						attention_type=kargs.get('attention_type', 'normal_attention'))
+						attention_type=kargs.get('attention_type', 'normal_attention'),
+						reuse_mask=kargs.get("reuse_mask", True))
 	model.build_pooler(reuse=reuse)
 	sent_repres_b = model.get_pooled_output()
 	with tf.variable_scope(model_config.scope+"/feature_output", reuse=tf.AUTO_REUSE):

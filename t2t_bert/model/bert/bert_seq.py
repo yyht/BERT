@@ -23,7 +23,7 @@ class Bert(object):
 		reuse = kargs["reuse"]
 		embedding_table_adv = kargs.get('embedding_table_adv', None)
 		print(embedding_table_adv, "==embedding-adv")
-		
+
 		if self.config.get("embedding", "none_factorized") == "none_factorized":
 			projection_width = self.config.hidden_size
 			tf.logging.info("==not using embedding factorized==")
@@ -99,6 +99,12 @@ class Bert(object):
 		with tf.variable_scope(other_embedding_scope, reuse=reuse):
 			with tf.variable_scope("embeddings"):
 
+				if kargs.get("reuse_mask", False):
+					dropout_name = other_embedding_scope + "/embeddings"
+					tf.logging.info("****** reuse mask: %s *******".format(dropout_name))
+				else:
+					dropout_name = None
+
 				# Add positional embeddings and token type embeddings, then layer
 				# normalize and perform dropout.
 				tf.logging.info("==using segment type embedding ratio: %s==", str(self.config.get("token_type_ratio", 1.0)))
@@ -114,11 +120,13 @@ class Bert(object):
 						max_position_embeddings=self.config.max_position_embeddings,
 						dropout_prob=hidden_dropout_prob,
 						token_type_ratio=self.config.get("token_type_ratio", 1.0),
-						position_offset=self.past_length)
+						position_offset=self.past_length,
+						dropout_name=dropout_name)
 
 	def build_encoder(self, input_ids, input_mask, 
 									hidden_dropout_prob, 
 									attention_probs_dropout_prob,
+									embedding_output=None,
 									past=None,
 									decode_loop_step=None,
 									max_decode_length=None,
@@ -201,6 +209,13 @@ class Bert(object):
 					tf.logging.info("****** normal attention *******")
 					transformer_model = bert_seq_modules.transformer_model
 
+				
+				if kargs.get("reuse_mask", False):
+					dropout_name = self.config.get("scope", "bert") + "/encoder"
+					tf.logging.info("****** reuse mask: %s *******".format(dropout_name))
+				else:
+					dropout_name = None
+
 				[self.all_encoder_layers,
 				self.all_present,
 				self.all_attention_scores,
@@ -220,7 +235,8 @@ class Bert(object):
 						decode_loop_step=decode_loop_step,
 						if_bp=if_bp,
 						if_cache_decode=if_cache_decode,
-						attention_fixed_size=self.config.get('attention_fixed_size', None))
+						attention_fixed_size=self.config.get('attention_fixed_size', None),
+						dropout_name=dropout_name)
 				# self.cached_present = tf.stack(self.all_present, axis=1)
 
 	def build_output_logits(self, **kargs):
@@ -354,6 +370,9 @@ class Bert(object):
 
 	def get_embedding_table(self):
 		return self.embedding_table
+
+	def get_embedding_output(self):
+		return self.embedding_output_word
 
 	def get_encoder_layers(self, layer_num):
 		if layer_num >= 0 and layer_num <= len(self.all_encoder_layers) - 1:

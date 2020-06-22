@@ -15,7 +15,7 @@ pai -name tensorflow1120
 	-project algo_public
 	-Dscript='file://${model_zip}'
 	-DentryFile='./BERT/t2t_bert/distributed_bin/all_reduce_train_eval_api.py' 
-	-DgpuRequired=200
+	-DgpuRequired=100
 	-DjobName='bert_qqp'
 	-Dtags='bert'
 	-DmaxHungTimeBeforeGCInSeconds=0
