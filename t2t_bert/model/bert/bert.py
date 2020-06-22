@@ -90,9 +90,11 @@ class Bert(object):
 		if embedding_seq_adv is not None:
 			if kargs.get("stop_gradient", False):
 				self.embedding_output_word += embedding_seq_adv
+				tf.logging.info("****** embedding_output_word with bp *******" )
 			else:
 				embedding_seq_adv = embedding_seq_adv + tf.stop_gradient(self.embedding_output_word) - self.embedding_output_word
 				self.embedding_output_word += embedding_seq_adv
+				tf.logging.info("****** embedding_output_word without bp *******" )
 
 		with tf.variable_scope(other_embedding_scope, reuse=reuse):
 			with tf.variable_scope("embeddings"):
