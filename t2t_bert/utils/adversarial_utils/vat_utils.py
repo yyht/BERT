@@ -190,7 +190,7 @@ def generate_virtual_adversarial_perturbation(model_config,
 			embedding_table_adv = noise
 			embedding_seq_adv = None
 			stop_gradient = False
-		elif kargs.get("adv_type", 'embedding_table') == 'embedding_seq_output'::
+		elif kargs.get("adv_type", 'embedding_table') == 'embedding_seq_output':
 			embedding_table_adv = None
 			embedding_seq_adv = noise
 
