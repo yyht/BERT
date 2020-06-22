@@ -157,20 +157,22 @@ def generate_virtual_adversarial_perturbation(model_config,
 		noise_gamma=1e-5,
 	"""
 
-	if kargs.get("adv_type", 'embedding_table') == 'embedding_table':
+	if adv_type == 'embedding_table':
 		input_shape = bert_utils.get_shape_list(embedding_table)
 		noise = tf.random_normal(shape=input_shape)
-	elif kargs.get("adv_type", 'embedding_table') == 'embedding_seq_output':
+		tf.logging.info("***** apply embedding table noise *****")
+	elif adv_type == 'embedding_seq_output':
 		input_shape = bert_utils.get_shape_list(embedding_seq_output)
 		noise = tf.random_normal(shape=input_shape)
 		noise *= noise_mask
+		tf.logging.info("***** apply embedding seq noise *****")
 
-	if kargs.get("vat_type", "vat") == "vat":
+	if vat_type == "vat":
 		noise_var =1e-1 # small_constant_for_finite_diff
 		step_size = 5.0 # perturb_norm_length
 		noise_gamma = 1e-5
 		tf.logging.info("***** vat hyparameter: noise_var: %s, step_size: %s, noise_gamma: %s" % (str(noise_var), str(step_size), str(noise_gamma)))
-	elif kargs.get("vat_type", "alum") == "alum":
+	elif vat_type == "alum":
 		noise_var = 1e-5
 		step_size = 1e-3
 		noise_gamma = 1e-5
@@ -187,12 +189,12 @@ def generate_virtual_adversarial_perturbation(model_config,
 			noise *= noise_var
 			tf.logging.info("***** apply vat *****")
 
-		if kargs.get("adv_type", 'embedding_table') == 'embedding_table':
+		if adv_type == 'embedding_table':
 			embedding_table_adv = noise
 			embedding_seq_adv = None
 			tf.logging.info("***** apply embedding_table *****")
 			stop_gradient = False
-		elif kargs.get("adv_type", 'embedding_table') == 'embedding_seq_output':
+		elif adv_type == 'embedding_seq_output':
 			embedding_table_adv = None
 			embedding_seq_adv = noise
 			tf.logging.info("***** apply embedding_seq_output *****")
@@ -277,17 +279,19 @@ def virtual_adversarial_loss(model_config,
 								adv_type=adv_type,
 								**kargs)
 
-	if kargs.get("adv_type", 'embedding_table') == 'embedding_table':
+	if adv_type == 'embedding_table':
 		if kargs.get("no_embed_bp_adv", False):
 			embedding_table_adv = r_vadv
 			tf.logging.info("***** embed_bp_adv *****")
 		else:
 			embedding_table_adv = r_vadv+tf.stop_gradient(embedding_table)-embedding_table
 			tf.logging.info("***** no_embed_bp_adv *****")
+		tf.logging.info("***** apply embedding_table *****")
 		embedding_seq_adv = None
-	elif kargs.get("adv_type", 'embedding_table') == 'embedding_seq_output':
+	elif adv_type == 'embedding_seq_output':
 		embedding_table_adv = None
 		embedding_seq_adv = r_vadv 
+		tf.logging.info("***** apply embedding_seq_output *****")
 
 	adv_logits = get_pretrain_logits(
 								model_config=model_config,
