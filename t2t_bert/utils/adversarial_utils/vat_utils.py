@@ -177,10 +177,10 @@ def generate_virtual_adversarial_perturbation(model_config,
 		tf.logging.info("***** alum hyparameter: noise_var: %s, step_size: %s, noise_gamma: %s" % (str(noise_var), str(step_size), str(noise_gamma)))
 
 	for _ in range(num_power_iterations):
-		if kargs.get("vat_type", "alum") == "alum":
+		if vat_type == "alum":
 			noise *= noise_var
 			tf.logging.info("***** apply alum *****")
-		elif kargs.get("vat_type", "vat") == "vat":
+		elif vat_type == "vat":
 			noise = adv_project(noise, 
 						norm_type="l2", 
 						eps=noise_gamma)
@@ -190,10 +190,12 @@ def generate_virtual_adversarial_perturbation(model_config,
 		if kargs.get("adv_type", 'embedding_table') == 'embedding_table':
 			embedding_table_adv = noise
 			embedding_seq_adv = None
+			tf.logging.info("***** apply embedding_table *****")
 			stop_gradient = False
 		elif kargs.get("adv_type", 'embedding_table') == 'embedding_seq_output':
 			embedding_table_adv = None
 			embedding_seq_adv = noise
+			tf.logging.info("***** apply embedding_seq_output *****")
 
 		adv_logits = get_pretrain_logits(
 									model_config=model_config,
