@@ -143,6 +143,7 @@ def generate_virtual_adversarial_perturbation(model_config,
 											pretrain_loss_type="normal",
 											adv_type="embedding_seq_output",
 											vat_type="vat",
+											stop_gradient=False,
 											**kargs):
 
 	"""
