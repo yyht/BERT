@@ -88,7 +88,7 @@ class Bert(object):
 						embedding_table_adv=embedding_table_adv)
 
 		if embedding_seq_adv is not None:
-			if kargs.get("stop_gradient", False):
+			if kargs.get("stop_gradient", True):
 				self.embedding_output_word += embedding_seq_adv
 				tf.logging.info("****** embedding_output_word with bp *******" )
 			else:
