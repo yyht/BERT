@@ -75,13 +75,17 @@ def bert_encoder(model_config, features, labels,
 						attention_probs_dropout_prob,
 						use_token_type=kargs.get('use_token_type', True),
 						reuse=reuse,
-						embedding_table_adv=kargs.get('embedding_table_adv', None))
+						embedding_table_adv=kargs.get('embedding_table_adv', None),
+						embedding_seq_adv=kargs.get('embedding_seq_adv', None),
+						stop_gradient=kargs.get("stop_gradient", False),
+						reuse_mask=kargs.get("reuse_mask", True))
 	model.build_encoder(input_ids,
 						input_mask,
 						hidden_dropout_prob, 
 						attention_probs_dropout_prob,
 						reuse=reuse,
-						attention_type=kargs.get('attention_type', 'normal_attention'))
+						attention_type=kargs.get('attention_type', 'normal_attention'),
+						reuse_mask=kargs.get("reuse_mask", True))
 	model.build_pooler(reuse=reuse)
 
 	return model

@@ -7,6 +7,7 @@ train_file=lazada/new_data/20190415/data/train_tfrecords
 dev_file=lazada/new_data/20190415/data/dev_tfrecords
 model_output=sentence_pair/pretrain_gatedcnn_lm/cpc_cls/vae_bow/pretrained_light_dgcnn/normal/disc_bi_ligthconv_v1_circle_loss
 epoch=100
+apply_cpc=none
 num_classes=4
 train_size=6000000
 eval_size=190190

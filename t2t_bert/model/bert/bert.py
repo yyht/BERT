@@ -39,6 +39,9 @@ class Bert(object):
 		embedding_table_adv = kargs.get('embedding_table_adv', None)
 		print(embedding_table_adv, "==embedding-adv")
 
+		embedding_seq_adv = kargs.get('embedding_seq_adv', None)
+		print(embedding_seq_adv, "==embedding-adv")
+
 		with tf.variable_scope(embedding_scope, reuse=reuse):
 			with tf.variable_scope("embeddings"):
 				# Perform embedding lookup on the word ids.
@@ -84,8 +87,21 @@ class Bert(object):
 						use_one_hot_embeddings=self.config.use_one_hot_embeddings,
 						embedding_table_adv=embedding_table_adv)
 
+		if embedding_seq_adv is not None:
+			if kargs.get("stop_gradient", False):
+				self.embedding_output_word += embedding_seq_adv
+			else:
+				embedding_seq_adv = embedding_seq_adv + tf.stop_gradient(self.embedding_output_word) - self.embedding_output_word
+				self.embedding_output_word += embedding_seq_adv
+
 		with tf.variable_scope(other_embedding_scope, reuse=reuse):
 			with tf.variable_scope("embeddings"):
+
+				if kargs.get("reuse_mask", False):
+					dropout_name = other_embedding_scope + "/embeddings"
+					tf.logging.info("****** reuse mask: %s *******" % (dropout_name))
+				else:
+					dropout_name = None
 
 				# Add positional embeddings and token type embeddings, then layer
 				# normalize and perform dropout.
@@ -101,11 +117,13 @@ class Bert(object):
 						initializer_range=self.config.initializer_range,
 						max_position_embeddings=self.config.max_position_embeddings,
 						dropout_prob=hidden_dropout_prob,
-						token_type_ratio=self.config.get("token_type_ratio", 1.0))
+						token_type_ratio=self.config.get("token_type_ratio", 1.0),
+						dropout_name=dropout_name)
 
 	def build_encoder(self, input_ids, input_mask, 
 									hidden_dropout_prob, 
 									attention_probs_dropout_prob,
+									embedding_output=None,
 									**kargs):
 		reuse = kargs["reuse"]
 		input_shape = bert_utils.get_shape_list(input_ids, expected_rank=[2,3])
@@ -166,10 +184,21 @@ class Bert(object):
 					tf.logging.info("****** normal attention *******")
 					transformer_model = bert_modules.transformer_model
 
+				if embedding_output is not None:
+					embedding_seq_output = embedding_output
+				else:
+					embedding_seq_output = self.embedding_output
+
+				if kargs.get("reuse_mask", False):
+					dropout_name = self.config.get("scope", "bert") + "/encoder"
+					tf.logging.info("****** reuse mask: %s *******" % (dropout_name))
+				else:
+					dropout_name = None
+
 				[self.all_encoder_layers,
 				self.all_attention_scores,
 				self.all_value_outputs] = transformer_model(
-						input_tensor=self.embedding_output,
+						input_tensor=embedding_seq_output,
 						attention_mask=attention_mask,
 						hidden_size=self.config.hidden_size,
 						num_hidden_layers=self.config.num_hidden_layers,
@@ -180,7 +209,8 @@ class Bert(object):
 						attention_probs_dropout_prob=attention_probs_dropout_prob,
 						initializer_range=self.config.initializer_range,
 						do_return_all_layers=True,
-						attention_fixed_size=self.config.get('attention_fixed_size', None))
+						attention_fixed_size=self.config.get('attention_fixed_size', None),
+						dropout_name=dropout_name)
 
 	def build_pooler(self, *args,**kargs):
 		reuse = kargs["reuse"]
@@ -236,6 +266,9 @@ class Bert(object):
 
 	def get_embedding_table(self):
 		return self.embedding_table
+
+	def get_embedding_output(self):
+		return self.embedding_output_word
 
 	def get_encoder_layers(self, layer_num):
 		if layer_num >= 0 and layer_num <= len(self.all_encoder_layers) - 1:
