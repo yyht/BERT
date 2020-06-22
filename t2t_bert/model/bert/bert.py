@@ -88,7 +88,7 @@ class Bert(object):
 						embedding_table_adv=embedding_table_adv)
 
 		if embedding_seq_adv is not None:
-			if kargs.get("stop_gradient", True):
+			if not kargs.get("stop_gradient", False):
 				self.embedding_output_word += embedding_seq_adv
 				tf.logging.info("****** embedding_output_word with bp *******" )
 			else:
@@ -188,8 +188,10 @@ class Bert(object):
 
 				if embedding_output is not None:
 					embedding_seq_output = embedding_output
+					tf.logging.info("****** outer-embedding_seq_output *******")
 				else:
 					embedding_seq_output = self.embedding_output
+					tf.logging.info("****** self-embedding_seq_output *******")
 
 				if kargs.get("reuse_mask", False):
 					dropout_name = self.config.get("scope", "bert") + "/encoder"
