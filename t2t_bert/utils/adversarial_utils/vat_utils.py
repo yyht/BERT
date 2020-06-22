@@ -157,11 +157,11 @@ def generate_virtual_adversarial_perturbation(model_config,
 		noise_gamma=1e-5,
 	"""
 
-	if kargs.get("adv_type", 'embedding_table') == 'embedding_table':
+	if adv_type == 'embedding_table':
 		input_shape = bert_utils.get_shape_list(embedding_table)
 		noise = tf.random_normal(shape=input_shape)
 		tf.logging.info("***** apply embedding table noise *****")
-	elif kargs.get("adv_type", 'embedding_table') == 'embedding_seq_output':
+	elif adv_type == 'embedding_seq_output':
 		input_shape = bert_utils.get_shape_list(embedding_seq_output)
 		noise = tf.random_normal(shape=input_shape)
 		noise *= noise_mask
