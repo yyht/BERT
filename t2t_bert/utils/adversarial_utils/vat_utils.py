@@ -228,6 +228,7 @@ def generate_virtual_adversarial_perturbation(model_config,
 			noise = adv_project(delta_grad, 
 							norm_type=project_norm_type, 
 							eps=noise_gamma)
+			tf.logging.info("***** apply alum proj *****")
 
 	return step_size * noise
 
