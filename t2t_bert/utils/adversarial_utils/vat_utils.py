@@ -168,7 +168,7 @@ def generate_virtual_adversarial_perturbation(model_config,
 		tf.logging.info("***** apply embedding seq noise *****")
 
 	if vat_type == "vat":
-		noise_var =1e-1 # small_constant_for_finite_diff
+		noise_var = 1e-1 # small_constant_for_finite_diff
 		step_size = 5.0 # perturb_norm_length
 		noise_gamma = 1e-5
 		tf.logging.info("***** vat hyparameter: noise_var: %s, step_size: %s, noise_gamma: %s" % (str(noise_var), str(step_size), str(noise_gamma)))
@@ -224,9 +224,10 @@ def generate_virtual_adversarial_perturbation(model_config,
 		delta_grad = tf.gradients(dist, [noise])[0]
 		# add small scale for d update
 		delta_grad = tf.stop_gradient(delta_grad)
-		noise = adv_project(delta_grad, 
-						norm_type=project_norm_type, 
-						eps=noise_gamma)
+		if vat_type == "alum":
+			noise = adv_project(delta_grad, 
+							norm_type=project_norm_type, 
+							eps=noise_gamma)
 
 	return step_size * noise
 
