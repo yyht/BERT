@@ -241,7 +241,7 @@ def classifier_model_fn_builder(
 		print(model_config.lm_ratio, '==mlm lm_ratio==')
 		loss = model_config.lm_ratio * masked_lm_loss #+ 0.0 * nsp_loss
 
-		if kargs.get("apply_vat", True):
+		if kargs.get("apply_vat", False):
 
 			unk_mask = tf.cast(tf.math.equal(features['input_ids'], 100), tf.float32) # not replace unk
 			cls_mask =  tf.cast(tf.math.equal(features['input_ids'], 101), tf.float32) # not replace cls
