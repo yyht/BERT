@@ -231,7 +231,12 @@ def generate_virtual_adversarial_perturbation(model_config,
 			tf.logging.info("***** apply alum proj *****")
 		elif vat_type == "vat":
 			 noise = delta_grad
-			 tf.logging.info("***** apply vat *****")
+			 tf.logging.info("***** apply vat noise *****")
+
+	if vat_type == "vat":
+		noise = adv_project(noise, 
+							norm_type=project_norm_type, 
+							eps=noise_gamma)
 
 	return step_size * noise
 
