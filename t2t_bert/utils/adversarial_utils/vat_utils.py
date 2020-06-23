@@ -109,8 +109,9 @@ def adv_project(grad, norm_type='inf', eps=1e-6):
 	"""
 	input_shape = bert_utils.get_shape_list(grad)
 	if norm_type == 'l2':
-		grad_norm = tf.sqrt(tf.reduce_sum(tf.pow(grad, 2.0), range(1, len(input_shape)), keep_dims=True))
-		direction = grad / (grad_norm + eps)
+    	alpha = tf.reduce_max(tf.abs(grad), range(1, len(input_shape)), keep_dims=True) + 1e-12
+    	l2_norm = alpha * tf.sqrt(tf.reduce_sum(tf.pow(grad / alpha, 2), range(1, len(input_shape)), keep_dims=True) + 1e-6)
+    	direction = grad / l2_norm
 		tf.logging.info("***** apply l2-adv *****")
 	elif norm_type == 'l1':
 		direction = tf.sign(grad)
@@ -163,12 +164,11 @@ def generate_virtual_adversarial_perturbation(model_config,
 		tf.logging.info("***** apply embedding table noise *****")
 	elif adv_type == 'embedding_seq_output':
 		input_shape = bert_utils.get_shape_list(embedding_seq_output)
-		noise = tf.random_normal(shape=input_shape)
-		noise *= noise_mask
+		noise = tf.random_normal(shape=input_shape)		
 		tf.logging.info("***** apply embedding seq noise *****")
 
 	if vat_type == "vat":
-		noise_var = 1e-1 # small_constant_for_finite_diff
+		noise_var = 1e-6 # small_constant_for_finite_diff
 		step_size = 5.0 # perturb_norm_length
 		noise_gamma = 1e-5
 		tf.logging.info("***** vat hyparameter: noise_var: %s, step_size: %s, noise_gamma: %s" % (str(noise_var), str(step_size), str(noise_gamma)))
@@ -179,6 +179,8 @@ def generate_virtual_adversarial_perturbation(model_config,
 		tf.logging.info("***** alum hyparameter: noise_var: %s, step_size: %s, noise_gamma: %s" % (str(noise_var), str(step_size), str(noise_gamma)))
 
 	for _ in range(num_power_iterations):
+		if adv_type == 'embedding_seq_output':
+			noise *= noise_mask
 		if vat_type == "alum":
 			noise *= noise_var
 			tf.logging.info("***** apply alum *****")
