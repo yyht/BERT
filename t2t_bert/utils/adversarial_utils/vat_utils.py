@@ -109,9 +109,9 @@ def adv_project(grad, norm_type='inf', eps=1e-6):
 	"""
 	input_shape = bert_utils.get_shape_list(grad)
 	if norm_type == 'l2':
-    	alpha = tf.reduce_max(tf.abs(grad), range(1, len(input_shape)), keep_dims=True) + 1e-12
-    	l2_norm = alpha * tf.sqrt(tf.reduce_sum(tf.pow(grad / alpha, 2), range(1, len(input_shape)), keep_dims=True) + 1e-6)
-    	direction = grad / l2_norm
+		alpha = tf.reduce_max(tf.abs(grad), range(1, len(input_shape)), keep_dims=True) + 1e-12
+		l2_norm = alpha * tf.sqrt(tf.reduce_sum(tf.pow(grad / alpha, 2), range(1, len(input_shape)), keep_dims=True) + 1e-6)
+		direction = grad / l2_norm
 		tf.logging.info("***** apply l2-adv *****")
 	elif norm_type == 'l1':
 		direction = tf.sign(grad)
