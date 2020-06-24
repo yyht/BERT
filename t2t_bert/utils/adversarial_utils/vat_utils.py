@@ -330,6 +330,8 @@ def virtual_adversarial_loss(model_config,
 		if sampled_binary_mask is not None:
 			dist_f = tf.reduce_sum(dist_f * tf.cast(sampled_binary_mask, tf.float32)) / tf.reduce_sum(1e-10+tf.cast(sampled_binary_mask, tf.float32))
 		loss = tf.reduce_mean(dist_b+dist_f)
+		tf.logging.info("***** apply kl_inclusive *****")
 	else:
 		loss = tf.reduce_mean(dist_b)
+		tf.logging.info("***** apply kl_exclusive *****")
 	return tf.identity(loss, name='vat_loss')
