@@ -272,6 +272,7 @@ def classifier_model_fn_builder(
 							vat_type="vat",
 							adv_type="embedding_seq_output",
 							stop_gradient=False,
+							kl_inclusive=False,
 							**kargs)
 
 			loss += kargs.get("vat_ratio", 1.0) * vat_loss
