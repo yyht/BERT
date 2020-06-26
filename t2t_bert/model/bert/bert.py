@@ -87,14 +87,14 @@ class Bert(object):
 						use_one_hot_embeddings=self.config.use_one_hot_embeddings,
 						embedding_table_adv=embedding_table_adv)
 
-		if embedding_seq_adv is not None:
+		if embedding_seq_adv is not None and kargs.get("emb_adv_pos", "emb_adv_post") == "emb_adv_pre":
 			if not kargs.get("stop_gradient", False):
 				self.embedding_output_word += embedding_seq_adv
-				tf.logging.info("****** embedding_output_word with bp *******" )
+				tf.logging.info("****** embedding_output_word pre-processor with bp *******" )
 			else:
 				embedding_seq_adv = embedding_seq_adv + tf.stop_gradient(self.embedding_output_word) - self.embedding_output_word
 				self.embedding_output_word += embedding_seq_adv
-				tf.logging.info("****** embedding_output_word without bp *******" )
+				tf.logging.info("****** embedding_output_word pre-processor without bp *******" )
 
 		with tf.variable_scope(other_embedding_scope, reuse=reuse):
 			with tf.variable_scope("embeddings"):
@@ -121,6 +121,15 @@ class Bert(object):
 						dropout_prob=hidden_dropout_prob,
 						token_type_ratio=self.config.get("token_type_ratio", 1.0),
 						dropout_name=dropout_name)
+
+		if embedding_seq_adv is not None and kargs.get("emb_adv_pos", "emb_adv_post") == "emb_adv_post":
+			if not kargs.get("stop_gradient", False):
+				self.embedding_output += embedding_seq_adv
+				tf.logging.info("****** embedding_output_word post-processor with bp *******" )
+			else:
+				embedding_seq_adv = embedding_seq_adv + tf.stop_gradient(self.embedding_output) - self.embedding_output
+				self.embedding_output += embedding_seq_adv
+				tf.logging.info("****** embedding_output_word post-processor without bp *******" )
 
 	def build_encoder(self, input_ids, input_mask, 
 									hidden_dropout_prob, 

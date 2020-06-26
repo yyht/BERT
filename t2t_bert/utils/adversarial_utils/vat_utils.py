@@ -35,13 +35,15 @@ def get_pretrain_logits(model_config,
 						stop_gradient=False,
 						sampled_binary_mask=None,
 						is_training=True,
-						pretrain_loss_type="normal", 
+						pretrain_loss_type="normal",
+						emb_adv_pos="emb_adv_post",
 						**kargs):
 	model = model_api(model_config, features, labels,
 					mode, target, reuse=tf.AUTO_REUSE,
 					embedding_table_adv=embedding_table_adv,
 					embedding_seq_adv=embedding_seq_adv,
 					stop_gradient=stop_gradient,
+					emb_adv_pos=emb_adv_pos,
 					**kargs)
 
 	if model_config.model_type == 'bert':
@@ -145,6 +147,7 @@ def generate_virtual_adversarial_perturbation(model_config,
 											adv_type="embedding_seq_output",
 											vat_type="vat",
 											stop_gradient=False,
+											emb_adv_pos="emb_adv_post",
 											**kargs):
 
 	"""
@@ -215,6 +218,7 @@ def generate_virtual_adversarial_perturbation(model_config,
 									sampled_binary_mask=sampled_binary_mask,
 									is_training=is_training,
 									pretrain_loss_type=pretrain_loss_type, 
+									emb_adv_pos=emb_adv_pos,
 									**kargs)
 		
 		dist = kl_divergence_with_logit(tf.stop_gradient(logits), adv_logits)
@@ -263,6 +267,7 @@ def virtual_adversarial_loss(model_config,
 							vat_type="vat",
 							adv_type="embedding_seq_output",
 							stop_gradient=False,
+							emb_adv_pos="emb_adv_post",
 							**kargs):
 	"""
 	https://github.com/namisan/mt-dnn/blob/master/alum/adv_masked_lm.py
@@ -289,6 +294,7 @@ def virtual_adversarial_loss(model_config,
 								pretrain_loss_type=pretrain_loss_type,
 								vat_type=vat_type,
 								adv_type=adv_type,
+								emb_adv_pos=emb_adv_pos,
 								**kargs)
 
 	if adv_type == 'embedding_table':

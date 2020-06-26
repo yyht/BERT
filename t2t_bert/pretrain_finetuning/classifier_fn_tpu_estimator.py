@@ -273,9 +273,10 @@ def classifier_model_fn_builder(
 							adv_type="embedding_seq_output",
 							stop_gradient=False,
 							kl_inclusive=False,
+							emb_adv_pos="emb_adv_post",
 							**kargs)
 
-			loss += kargs.get("vat_ratio", 1.0) * vat_loss
+			loss += kargs.get("vat_ratio", 10.0) * vat_loss
 			tf.logging.info("***** apply vat loss *****")
 		
 		model_io_fn = model_io.ModelIO(model_io_config)
