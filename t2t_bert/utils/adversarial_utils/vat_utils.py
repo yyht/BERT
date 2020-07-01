@@ -171,8 +171,8 @@ def generate_virtual_adversarial_perturbation(model_config,
 		tf.logging.info("***** apply embedding seq noise *****")
 
 	if vat_type == "vat":
-		noise_var = 1e-6 # small_constant_for_finite_diff
-		step_size = 2.0 # perturb_norm_length
+		noise_var = 1e-5 # small_constant_for_finite_diff
+		step_size = 1e-3 # perturb_norm_length
 		noise_gamma = 1e-5
 		tf.logging.info("***** vat hyparameter: noise_var: %s, step_size: %s, noise_gamma: %s" % (str(noise_var), str(step_size), str(noise_gamma)))
 	elif vat_type == "alum":
