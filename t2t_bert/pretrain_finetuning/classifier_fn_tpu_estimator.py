@@ -116,7 +116,7 @@ def classifier_model_fn_builder(
 
 		if 'input_mask' not in features:
 			input_mask = tf.cast(tf.not_equal(features['input_ids_{}'.format(target)], 
-                                                                            kargs.get('[PAD]', 0)), tf.int32)
+																			kargs.get('[PAD]', 0)), tf.int32)
 
 			if target:
 				features['input_mask_{}'.format(target)] = input_mask
@@ -277,7 +277,7 @@ def classifier_model_fn_builder(
 							**kargs)
 
 			loss += kargs.get("vat_ratio", 1.0) * vat_loss
-                        tf.logging.info("***** apply vat loss:%s *****" % (str(kargs.get("vat_ratio", 1))))
+			tf.logging.info("***** apply vat loss:%s *****" % (str(kargs.get("vat_ratio", 1))))
 		
 		model_io_fn = model_io.ModelIO(model_io_config)
 
