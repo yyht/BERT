@@ -271,8 +271,8 @@ def classifier_model_fn_builder(
 							project_norm_type="l2",
 							vat_type="vat",
 							adv_type="embedding_seq_output",
-							stop_gradient=False,
-							kl_inclusive=False,
+							stop_gradient=True,
+							kl_inclusive=True,
 							emb_adv_pos="emb_adv_post",
 							**kargs)
 
