@@ -268,11 +268,11 @@ def classifier_model_fn_builder(
 							noise_gamma=1e-5,
 							is_training=is_training,
 							pretrain_loss_type='normal',
-							project_norm_type="l2",
-							vat_type="vat",
+							project_norm_type="inf",
+							vat_type="alum",
 							adv_type="embedding_seq_output",
-							stop_gradient=False,
-							kl_inclusive=False,
+							stop_gradient=True,
+							kl_inclusive=True,
 							emb_adv_pos="emb_adv_post",
 							**kargs)
 
