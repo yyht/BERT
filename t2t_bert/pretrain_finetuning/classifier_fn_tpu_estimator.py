@@ -276,8 +276,8 @@ def classifier_model_fn_builder(
 							emb_adv_pos="emb_adv_post",
 							**kargs)
 
-			loss += kargs.get("vat_ratio", 10.0) * vat_loss
-			tf.logging.info("***** apply vat loss *****")
+			loss += kargs.get("vat_ratio", 1.0) * vat_loss
+                        tf.logging.info("***** apply vat loss:%s *****" % (str(kargs.get("vat_ratio", 1))))
 		
 		model_io_fn = model_io.ModelIO(model_io_config)
 
