@@ -171,7 +171,7 @@ def generate_virtual_adversarial_perturbation(model_config,
 		tf.logging.info("***** apply embedding seq noise *****")
 
 	if vat_type == "vat":
-		noise_var = 1e-5 # small_constant_for_finite_diff
+		noise_var = 1e-1 # small_constant_for_finite_diff
 		step_size = 1e-3 # perturb_norm_length
 		noise_gamma = 1e-5
 		tf.logging.info("***** vat hyparameter: noise_var: %s, step_size: %s, noise_gamma: %s" % (str(noise_var), str(step_size), str(noise_gamma)))
@@ -335,9 +335,9 @@ def virtual_adversarial_loss(model_config,
 		dist_f = kl_divergence_with_logit(tf.stop_gradient(adv_logits), logits)
 		if sampled_binary_mask is not None:
 			dist_f = tf.reduce_sum(dist_f * tf.cast(sampled_binary_mask, tf.float32)) / tf.reduce_sum(1e-10+tf.cast(sampled_binary_mask, tf.float32))
-		loss = tf.reduce_mean(dist_b+dist_f)
+		loss = tf.reduce_sum(dist_b+dist_f)
 		tf.logging.info("***** apply kl_inclusive *****")
 	else:
-		loss = tf.reduce_mean(dist_b)
+		loss = tf.reduce_sum(dist_b)
 		tf.logging.info("***** apply kl_exclusive *****")
 	return tf.identity(loss, name='vat_loss')

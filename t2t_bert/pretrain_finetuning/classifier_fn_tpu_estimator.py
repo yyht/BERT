@@ -272,7 +272,7 @@ def classifier_model_fn_builder(
 							vat_type="vat",
 							adv_type="embedding_seq_output",
 							stop_gradient=True,
-							kl_inclusive=True,
+							kl_inclusive=False,
 							emb_adv_pos="emb_adv_post",
 							**kargs)
 
@@ -362,7 +362,7 @@ def classifier_model_fn_builder(
 
 				estimator_spec = tf.contrib.tpu.TPUEstimatorSpec(
 								mode=mode,
-								loss=loss,
+								loss=vat_loss,
 								train_op=train_op,
 								scaffold_fn=scaffold_fn)
 
