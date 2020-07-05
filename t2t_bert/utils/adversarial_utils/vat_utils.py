@@ -110,9 +110,13 @@ def adv_project(grad, norm_type='inf', eps=1e-6):
 
 	"""
 	input_shape = bert_utils.get_shape_list(grad)
+	if len(input_shape) >= 3:
+		shape_list = range(1, len(input_shape))
+	else:
+		shape_list = range(0, len(input_shape))
 	if norm_type == 'l2':
-		alpha = tf.reduce_max(tf.abs(grad), range(1, len(input_shape)), keep_dims=True) + 1e-12
-		l2_norm = alpha * tf.sqrt(tf.reduce_sum(tf.pow(grad / alpha, 2), range(1, len(input_shape)), keep_dims=True) + 1e-6)
+		alpha = tf.reduce_max(tf.abs(grad), shape_list, keep_dims=True) + 1e-12
+		l2_norm = alpha * tf.sqrt(tf.reduce_sum(tf.pow(grad / alpha, 2), shape_list, keep_dims=True) + 1e-6)
 		direction = grad / l2_norm
 		tf.logging.info("***** apply l2-adv *****")
 	elif norm_type == 'l1':
@@ -120,7 +124,7 @@ def adv_project(grad, norm_type='inf', eps=1e-6):
 		tf.logging.info("***** apply l1-adv *****")
 	else:
 		grad_max = tf.reduce_max(tf.abs(grad), 
-								axis=range(1, len(input_shape)),
+								axis=shape_list,
 								keep_dims=True)
 		direction = grad / (grad_max + eps)
 		tf.logging.info("***** apply inf-adv *****")
@@ -171,8 +175,8 @@ def generate_virtual_adversarial_perturbation(model_config,
 		tf.logging.info("***** apply embedding seq noise *****")
 
 	if vat_type == "vat":
-		noise_var = 1e-5 # small_constant_for_finite_diff
-		step_size = 1e-3 # perturb_norm_length
+		noise_var = 1e-1 # small_constant_for_finite_diff
+		step_size = 5e-1 # perturb_norm_length
 		noise_gamma = 1e-5
 		tf.logging.info("***** vat hyparameter: noise_var: %s, step_size: %s, noise_gamma: %s" % (str(noise_var), str(step_size), str(noise_gamma)))
 	elif vat_type == "alum":
@@ -189,7 +193,7 @@ def generate_virtual_adversarial_perturbation(model_config,
 			tf.logging.info("***** apply alum *****")
 		elif vat_type == "vat":
 			noise = adv_project(noise, 
-						norm_type="l2", 
+						norm_type=project_norm_type, 
 						eps=noise_gamma)
 			noise *= noise_var
 			tf.logging.info("***** apply vat *****")
@@ -335,9 +339,9 @@ def virtual_adversarial_loss(model_config,
 		dist_f = kl_divergence_with_logit(tf.stop_gradient(adv_logits), logits)
 		if sampled_binary_mask is not None:
 			dist_f = tf.reduce_sum(dist_f * tf.cast(sampled_binary_mask, tf.float32)) / tf.reduce_sum(1e-10+tf.cast(sampled_binary_mask, tf.float32))
-		loss = tf.reduce_mean(dist_b+dist_f)
+		loss = tf.reduce_sum(dist_b+dist_f)
 		tf.logging.info("***** apply kl_inclusive *****")
 	else:
-		loss = tf.reduce_mean(dist_b)
+		loss = tf.reduce_sum(dist_b)
 		tf.logging.info("***** apply kl_exclusive *****")
 	return tf.identity(loss, name='vat_loss')

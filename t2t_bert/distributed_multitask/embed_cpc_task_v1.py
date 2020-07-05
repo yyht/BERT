@@ -170,7 +170,7 @@ def model_fn_builder(model,
 			neg_true_mask = tf.cast(triplet_loss_utils._get_anchor_negative_triplet_mask(label_ids), tf.float32)
 			pos_true_mask = (1.0 - neg_true_mask) * tf.expand_dims(loss_mask, axis=-1) * tf.expand_dims(loss_mask, axis=0)
 			neg_true_mask = neg_true_mask * tf.expand_dims(loss_mask, axis=-1) * tf.expand_dims(loss_mask, axis=0)
-		elif task_type == 'wsdm':
+		elif task_type in ['wsdm', 'brand_search']:
 			pos_label_mask = tf.cast(features["{}_label_ids".format(task_type)], dtype=tf.float32)
 			pos_label_mask = tf.expand_dims(pos_label_mask, axis=0)  #* tf.expand_dims(pos_label_mask, axis=0)
 			[not_equal_mask, equal_mask] = get_labels_of_similarity(
@@ -184,7 +184,7 @@ def model_fn_builder(model,
 			neg_true_mask = tf.ones_like(cosine_score) - pos_true_mask
 			pos_true_mask = pos_true_mask * tf.expand_dims(loss_mask, axis=-1) * tf.expand_dims(loss_mask, axis=0)
 			neg_true_mask = neg_true_mask * tf.expand_dims(loss_mask, axis=-1) * tf.expand_dims(loss_mask, axis=0)
-		elif task_type == 'afqmc':
+		elif task_type in ['afqmc']:
 			score_shape = bert_utils.get_shape_list(cosine_score, expected_rank=[2,3])
 			[not_equal_mask, equal_mask] = get_labels_of_similarity(
 									features['input_ids_a'], 
