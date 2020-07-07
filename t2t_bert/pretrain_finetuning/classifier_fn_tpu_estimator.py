@@ -249,23 +249,23 @@ def classifier_model_fn_builder(
 
 			if kargs.get("other_mask", True):
 
-				ngram_list = kargs.get("ngram", [10, 5, 3])
-				mask_prob_list = kargs.get("mask_prob", [0.3, 0.3, 0.3])
-				ngram_ratio = kargs.get("ngram_ratio", [7, 1, 1])
-				uniform_ratio = kargs.get("uniform_ratio", 0.6)
-				tf.logging.info("****** dynamic ngram: %s, mask_prob: %s, mask_prior: %s, uniform_ratio: %s *******", 
-						str(ngram_list), str(mask_prob_list), str(ngram_ratio), str(uniform_ratio))	
-				tran_prob_list, hmm_tran_prob_list = [], []
-				for ngram_sub, mask_prob_sub in zip(ngram_list, mask_prob_list):
-					tran_prob, hmm_tran_prob = ngram_prob(ngram_sub, mask_prob_sub)
-					tran_prob_list.append(tran_prob)
-					hmm_tran_prob_list.append(hmm_tran_prob)
-				mask_prior = []
-				for ratio in ngram_ratio:
-					actual_ratio = (1 - uniform_ratio) / sum(ngram_ratio) * ratio
-					mask_prior.append(actual_ratio)
-				mask_prior.append(uniform_ratio)
-				mask_prior = np.array(mask_prior).astype(np.float32)
+				# ngram_list = kargs.get("ngram", [10, 5, 3])
+				# mask_prob_list = kargs.get("mask_prob", [0.3, 0.3, 0.3])
+				# ngram_ratio = kargs.get("ngram_ratio", [7, 1, 1])
+				# uniform_ratio = kargs.get("uniform_ratio", 0.6)
+				# tf.logging.info("****** dynamic ngram: %s, mask_prob: %s, mask_prior: %s, uniform_ratio: %s *******", 
+				# 		str(ngram_list), str(mask_prob_list), str(ngram_ratio), str(uniform_ratio))	
+				# tran_prob_list, hmm_tran_prob_list = [], []
+				# for ngram_sub, mask_prob_sub in zip(ngram_list, mask_prob_list):
+				# 	tran_prob, hmm_tran_prob = ngram_prob(ngram_sub, mask_prob_sub)
+				# 	tran_prob_list.append(tran_prob)
+				# 	hmm_tran_prob_list.append(hmm_tran_prob)
+				# mask_prior = []
+				# for ratio in ngram_ratio:
+				# 	actual_ratio = (1 - uniform_ratio) / sum(ngram_ratio) * ratio
+				# 	mask_prior.append(actual_ratio)
+				# mask_prior.append(uniform_ratio)
+				# mask_prior = np.array(mask_prior).astype(np.float32)
 
 				tf.logging.info("***** adv unlabled data *****")
 				
