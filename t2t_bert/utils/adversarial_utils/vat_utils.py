@@ -116,7 +116,7 @@ def adv_project(grad, norm_type='inf', eps=1e-6):
 		shape_list = range(0, len(input_shape))
 	if norm_type == 'l2':
 		alpha = tf.reduce_max(tf.abs(grad), shape_list, keep_dims=True) + 1e-12
-		l2_norm = alpha * tf.sqrt(tf.reduce_sum(tf.pow(grad / alpha, 2), shape_list, keep_dims=True) + 1e-6)
+		l2_norm = alpha * tf.sqrt(tf.reduce_sum(tf.pow(grad / alpha, 2), shape_list, keep_dims=True) + eps)
 		direction = grad / l2_norm
 		tf.logging.info("***** apply l2-adv *****")
 	elif norm_type == 'l1':
@@ -171,13 +171,13 @@ def generate_virtual_adversarial_perturbation(model_config,
 		tf.logging.info("***** apply embedding table noise *****")
 	elif adv_type == 'embedding_seq_output':
 		input_shape = bert_utils.get_shape_list(embedding_seq_output)
-		noise = tf.random_normal(shape=input_shape)		
+		noise = tf.random_normal(shape=input_shape[0:-1]+[1])		
 		tf.logging.info("***** apply embedding seq noise *****")
 
 	if vat_type == "vat":
 		noise_var = 1e-1 # small_constant_for_finite_dif
 		step_size = 5e-1 # perturb_norm_length
-		noise_gamma = 1e-5
+		noise_gamma = 1e-8
 		tf.logging.info("***** vat hyparameter: noise_var: %s, step_size: %s, noise_gamma: %s" % (str(noise_var), str(step_size), str(noise_gamma)))
 	elif vat_type == "alum":
 		noise_var = 1e-5
@@ -247,6 +247,10 @@ def generate_virtual_adversarial_perturbation(model_config,
 		noise = adv_project(noise, 
 							norm_type=project_norm_type, 
 							eps=noise_gamma)
+
+	if kargs.get('rampup_method', "mean_teacher") == 'mean_teacher':
+		step_size_temp = tf.random_uniform([])
+		step_size *= tf.exp(-5*tf.pow(1 - step_size_temp, 2))
 
 	return step_size * noise
 

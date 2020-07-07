@@ -69,13 +69,13 @@ def model_fn_builder(
 
 		pretrained_tvars = model_io_fn.get_params(model_config.scope, 
 										not_storage_params=not_storage_params)
-		lm_seq_prediction_tvars = model_io_fn.get_params("discriminator_predictions", 
-									not_storage_params=not_storage_params)
-		lm_pretrain_tvars = model_io_fn.get_params("cls/seq_relationship", 
-									not_storage_params=not_storage_params)
+		# lm_seq_prediction_tvars = model_io_fn.get_params("discriminator_predictions", 
+		# 							not_storage_params=not_storage_params)
+		# lm_pretrain_tvars = model_io_fn.get_params("cls/seq_relationship", 
+		# 							not_storage_params=not_storage_params)
 
-		pretrained_tvars.extend(lm_seq_prediction_tvars)
-		pretrained_tvars.extend(lm_pretrain_tvars)
+		# pretrained_tvars.extend(lm_seq_prediction_tvars)
+		# pretrained_tvars.extend(lm_pretrain_tvars)
 		tvars = pretrained_tvars
 
 		print('==discriminator parameters==', tvars)
