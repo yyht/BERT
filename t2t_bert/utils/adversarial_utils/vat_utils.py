@@ -171,7 +171,7 @@ def generate_virtual_adversarial_perturbation(model_config,
 		tf.logging.info("***** apply embedding table noise *****")
 	elif adv_type == 'embedding_seq_output':
 		input_shape = bert_utils.get_shape_list(embedding_seq_output)
-		noise = tf.random_normal(shape=input_shape)		
+		noise = tf.random_normal(shape=input_shape[0:-1]+[1])		
 		tf.logging.info("***** apply embedding seq noise *****")
 
 	if vat_type == "vat":
@@ -247,6 +247,10 @@ def generate_virtual_adversarial_perturbation(model_config,
 		noise = adv_project(noise, 
 							norm_type=project_norm_type, 
 							eps=noise_gamma)
+
+	if kargs.get('rampup_method', "mean_teacher") == 'mean_teacher':
+		step_size_temp = tf.random_uniform([])
+		step_size *= tf.exp(-5*tf.pow(1 - step_size_temp, 2))
 
 	return step_size * noise
 
