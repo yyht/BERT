@@ -94,7 +94,7 @@ def classifier_model_fn_builder(
 
 	ngram_list = kargs.get("ngram", [10, 5, 3])
 	mask_prob_list = kargs.get("mask_prob", [0.2, 0.2, 0.2])
-	ngram_ratio = kargs.get("ngram_ratio", [5, 2, 2])
+	ngram_ratio = kargs.get("ngram_ratio", [7, 1, 1])
 	uniform_ratio = kargs.get("uniform_ratio", 0.1)
 	tf.logging.info("****** dynamic ngram: %s, mask_prob: %s, mask_prior: %s, uniform_ratio: %s *******", 
 			str(ngram_list), str(mask_prob_list), str(ngram_ratio), str(uniform_ratio))	
