@@ -228,11 +228,11 @@ def build_model(sess):
 					target="",
 					sharing_mode=FLAGS.sharing_mode)
 
-	model_fn(features, [], tf.estimator.ModeKeys.TRAIN, {})
+	resp_dict = model_fn(features, [], tf.estimator.ModeKeys.TRAIN, {})
 
 	checkpoint_path = os.path.join(FLAGS.buckets, FLAGS.checkpoint_path)
 	tvars = tf.trainable_variables()
-
+	
 	(assignment_map, initialized_variable_names
 	) = get_assigment_map_from_checkpoint(tvars, checkpoint_path, exclude_scope=FLAGS.exclude_scope)
 
@@ -243,6 +243,7 @@ def build_model(sess):
 			init_string = ", *INIT_FROM_CKPT*"
 		tf.logging.info("  name = %s, shape = %s%s", var.name, var.shape,
 										init_string)
+
 	tf.train.init_from_checkpoint(checkpoint_path, assignment_map)
 	global_step = tf.train.get_or_create_global_step()
 	init = tf.group(tf.global_variables_initializer())
