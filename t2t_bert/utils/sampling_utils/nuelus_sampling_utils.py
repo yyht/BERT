@@ -81,7 +81,7 @@ def nucleus_sampling(logits, vocab_size, p=0.9,
 	exclude_mask = reorder(exclude_mask, tf.cast(indices_v1, dtype=tf.int32))
 	if len(input_shape_list) == 3:
 		exclude_mask = tf.reshape(exclude_mask, input_shape_list)
-		logits = tf.reshape(logits, input_shape_list)
+		# logits = tf.reshape(logits, input_shape_list)
 
 	if input_ids is not None and input_ori_ids is not None:
 		exclude_mask, input_ori_ids = get_extra_mask(
@@ -89,4 +89,6 @@ def nucleus_sampling(logits, vocab_size, p=0.9,
 								exclude_mask, vocab_size,
 								**kargs)
 
-	return logits, exclude_mask, input_ori_ids
+		return [exclude_mask, input_ori_ids]
+	else:
+		return [exclude_mask]
