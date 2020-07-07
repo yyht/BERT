@@ -94,7 +94,7 @@ def classifier_model_fn_builder(
 
 	ngram_list = kargs.get("ngram", [10, 5, 3])
 	mask_prob_list = kargs.get("mask_prob", [0.2, 0.2, 0.2])
-	ngram_ratio = kargs.get("ngram_ratio", [7, 1, 1])
+	ngram_ratio = kargs.get("ngram_ratio", [5, 2, 2])
 	uniform_ratio = kargs.get("uniform_ratio", 0.1)
 	tf.logging.info("****** dynamic ngram: %s, mask_prob: %s, mask_prior: %s, uniform_ratio: %s *******", 
 			str(ngram_list), str(mask_prob_list), str(ngram_ratio), str(uniform_ratio))	
@@ -113,7 +113,7 @@ def classifier_model_fn_builder(
 	def model_fn(features, labels, mode, params):
 
 		model_api = model_zoo(model_config)
-
+                print(features)
 		if 'input_mask' not in features:
 			input_mask = tf.cast(tf.not_equal(features['input_ids_{}'.format(target)], 
 																			kargs.get('[PAD]', 0)), tf.int32)
@@ -241,14 +241,18 @@ def classifier_model_fn_builder(
 		print(model_config.lm_ratio, '==mlm lm_ratio==')
 		loss = model_config.lm_ratio * masked_lm_loss #+ 0.0 * nsp_loss
 
-		if kargs.get("apply_vat", True):
+		if kargs.get("apply_vat", False):
+
+			adv_features = {}
+			for key in features:
+				adv_features[key] = features[key]
 
 			if kargs.get("other_mask", True):
 
 				ngram_list = kargs.get("ngram", [10, 5, 3])
 				mask_prob_list = kargs.get("mask_prob", [0.3, 0.3, 0.3])
 				ngram_ratio = kargs.get("ngram_ratio", [7, 1, 1])
-				uniform_ratio = kargs.get("uniform_ratio", 1.0)
+				uniform_ratio = kargs.get("uniform_ratio", 0.6)
 				tf.logging.info("****** dynamic ngram: %s, mask_prob: %s, mask_prior: %s, uniform_ratio: %s *******", 
 						str(ngram_list), str(mask_prob_list), str(ngram_ratio), str(uniform_ratio))	
 				tran_prob_list, hmm_tran_prob_list = [], []
@@ -264,9 +268,7 @@ def classifier_model_fn_builder(
 				mask_prior = np.array(mask_prior).astype(np.float32)
 
 				tf.logging.info("***** adv unlabled data *****")
-				adv_features = {}
-				for key in features:
-					adv_features[key] = features[key]
+				
 				[adv_output_ids, 
 				adv_sampled_binary_mask] = hmm_input_ids_generation(model_config,
 										adv_features['input_ori_ids'],
@@ -301,7 +303,8 @@ def classifier_model_fn_builder(
 			unk_mask = tf.cast(tf.math.equal(adv_features['input_ids'], 100), tf.float32) # not replace unk
 			cls_mask =  tf.cast(tf.math.equal(adv_features['input_ids'], 101), tf.float32) # not replace cls
 			sep_mask = tf.cast(tf.math.equal(adv_features['input_ids'], 102), tf.float32) # not replace sep
-			none_replace_mask =  unk_mask + cls_mask + sep_mask
+			mask_mask = tf.cast(tf.math.equal(adv_features['input_ids'], 103), tf.float32) # not replace sep
+			none_replace_mask =  unk_mask + cls_mask + sep_mask + mask_mask
 			noise_mask = tf.cast(adv_features['input_mask'], tf.float32) * (1-none_replace_mask)
 			noise_mask = tf.expand_dims(noise_mask, axis=-1)
 
@@ -417,7 +420,7 @@ def classifier_model_fn_builder(
 
 				estimator_spec = tf.contrib.tpu.TPUEstimatorSpec(
 								mode=mode,
-								loss=vat_loss,
+								loss=loss,
 								train_op=train_op,
 								scaffold_fn=scaffold_fn)
 
