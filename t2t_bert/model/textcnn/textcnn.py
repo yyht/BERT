@@ -413,7 +413,8 @@ class TextCNN(base_model.BaseModel):
 												reuse=False, 
 												activation=tf.nn.relu,
 												is_casual=self.config['is_casual'],
-												padding=self.config.get('padding', 'same')
+												padding=self.config.get('padding', 'same'),
+												layer_wise_pos=self.config.get('layer_wise_pos', False)
 												)
 				pooled_output = []
 				if self.config.get('is_casual', True):

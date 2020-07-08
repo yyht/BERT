@@ -9,6 +9,7 @@ from utils.qanet.qanet_layers import highway
 from utils.dsmm.tf_common.nn_module import encode, attend, mlp_layer
 from utils.bert import bert_utils
 from utils.esim import esim_utils
+from utils.textcnn import position_utils
 
 initializer = tf.glorot_uniform_initializer()
 initializer = lambda: tf.contrib.layers.variance_scaling_initializer(factor=1.0,
@@ -178,7 +179,8 @@ def dgcnn(x, input_mask,
 			reuse=False, 
 			activation=tf.nn.relu,
 			is_casual=False,
-			padding='SAME'
+			padding='SAME',
+			layer_wise_pos=False,
 			):
 
 	print(num_filters, '===num_filters===')
@@ -211,6 +213,10 @@ def dgcnn(x, input_mask,
 		dropout_rate = 0.1
 	else:
 		dropout_rate = 0.0
+
+	if layer_wise_pos:
+		inputs = position_utils.add_timing_signal_1d(inputs)
+		tf.logging.info("==layer-wise position encoding==")
 
 	with tf.variable_scope(scope_name, reuse=reuse):
 		inputs = gated_conv1d_op(inputs,
@@ -258,6 +264,9 @@ def dgcnn(x, input_mask,
 
 			tf.logging.info("==kernel_size:%s, num_filter:%s, stride:%s, dilation_rate:%s==", str(kernel_size), 
 										str(num_filter), str(stride), str(dilation_rate))
+			if layer_wise_pos:
+				inputs = position_utils.add_timing_signal_1d(inputs)
+				tf.logging.info("==layer-wise position encoding==")
 			gatedcnn_outputs = residual_gated_conv1d_op(inputs,
 									residual_inputs,
 									filters=num_filter, 
@@ -306,7 +315,8 @@ def backward_dgcnn(x, input_mask,
 			reuse=False, 
 			activation=tf.nn.relu,
 			is_casual=False,
-			padding='SAME'):
+			padding='SAME',
+			layer_wise_pos=False):
 
 	# input_mask: batch_size, seq
 
@@ -339,6 +349,10 @@ def backward_dgcnn(x, input_mask,
 		# inputs = tf.pad(inputs, [[0, 0, ], [left_pad, right_pad], [0, 0]])
 		# padding = 'VALID'
 		print(left_pad, right_pad, '===projection===')
+
+	if layer_wise_pos:
+		inputs = position_utils.add_timing_signal_1d(inputs)
+		tf.logging.info("==layer-wise position encoding==")
 
 	with tf.variable_scope(scope_name, reuse=reuse):
 		inputs = gated_conv1d_op(inputs,
@@ -388,6 +402,10 @@ def backward_dgcnn(x, input_mask,
 
 			tf.logging.info("==kernel_size:%s, num_filter:%s, stride:%s, dilation_rate:%s==", str(kernel_size), 
 										str(num_filter), str(stride), str(dilation_rate))
+			if layer_wise_pos:
+				inputs = position_utils.add_timing_signal_1d(inputs)
+				tf.logging.info("==layer-wise position encoding==")
+
 			gatedcnn_outputs = residual_gated_conv1d_op(inputs,
 									residual_inputs,
 									filters=num_filter, 
