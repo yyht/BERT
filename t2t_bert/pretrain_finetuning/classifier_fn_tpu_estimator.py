@@ -113,7 +113,7 @@ def classifier_model_fn_builder(
 	def model_fn(features, labels, mode, params):
 
 		model_api = model_zoo(model_config)
-
+                print(features)
 		if 'input_mask' not in features:
 			input_mask = tf.cast(tf.not_equal(features['input_ids_{}'.format(target)], 
 																			kargs.get('[PAD]', 0)), tf.int32)
