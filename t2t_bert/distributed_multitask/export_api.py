@@ -309,6 +309,33 @@ flags.DEFINE_string(
 	"if apply distillation"
 	)
 
+flags.DEFINE_string(
+	"apply_cpc", 'none',
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
+	"task_invariant", "no",
+	"if apply distillation"
+	)
+
+flags.DEFINE_float(
+	"init_lr", 5e-5,
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
+	"multitask_balance_type", "data_balanced",
+	"if apply distillation"
+	)
+
+flags.DEFINE_integer(
+	"prefetch", 0,
+	"if apply distillation"
+	)
+
+
+
 def main(_):
 
 	print(FLAGS)

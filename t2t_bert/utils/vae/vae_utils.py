@@ -16,6 +16,16 @@ batch-normalization:
 https://github.com/allenai/vampire/tree/master/vampire/modules/token_embedders
 """
 
+def kl_divergence_with_logit(q_logit, p_logit):
+	# [batch_size, seq_length, classes]
+	q_logit = tf.nn.log_softmax(q_logit, axis=-1)
+	p_logit = tf.nn.log_softmax(p_logit, axis=-1)
+
+	# [batch_size, seq_length]
+	qlogq = tf.reduce_sum(tf.exp(q_logit) * q_logit, -1)
+	qlogp = tf.reduce_sum(tf.exp(q_logit) * p_logit, -1)
+	return qlogq - qlogp
+
 def mean_normalize_scale(tensor, 
 						is_training, 
 						scope, 
@@ -252,6 +262,8 @@ def bow_loss(input_ids, latent_variables,
 			bow_loss = tf.power(tf.exp(logits) - term_freq, 2)
 		elif kargs.get('bow_loss_type', "mse") == 'l1':
 			bow_loss = tf.abs(tf.exp(logits) - term_freq)
+		elif kargs.get("bow_loss_type", "mse") == "kl":
+			bow_loss = -tf.reduce_sum(logits*tf.stop_gradient(term_freq), -1)
 		else:
 			bow_loss = tf.power(tf.exp(logits) - term_freq, 2)
 		bow_loss = tf.reduce_mean(tf.reduce_sum(bow_loss, -1))

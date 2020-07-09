@@ -1,5 +1,6 @@
 import tensorflow as tf
 import numpy as np
+import math
 
 def add_timing_signal_1d(x, min_timescale=1.0, max_timescale=1.0e4):
     """Adds a bunch of sinusoids of different frequencies to a Tensor.
