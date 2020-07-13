@@ -82,7 +82,7 @@ def model_fn_builder(
 		label_ids = features["label_ids"]
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
-			dropout_prob = model_config.dropout_prob
+			dropout_prob = model_config.get("dropout_prob", 0.1)
 			is_training = True
 		else:
 			dropout_prob = 0.0

@@ -113,7 +113,7 @@ def classifier_model_fn_builder(
 	def model_fn(features, labels, mode, params):
 
 		model_api = model_zoo(model_config)
-                print(features)
+		print(features)
 		if 'input_mask' not in features:
 			input_mask = tf.cast(tf.not_equal(features['input_ids_{}'.format(target)], 
 																			kargs.get('[PAD]', 0)), tf.int32)
@@ -165,7 +165,16 @@ def classifier_model_fn_builder(
 			sampled_binary_mask = None
 			is_training = False
 
-		model = model_api(model_config, features, labels,
+		model_features = {}
+		for key in model_features:
+			model_features[key] = features[key]
+
+		if model_config.get("model_type", "bert") == "funnelbert":
+			"""
+			funnel-bert needs opposite pad-mask as input
+			"""
+			model_features['input_mask'] = (1.0 - tf.cast(model_features['input_mask'], dtype=tf.float32))
+		model = model_api(model_config, model_features, labels,
 							mode, target, reuse=tf.AUTO_REUSE,
 							**kargs)
 

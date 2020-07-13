@@ -5,6 +5,7 @@ from model.bert import albert
 from model.bert import bert_electra_joint
 from model.bert import albert_official_electra_joint
 from model.bert import albert_official
+from model.bert import funnel_bert
 from model.textcnn import textcnn
 import tensorflow as tf
 from utils.vae import vae_utils
@@ -413,6 +414,68 @@ def gated_cnn_encoder(model_config, features, labels,
 		if cnn_type in ['bi_dgcnn', 'bi_light_dgcnn']:
 			tf.logging.info(" build seq-lm-backward logits ")
 			model.build_backward_output_logits(reuse=reuse)
+	return model
+
+def funnelbert_encoder(model_config, features, labels, 
+			mode, target, reuse=None, **kargs):
+
+	if target:
+		input_ids = features["input_ids_{}".format(target)]
+		input_mask = tf.cast(features["input_mask_{}".format(target)], dtype=tf.float32)
+		segment_ids = features["segment_ids_{}".format(target)]
+	else:
+		input_ids = features["input_ids"]
+		input_mask = tf.cast(features["input_mask"], dtype=tf.float32)
+		segment_ids = features["segment_ids"]
+	if kargs.get('ues_token_type', 'yes') == 'yes':
+		tf.logging.info(" using segment embedding with different types ")
+	else:
+		tf.logging.info(" using segment embedding with same types ")
+		segment_ids = tf.zeros_like(segment_ids)
+
+	if mode == tf.estimator.ModeKeys.TRAIN:
+		hidden_dropout_prob = model_config.dropout
+		attention_probs_dropout_prob = model_config.dropatt
+		dropout_prob = model_config.dropout
+		is_training = True
+	else:
+		hidden_dropout_prob = 0.0
+		attention_probs_dropout_prob = 0.0
+		dropout_prob = 0.0
+		is_training = False
+
+	if kargs.get('use_token_type', True):
+		tf.logging.info(" use token type ")
+	else:
+		tf.logging.info(" not use token type ")
+
+	model = funnel_bert.FunnelTransformer(model_config)
+	model.build_embedder(input_ids, segment_ids, 
+                                hidden_dropout_prob, 
+                                attention_probs_dropout_prob,
+                                model_config.use_bfloat16,
+                                is_training,
+                                use_tpu=False,
+                                embedding_table_adv=kargs.get('embedding_table_adv', None),
+								embedding_seq_adv=kargs.get('embedding_seq_adv', None),
+								emb_adv_pos=kargs.get('emb_adv_pos', "emb_adv_post"),
+								stop_gradient=kargs.get("stop_gradient", False))
+
+	model.build_encoder(input_ids, input_mask, 
+                    segment_ids,
+                    hidden_dropout_prob, 
+                    attention_probs_dropout_prob,
+                    is_training,
+                    use_bfloat16=model_config.use_bfloat16,
+                    embedding_output=kargs.get("stop_gradient", None))
+
+	model.build_pooler(reuse=reuse)
+	if kargs.get("funnel_transformer_task_type", "finetuning") == 'pretrain':
+		model.build_decoder(model.encoder_hiddens, 
+							input_ids, input_mask, 
+							segment_ids, 
+							is_training)
+
 	return model
 
 # def gated_cnn_encoder_decoder(model_config, features, labels, 

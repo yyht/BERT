@@ -1,0 +1,31 @@
+{
+    "block_size": "12",
+    "d_embed": 256,
+    "d_head": 64,
+    "d_inner": 1024,
+    "d_model": 256,
+    "decoder_size": "2",
+
+    "truncate_seq":true,
+    "seg_id_cls":2,
+    "separate_cls":true,
+    "scope":"model",
+    "use_bfloat16":false,
+    "hidden_size":256,
+    
+    "dropact": 0.0,
+    "dropatt": 0.1,
+    "dropout": 0.1,
+
+    "ff_activation": "gelu",
+    "init": "truncated_normal",
+    "init_range": 0.1,
+    "init_std": 0.02,
+    "n_head": 4,
+    "pool_q_only": true,
+    "pooling_size": 2,
+    "pooling_type": "mean",
+    "rel_attn_type": "factorized",
+
+    "vocab_size": 21128
+}
