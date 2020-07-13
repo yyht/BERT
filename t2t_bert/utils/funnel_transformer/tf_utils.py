@@ -5,6 +5,127 @@ from tensorflow.python.framework import ops
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import gen_array_ops
 from tensorflow.python.ops import gen_nn_ops
+from tensorflow.python.ops import gen_math_ops
+from tensorflow.python.framework import constant_op
+from tensorflow.python.framework import dtypes
+from tensorflow.python.framework import sparse_tensor
+from tensorflow.python.framework.constant_op import constant
+
+def sequence_mask(lengths, maxlen=None, dtype=dtypes.bool, name=None):
+	"""Returns a mask tensor representing the first N positions of each cell.
+	If `lengths` has shape `[d_1, d_2, ..., d_n]` the resulting tensor `mask` has
+	dtype `dtype` and shape `[d_1, d_2, ..., d_n, maxlen]`, with
+	```
+	mask[i_1, i_2, ..., i_n, j] = (j < lengths[i_1, i_2, ..., i_n])
+	```
+	Examples:
+	```python
+	tf.sequence_mask([1, 3, 2], 5)  # [[True, False, False, False, False],
+																	#  [True, True, True, False, False],
+																	#  [True, True, False, False, False]]
+	tf.sequence_mask([[1, 3],[2,0]])  # [[[True, False, False],
+																		#   [True, True, True]],
+																		#  [[True, True, False],
+																		#   [False, False, False]]]
+	```
+	Args:
+		lengths: integer tensor, all its values <= maxlen.
+		maxlen: scalar integer tensor, size of last dimension of returned tensor.
+			Default is the maximum value in `lengths`.
+		dtype: output type of the resulting tensor.
+		name: name of the op.
+	Returns:
+		A mask tensor of shape `lengths.shape + (maxlen,)`, cast to specified dtype.
+	Raises:
+		ValueError: if `maxlen` is not a scalar.
+	"""
+	with ops.name_scope(name, "SequenceMask", [lengths, maxlen]):
+		lengths = ops.convert_to_tensor(lengths)
+
+		if maxlen is None:
+			maxlen = gen_math_ops._max(lengths, _all_dimensions(lengths))
+			maxlen = gen_math_ops.maximum(constant(0, maxlen.dtype), maxlen)
+		else:
+			maxlen = ops.convert_to_tensor(maxlen)
+		if maxlen.get_shape().ndims is not None and maxlen.get_shape().ndims != 0:
+			raise ValueError("maxlen must be scalar for sequence_mask")
+
+		# The basic idea is to compare a range row vector of size maxlen:
+		# [0, 1, 2, 3, 4]
+		# to length as a matrix with 1 column: [[1], [3], [2]].
+		# Because of broadcasting on both arguments this comparison results
+		# in a matrix of size (len(lengths), maxlen)
+		row_vector = gen_math_ops._range(
+				constant(0, maxlen.dtype), maxlen, constant(1, maxlen.dtype))
+		# Since maxlen >= max(lengths), it is safe to use maxlen as a cast
+		# authoritative type. Whenever maxlen fits into tf.int32, so do the lengths.
+		matrix = gen_math_ops.cast(expand_dims(lengths, -1), maxlen.dtype)
+		result = row_vector < matrix
+
+		if dtype is None or result.dtype.base_dtype == dtype.base_dtype:
+			return result
+		else:
+			return gen_math_ops.cast(result, dtype)
+
+def rank(input, name=None):
+	# pylint: disable=redefined-builtin
+	"""Returns the rank of a tensor.
+	Returns a 0-D `int32` `Tensor` representing the rank of `input`.
+	For example:
+	```python
+	# shape of tensor 't' is [2, 2, 3]
+	t = tf.constant([[[1, 1, 1], [2, 2, 2]], [[3, 3, 3], [4, 4, 4]]])
+	tf.rank(t)  # 3
+	```
+	**Note**: The rank of a tensor is not the same as the rank of a matrix. The
+	rank of a tensor is the number of indices required to uniquely select each
+	element of the tensor. Rank is also known as "order", "degree", or "ndims."
+	Args:
+		input: A `Tensor` or `SparseTensor`.
+		name: A name for the operation (optional).
+	Returns:
+		A `Tensor` of type `int32`.
+	@compatibility(numpy)
+	Equivalent to np.ndim
+	@end_compatibility
+	"""
+	return rank_internal(input, name, optimize=True)
+
+
+def rank_internal(input, name=None, optimize=True):
+	# pylint: disable=redefined-builtin
+	"""Returns the rank of a tensor.
+	Args:
+		input: A `Tensor` or `SparseTensor`.
+		name: A name for the operation (optional).
+		optimize: if true, encode the rank as a constant when possible.
+	Returns:
+		A `Tensor` of type `int32`.
+	"""
+	with ops.name_scope(name, "Rank", [input]) as name:
+		if isinstance(
+				input, (sparse_tensor.SparseTensor, sparse_tensor.SparseTensorValue)):
+			return gen_array_ops.size(input.dense_shape, name=name)
+		else:
+			input = ops.convert_to_tensor(input)
+			input_shape = input.get_shape()
+			if optimize and input_shape.ndims is not None:
+				return constant(input_shape.ndims, dtypes.int32, name=name)
+			return gen_array_ops.rank(input, name=name)
+
+def _all_dimensions(x):
+	"""Returns a 1D-tensor listing all dimensions in x."""
+	# Fast path: avoid creating Rank and Range ops if ndims is known.
+	if isinstance(x, ops.Tensor) and x.get_shape().ndims is not None:
+		return constant_op.constant(
+				np.arange(x.get_shape().ndims), dtype=dtypes.int32)
+	if (isinstance(x, sparse_tensor.SparseTensor) and
+			x.dense_shape.get_shape().is_fully_defined()):
+		r = x.dense_shape.get_shape().dims[0].value  # sparse.dense_shape is 1-D.
+		return constant_op.constant(np.arange(r), dtype=dtypes.int32)
+
+	# Otherwise, we rely on `range` and `rank` to do the right thing at runtime.
+	return gen_math_ops._range(0, rank(x), 1)
 
 def expand_dims_v2(input, axis, name=None):
 	"""Returns a tensor with an additional dimension inserted at index `axis`.
@@ -266,7 +387,7 @@ def repeat_with_axis(data, repeats, axis, name=None):
 			repeats_ndims = rank(repeats)
 			broadcast_shape = array_ops.concat(
 					[data_shape[:axis + 1 - repeats_ndims], repeats_shape], axis=0)
-			repeats = sequence_mask.broadcast_to(repeats, broadcast_shape)
+			repeats = gen_array_ops.broadcast_to(repeats, broadcast_shape)
 			repeats.set_shape([None] * (axis + 1))
 
 		# Create a "sequence mask" based on `repeats`, where slices across `axis`
@@ -289,9 +410,9 @@ def repeat_with_axis(data, repeats, axis, name=None):
 		if axis == 0:
 			result = masked
 		else:
-			result_shape = concat([data_shape[:axis], [-1], data_shape[axis + 1:]],
+			result_shape = array_ops.concat([data_shape[:axis], [-1], data_shape[axis + 1:]],
 														axis=0)
-			result = reshape(masked, result_shape)
+			result = array_ops.reshape(masked, result_shape)
 
 		# Preserve shape information.
 		if data.shape.ndims is not None:
@@ -325,7 +446,7 @@ def _with_nonzero_rank(data):
 	else:
 		data_shape = array_ops.shape(data)
 		data_ndims = array_ops.rank(data)
-		return array_ops.reshape(data, concat([[1], data_shape], axis=0)[-data_ndims:])
+		return array_ops.reshape(data, array_ops.concat([[1], data_shape], axis=0)[-data_ndims:])
 
 
 def repeat(input, repeats, axis=None, name=None):  # pylint: disable=redefined-builtin

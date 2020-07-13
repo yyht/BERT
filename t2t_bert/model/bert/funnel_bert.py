@@ -1,7 +1,5 @@
 import numpy as np
 import tensorflow as tf
-from utils.bert import bert_utils
-from utils.bert import bert_modules
 import copy
 from utils.funnel_transformer import funnel_transformer_modules
 from utils.funnel_transformer import funnel_transformer_utils
@@ -9,8 +7,6 @@ from utils.funnel_transformer import funnel_transformer_ops
 
 import numpy as np
 import tensorflow as tf
-from utils.bert import bert_utils
-from utils.bert import bert_modules
 import copy
 import os
 

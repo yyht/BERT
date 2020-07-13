@@ -4,6 +4,14 @@ import numpy as np
 from utils.funnel_transformer import funnel_transformer_ops
 from utils.funnel_transformer import tf_utils
 
+def check_tf_version():
+	version = tf.__version__
+	print("==tf version==", version)
+	if int(version.split(".")[0]) >= 2 or int(version.split(".")[1]) >= 15:
+		return True
+	else:
+		return False
+
 def get_embedding_table(net_config, scope="input", dtype=tf.float32):
 	"""Get the corresponding embeeding table."""
 	net_config = net_config
@@ -84,39 +92,45 @@ def pool_tensor(net_config, tensor, mode="mean"):
 
 	if ndims == 2: pooled = pooled[:, :, None]
 	if mode == "mean":
-		# pooled = tf.nn.avg_pool1d(
-		# 		pooled,
-		# 		ksize=pool_size,
-		# 		strides=pool_size,
-		# 		data_format="NWC",
-		# 		padding="SAME")
-		pooled = tf_utils.avg_pool1d(
+		if not check_tf_version():
+			pooled = tf_utils.avg_pool1d(
 				pooled,
 				ksize=pool_size,
 				strides=pool_size,
 				data_format="NWC",
 				padding="SAME")
+		else:
+			pooled = tf.nn.avg_pool1d(
+					pooled,
+					ksize=pool_size,
+					strides=pool_size,
+					data_format="NWC",
+					padding="SAME")
 	elif mode == "max":
-		# pooled = tf.nn.max_pool1d(
-		# 		pooled,
-		# 		ksize=pool_size,
-		# 		strides=pool_size,
-		# 		data_format="NWC",
-		# 		padding="SAME")
-		pooled = tf_utils.max_pool1d(
+		if not check_tf_version():
+			pooled = tf_utils.max_pool1d(
+					pooled,
+					ksize=pool_size,
+					strides=pool_size,
+					data_format="NWC",
+					padding="SAME")
+		else:
+			pooled = tf.nn.max_pool1d(
 				pooled,
 				ksize=pool_size,
 				strides=pool_size,
 				data_format="NWC",
 				padding="SAME")
 	elif mode == "min":
-		# pooled = -tf.nn.max_pool1d(
-		# 		-pooled,
-		# 		ksize=pool_size,
-		# 		strides=pool_size,
-		# 		data_format="NWC",
-		# 		padding="SAME")
-		pooled = -tf_utils.max_pool1d(
+		if not check_tf_version():
+			pooled = -tf_utils.max_pool1d(
+					-pooled,
+					ksize=pool_size,
+					strides=pool_size,
+					data_format="NWC",
+					padding="SAME")
+		else:
+			pooled = -tf.nn.max_pool1d(
 				-pooled,
 				ksize=pool_size,
 				strides=pool_size,

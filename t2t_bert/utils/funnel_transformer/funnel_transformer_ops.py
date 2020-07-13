@@ -7,7 +7,7 @@ import functools
 import numpy as np
 import tensorflow as tf
 import functools
-from utils.bert import bert_utils
+# from utils.bert import bert_utils
 
 # from utils.bert import dropout_utils
 # stable_dropout = dropout_utils.ReuseDropout()
@@ -26,7 +26,7 @@ EPS = 1e-9
 def check_tf_version():
 	version = tf.__version__
 	print("==tf version==", version)
-	if int(version.split(".")[0]) >= 2 or int(version.split(".")[1]) > 15:
+	if int(version.split(".")[0]) >= 2 or int(version.split(".")[1]) >= 15:
 		return True
 	else:
 		return False
@@ -230,15 +230,17 @@ def layer_norm_op(inputs,
 # 	return dropout_func(tensor, training=training)
 
 def dropout_op(tensor, rate, training, *args, **kwargs):
-	dropout_name = kwargs.get('name', None)
+	dropout_name = kwargs.get('name', "")
 	# if dropout_name:
 	# 	output = stable_dropout.dropout(tensor, rate, dropout_name)
 	# else:
+	tf.logging.info("****** dropout name: %s, rate: %s"%(dropout_name, str(rate)))
 	if training:
-		return tensor
+		tf.logging.info("****** dropout *******")
+		return tf.nn.dropout(tensor, keep_prob=1.0 - rate)
 	else:
-		output = tf.nn.dropout(tensor, keep_prob=1.0 - rate)
-		return output
+		tf.logging.info("****** original *******")
+		return tensor
 
 def gelu(x):
 	"""Gaussian Error Linear Unit.

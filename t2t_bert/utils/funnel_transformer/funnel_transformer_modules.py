@@ -11,7 +11,7 @@ import tensorflow as tf
 import numpy as np
 import os
 
-from utils.bert import bert_utils
+# from utils.bert import bert_utils
 # from utils.bert import layer_norm_utils
 # from utils.bert import dropout_utils
 from utils.funnel_transformer import funnel_transformer_ops
