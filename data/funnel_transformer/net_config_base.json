@@ -22,6 +22,7 @@
     "init": "truncated_normal",
     "init_range": 0.1,
     "init_std": 0.02,
+    "initializer_range":0.02,
     "n_head": 12,
     "pool_q_only": true,
     "pooling_size": 2,
