@@ -26,7 +26,7 @@ EPS = 1e-9
 def check_tf_version():
 	version = tf.__version__
 	print("==tf version==", version)
-	if int(version.split(".")[0]) >= 2 or int(version.split(".")[1]) > 15:
+	if int(version.split(".")[0]) >= 2 or int(version.split(".")[1]) >= 15:
 		return True
 	else:
 		return False
