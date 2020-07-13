@@ -7,6 +7,7 @@ from distributed_encoder.bert_encoder import electra_gumbel_encoder
 from distributed_encoder.bert_encoder import albert_encoder_official
 from distributed_encoder.bert_encoder import electra_gumbel_albert_official_encoder
 from distributed_encoder.bert_encoder import gated_cnn_encoder
+from distributed_encoder.bert_encoder import funnelbert_encoder
 
 from distributed_encoder.classifynet_encoder import textcnn_encoder
 from distributed_encoder.classifynet_encoder import textlstm_encoder
@@ -63,6 +64,9 @@ def model_zoo(model_config):
 	elif model_config.get("model_type", "bert") == "bert_interaction":
 		model_interface = bert_interaction_encoder
 		tf.logging.info("****** bert seq encoder ******* ")
+	elif model_config.get("model_type", "bert") == "funnelbert":
+		model_interface = funnelbert_encoder
+		tf.logging.info("****** bert funnelbert encoder ******* ")
 	return model_interface
 
 def model_config_parser(FLAGS):
@@ -71,7 +75,8 @@ def model_config_parser(FLAGS):
 
 	if FLAGS.model_type in ["bert", "bert_rule", "albert", "electra_gumbel_encoder", 
 					"albert_official", "electra_gumbel_albert_official_encoder",
-					"bert_seq", "bert_interaction"]:
+					"bert_seq", "bert_interaction",
+					"funnelbert"]:
 		config = json.load(open(FLAGS.config_file, "r"))
 		print(config, '==model config==')
 		config = Bunch(config)

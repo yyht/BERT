@@ -31,6 +31,8 @@ except Exception as e:
 class Optimizer(object):
 	def __init__(self, config, **kargs):
 		self.config = config
+		for key in self.config:
+			print(key, self.config[key], "==opt config==")
 
 		# self.global_step = tf.get_variable(
 		#                   "global_step",
@@ -251,7 +253,8 @@ class Optimizer(object):
 						beta_1=self.config.get("beta_1", 0.9),
 						beta_2=self.config.get("beta_2", 0.999),
 						epsilon=self.config.get("epsilon", 1e-6),
-						exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"])
+						exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"],
+						include_in_weight_decay=["r_s_bias", "r_r_bias", "r_w_bias"])
 		elif opt_type == "adam_weight_decay":
 			print("==apply original adam weight decay==")
 			opt = adam_weight_decay_utils.AdamWOptimizer(
@@ -268,7 +271,8 @@ class Optimizer(object):
 						beta1=self.config.get("beta_1", 0.9),
 						beta2=self.config.get("beta_2", 0.999),
 						epsilon=self.config.get("epsilon", 1e-6),
-						exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"]
+						exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"],
+						include_in_weight_decay=["r_s_bias", "r_r_bias", "r_w_bias"]
 						)
 		elif opt_type == "pai_soar_adam_decay":
 			print("==apply pai soar adam decay==")
@@ -278,7 +282,8 @@ class Optimizer(object):
 						beta_1=self.config.get("beta_1", 0.9),
 						beta_2=self.config.get("beta_2", 0.999),
 						epsilon=self.config.get("epsilon", 1e-6),
-						exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"])
+						exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"],
+						include_in_weight_decay=["r_s_bias", "r_r_bias", "r_w_bias"])
 		elif opt_type == "adam":
 			print("==apply adam==")
 			opt = tf.train.AdamOptimizer(learning_rate,
@@ -293,7 +298,8 @@ class Optimizer(object):
 								 beta_1=self.config.get("beta_1", 0.9),
 								 beta_2=self.config.get("beta_2", 0.999),
 								 epsilon=self.config.get("epsilon", 1e-6),
-								 exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"]
+								 exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"],
+								 include_in_weight_decay=["r_s_bias", "r_r_bias", "r_w_bias"]
 								)
 		elif opt_type == 'radam':
 			opt = radam_utils.RAdamOptimizer(
@@ -311,7 +317,8 @@ class Optimizer(object):
 								beta_1=self.config.get("beta_1", 0.9),
 								beta_2=self.config.get("beta_2", 0.999),
 								epsilon=self.config.get("epsilon", 1e-6),
-								exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"])
+								exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"],
+								include_in_weight_decay=["r_s_bias", "r_r_bias", "r_w_bias"])
 
 		elif opt_type == "sgd":
 			print("=== apply sgd ===")

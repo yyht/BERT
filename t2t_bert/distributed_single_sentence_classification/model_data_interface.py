@@ -3,7 +3,7 @@ import tensorflow as tf
 def data_interface(FLAGS):
 	print(FLAGS.model_type, "===model type===", FLAGS.task_type)
 	if FLAGS.model_type in ["bert","bert_small", "albert", "electra_gumbel_encoder", 
-						"albert_official", "bert_seq"]:
+						"albert_official", "bert_seq", "funnelbert"]:
 		if FLAGS.task_type == "single_sentence_classification":
 			name_to_features = {
 					"input_ids":
@@ -15,6 +15,8 @@ def data_interface(FLAGS):
 					"label_ids":
 							tf.FixedLenFeature([], tf.int64),
 			}
+			if FLAGS.model_type in ['funnelbert']:
+				name_to_features['input_mask'] = tf.FixedLenFeature([FLAGS.max_length], tf.float32)
 		elif FLAGS.task_type == "single_sentence_multilabel_classification":
 			name_to_features = {
 					"input_ids":

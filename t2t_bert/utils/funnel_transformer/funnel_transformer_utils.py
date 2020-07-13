@@ -2,7 +2,6 @@ import tensorflow as tf
 import numpy as np
 
 from utils.funnel_transformer import funnel_transformer_ops
-from utils.funnel_transformer import funnel_transformer_utils
 from utils.funnel_transformer import tf_utils
 
 def get_embedding_table(net_config, scope="input", dtype=tf.float32):
@@ -285,7 +284,8 @@ def init_attn_structures(net_config, attn_structures,
 												pos_id, is_training, name):
 	"""Initialize extra structures needed for attention."""
 	if net_config.rel_attn_type == "null":
-		attn_structures = (None, None, None)
+		# attn_structures = (None, None, None)
+		return (None, None, None)
 	else:
 		if attn_structures is None:
 			seq_len = tf.shape(hidden)[1]
@@ -323,9 +323,7 @@ def init_attn_structures(net_config, attn_structures,
 					tf.ones([num_real_token, num_real_token], dtype=hidden.dtype),
 					[[1, 0], [1, 0]])
 
-			attn_structures = (pos_enc, seg_mat, func_mask)
-
-	return attn_structures
+		return (pos_enc, seg_mat, func_mask)
 
 def input_projection(net_config, input_embed, initializer):
 	"""Project input embedding to a proper dimension if needed."""

@@ -21,7 +21,9 @@ class AdamWeightDecayOptimizer(tf.train.Optimizer):
 							 beta_1=0.9,
 							 beta_2=0.999,
 							 epsilon=1e-6,
+							 bias_correction=False,
 							 exclude_from_weight_decay=None,
+							 include_in_weight_decay=["r_s_bias", "r_r_bias", "r_w_bias"],
 							 name="AdamWeightDecayOptimizer"):
 		"""Constructs a AdamWeightDecayOptimizer."""
 		super(AdamWeightDecayOptimizer, self).__init__(False, name)
@@ -32,6 +34,8 @@ class AdamWeightDecayOptimizer(tf.train.Optimizer):
 		self.beta_2 = beta_2
 		self.epsilon = epsilon
 		self.exclude_from_weight_decay = exclude_from_weight_decay
+		self.include_in_weight_decay = include_in_weight_decay
+		self.bias_correction = False
 
 	def apply_gradients(self, grads_and_vars, global_step=None, name=None, learning_rate=None):
 		"""See base class."""
@@ -84,6 +88,16 @@ class AdamWeightDecayOptimizer(tf.train.Optimizer):
 			if self._do_use_weight_decay(param_name):
 				update += self.weight_decay_rate * param
 
+			# Adam bias correction
+			if self.bias_correction:
+				global_step_float = tf.cast(global_step, update.dtype)
+				bias_correction1 = 1.0 - self.beta_1 ** (global_step_float + 1)
+				bias_correction2 = 1.0 - self.beta_2 ** (global_step_float + 1)
+				learning_rate = (self.learning_rate * tf.sqrt(bias_correction2)
+												 / bias_correction1)
+			else:
+				learning_rate = self.learning_rate
+
 			update_with_lr = learning_rate * update
 
 			next_param = param - update_with_lr
@@ -98,9 +112,17 @@ class AdamWeightDecayOptimizer(tf.train.Optimizer):
 		"""Whether to use L2 weight decay for `param_name`."""
 		if not self.weight_decay_rate:
 			return False
+
+		if self.include_in_weight_decay:
+			for r in self.include_in_weight_decay:
+				if re.search(r, param_name) is not None:
+					tf.logging.info("Include %s in weight decay", param_name)
+					return True
+
 		if self.exclude_from_weight_decay:
 			for r in self.exclude_from_weight_decay:
 				if re.search(r, param_name) is not None:
+					tf.logging.info("Adam WD excludes %s", param_name)
 					return False
 		return True
 
@@ -134,6 +156,7 @@ class LAMBOptimizer_v1(tf.train.Optimizer):
 				 beta_2=0.999,
 				 epsilon=1e-6,
 				 exclude_from_weight_decay=None,
+				 include_in_weight_decay=["r_s_bias", "r_r_bias", "r_w_bias"],
 				 name="LAMBOptimizer"):
 		"""Constructs a LAMBOptimizer."""
 		super(LAMBOptimizer_v1, self).__init__(False, name)
@@ -144,6 +167,7 @@ class LAMBOptimizer_v1(tf.train.Optimizer):
 		self.beta_2 = beta_2
 		self.epsilon = epsilon
 		self.exclude_from_weight_decay = exclude_from_weight_decay
+		self.include_in_weight_decay = include_in_weight_decay
 
 	def apply_gradients(self, grads_and_vars, global_step=None, name=None, learning_rate=None):
 		"""See base class."""
@@ -231,9 +255,17 @@ class LAMBOptimizer_v1(tf.train.Optimizer):
 		"""Whether to use L2 weight decay for `param_name`."""
 		if not self.weight_decay_rate:
 			return False
+
+		if self.include_in_weight_decay:
+			for r in self.include_in_weight_decay:
+				if re.search(r, param_name) is not None:
+					tf.logging.info("Include %s in weight decay", param_name)
+					return True
+
 		if self.exclude_from_weight_decay:
 			for r in self.exclude_from_weight_decay:
 				if re.search(r, param_name) is not None:
+					tf.logging.info("Adam WD excludes %s", param_name)
 					return False
 		return True
 
@@ -260,6 +292,7 @@ class LAMBOptimizer_v2(tf.train.Optimizer):
 				beta_2=0.999,
 				epsilon=1e-6,
 				exclude_from_weight_decay=None,
+				include_in_weight_decay=["r_s_bias", "r_r_bias", "r_w_bias"],
 				exclude_from_layer_adaptation=None,
 				name="LAMBOptimizer"):
 		"""Constructs a LAMBOptimizer."""
@@ -271,6 +304,7 @@ class LAMBOptimizer_v2(tf.train.Optimizer):
 		self.beta_2 = beta_2
 		self.epsilon = epsilon
 		self.exclude_from_weight_decay = exclude_from_weight_decay
+		self.include_in_weight_decay = include_in_weight_decay
 		# exclude_from_layer_adaptation is set to exclude_from_weight_decay if the
 		# arg is None.
 		# TODO(jingli): validate if exclude_from_layer_adaptation is necessary.
@@ -351,9 +385,17 @@ class LAMBOptimizer_v2(tf.train.Optimizer):
 		"""Whether to use L2 weight decay for `param_name`."""
 		if not self.weight_decay_rate:
 			return False
+
+		if self.include_in_weight_decay:
+			for r in self.include_in_weight_decay:
+				if re.search(r, param_name) is not None:
+					tf.logging.info("Include %s in weight decay", param_name)
+					return True
+
 		if self.exclude_from_weight_decay:
 			for r in self.exclude_from_weight_decay:
 				if re.search(r, param_name) is not None:
+					tf.logging.info("Adam WD excludes %s", param_name)
 					return False
 		return True
 
@@ -394,6 +436,7 @@ class AdaFactorOptimizer(tf.train.Optimizer):
 				 beta_2=0.999,
 				 epsilon=1e-6,
 				 exclude_from_weight_decay=None,
+				 include_in_weight_decay=["r_s_bias", "r_r_bias", "r_w_bias"],
 				 clipping_rate=1.0,
 				 name="AdaFactorOptimizer"):
 		"""Constructs a AdaFactorOptimizer."""
@@ -408,6 +451,7 @@ class AdaFactorOptimizer(tf.train.Optimizer):
 		self.epsilon2 = 0.001
 		self.clipping_rate = clipping_rate
 		self.exclude_from_weight_decay = exclude_from_weight_decay
+		self.include_in_weight_decay = include_in_weight_decay
 		self.use_locking = False
 
 	def _use_factored(self, shape):
@@ -526,9 +570,17 @@ class AdaFactorOptimizer(tf.train.Optimizer):
 		"""Whether to use L2 weight decay for `param_name`."""
 		if not self.weight_decay_rate:
 			return False
+
+		if self.include_in_weight_decay:
+			for r in self.include_in_weight_decay:
+				if re.search(r, param_name) is not None:
+					tf.logging.info("Include %s in weight decay", param_name)
+					return True
+
 		if self.exclude_from_weight_decay:
 			for r in self.exclude_from_weight_decay:
 				if re.search(r, param_name) is not None:
+					tf.logging.info("Adam WD excludes %s", param_name)
 					return False
 		return True
 

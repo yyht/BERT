@@ -7,9 +7,10 @@ import functools
 import numpy as np
 import tensorflow as tf
 import functools
+from utils.bert import bert_utils
 
-from utils.bert import dropout_utils
-stable_dropout = dropout_utils.ReuseDropout()
+# from utils.bert import dropout_utils
+# stable_dropout = dropout_utils.ReuseDropout()
 
 # from absl import flags
 # import absl.logging as _logging
@@ -22,6 +23,13 @@ stable_dropout = dropout_utils.ReuseDropout()
 INF = 1e6
 EPS = 1e-9
 
+def check_tf_version():
+	version = tf.__version__
+	print("==tf version==", version)
+	if int(version.split(".")[0]) >= 2 or int(version.split(".")[1]) >= 15:
+		return True
+	else:
+		return False
 
 ###############################################################################
 ##### Utils
@@ -86,29 +94,28 @@ def embedding_lookup(x, n_embed, d_embed, initializer, lookup_table=None,
 		else:
 			embedding_table_adv = lookup_table
 			tf.logging.info("==apply normal embedding==")
-		if use_tpu:
-			if len(x.shape.as_list()) == 2:
-				one_hot_idx = tf.one_hot(x, n_embed, dtype=dtype)
-				tf.logging.info("==apply onehot embedding==")
-			elif len(x.shape.as_list()) == 3:
-				one_hot_idx = x
-				tf.logging.info("==apply gumbel embedding==")
-			else:
-				one_hot_idx = tf.one_hot(x, n_embed, dtype=dtype)
-				tf.logging.info("==apply onehot embedding==")
-			if len(x.shape.as_list()) == 2:
-				einsum_prefix = get_einsum_prefix(x.shape.ndims)
-				einsum_str = "{0}n,nd->{0}d".format(einsum_prefix)
-			elif len(x.shape.as_list()) == 3:
-				einsum_prefix = get_einsum_prefix(x.shape.ndims)
-				einsum_str = "{0}n,nd->{0}d".format(einsum_prefix[:-1])
-			else:
-				einsum_prefix = get_einsum_prefix(x.shape.ndims)
-				einsum_str = "{0}n,nd->{0}d".format(einsum_prefix)
-			tf.logging.info("*** einsum_str: %s ***", einsum_str)
-			output = tf.einsum(einsum_str, one_hot_idx, embedding_table_adv)
+		if len(x.shape.as_list()) == 2:
+			one_hot_idx = tf.one_hot(x, n_embed, dtype=dtype)
+			tf.logging.info("==apply onehot embedding==")
+		elif len(x.shape.as_list()) == 3:
+			one_hot_idx = x
+			tf.logging.info("==apply gumbel embedding==")
 		else:
-			output = tf.nn.embedding_lookup(embedding_table_adv, x)
+			one_hot_idx = tf.one_hot(x, n_embed, dtype=dtype)
+			tf.logging.info("==apply onehot embedding==")
+		if len(x.shape.as_list()) == 2:
+			einsum_prefix = get_einsum_prefix(x.shape.ndims)
+			einsum_str = "{0}n,nd->{0}d".format(einsum_prefix)
+		elif len(x.shape.as_list()) == 3:
+			einsum_prefix = get_einsum_prefix(x.shape.ndims)
+			einsum_str = "{0}n,nd->{0}d".format(einsum_prefix[:-1])
+		else:
+			einsum_prefix = get_einsum_prefix(x.shape.ndims)
+			einsum_str = "{0}n,nd->{0}d".format(einsum_prefix)
+		tf.logging.info("*** einsum_str: %s ***", einsum_str)
+		output = tf.einsum(einsum_str, one_hot_idx, embedding_table_adv)
+		print(one_hot_idx.get_shape(), embedding_table_adv.get_shape(), 
+			"==embedding shape==", einsum_str, output.get_shape())
 
 		return output, lookup_table
 
@@ -139,6 +146,9 @@ def dense(x, out_shape, initializer, inp_shape=None, begin_axis=-1,
 
 		output = tf.einsum(
 				"{0}{1},{1}{2}->{0}{2}".format(prefix, inp_str, out_str), x, kernel)
+
+		print(x.get_shape(), kernel.get_shape(), "==dense shape==", prefix,
+				inp_str, out_str, output.get_shape())
 
 		if use_bias:
 			bias = tf.get_variable("bias",
@@ -227,7 +237,7 @@ def dropout_op(tensor, rate, training, *args, **kwargs):
 	if training:
 		return tensor
 	else:
-		output = tf.nn.dropout(tensor, 1.0 - rate)
+		output = tf.nn.dropout(tensor, keep_prob=1.0 - rate)
 		return output
 
 def gelu(x):
@@ -328,9 +338,17 @@ def rel_attn_core(
 	# content based attention score
 	r_w_bias = tf.get_variable("r_w_bias", [n_head, d_head],
 														 dtype=tf_float, initializer=initializer)
-	# print((q_head + r_w_bias * scale).get_shape(), k_head.get_shape())
-	content_bias = tf.einsum("aind,ajnd->anij",
+	
+	if not check_tf_version():
+		# print((q_head + r_w_bias * scale).get_shape(), k_head.get_shape())
+		content_bias = tf.einsum("aind,ajnd->anij",
+														 q_head + r_w_bias * scale, k_head)
+	else:
+		content_bias = tf.einsum("...ind,...jnd->...nij",
 													 q_head + r_w_bias * scale, k_head)
+
+	print(q_head.get_shape(), (r_w_bias * scale).get_shape(), k_head.get_shape(), 
+		"==rel_attn_core shape==", content_bias.get_shape())
 
 	# position based attention score
 	if pos_enc is None:
@@ -384,8 +402,14 @@ def rel_attn_core(
 
 	# attention output
 	# print(attn_prob.get_shape(), v_head.get_shape())
-	attn_vec = tf.einsum("anij,ajnd->aind", attn_prob, v_head)
-	# attn_vec = tf.einsum("...nij,...jnd->...ind", attn_prob, v_head)
+	
+	if not check_tf_version():
+		attn_vec = tf.einsum("anij,ajnd->aind", attn_prob, v_head)
+	else:
+		attn_vec = tf.einsum("...nij,...jnd->...ind", attn_prob, v_head)
+
+	print(attn_prob.get_shape(), (v_head).get_shape(), 
+		"==attn_core shape==", attn_vec.get_shape())
 
 	# things to monitor in attention
 	ret_dict["content_bias"] = content_bias
@@ -489,10 +513,16 @@ def rel_pos_bias_gpu(q_head, pos_enc, d_model, n_head, d_head, klen,
 								 initializer=initializer, scope="r", use_bias=False)
 
 	# [B x T x N x D]
-	pos_bias = tf.einsum("ainh,jnh->anij", q_head + r_r_bias * scale,
+	if not check_tf_version():
+		pos_bias = tf.einsum("ainh,jnh->anij", q_head + r_r_bias * scale,
 											 r_head)
-	# pos_bias = tf.einsum("...inh,jnh->...nij", q_head + r_r_bias * scale,
-	# 										 r_head)
+	else:
+		pos_bias = tf.einsum("...inh,jnh->...nij", q_head + r_r_bias * scale,
+											 r_head)
+
+	print((q_head + r_r_bias * scale).get_shape(), 
+		(r_head).get_shape(), "==rel_pos_bias_gpu shape==", pos_bias.get_shape())
+
 	pos_bias = rel_shift(pos_bias, -2, klen, shift)
 
 	if func_mask is not None:
@@ -516,11 +546,15 @@ def rel_pos_bias(q_head, pos_enc, d_model, n_head, d_head, initializer,
 	scale = tf.cast(1.0 / np.sqrt(d_head), dtype)
 	# [B x T x N x D]
 	# print((q_head + r_r_bias * scale).get_shape(), r_kernel.get_shape())
-	q_head_r = tf.einsum("ainh,dnh->aind", q_head + r_r_bias * scale,
+	if not check_tf_version():
+		q_head_r = tf.einsum("ainh,dnh->aind", q_head + r_r_bias * scale,
+											 r_kernel)
+	else:
+		q_head_r = tf.einsum("...inh,dnh->...ind", q_head + r_r_bias * scale,
 											 r_kernel)
 
-	# q_head_r = tf.einsum("...inh,dnh->...ind", q_head + r_r_bias * scale,
-	# 										 r_kernel)
+	print((q_head + r_r_bias * scale).get_shape(), 
+		(r_kernel).get_shape(), "==rel_pos_bias shape==", q_head_r.get_shape())
 
 	# [(B) x T x N x D]
 	q_head_r_1 = q_head_r * tf.expand_dims(enc_q_1, -2)
@@ -529,12 +563,16 @@ def rel_pos_bias(q_head, pos_enc, d_model, n_head, d_head, initializer,
 
 	# [(B) x T x N x D]
 	prefix_k = get_einsum_prefix(enc_k_1.shape.ndims - 2)
-	einsum_str = "aind,{0}jd->anij".format(prefix_k)
-	# print(q_head_r_1.get_shape(), enc_k_1.get_shape(), einsum_str)
-	# einsum_str = "...ind,{0}jd->...nij".format(prefix_k)
+	if not check_tf_version():
+		einsum_str = "aind,{0}jd->anij".format(prefix_k)
+	else:
+		einsum_str = "...ind,{0}jd->...nij".format(prefix_k)
 	pos_bias = (tf.einsum(einsum_str, q_head_r_1, enc_k_1) +
 							tf.einsum(einsum_str, q_head_r_2, enc_k_2))
 
+	print((q_head_r_1).get_shape(), 
+		(enc_k_1).get_shape(), "==rel_pos_bias shape==", 
+		prefix_k, einsum_str, pos_bias.get_shape())
 	if func_mask is not None:
 		pos_bias *= func_mask
 
@@ -560,8 +598,15 @@ def rel_seg_bias(q_head, seg_mat, n_head, d_head, initializer, func_mask=None,
 	scale = tf.cast(1.0 / np.sqrt(d_head), dtype)
 	q_head_s = q_head + r_s_bias * scale
 	# [... x N x T x 2]
-	seg_biases = tf.einsum("ainh,snh->anis", q_head_s, seg_embed)
-	# seg_biases = tf.einsum("...inh,snh->...nis", q_head_s, seg_embed)
+	
+	if not check_tf_version():
+		seg_biases = tf.einsum("ainh,snh->anis", q_head_s, seg_embed)
+	else:
+		seg_biases = tf.einsum("...inh,snh->...nis", q_head_s, seg_embed)
+
+	print((q_head_s).get_shape(), 
+		(seg_embed).get_shape(), "==rel_seg_bias shape==", 
+		seg_biases.get_shape())
 
 	# Split into `diff` & `same`: [... x N x T x 1]
 	seg_bias_diff, seg_bias_same = tf.split(seg_biases, 2, axis=-1)
@@ -587,8 +632,8 @@ def seg_id_to_mat(seg_q, seg_k, config):
 
 	# Treat [cls] as in the same segment as both A & B
 	cls_mat = tf.logical_or(
-			tf.expand_dims(tf.equal(seg_q, tf.constant([config.seg_id_cls])), -1),
-			tf.expand_dims(tf.equal(seg_k, tf.constant([config.seg_id_cls])), -2))
+			tf.expand_dims(tf.equal(seg_q, tf.constant([config.seg_id_cls], dtype=seg_q.dtype)), -1),
+			tf.expand_dims(tf.equal(seg_k, tf.constant([config.seg_id_cls], dtype=seg_k.dtype)), -2))
 	seg_mat = tf.logical_or(cls_mat, seg_mat)
 
 	return seg_mat
@@ -611,9 +656,17 @@ def get_pos_enc(pos_id_q, pos_id_k, d_model, dropout, is_training,
 
 	# sinusoid_q = tf.einsum("...i,d->...id", pos_id_q, inv_freq)
 	# sinusoid_k = tf.einsum("...i,d->...id", pos_id_k, inv_freq)
+	if not check_tf_version():
+		sinusoid_q = tf.einsum("i,d->id", pos_id_q, inv_freq)
+		sinusoid_k = tf.einsum("i,d->id", pos_id_k, inv_freq)
+	else:
+		sinusoid_q = tf.einsum("...i,d->...id", pos_id_q, inv_freq)
+		sinusoid_k = tf.einsum("...i,d->...id", pos_id_k, inv_freq)
 
-	sinusoid_q = tf.einsum("i,d->id", pos_id_q, inv_freq)
-	sinusoid_k = tf.einsum("i,d->id", pos_id_k, inv_freq)
+	print((pos_id_q).get_shape(), 
+		(inv_freq).get_shape(), "==get_pos_enc shape==", sinusoid_q.get_shape())
+	print((pos_id_k).get_shape(), 
+		(inv_freq).get_shape(), "==get_pos_enc shape==", sinusoid_k.get_shape())
 
 	sin_enc_q = tf.sin(sinusoid_q)
 	cos_enc_q = tf.cos(sinusoid_q)
@@ -643,8 +696,14 @@ def get_pos_enc_gpu(rel_pos_id, d_model, dropout, is_training,
 	freq_seq = tf.cast(tf.range(0, d_model_half, 1.0), dtype=dtype)
 	inv_freq = 1 / (10000 ** (freq_seq / d_model_half))
 
-	# sinusoid = tf.einsum("...i,d->...id", rel_pos_id, inv_freq)
-	sinusoid = tf.einsum("i,d->id", rel_pos_id, inv_freq)
+	if not check_tf_version():
+		sinusoid = tf.einsum("i,d->id", rel_pos_id, inv_freq)
+	else:
+		sinusoid = tf.einsum("...i,d->...id", rel_pos_id, inv_freq)
+
+	print((rel_pos_id).get_shape(), 
+		(inv_freq).get_shape(), "==get_pos_enc shape==", sinusoid.get_shape())
+	
 	sin_enc = tf.sin(sinusoid)
 	cos_enc = tf.cos(sinusoid)
 	sin_enc = dropout_op(sin_enc, dropout, training=is_training, name=name+"/pos_enc_sin")

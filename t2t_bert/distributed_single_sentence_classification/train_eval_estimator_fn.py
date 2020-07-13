@@ -151,6 +151,7 @@ def train_eval_fn(FLAGS,
 							"clip_norm":config.get("clip_norm", 1.0),
 							"grad_clip":config.get("grad_clip", "global_norm"),
 							"epoch":FLAGS.epoch,
+							"beta_2":0.99,
 							"strategy":FLAGS.distribution_strategy})
 
 		anneal_config = Bunch({
@@ -339,7 +340,20 @@ def train_eval_fn(FLAGS,
 			tf.logging.info("==training time=={}".format(train_end_time - train_being_time))
 			eval_results = model_estimator.evaluate(input_fn=eval_features, steps=num_eval_steps)
 			print(eval_results)
-			
+
+			def estimator_eval_fn(ckpt_path):
+				return model_estimator.evaluate(
+				              input_fn=eval_features,
+				              steps=num_eval_steps,
+				              checkpoint_path=ckpt_path)
+
+			try:
+				from .evaluate_all_ckpt import evalue_all_ckpt
+			except:
+				from evaluate_all_ckpt import evalue_all_ckpt
+
+			evalue_all_ckpt(checkpoint_dir, "classification", estimator_eval_fn)
+		
 		elif kargs.get("distribution_strategy", "MirroredStrategy") in ["ParameterServerStrategy", "CollectiveAllReduceStrategy"]: 
 			print("==apply multi-machine machine multi-card training==")
 			try:

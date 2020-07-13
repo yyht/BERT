@@ -159,6 +159,8 @@ class FunnelTransformer(object):
 					seg_id=token_type_ids,
 					input_mask=input_mask,
 					attn_structures=self.attn_structures)
+			print(self.attn_structures, "==attention structures==")
+
 		funnel_transformer_ops.update_ret_dict(self.ret_dict, 
 																					self.enc_dict, 
 																					"enc")
@@ -201,12 +203,14 @@ class FunnelTransformer(object):
 			with tf.variable_scope("pooler"):
 				# We "pool" the model by simply taking the hidden state corresponding
 				# to the first token. We assume that this has been pre-trained
+				initializer = get_initializer(self.config)
 				first_token_tensor = tf.squeeze(self.sequence_output[:, 0:1, :], axis=1)
 				self.pooled_output = tf.layers.dense(
 						first_token_tensor,
 						self.config.hidden_size,
 						activation=tf.tanh,
-						kernel_initializer=bert_modules.create_initializer(self.config.initializer_range))
+						kernel_initializer=initializer,
+						use_bias=True)
 	
 	def get_multihead_attention(self):
 		attention_scores_list = []

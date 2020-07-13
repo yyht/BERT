@@ -16,6 +16,8 @@ from optimizer import radam_utils
 class Optimizer(object):
 	def __init__(self, config, **kargs):
 		self.config = config
+		for key in self.config:
+			print(key, self.config[key], "==opt config==")
 		self.global_step = tf.train.get_or_create_global_step()
 
 		num_warmup_steps = self.config.num_warmup_steps
@@ -189,7 +191,8 @@ class Optimizer(object):
 						beta_1=self.config.get("beta_1", 0.9),
 						beta_2=self.config.get("beta_2", 0.999),
 						epsilon=self.config.get("epsilon", 1e-6),
-						exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"])
+						exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"],
+						include_in_weight_decay=["r_s_bias", "r_r_bias", "r_w_bias"])
 			tf.logging.info("***** apply adam_decay *****")
 		elif opt_type == "adam":
 			opt = tf.train.AdamOptimizer(learning_rate,
@@ -205,6 +208,7 @@ class Optimizer(object):
 							   epsilon=self.config.get("epsilon", 1e-6),
 							   exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"],
 							   exclude_from_layer_adaptation=None,
+							   include_in_weight_decay=["r_s_bias", "r_r_bias", "r_w_bias"],
 							   name="LAMBOptimizer")
 			tf.logging.info("***** apply lamb_v2 *****")
 		elif opt_type == "lamb_v1":
@@ -214,6 +218,7 @@ class Optimizer(object):
 							   beta_2=self.config.get("beta_2", 0.999),
 							   epsilon=self.config.get("epsilon", 1e-6),
 							   exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"],
+							   include_in_weight_decay=["r_s_bias", "r_r_bias", "r_w_bias"],
 							   name="LAMBOptimizer")
 			tf.logging.info("***** apply lamb_v1 *****")
 		elif opt_type == 'radam':
@@ -227,7 +232,8 @@ class Optimizer(object):
 						 warmup_proportion=0.1,
 						 min_lr=0.,
 						 use_locking=False,
-						 exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"])
+						 exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"],
+						 include_in_weight_decay=["r_s_bias", "r_r_bias", "r_w_bias"])
 			tf.logging.info("***** apply radam *****")
 		elif opt_type == "adafactor":
 			tf.logging.info("***** apply adafactor *****")
@@ -237,7 +243,8 @@ class Optimizer(object):
 								beta_1=self.config.get("beta_1", 0.9),
 								beta_2=self.config.get("beta_2", 0.999),
 								epsilon=self.config.get("epsilon", 1e-6),
-								exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"])
+								exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"],
+								include_in_weight_decay=["r_s_bias", "r_r_bias", "r_w_bias"])
 		elif opt_type == "sgd":
 			tf.logging.info("***** apply sgd *****")
 			opt = tf.train.GradientDescentOptimizer(learning_rate=learning_rate)

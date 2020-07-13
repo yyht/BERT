@@ -12,14 +12,14 @@ import numpy as np
 import os
 
 from utils.bert import bert_utils
-from utils.bert import layer_norm_utils
-from utils.bert import dropout_utils
+# from utils.bert import layer_norm_utils
+# from utils.bert import dropout_utils
 from utils.funnel_transformer import funnel_transformer_ops
 from utils.funnel_transformer import funnel_transformer_utils
 
 # from utils.bert.efficient_multihead_attention import efficient_attention_layer
 
-stable_dropout = dropout_utils.ReuseDropout()
+# stable_dropout = dropout_utils.ReuseDropout()
 
 def input_embedding(net_config, initializer, inputs, is_training, seg_id=None, pos_id=None,
 										word_embed_table=None, use_tpu=False, scope="input",
@@ -148,13 +148,16 @@ def encoder(net_config,
 		layer_dict = {}
 		for block_idx in range(net_config.n_block):
 			# prepare structures for relative attention
+			print("==block_idx==", block_idx)
 			if block_idx == 0:
 				attn_structures_name = os.path.join(scope, str(block_idx), 'attn_structures')
-				pos_enc, seg_mat, func_mask = funnel_transformer_utils.init_attn_structures(
+				(pos_enc, seg_mat, func_mask) = funnel_transformer_utils.init_attn_structures(
 						net_config,
 						attn_structures,
 						input_embed, seg_id, pos_id, is_training, 
 						attn_structures_name)
+				if attn_structures is None:
+					attn_structures = (pos_enc, seg_mat, func_mask)
 			else:
 				pre_attn_pooling_name = os.path.join(scope, str(block_idx), 'pre_attn_pooling')
 				pool_ret = funnel_transformer_utils.pre_attn_pooling(

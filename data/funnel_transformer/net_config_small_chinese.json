@@ -1,5 +1,5 @@
 {
-    "block_size": "4_4_4",
+    "block_size": "12",
     "d_embed": 256,
     "d_head": 64,
     "d_inner": 1024,
@@ -11,11 +11,12 @@
     "separate_cls":true,
     "scope":"model",
     "use_bfloat16":false,
-    "hidden_size":64,
+    "hidden_size":256,
     
     "dropact": 0.0,
     "dropatt": 0.1,
     "dropout": 0.1,
+
     "ff_activation": "gelu",
     "init": "truncated_normal",
     "init_range": 0.1,
@@ -25,7 +26,6 @@
     "pooling_size": 2,
     "pooling_type": "mean",
     "rel_attn_type": "factorized",
-    "separate_cls": true,
 
     "vocab_size": 21128
 }

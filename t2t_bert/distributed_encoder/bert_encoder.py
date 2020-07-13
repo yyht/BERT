@@ -421,11 +421,11 @@ def funnelbert_encoder(model_config, features, labels,
 
 	if target:
 		input_ids = features["input_ids_{}".format(target)]
-		input_mask = features["input_mask_{}".format(target)]
+		input_mask = tf.cast(features["input_mask_{}".format(target)], dtype=tf.float32)
 		segment_ids = features["segment_ids_{}".format(target)]
 	else:
 		input_ids = features["input_ids"]
-		input_mask = features["input_mask"]
+		input_mask = tf.cast(features["input_mask"], dtype=tf.float32)
 		segment_ids = features["segment_ids"]
 	if kargs.get('ues_token_type', 'yes') == 'yes':
 		tf.logging.info(" using segment embedding with different types ")
@@ -434,13 +434,15 @@ def funnelbert_encoder(model_config, features, labels,
 		segment_ids = tf.zeros_like(segment_ids)
 
 	if mode == tf.estimator.ModeKeys.TRAIN:
-		hidden_dropout_prob = model_config.hidden_dropout_prob
-		attention_probs_dropout_prob = model_config.attention_probs_dropout_prob
-		dropout_prob = model_config.dropout_prob
+		hidden_dropout_prob = model_config.dropout
+		attention_probs_dropout_prob = model_config.dropatt
+		dropout_prob = model_config.dropout
+		is_training = True
 	else:
 		hidden_dropout_prob = 0.0
 		attention_probs_dropout_prob = 0.0
 		dropout_prob = 0.0
+		is_training = False
 
 	if kargs.get('use_token_type', True):
 		tf.logging.info(" use token type ")
