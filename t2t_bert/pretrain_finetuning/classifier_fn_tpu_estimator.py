@@ -174,6 +174,8 @@ def classifier_model_fn_builder(
 			funnel-bert needs opposite pad-mask as input
 			"""
 			model_features['input_mask'] = (1.0 - tf.cast(model_features['input_mask'], dtype=tf.float32))
+			tf.logging.info("***** funnelbert needs reverse input-mask *****")
+			
 		model = model_api(model_config, model_features, labels,
 							mode, target, reuse=tf.AUTO_REUSE,
 							**kargs)
