@@ -166,7 +166,7 @@ def classifier_model_fn_builder(
 			is_training = False
 
 		model_features = {}
-		for key in model_features:
+		for key in features:
 			model_features[key] = features[key]
 
 		if model_config.get("model_type", "bert") == "funnelbert":
