@@ -35,7 +35,7 @@ class AdamWeightDecayOptimizer(tf.train.Optimizer):
 		self.epsilon = epsilon
 		self.exclude_from_weight_decay = exclude_from_weight_decay
 		self.include_in_weight_decay = include_in_weight_decay
-		self.bias_correction = False
+		self.bias_correction = bias_correction
 
 	def apply_gradients(self, grads_and_vars, global_step=None, name=None, learning_rate=None):
 		"""See base class."""
@@ -95,6 +95,7 @@ class AdamWeightDecayOptimizer(tf.train.Optimizer):
 				bias_correction2 = 1.0 - self.beta_2 ** (global_step_float + 1)
 				learning_rate = (self.learning_rate * tf.sqrt(bias_correction2)
 												 / bias_correction1)
+				tf.logging.info("***** apply adam-bias correction name ***** %s"%( param_name))
 			else:
 				learning_rate = self.learning_rate
 

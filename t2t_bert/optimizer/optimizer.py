@@ -191,6 +191,7 @@ class Optimizer(object):
 						beta_1=self.config.get("beta_1", 0.9),
 						beta_2=self.config.get("beta_2", 0.999),
 						epsilon=self.config.get("epsilon", 1e-6),
+						bias_correction=self.config.get('bias_correction', False),
 						exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"],
 						include_in_weight_decay=["r_s_bias", "r_r_bias", "r_w_bias"])
 			tf.logging.info("***** apply adam_decay *****")
