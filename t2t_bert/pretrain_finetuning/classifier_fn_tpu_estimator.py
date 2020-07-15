@@ -175,7 +175,9 @@ def classifier_model_fn_builder(
 			"""
 			model_features['input_mask'] = (1.0 - tf.cast(model_features['input_mask'], dtype=tf.float32))
 			tf.logging.info("***** funnelbert needs reverse input-mask *****")
-			
+			cls_token_type = 2 * tf.ones_like(model_features['segment_ids'][:, 0:1, :])
+			model_features['segment_ids'] = tf.concat([cls_token_type, token_type_ids[:, 1:, :]], axis=1)
+
 		model = model_api(model_config, model_features, labels,
 							mode, target, reuse=tf.AUTO_REUSE,
 							**kargs)
