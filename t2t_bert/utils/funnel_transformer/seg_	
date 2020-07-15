@@ -631,8 +631,8 @@ def seg_id_to_mat(net_config, seg_q, seg_k):
 
 	# Treat [cls] as in the same segment as both A & B
 	cls_mat = tf.logical_or(
-			tf.expand_dims(tf.equal(seg_q, tf.constant([net_config.seg_id_cls], dtype=tf.int64)), -1),
-			tf.expand_dims(tf.equal(seg_k, tf.constant([net_config.seg_id_cls], dtype=tf.int64)), -2))
+			tf.expand_dims(tf.equal(seg_q, tf.constant([net_config.seg_id_cls], dtype=seg_q.dtype)), -1),
+			tf.expand_dims(tf.equal(seg_k, tf.constant([net_config.seg_id_cls], dtype=seg_k.dtype)), -2))
 	seg_mat = tf.logical_or(cls_mat, seg_mat)
 
 	return seg_mat
