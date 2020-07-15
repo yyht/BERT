@@ -82,7 +82,7 @@ def dropout(input_tensor, dropout_prob, dropout_name=None):
 		A version of `input_tensor` with dropout applied.
 	"""
 	if dropout_prob is None or dropout_prob == 0.0:
-		return input_tensor
+		return tf.identity(input_tensor)
 	if dropout_name:
 		output = stable_dropout.dropout(input_tensor, dropout_prob, dropout_name)
 	else:

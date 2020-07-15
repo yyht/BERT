@@ -149,6 +149,8 @@ def encoder(net_config,
 						attn_structures,
 						output, seg_id, pos_id, is_training, 
 						attn_structures_name)
+				if attn_structures is None:
+					attn_structures = (pos_enc, seg_mat, func_mask)
 			else:
 				pre_attn_pooling_name = os.path.join(scope, str(block_idx), 'pre_attn_pooling')
 				pool_ret = funnel_transformer_utils.pre_attn_pooling(
@@ -180,7 +182,7 @@ def encoder(net_config,
 
 						# attention layer
 						tfmxl_name = os.path.join(scope, str(block_idx), str(layer_idx), str(repeat_idx), 'tfmxl_layer')
-						output, layer_dict = funnel_transformer_ops.tfmxl_layer(
+						output, layer_dict = funnel_transformer_utils.tfmxl_layer(
 								net_config=net_config,
 								q=q,
 								k=k,
@@ -209,9 +211,9 @@ def encoder(net_config,
 						hiddens.append(output)
 						prefix = "block_{}/layer_{}/repeat_{}".format(
 								block_idx, layer_idx, repeat_idx)
-						ops.update_ret_dict(ret_dict, layer_dict, prefix)
+						funnel_transformer_ops.update_ret_dict(ret_dict, layer_dict, prefix)
 
-	return output, hiddens, ret_dict
+	return output, hiddens, ret_dict, attn_structures
 
 def decoder(net_config, 
 						hiddens,
@@ -231,7 +233,7 @@ def decoder(net_config,
 	output, bridge_dict = funnel_transformer_utils.bridge_layer(
 			net_config,
 			hiddens, input_mask, reuse=reuse)
-	ops.update_ret_dict(ret_dict, bridge_dict, "bridge")
+	funnel_transformer_ops.update_ret_dict(ret_dict, bridge_dict, "bridge")
 
 	if net_config.decoder_depth == 0:
 		return output, ret_dict
@@ -269,7 +271,7 @@ def decoder(net_config,
 							func_mask=func_mask,
 							name=tfmxl_name)
 
-					ops.update_ret_dict(
+					funnel_transformer_ops.update_ret_dict(
 							ret_dict, layer_dict,
 							"layer_{}/repeat_{}".format(layer_idx, repeat_idx))
 

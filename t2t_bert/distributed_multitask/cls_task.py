@@ -231,7 +231,7 @@ def model_fn_builder(model,
 
 		if load_pretrained == "yes":
 			use_tpu = 1 if kargs.get('use_tpu', False) else 0
-			scaffold_fn = model_io_fn.load_pretrained(pretrained_tvars, 
+			scaffold_fn = model_io_fn.load_pretrained(tvars, 
 											init_checkpoint,
 											exclude_scope=exclude_scope,
 											use_tpu=use_tpu)

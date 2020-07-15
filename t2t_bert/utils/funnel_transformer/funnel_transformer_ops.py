@@ -235,14 +235,14 @@ def dropout_op(tensor, rate, training, *args, **kwargs):
 	# 	output = stable_dropout.dropout(tensor, rate, dropout_name)
 	# else:
 	tf.logging.info("****** dropout name: %s, rate: %s"%(dropout_name, str(rate)))
-	if rate is None or rate == 0.0:
-		return tensor
+	if rate is None or rate == 0.0 or not training:
+		return tf.identity(tensor)
 	if training:
 		tf.logging.info("****** dropout *******")
 		return tf.nn.dropout(tensor, keep_prob=1.0 - rate)
 	else:
 		tf.logging.info("****** original *******")
-		return tensor
+		return tf.identity(tensor)
 
 def gelu(x):
 	"""Gaussian Error Linear Unit.

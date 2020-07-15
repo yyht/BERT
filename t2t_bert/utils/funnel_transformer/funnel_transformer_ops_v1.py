@@ -224,15 +224,16 @@ def dropout_op(tensor, rate, training, *args, **kwargs):
 	# if dropout_name:
 	# 	output = stable_dropout.dropout(tensor, rate, dropout_name)
 	# else:
-	tf.logging.info("****** dropout name: %s, rate: %s"%(dropout_name, str(rate)))
-	if rate is None or rate == 0.0:
-		return tensor
+	tf.logging.info("****** dropout name: %s, rate: %s, training: %s"%(dropout_name, str(rate), str(training)))
+	if rate is None or rate == 0.0 or not training:
+		tf.logging.info("****** original *******")
+		return tf.identity(tensor)
 	if training:
 		tf.logging.info("****** dropout *******")
 		return tf.nn.dropout(tensor, keep_prob=1.0 - rate)
 	else:
 		tf.logging.info("****** original *******")
-		return tensor
+		return tf.identity(tensor)
 
 
 def gelu(x):
@@ -284,7 +285,7 @@ def residual_and_layer_norm(residual, hidden, norm_shape=None):
 
 def positionwise_ffn(inp, d_model, d_inner, dropout, dropact, initializer,
 										 activation_type="gelu", scope="ff", is_training=True,
-										 reuse=None):
+										 reuse=None, name="ffn"):
 	"""Position-wise Feed-forward Network."""
 	ret_dict = {}
 
@@ -630,8 +631,8 @@ def seg_id_to_mat(net_config, seg_q, seg_k):
 
 	# Treat [cls] as in the same segment as both A & B
 	cls_mat = tf.logical_or(
-			tf.expand_dims(tf.equal(seg_q, tf.constant([net_config.seg_id_cls])), -1),
-			tf.expand_dims(tf.equal(seg_k, tf.constant([net_config.seg_id_cls])), -2))
+			tf.expand_dims(tf.equal(seg_q, tf.constant([net_config.seg_id_cls], dtype=tf.int64)), -1),
+			tf.expand_dims(tf.equal(seg_k, tf.constant([net_config.seg_id_cls], dtype=tf.int64)), -2))
 	seg_mat = tf.logical_or(cls_mat, seg_mat)
 
 	return seg_mat

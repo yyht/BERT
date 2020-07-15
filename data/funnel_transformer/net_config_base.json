@@ -13,6 +13,7 @@
     "use_bfloat16":false,
     "hidden_size":768,
     "hidden_act": "gelu", 
+    "verbose":true,
     
     "dropact": 0.0,
     "dropatt": 0.1,

@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 
 from utils.funnel_transformer import funnel_transformer_ops_v1 as funnel_transformer_ops
-from utils.funnel_transformer import tf_utils
+import tf_utils
 
 def check_tf_version():
 	version = tf.__version__
@@ -117,6 +117,7 @@ def pool_tensor(net_config, tensor, mode="mean"):
 					strides=pool_size,
 					data_format="NWC",
 					padding="SAME")
+			tf.logging.info(" using tf avg_pool1d")
 		else:
 			pooled = tf_utils.avg_pool1d(
 					pooled,
@@ -124,6 +125,7 @@ def pool_tensor(net_config, tensor, mode="mean"):
 					strides=pool_size,
 					data_format="NWC",
 					padding="SAME")
+			tf.logging.info(" using my tf avg_pool1d")
 	elif mode == "max":
 		if check_tf_version():
 			pooled = tf.nn.max_pool1d(
@@ -132,6 +134,7 @@ def pool_tensor(net_config, tensor, mode="mean"):
 					strides=pool_size,
 					data_format="NWC",
 					padding="SAME")
+			tf.logging.info(" using tf max_pool1d")
 		else:
 			pooled = tf_utils.max_pool1d(
 					pooled,
@@ -139,6 +142,7 @@ def pool_tensor(net_config, tensor, mode="mean"):
 					strides=pool_size,
 					data_format="NWC",
 					padding="SAME")
+			tf.logging.info(" using my tf avg_pool1d")
 	elif mode == "min":
 		if check_tf_version():
 			pooled = -tf.nn.max_pool1d(
@@ -147,6 +151,7 @@ def pool_tensor(net_config, tensor, mode="mean"):
 					strides=pool_size,
 					data_format="NWC",
 					padding="SAME")
+			tf.logging.info(" using tf min_pool1d")
 		else:
 			pooled = -tf_utils.max_pool1d(
 					-pooled,
@@ -154,6 +159,7 @@ def pool_tensor(net_config, tensor, mode="mean"):
 					strides=pool_size,
 					data_format="NWC",
 					padding="SAME")
+			tf.logging.info(" using my tf min_pool1d")
 	else:
 		raise NotImplementedError
 	if ndims == 2: pooled = tf.squeeze(pooled, 2)
@@ -400,6 +406,6 @@ def tfmxl_layer(net_config, q, k, v, pos_enc, seg_mat, attn_mask,
       initializer=initializer,
       name=name)
 
-  ops.update_ret_dict(ret_dict, attn_dict, "attn")
-  ops.update_ret_dict(ret_dict, pffn_dict, "pffn")
+  funnel_transformer_ops.update_ret_dict(ret_dict, attn_dict, "attn")
+  funnel_transformer_ops.update_ret_dict(ret_dict, pffn_dict, "pffn")
   return output, ret_dict
