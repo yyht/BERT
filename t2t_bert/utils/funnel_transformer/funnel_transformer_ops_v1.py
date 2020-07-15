@@ -638,6 +638,7 @@ def seg_id_to_mat(net_config, seg_q, seg_k):
 	return seg_mat
 
 
+
 def get_pos_enc(pos_id_q, pos_id_k, d_model, dropout, is_training,
 								clamp_len=-1, dtype=tf.float32, name='pos_enc'):
 	"""Create inputs related to relative position encoding."""
