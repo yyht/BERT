@@ -178,7 +178,8 @@ def classifier_model_fn_builder(
 			cls_token_type = model_config.get('seg_id_cls', 2) * tf.ones_like(model_features['segment_ids'][:, 0:1])
 			model_features['segment_ids'] = tf.concat([cls_token_type, model_features['segment_ids'][:, 1:]], axis=1)
 
-			if model.n_block > 1:
+			n_block = model_config.get('block_size', "4").split("_")
+			if n_block > 1:
 				return_type = "decoder"
 				tf.logging.info("***** apply decoder reconstruction *****")
 			else:
