@@ -351,9 +351,9 @@ def denoise_autoencoder(config, input_tensor, output_weights,
 		elif kargs.get("discriminator_mode", "ce_loss") == "circle_loss":
 
 			gamma = kargs.get("circle_loss_gamma", 64)
-    		margin = kargs.get("circle_loss_margin", 0.25)
+			margin = kargs.get("circle_loss_margin", 0.25)
 
-    		tf.logging.info("== apply sparse circle loss, gamma: %s, marin: %s=="%(str(gamma), str(margin)))
+			tf.logging.info("== apply sparse circle loss, gamma: %s, marin: %s=="%(str(gamma), str(margin)))
 
 			# [batch_size x seq_length]
 			label_ids = tf.reshape(input_ori_ids, [-1])
