@@ -111,10 +111,10 @@ class Bert(object):
 						activation=tf.tanh,
 						kernel_initializer=bert_modules.create_initializer(self.config.initializer_range))
 	
-	def get_pooled_output(self):
+	def get_pooled_output(self, **kargs):
 		return self.pooled_output
 
-	def get_sequence_output(self):
+	def get_sequence_output(self, **kargs):
 		"""Gets final hidden layer of encoder.
 
 		Returns:
@@ -123,13 +123,13 @@ class Bert(object):
 		"""
 		return self.sequence_output
 
-	def get_all_encoder_layers(self):
+	def get_all_encoder_layers(self, **kargs):
 		return self.all_encoder_layers
 
-	def get_embedding_table(self):
+	def get_embedding_table(self, **kargs):
 		return self.embedding_table
 
-	def get_encoder_layers(self, layer_num):
+	def get_encoder_layers(self, layer_num, **kargs):
 		if layer_num >= 0 and layer_num <= len(self.all_encoder_layers) - 1:
 			print("==get encoder layer==", layer_num)
 			return self.all_encoder_layers[layer_num]

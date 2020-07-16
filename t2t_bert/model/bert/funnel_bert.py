@@ -209,29 +209,29 @@ class FunnelTransformer(object):
 						kernel_initializer=initializer,
 						use_bias=True)
 	
-	def get_multihead_attention(self):
+	def get_multihead_attention(self, **kargs):
 		attention_scores_list = []
 		for key in self.ret_dict:
 			if 'enc' in key and 'attn_prob' in key:
 				attention_scores_list.append(self.ret_dict[key])
 		return attention_scores_list
 	
-	def get_pooled_output(self):
+	def get_pooled_output(self, **kargs):
 		return self.pooled_output
 
-	def put_task_output(self, input_repres):
+	def put_task_output(self, input_repres, **kargs):
 		self.task_repres = input_repres
 
-	def get_task_output(self):
+	def get_task_output(self, **kargs):
 		return self.task_repres
 
-	def get_value_layer(self):
+	def get_value_layer(self, **kargs):
 		return None
 
-	def get_embedding_projection_table(self):
+	def get_embedding_projection_table(self, **kargs):
 		return None
 
-	def get_sequence_output(self, output_type='encoder'):
+	def get_sequence_output(self, output_type='encoder', **kargs):
 		"""Gets final hidden layer of encoder.
 
 		Returns:
@@ -245,7 +245,7 @@ class FunnelTransformer(object):
 		else:
 			return self.encoder_output
 
-	def get_all_encoder_layers(self, output_type='encoder'):
+	def get_all_encoder_layers(self, output_type='encoder', **kargs):
 		if output_type == 'encoder':
 			return self.encoder_hiddens
 		elif output_type == 'decoder':
@@ -253,13 +253,13 @@ class FunnelTransformer(object):
 		else:
 			return self.encoder_hiddens
 
-	def get_embedding_table(self):
+	def get_embedding_table(self, **kargs):
 		return self.word_embed_table
 
-	def get_embedding_output(self):
+	def get_embedding_output(self, **kargs):
 		return self.input_embed
 
-	def get_encoder_layers(self, layer_num):
+	def get_encoder_layers(self, layer_num, **kargs):
 		if layer_num >= 0 and layer_num <= len(self.encoder_hiddens) - 1:
 			print("==get encoder layer==", layer_num)
 			return self.encoder_hiddens[layer_num]
