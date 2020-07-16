@@ -76,6 +76,7 @@ class FunnelTransformer(object):
 		self.config.decoder_repeat_size = decoder_size[1]
 		self.attn_structures = None
 		self.initializer_range = self.config.init_std
+		tf.logging.info("==using embedding scope block-size: %s =="%(str(self.n_block)))
 
 	def build_embedder(self, input_ids, token_type_ids, 
 									hidden_dropout_prob, 
