@@ -579,28 +579,28 @@ class TextCNN(base_model.BaseModel):
 			logits = tf.einsum("abc,dc->abd", input_tensor, self.emb_mat)
 			self.backward_logits = tf.nn.bias_add(logits, output_bias)
 
-	def get_pooled_output(self):
+	def get_pooled_output(self, **kargs):
 		return self.output
 
-	def put_task_output(self, input_repres):
+	def put_task_output(self, input_repres, **kargs):
 		self.task_repres = input_repres
 
-	def get_task_output(self):
+	def get_task_output(self, **kargs):
 		return self.task_repres
 
-	def get_sequence_output(self):
+	def get_sequence_output(self, **kargs):
 		return self.sequence_output
 
-	def get_embedding_table(self):
+	def get_embedding_table(self, **kargs):
 		return self.emb_mat
 
-	def get_embedding_projection_table(self):
+	def get_embedding_projection_table(self, **kargs):
 		return None
 
-	def get_sequence_output_logits(self):
+	def get_sequence_output_logits(self, **kargs):
 		return self.logits
 
-	def get_sequence_backward_output_logits(self):
+	def get_sequence_backward_output_logits(self, **kargs):
 		return self.backward_logits
 
 	

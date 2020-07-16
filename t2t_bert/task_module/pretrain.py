@@ -10,6 +10,12 @@ import math
 import re
 import six
 import tensorflow as tf
+from loss import loss_utils
+
+def normalizing(x, axis):    
+	norm = tf.sqrt(tf.reduce_sum(tf.square(x), axis=axis, keep_dims=True))
+	normalized = x / (norm+1e-10)   
+	return normalized
 
 def get_masked_lm_output(config, input_tensor, output_weights, positions,
 							label_ids, label_weights, **kargs):
@@ -250,6 +256,129 @@ def seq_mask_masked_lm_output(config, input_tensor, output_weights,
 			tf.logging.info("**** normal mlm loss ****")
 
 		return (loss, per_example_loss, logits, sampled_binary_mask)
+
+def denoise_autoencoder(config, input_tensor, output_weights,
+							input_mask, input_ori_ids, input_ids, 
+							sampled_binary_mask, **kargs):
+	input_shape_list = bert_utils.get_shape_list(input_tensor, expected_rank=3)
+	batch_size = input_shape_list[0]
+	seq_length = input_shape_list[1]
+	hidden_dims = input_shape_list[2]
+
+	embedding_projection = kargs.get('embedding_projection', None)
+
+	scope = kargs.get('scope', None)
+	if scope:
+		scope = scope + '/' + 'cls/predictions'
+	else:
+		scope = 'cls/predictions'
+
+	tf.logging.info("**** mlm generator scope **** %s", str(scope))
+
+	# with tf.variable_scope("cls/predictions", reuse=tf.AUTO_REUSE):
+	with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
+		if config.get('ln_type', 'postln') == 'preln':
+			input_tensor = bert_modules.layer_norm(input_tensor)
+		elif config.get('ln_type', 'postln') == 'postln':
+			input_tensor = input_tensor
+		else:
+			input_tensor = input_tensor
+
+		if config.get("embedding", "none_factorized") == "none_factorized":
+			projection_width = config.hidden_size
+			tf.logging.info("==not using embedding factorized==")
+		else:
+			projection_width = config.get('embedding_size', config.hidden_size)
+			tf.logging.info("==using embedding factorized: embedding size: %s==", str(projection_width))
+
+		with tf.variable_scope("transform"):
+			input_tensor = tf.layers.dense(
+					input_tensor,
+					units=projection_width,
+					activation=bert_modules.get_activation(config.hidden_act),
+					kernel_initializer=bert_modules.create_initializer(
+							config.initializer_range))
+
+			if config.get('ln_type', 'postln') == 'preln':
+				input_tensor = input_tensor
+			elif config.get('ln_type', 'postln') == 'postln':
+				input_tensor = bert_modules.layer_norm(input_tensor)
+			else:
+				input_tensor = bert_modules.layer_norm(input_tensor)
+
+		if embedding_projection is not None:
+			# batch x seq x hidden, embedding x hidden
+			print(input_tensor.get_shape(), embedding_projection.get_shape())
+			input_tensor = tf.einsum("abc,dc->abd", input_tensor, embedding_projection)
+		else:
+			print("==no need for embedding projection==")
+			input_tensor = input_tensor
+
+		input_tensor_norm = normalizing(input_tensor, 2)    # batch L emb
+		output_weights_norm = normalizing(output_weights, 1)    # batch L emb
+
+		logits = tf.einsum("abd,cd->abc", input_tensor_norm, output_weights_norm)
+
+		if kargs.get("discriminator_mode", None) == "gan":
+			pass
+		elif kargs.get("discriminator_mode", "ce_loss") == "ce_loss":
+			log_probs = tf.nn.log_softmax(logits*config.get("temperature", 100.0), 
+									dim=-1, name=None)
+
+			rec_sent = tf.squeeze(tf.argmax(logits, 2))
+			# [batch_size*seq_len]
+			label_ids = tf.reshape(input_ori_ids, [-1])
+			# [batch_size*seq_len]
+			
+			# [batch_size*seq_len, vocab_size]
+			log_probs = tf.reshape(log_probs, [-1, config.vocab_size])
+
+			# [batch_size*seq_len, vocab_size]
+			one_hot_labels = tf.one_hot(
+				label_ids, depth=config.vocab_size, dtype=tf.float32)
+
+			per_example_loss = -tf.reduce_sum(log_probs * one_hot_labels, axis=[-1])
+			if kargs.get("loss_converage", "local") == "local":
+				label_weights = tf.reshape(sampled_binary_mask, [-1])
+				numerator = tf.reduce_sum(label_weights * per_example_loss)
+				denominator = tf.reduce_sum(label_weights) + 1e-5
+				loss = numerator / denominator
+			elif kargs.get("loss_converage", "local") == "all":
+				all_label_weights = tf.reshape(tf.cast(input_mask, dtype=tf.float32), [-1])
+				numerator = tf.reduce_sum(all_label_weights * per_example_loss)
+				denominator = tf.reduce_sum(all_label_weights) + 1e-5
+				loss = numerator / denominator
+		elif kargs.get("discriminator_mode", "ce_loss") == "circle_loss":
+
+			gamma = kargs.get("circle_loss_gamma", 64)
+    		margin = kargs.get("circle_loss_margin", 0.25)
+
+    		tf.logging.info("== apply sparse circle loss, gamma: %s, marin: %s=="%(str(gamma), str(margin)))
+
+			# [batch_size x seq_length]
+			label_ids = tf.reshape(input_ori_ids, [-1])
+			# [batch_size x seq_length, vocab_size]
+			logits_all = tf.reshape(logits, [-1, config.vocab_size])
+			# [batch_size x seq_length, 1]
+
+			per_example_loss = loss_utils.sparse_circle_loss(
+									label_ids, 
+									logits_all, 
+									margin=margin,
+									gamma=gamma)
+			
+			if kargs.get("loss_converage", "local") == "local":
+				numerator = tf.reduce_sum(label_weights * per_example_loss)
+				denominator = tf.reduce_sum(label_weights) + 1e-5
+				loss = numerator / denominator
+			elif kargs.get("loss_converage", "local") == "all":
+				all_label_weights = tf.reshape(tf.cast(input_mask, dtype=tf.float32), [-1])
+				numerator = tf.reduce_sum(all_label_weights * per_example_loss)
+				denominator = tf.reduce_sum(all_label_weights) + 1e-5
+				loss = numerator / denominator
+
+
+	return (loss, per_example_loss, logits, sampled_binary_mask)
 
 def emb_score(config, input_tensor, input_ids, 
 				output_weights,

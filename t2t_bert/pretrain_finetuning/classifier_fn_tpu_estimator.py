@@ -178,8 +178,16 @@ def classifier_model_fn_builder(
 			cls_token_type = model_config.get('seg_id_cls', 2) * tf.ones_like(model_features['segment_ids'][:, 0:1])
 			model_features['segment_ids'] = tf.concat([cls_token_type, model_features['segment_ids'][:, 1:]], axis=1)
 
+			if model.n_block > 1:
+				return_type = "decoder"
+				tf.logging.info("***** apply decoder reconstruction *****")
+			else:
+				return_type = "encoder"
+				tf.logging.info("***** apply encoder reconstruction *****")
+
 		model = model_api(model_config, model_features, labels,
 							mode, target, reuse=tf.AUTO_REUSE,
+							funnel_transformer_task_type="pretrain",
 							**kargs)
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
@@ -221,7 +229,7 @@ def classifier_model_fn_builder(
 			masked_lm_example_loss, 
 			masked_lm_log_probs,
 			masked_lm_mask) = seq_masked_lm_fn(model_config, 
-										model.get_sequence_output(), 
+										model.get_sequence_output(output_type=return_type), 
 										model.get_embedding_table(),
 										features['input_mask'], 
 										features['input_ori_ids'], 

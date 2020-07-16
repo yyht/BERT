@@ -247,13 +247,13 @@ class Bert(object):
 						activation=tf.tanh,
 						kernel_initializer=bert_modules.create_initializer(self.config.initializer_range))
 	
-	def get_multihead_attention(self):
+	def get_multihead_attention(self, **kargs):
 		return self.all_attention_scores
 	
-	def get_pooled_output(self):
+	def get_pooled_output(self, **kargs):
 		return self.pooled_output
 
-	def put_task_output(self, input_repres):
+	def put_task_output(self, input_repres, **kargs):
 		self.task_repres = input_repres
 
 	def get_task_output(self):
@@ -262,10 +262,10 @@ class Bert(object):
 	def get_value_layer(self):
 		return self.all_value_outputs
 
-	def get_embedding_projection_table(self):
+	def get_embedding_projection_table(self, **kargs):
 		return None
 
-	def get_sequence_output(self):
+	def get_sequence_output(self, **kargs):
 		"""Gets final hidden layer of encoder.
 
 		Returns:
@@ -274,16 +274,16 @@ class Bert(object):
 		"""
 		return self.sequence_output
 
-	def get_all_encoder_layers(self):
+	def get_all_encoder_layers(self, **kargs):
 		return self.all_encoder_layers
 
-	def get_embedding_table(self):
+	def get_embedding_table(self, **kargs):
 		return self.embedding_table
 
-	def get_embedding_output(self):
+	def get_embedding_output(self, **kargs):
 		return self.embedding_output_word
 
-	def get_encoder_layers(self, layer_num):
+	def get_encoder_layers(self, layer_num, **kargs):
 		if layer_num >= 0 and layer_num <= len(self.all_encoder_layers) - 1:
 			print("==get encoder layer==", layer_num)
 			return self.all_encoder_layers[layer_num]

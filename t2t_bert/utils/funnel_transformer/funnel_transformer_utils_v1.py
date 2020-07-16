@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 
 from utils.funnel_transformer import funnel_transformer_ops_v1 as funnel_transformer_ops
-import tf_utils
+from utils.funnel_transformer import tf_utils
 
 def check_tf_version():
 	version = tf.__version__

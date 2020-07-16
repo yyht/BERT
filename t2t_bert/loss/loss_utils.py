@@ -394,6 +394,47 @@ def circle_loss(pair_wise_cosine_matrix, pred_true_mask,
 	logits = tf.nn.softplus(joint_neg_loss+joint_pos_loss)
 	return logits
 
+def sparse_circle_loss(y_true, y_pred, 
+				margin=0.25,
+				gamma=64):
+
+	"""
+	https://github.com/zhen8838/Circle-Loss/blob/master/circle_loss.py
+	"""
+	O_p = 1 + margin
+	O_n = -margin
+
+	Delta_p = 1 - margin
+	Delta_n = margin
+
+	y_true = tf.expand_dims(y_true, axis=-1)
+
+	input_shape_list = bert_utils.get_shape_list(y_pred, expected_rank=[2])
+	batch_size = input_shape_list[0]
+	seq_length = input_shape_list[1]
+
+	batch_idxs = tf.expand_dims(tf.range(0, batch_size, dtype=tf.int32), 1)  # shape [batch,1]
+
+	idxs = tf.concat([batch_idxs, tf.cast(y_true, tf.int32)], 1)
+	sp = tf.expand_dims(tf.gather_nd(y_pred, idxs), 1)
+	mask = tf.logical_not(
+		tf.scatter_nd(idxs, tf.ones(tf.shape(idxs)[0], tf.bool),
+					  tf.shape(y_pred)))
+
+	sn = tf.reshape(tf.boolean_mask(y_pred, mask), (batch_size, -1))
+
+	alpha_p = tf.nn.relu(O_p - tf.stop_gradient(sp))
+	alpha_n = tf.nn.relu(tf.stop_gradient(sn) - O_n)
+
+	r_sp_m = alpha_p * (sp - Delta_p)
+	r_sn_m = alpha_n * (sn - Delta_n)
+	_Z = tf.concat([r_sn_m, r_sp_m], 1)
+	_Z = _Z * gamma
+	# sum all similarity
+	logZ = tf.reduce_logsumexp(_Z, 1, keepdims=True)
+	logits = -r_sp_m * gamma + logZ
+	return logits, mask
+	
 def gradient_penalty_loss(loss, embeding_matrix, **kargs):
 	# output_weights is embedding_matrix
 	gp = tf.reduce_sum(tf.gradients(loss, [embeding_matrix])[0]**2)
