@@ -470,7 +470,7 @@ def funnelbert_encoder(model_config, features, labels,
                     embedding_output=kargs.get("stop_gradient", None))
 
 	model.build_pooler(reuse=reuse)
-	if kargs.get("funnel_transformer_task_type", "finetuning") == 'pretrain':
+	if kargs.get("if_use_decoder", "none_decoder") == 'use_decoder':
 		model.build_decoder(model.encoder_hiddens, 
 							input_ids, input_mask, 
 							segment_ids, 
