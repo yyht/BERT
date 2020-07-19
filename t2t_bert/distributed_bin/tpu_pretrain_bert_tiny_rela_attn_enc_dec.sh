@@ -12,7 +12,7 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--num_classes 2 \
 	--train_size 11000000 \
 	--eval_size 1100000 \
-	--batch_size 384 \
+	--batch_size 256 \
 	--model_type "funnelbert" \
 	--model_scope "model" \
 	--if_shard 1 \
@@ -30,7 +30,7 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--init_lr 1e-4 \
 	--num_tpu_cores 8 \
 	--do_train true \
-	--tpu_name "albert3" \
+	--tpu_name "albert1" \
 	--mode "pretrain" \
 
 
