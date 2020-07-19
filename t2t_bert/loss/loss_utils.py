@@ -446,7 +446,10 @@ def sparse_circle_loss(y_true, y_pred,
 	# sum all similarity
 	logZ = tf.reduce_logsumexp(_Z, 1, keepdims=True)
 	logits = -r_sp_m * gamma + logZ
-	return logits, mask, r_sp_m, r_sn_m, _Z
+	if kargs.get("debug_mode", False):
+		return logits, mask, r_sp_m, r_sn_m, _Z
+	else:
+		return logits, mask
 	
 def gradient_penalty_loss(loss, embeding_matrix, **kargs):
 	# output_weights is embedding_matrix
