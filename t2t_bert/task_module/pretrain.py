@@ -322,8 +322,11 @@ def denoise_autoencoder(config, input_tensor, output_weights,
 		if kargs.get("discriminator_mode", None) == "gan":
 			pass
 		elif kargs.get("discriminator_mode", "ce_loss") == "ce_loss":
-			log_probs = tf.nn.log_softmax(logits*config.get("temperature", 100.0), 
+			temperature = config.get("temperature", 100.0)
+			log_probs = tf.nn.log_softmax(logits*temperature, 
 									dim=-1, name=None)
+
+			tf.logging.info("== ce loss with temperature: %s =="%(str(temperature)))
 
 			rec_sent = tf.squeeze(tf.argmax(logits, 2))
 			# [batch_size*seq_len]
@@ -361,9 +364,10 @@ def denoise_autoencoder(config, input_tensor, output_weights,
 			logits_all = tf.reshape(logits, [-1, config.vocab_size])
 			# [batch_size x seq_length, 1]
 
-			per_example_loss, logits_mask = loss_utils.sparse_circle_loss(
+			per_example_loss, logits_mask = loss_utils.sparse_circle_loss_v1(
 									label_ids, 
 									logits_all, 
+									n_class=config.vocab_size,
 									margin=margin,
 									gamma=gamma)
 			
