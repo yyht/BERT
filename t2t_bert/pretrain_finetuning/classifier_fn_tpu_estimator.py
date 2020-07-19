@@ -138,7 +138,7 @@ def classifier_model_fn_builder(
 		input_ori_ids = features.get('input_ori_ids', None)
 		if mode == tf.estimator.ModeKeys.TRAIN:
 			is_training = True
-			if input_ori_ids is not None:
+			if input_ori_ids is not None and model_config.get("corrupted", True):
 				# [output_ids, 
 				# sampled_binary_mask] = random_input_ids_generation(
 				# 							model_config, 
@@ -160,9 +160,11 @@ def classifier_model_fn_builder(
 				features['input_ids'] = output_ids
 				tf.logging.info("***** Running random sample input generation *****")
 			else:
-				sampled_binary_mask = None
+				sampled_binary_mask = features['input_mask']
+				tf.logging.info("***** Running original sample input generation *****")
 		else:
-			sampled_binary_mask = None
+			sampled_binary_mask = features['input_mask']
+			tf.logging.info("***** Running original sample input generation *****")
 			is_training = False
 
 		model_features = {}
@@ -181,14 +183,16 @@ def classifier_model_fn_builder(
 			n_block = len(model_config.get('block_size', "4").split("_"))
 			if n_block > 1:
 				return_type = "decoder"
+				if_use_decoder = 'use_decoder'
 				tf.logging.info("***** apply decoder reconstruction *****")
 			else:
 				return_type = "encoder"
+				if_use_decoder = 'none'
 				tf.logging.info("***** apply encoder reconstruction *****")
 
 		model = model_api(model_config, model_features, labels,
 							mode, target, reuse=tf.AUTO_REUSE,
-							funnel_transformer_task_type="pretrain",
+							if_use_decoder=if_use_decoder,
 							**kargs)
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
@@ -220,10 +224,26 @@ def classifier_model_fn_builder(
 			masked_lm_fn = pretrain_albert.get_masked_lm_output
 			seq_masked_lm_fn = pretrain_albert.seq_mask_masked_lm_output
 			print("==apply albert masked lm==")
+		elif model_config.model_type == 'funnelbert':
+			masked_lm_fn = pretrain.get_masked_lm_output
+			seq_masked_lm_fn = pretrain.seq_mask_masked_lm_output
+			print("==apply funnelbert masked lm==")
 		else:
 			masked_lm_fn = pretrain.get_masked_lm_output
 			seq_masked_lm_fn = pretrain_albert.seq_mask_masked_lm_output
 			print("==apply bert masked lm==")
+
+		if model_config.get("model_type", "bert") == "funnelbert":
+			if n_block > 1:
+				seq_masked_lm_fn = pretrain.denoise_autoencoder
+				discriminator_mode = "circle_loss"
+				tf.logging.info("***** discriminator_mode: %s *****"%(discriminator_mode))
+				tf.logging.info("***** loss_converage: %s *****"%(loss_converage))
+				tf.logging.info(seq_masked_lm_fn)
+				if model_config.get("corrupted", True):
+					loss_converage = 'local'
+				else:
+					loss_converage = 'global'
 
 		if sampled_binary_mask is not None:
 			(masked_lm_loss,
@@ -238,7 +258,9 @@ def classifier_model_fn_builder(
 										sampled_binary_mask,
 										reuse=tf.AUTO_REUSE,
 										embedding_projection=model.get_embedding_projection_table(),
-										pretrain_loss_type="normal")
+										pretrain_loss_type="normal",
+										discriminator_mode=discriminator_mode,
+										loss_converage=loss_converage)
 			masked_lm_ids = input_ori_ids
 		else:
 

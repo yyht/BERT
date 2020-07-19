@@ -368,6 +368,7 @@ def denoise_autoencoder(config, input_tensor, output_weights,
 									gamma=gamma)
 			
 			if kargs.get("loss_converage", "local") == "local":
+				label_weights = tf.reshape(sampled_binary_mask, [-1])
 				numerator = tf.reduce_sum(label_weights * per_example_loss)
 				denominator = tf.reduce_sum(label_weights) + 1e-5
 				loss = numerator / denominator
@@ -376,7 +377,6 @@ def denoise_autoencoder(config, input_tensor, output_weights,
 				numerator = tf.reduce_sum(all_label_weights * per_example_loss)
 				denominator = tf.reduce_sum(all_label_weights) + 1e-5
 				loss = numerator / denominator
-
 
 	return (loss, per_example_loss, logits, sampled_binary_mask)
 
