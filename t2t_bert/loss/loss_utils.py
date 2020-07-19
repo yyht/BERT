@@ -396,7 +396,8 @@ def circle_loss(pair_wise_cosine_matrix, pred_true_mask,
 
 def sparse_circle_loss(y_true, y_pred, 
 				margin=0.25,
-				gamma=64):
+				gamma=64,
+				**kargs):
 
 	"""
 	https://github.com/zhen8838/Circle-Loss/blob/master/circle_loss.py
@@ -416,24 +417,39 @@ def sparse_circle_loss(y_true, y_pred,
 	batch_idxs = tf.expand_dims(tf.range(0, batch_size, dtype=tf.int32), 1)  # shape [batch,1]
 
 	idxs = tf.concat([batch_idxs, tf.cast(y_true, tf.int32)], 1)
-	sp = tf.expand_dims(tf.gather_nd(y_pred, idxs), 1)
 	mask = tf.logical_not(
 		tf.scatter_nd(idxs, tf.ones(tf.shape(idxs)[0], tf.bool),
 					  tf.shape(y_pred)))
 
-	sn = tf.reshape(tf.boolean_mask(y_pred, mask), (batch_size, -1))
+	if not kargs.get("use_tpu", True):
+		sp = tf.expand_dims(tf.gather_nd(y_pred, idxs), 1)
+		sn = tf.reshape(tf.boolean_mask(y_pred, mask), (batch_size, -1))
+		alpha_p = tf.nn.relu(O_p - tf.stop_gradient(sp))
+		alpha_n = tf.nn.relu(tf.stop_gradient(sn) - O_n)
 
-	alpha_p = tf.nn.relu(O_p - tf.stop_gradient(sp))
-	alpha_n = tf.nn.relu(tf.stop_gradient(sn) - O_n)
+		r_sp_m = alpha_p * (sp - Delta_p)
+		r_sn_m = alpha_n * (sn - Delta_n)
+		_Z = tf.concat([r_sn_m, r_sp_m], 1)
+		tf.logging.info("*** gpu sparse-circle loss ***")
+	else:
+		alpha_p = tf.nn.relu(O_p - tf.stop_gradient(y_pred))
+		alpha_n = tf.nn.relu(tf.stop_gradient(y_pred) - O_n)
+	
+		r_sp_m = alpha_p * (y_pred - Delta_p) * (1.0 - tf.cast(mask, dtype=tf.float32))
+		r_sn_m = alpha_n * (y_pred - Delta_n) * (tf.cast(mask, dtype=tf.float32))
 
-	r_sp_m = alpha_p * (sp - Delta_p)
-	r_sn_m = alpha_n * (sn - Delta_n)
-	_Z = tf.concat([r_sn_m, r_sp_m], 1)
+		_Z = r_sp_m + r_sn_m
+		r_sp_m = tf.reduce_sum(r_sp_m, axis=-1, keepdims=True)
+		tf.logging.info("*** gpu and tpu sparse-circle loss ***")
+
 	_Z = _Z * gamma
 	# sum all similarity
 	logZ = tf.reduce_logsumexp(_Z, 1, keepdims=True)
 	logits = -r_sp_m * gamma + logZ
-	return logits, mask
+	if kargs.get("debug_mode", False):
+		return logits, mask, r_sp_m, r_sn_m, _Z
+	else:
+		return logits, mask
 	
 def gradient_penalty_loss(loss, embeding_matrix, **kargs):
 	# output_weights is embedding_matrix
