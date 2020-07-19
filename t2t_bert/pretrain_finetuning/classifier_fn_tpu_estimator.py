@@ -237,13 +237,10 @@ def classifier_model_fn_builder(
 			if n_block > 1:
 				seq_masked_lm_fn = pretrain.denoise_autoencoder
 				discriminator_mode = "circle_loss"
+				loss_converage = model_config.get("loss_converage", 'global')
 				tf.logging.info("***** discriminator_mode: %s *****"%(discriminator_mode))
 				tf.logging.info("***** loss_converage: %s *****"%(loss_converage))
 				tf.logging.info(seq_masked_lm_fn)
-				if model_config.get("corrupted", True):
-					loss_converage = 'local'
-				else:
-					loss_converage = 'global'
 
 		if sampled_binary_mask is not None:
 			(masked_lm_loss,
