@@ -315,7 +315,7 @@ def denoise_autoencoder(config, input_tensor, output_weights,
 			input_tensor = input_tensor
 
 		input_tensor_norm = normalizing(input_tensor, 2)    # batch L emb
-		output_weights_norm = normalizing(output_weights, 1)    # batch L emb
+		output_weights_norm = normalizing(output_weights, 1)    # batch  emb
 
 		logits = tf.einsum("abd,cd->abc", input_tensor_norm, output_weights_norm)
 
