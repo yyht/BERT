@@ -236,7 +236,7 @@ def classifier_model_fn_builder(
 		if model_config.get("model_type", "bert") == "funnelbert":
 			if n_block > 1:
 				seq_masked_lm_fn = pretrain.denoise_autoencoder
-				discriminator_mode = "ce_loss"
+				discriminator_mode = "circle_loss"
 				loss_converage = model_config.get("loss_converage", 'global')
 				tf.logging.info("***** discriminator_mode: %s *****"%(discriminator_mode))
 				tf.logging.info("***** loss_converage: %s *****"%(loss_converage))
