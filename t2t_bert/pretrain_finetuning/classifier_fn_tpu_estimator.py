@@ -234,13 +234,17 @@ def classifier_model_fn_builder(
 			print("==apply bert masked lm==")
 
 		if model_config.get("model_type", "bert") == "funnelbert":
-			if n_block > 1:
+			if n_block > 1 and model_config.get('pretrain_loss', "ae") == "ae":
 				seq_masked_lm_fn = pretrain.denoise_autoencoder
 				discriminator_mode = "ce_loss"
 				loss_converage = model_config.get("loss_converage", 'global')
 				tf.logging.info("***** discriminator_mode: %s *****"%(discriminator_mode))
 				tf.logging.info("***** loss_converage: %s *****"%(loss_converage))
 				tf.logging.info(seq_masked_lm_fn)
+		else:
+			discriminator_mode = "ce_loss"
+			loss_converage = model_config.get("loss_converage", 'global')
+			tf.logging.info(seq_masked_lm_fn)
 
 		if sampled_binary_mask is not None:
 			(masked_lm_loss,
