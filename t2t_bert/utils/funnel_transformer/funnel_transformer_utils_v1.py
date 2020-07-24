@@ -340,7 +340,8 @@ def upsample(net_config, output, stride, tgt_len):
 
 	return output
 
-def bridge_layer(net_config, hiddens, input_mask, reuse=tf.AUTO_REUSE):
+def bridge_layer(net_config, hiddens, input_mask,
+								reuse=tf.AUTO_REUSE):
 	"""A bridge layer between encoder and decoder."""
 	net_config = net_config
 	ret_dict = {}
@@ -362,7 +363,13 @@ def bridge_layer(net_config, hiddens, input_mask, reuse=tf.AUTO_REUSE):
 		# add residual connection
 		upsampled_hidden = upsampled_hids[-1]
 		unpooled_hidden = upsampled_hids[0]
-		output = upsampled_hidden + unpooled_hidden
+		if_skip_connetion = net_config.get('if_skip_connetion', True)
+		if if_skip_connetion:
+			tf.logging.info("**** apply if_skip_connetion **** ")
+			output = upsampled_hidden + unpooled_hidden
+		else:
+			output = upsampled_hidden
+			tf.logging.info("**** not apply if_skip_connetion **** ")
 
 	return output, ret_dict
 
