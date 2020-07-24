@@ -241,6 +241,10 @@ def classifier_model_fn_builder(
 				tf.logging.info("***** discriminator_mode: %s *****"%(discriminator_mode))
 				tf.logging.info("***** loss_converage: %s *****"%(loss_converage))
 				tf.logging.info(seq_masked_lm_fn)
+			else:
+				discriminator_mode = "ce_loss"
+				loss_converage = model_config.get("loss_converage", 'global')
+				tf.logging.info(seq_masked_lm_fn)
 		else:
 			discriminator_mode = "ce_loss"
 			loss_converage = model_config.get("loss_converage", 'global')
