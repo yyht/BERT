@@ -6,6 +6,7 @@
     "d_model": 256,
     "decoder_size": "2",
     "if_skip_connetion":false,
+    "pretrain_loss":"ae",
 
     "truncate_seq":true,
     "seg_id_cls":2,
