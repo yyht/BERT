@@ -32,6 +32,7 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--do_train true \
 	--tpu_name "albert2" \
 	--mode "pretrain" \
+	--random_generator "5"
 
 
 
