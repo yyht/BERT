@@ -5,7 +5,7 @@
     "d_inner": 3072,
     "d_model": 768,
     "decoder_size": "2",
-    "corrupted":true,
+    "corrupted":false,
 
     "truncate_seq":true,
     "seg_id_cls":2,
