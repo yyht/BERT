@@ -556,9 +556,9 @@ def _decode_record(FLAGS, record, num_predict,
 	# example["input_mask"] = tf.cast(tf.logical_or(is_mask, is_pad), tf.float32)
 	# example["pad_mask"] = tf.cast(is_pad, tf.float32)
 	input_mask = tf.logical_or(tf.logical_or(is_mask, is_pad), origin_input_mask)
-	example["masked_mask"] = tf.cast(tf.logical_or(is_mask, is_pad), dtype=tf.float32)
+	example["masked_mask"] = 1.0 - tf.cast(tf.logical_or(is_mask, is_pad), dtype=tf.float32)
 	pad_mask = tf.logical_or(origin_input_mask, is_pad)
-	example["pad_mask"] = tf.cast(pad_mask, tf.float32)
+	example["pad_mask"] = 1.0 - tf.cast(pad_mask, tf.float32)
 
 	# create target mapping
 	create_target_mapping(

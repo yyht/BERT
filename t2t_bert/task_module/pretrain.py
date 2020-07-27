@@ -362,7 +362,7 @@ def denoise_autoencoder(config, input_tensor, output_weights,
 			label_ids = tf.reshape(input_ori_ids, [-1])
 			# [batch_size x seq_length, vocab_size]
 			logits_all = tf.reshape(logits, [-1, config.vocab_size])
-			# [batch_size x seq_length, 1]
+			# [batch_size x seq_length,zaa 1]
 
 			per_example_loss, logits_mask = loss_utils.sparse_circle_loss_v1(
 									label_ids, 
