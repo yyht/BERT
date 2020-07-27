@@ -161,7 +161,7 @@ def classifier_model_fn_builder(
 			features['input_ori_ids'] = seq_features['input_ids']
 		if 'masked_input' in features:
 			seq_features['input_ids'] = features['masked_input']
-			model_config.get("corrupted", True) = False
+			model_config.corrupted = False
 
 		not_equal = tf.cast(tf.not_equal(features["input_ori_ids"], tf.zeros_like(features["input_ori_ids"])), tf.int32)
 		not_equal = tf.reduce_sum(not_equal, axis=-1)
