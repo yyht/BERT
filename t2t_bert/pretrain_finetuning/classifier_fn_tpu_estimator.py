@@ -202,11 +202,12 @@ def classifier_model_fn_builder(
 				return_type = "encoder"
 				if_use_decoder = 'none'
 				tf.logging.info("***** apply encoder reconstruction *****")
-			if model_config.get("denoise_mode", "autoencoding") == "autoencoding":
-				model_features['input_ids'] = input_ori_ids
-				tf.logging.info("***** apply auto-encoding reconstruction *****")
-			elif model_config.get("denoise_mode", "autoencoding") == "denoise":
-				tf.logging.info("***** apply denoise reconstruction *****")
+			if n_block > 1:
+				if model_config.get("denoise_mode", "autoencoding") == "autoencoding":
+					model_features['input_ids'] = input_ori_ids
+					tf.logging.info("***** apply auto-encoding reconstruction *****")
+				elif model_config.get("denoise_mode", "autoencoding") == "denoise":
+					tf.logging.info("***** apply denoise reconstruction *****")
 
 		model = model_api(model_config, model_features, labels,
 							mode, target, reuse=tf.AUTO_REUSE,
@@ -267,6 +268,7 @@ def classifier_model_fn_builder(
 			discriminator_mode = "ce_loss"
 			loss_converage = model_config.get("loss_converage", 'global')
 			tf.logging.info(seq_masked_lm_fn)
+			tf.logging.info(masked_lm_fn)
 
 		if input_ori_ids is not None and model_config.get("corrupted", True):
 			(masked_lm_loss,
@@ -285,6 +287,7 @@ def classifier_model_fn_builder(
 										discriminator_mode=discriminator_mode,
 										loss_converage=loss_converage)
 			masked_lm_ids = input_ori_ids
+			tf.logging.info("*** apply sequential mlm loss ***")
 		else:
 			masked_lm_positions = features["masked_lm_positions"]
 			masked_lm_ids = features["masked_lm_ids"]
@@ -303,6 +306,7 @@ def classifier_model_fn_builder(
 											reuse=tf.AUTO_REUSE,
 											embedding_projection=model.get_embedding_projection_table(),
 											pretrain_loss_type="normal")
+			tf.logging.info("*** apply bert-like mlm loss ***")
 		
 		print(model_config.lm_ratio, '==mlm lm_ratio==')
 		loss = model_config.lm_ratio * masked_lm_loss #+ 0.0 * nsp_loss
