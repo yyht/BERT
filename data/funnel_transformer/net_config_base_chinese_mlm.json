@@ -1,6 +1,6 @@
 {
     "block_size": "12",
-    "d_embed": 768,
+    "d_embed": 512,
     "d_head": 64,
     "d_inner": 3072,
     "d_model": 768,
