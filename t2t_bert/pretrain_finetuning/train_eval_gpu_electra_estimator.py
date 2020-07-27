@@ -260,7 +260,7 @@ def train_eval_fn(FLAGS,
 				**kargs)
 
 	if FLAGS.use_tpu:
-		from data_generator import tf_data_utils
+		from data_generator import tf_data_utils, tf_pretrain_data_utils
 		estimator = tf.contrib.tpu.TPUEstimator(
 				  use_tpu=True,
 				  model_fn=model_fn,
@@ -271,11 +271,38 @@ def train_eval_fn(FLAGS,
 		if FLAGS.do_train:
 			tf.logging.info("***** Running training *****")
 			tf.logging.info("  Batch size = %d", FLAGS.batch_size)
-			input_features = tf_data_utils.electra_input_fn_builder(train_file, 
+			if FLAGS.random_generator == "1":
+				input_features = tf_data_utils.electra_input_fn_builder(train_file, 
+											FLAGS.max_length,
+											FLAGS.max_predictions_per_seq,
+											True,
+											num_cpu_threads=4)
+			elif FLAGS.random_generator == "5":
+				data_config = Bunch({})
+				data_config.min_tok = 1
+				data_config.max_tok = 10
+				data_config.sep_id = 102
+				data_config.pad_id = 0
+				data_config.cls_id = 101
+				data_config.mask_id = 103
+				data_config.leak_ratio = 0.1
+				data_config.rand_ratio = 0.1
+				data_config.vocab_size = config.vocab_size
+				data_config.mask_prob = 0.15
+				data_config.sample_strategy = 'token_span'
+				data_config.truncate_seq = False
+				data_config.stride = 1
+				data_config.use_bfloat16 = False
+				tf.logging.info("***** Running efficiency input fn builder *****")
+				input_features = tf_pretrain_data_utils.input_fn_builder(train_file, 
 										FLAGS.max_length,
 										FLAGS.max_predictions_per_seq,
 										True,
-										num_cpu_threads=4)
+										num_cpu_threads=4,
+										FLAGS=data_config,
+										truncate_seq=data_config.truncate_seq, 
+										use_bfloat16=data_config.use_bfloat16,
+										stride=data_config.stride)
 			estimator.train(input_fn=input_features, max_steps=num_train_steps)
 		else:
 			tf.logging.info("***** Running evaluation *****")
@@ -371,6 +398,36 @@ def train_eval_fn(FLAGS,
 											task_index=task_index)
 				eval_features = lambda: tf_data_utils.all_reduce_eval_batch_input_fn(dev_file,
 											_decode_batch_record, name_to_features, params, if_shard=FLAGS.if_shard,
+											worker_count=worker_count,
+											task_index=task_index)
+			elif kargs.get("parse_type", "parse_dynamic") == 'parse_dynamic':
+				data_config = Bunch({})
+				data_config.min_tok = 1
+				data_config.max_tok = 10
+				data_config.sep_id = 102
+				data_config.pad_id = 0
+				data_config.cls_id = 101
+				data_config.mask_id = 103
+				data_config.leak_ratio = 0.1
+				data_config.rand_ratio = 0.1
+				data_config.vocab_size = config.vocab_size
+				data_config.mask_prob = 0.15
+				data_config.sample_strategy = 'token_span'
+				data_config.truncate_seq = False
+				data_config.stride = 1
+				data_config.use_bfloat16 = False
+				tf.logging.info("***** Running efficiency input fn builder *****")
+				train_features = tf_pretrain_data_utils.input_fn_builder(train_file, 
+										FLAGS.max_length,
+										FLAGS.max_predictions_per_seq,
+										True,
+										num_cpu_threads=4,
+										FLAGS=data_config,
+										truncate_seq=data_config.truncate_seq, 
+										use_bfloat16=data_config.use_bfloat16,
+										stride=data_config.stride)
+				eval_features = lambda: tf_data_utils.all_reduce_eval_input_fn(dev_file,
+											_decode_record, name_to_features, params, if_shard=FLAGS.if_shard,
 											worker_count=worker_count,
 											task_index=task_index)
 
