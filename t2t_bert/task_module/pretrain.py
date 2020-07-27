@@ -12,10 +12,143 @@ import six
 import tensorflow as tf
 from loss import loss_utils
 
+def check_tf_version():
+	version = tf.__version__
+	print("==tf version==", version)
+	if int(version.split(".")[0]) >= 2 or int(version.split(".")[1]) >= 15:
+		return True
+	else:
+		return False
+
 def normalizing(x, axis):    
 	norm = tf.sqrt(tf.reduce_sum(tf.square(x), axis=axis, keep_dims=True))
 	normalized = x / (norm+1e-10)   
 	return normalized
+
+def get_masked_lm_output_v1(config, input_tensor, 
+							output_weights, 
+							output_target,
+							output_target_mask,
+							output_target_mapping, 
+							**kargs):
+	input_shape_list = bert_utils.get_shape_list(input_tensor, expected_rank=3)
+	batch_size = input_shape_list[0]
+	seq_length = input_shape_list[1]
+	hidden_dims = input_shape_list[2]
+
+	embedding_projection = kargs.get('embedding_projection', None)
+
+	scope = kargs.get('scope', None)
+	if scope:
+		scope = scope + '/' + 'cls/predictions'
+	else:
+		scope = 'cls/predictions'
+
+	tf.logging.info("**** mlm generator scope **** %s", str(scope))
+	if output_target_mapping is not None:
+		# [batch_size, num_predict, hidden_dims]
+		if check_tf_version():
+			input_tensor = tf.einsum("...id,...ki->...kd", input_tensor, output_target_mapping)
+		else:
+			input_tensor = tf.einsum("aid,aki->akd", input_tensor, output_target_mapping)
+		tf.logging.info("==using target output_target_mapping input==")
+	else:
+		tf.logging.info("==using whole sentence input==")
+	
+	# with tf.variable_scope("cls/predictions", reuse=tf.AUTO_REUSE):
+	with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
+		if config.get('ln_type', 'postln') == 'preln':
+			input_tensor = bert_modules.layer_norm(input_tensor)
+		elif config.get('ln_type', 'postln') == 'postln':
+			input_tensor = input_tensor
+		else:
+			input_tensor = input_tensor
+
+		if config.get("embedding", "none_factorized") == "none_factorized":
+			projection_width = config.hidden_size
+			tf.logging.info("==not using embedding factorized==")
+		else:
+			projection_width = config.get('embedding_size', config.hidden_size)
+			tf.logging.info("==using embedding factorized: embedding size: %s==", str(projection_width))
+
+		with tf.variable_scope("transform"):
+			input_tensor = tf.layers.dense(
+					input_tensor,
+					units=projection_width,
+					activation=bert_modules.get_activation(config.hidden_act),
+					kernel_initializer=bert_modules.create_initializer(
+							config.initializer_range))
+
+			if config.get('ln_type', 'postln') == 'preln':
+				input_tensor = input_tensor
+			elif config.get('ln_type', 'postln') == 'postln':
+				input_tensor = bert_modules.layer_norm(input_tensor)
+			else:
+				input_tensor = bert_modules.layer_norm(input_tensor)
+
+		if embedding_projection is not None:
+			# batch x seq x hidden, embedding x hidden
+			print(input_tensor.get_shape(), embedding_projection.get_shape())
+			input_tensor = tf.einsum("abc,dc->abd", input_tensor, embedding_projection)
+		else:
+			print("==no need for embedding projection==")
+			input_tensor = input_tensor
+
+		output_bias = tf.get_variable(
+				"output_bias",
+				shape=[config.vocab_size],
+				initializer=tf.zeros_initializer())
+		# [batch, num_predict, embedding]
+		logits = tf.einsum("abc,dc->abd", input_tensor, output_weights)
+		logits = tf.nn.bias_add(logits, output_bias)
+
+		if kargs.get("pretrain_loss_type", "normal") == "normal":
+			# [batch, num_predict]
+			per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+													logits=logits,
+													labels=tf.stop_gradient(output_target),
+													)
+			per_example_loss *= output_target_mask
+			loss = tf.reduce_sum(per_example_loss) / (1e-10 + tf.reduce_sum(output_target_mask))
+			tf.logging.info("**** normal mlm loss ****")
+		elif kargs.get("pretrain_loss_type", "normal") == "gradient_penalty":
+			log_probs = tf.nn.log_softmax(logits, axis=-1)
+
+			# [batch_size*num_predict]
+			label_ids = tf.reshape(output_target, [-1])
+			# [batch_size*num_predict]
+			label_weights = tf.reshape(output_target_mask, [-1])
+			# [batch_size*num_predict, vocab_size]
+			log_probs = tf.reshape(log_probs, [-1, config.vocab_size])
+
+			# [batch_size*num_predict, vocab_size]
+			one_hot_labels = tf.one_hot(
+				label_ids, depth=config.vocab_size, dtype=tf.float32)
+
+			# The `positions` tensor might be zero-padded (if the sequence is too
+			# short to have the maximum number of predictions). The `label_weights`
+			# tensor has a value of 1.0 for every real prediction and 0.0 for the
+			# padding predictions.
+			per_example_loss = -tf.reduce_sum(log_probs * one_hot_labels, axis=[-1])
+			numerator = tf.reduce_sum(label_weights * per_example_loss)
+			denominator = tf.reduce_sum(label_weights) + 1e-5
+			loss = numerator / denominator
+
+			# output_weights is embedding_matrix
+			gp = tf.reduce_sum(tf.gradients(loss, [output_weights])[0]**2)
+			loss += 0.5 * kargs.get('epsilon', 1.0) * gp
+			tf.logging.info("**** normal mlm loss with gradient penalty ****")
+		else:
+			per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+													logits=logits,
+													labels=tf.stop_gradient(input_ori_ids),
+													)
+			per_example_loss *= output_target_mask
+			loss = tf.reduce_sum(per_example_loss) / (1e-10 + tf.reduce_sum(output_target_mask))
+			tf.logging.info("**** normal mlm loss ****")
+
+		return (loss, per_example_loss, logits, output_target_mask)
+	
 
 def get_masked_lm_output(config, input_tensor, output_weights, positions,
 							label_ids, label_weights, **kargs):
