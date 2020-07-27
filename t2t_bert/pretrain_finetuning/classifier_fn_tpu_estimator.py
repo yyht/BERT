@@ -208,7 +208,9 @@ def classifier_model_fn_builder(
 					tf.logging.info("***** apply auto-encoding reconstruction *****")
 				elif model_config.get("denoise_mode", "autoencoding") == "denoise":
 					tf.logging.info("***** apply denoise reconstruction *****")
-
+			else:
+				tf.logging.info("***** apply mlm-denoise *****")
+				
 		model = model_api(model_config, model_features, labels,
 							mode, target, reuse=tf.AUTO_REUSE,
 							if_use_decoder=if_use_decoder,
