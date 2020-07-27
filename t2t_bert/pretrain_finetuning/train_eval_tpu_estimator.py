@@ -2,7 +2,7 @@
 import tensorflow as tf
 
 from optimizer import distributed_optimizer as optimizer
-from data_generator import tf_data_utils
+from data_generator import tf_data_utils, tf_pretrain_data_utils
 
 try:
 	from distributed_single_sentence_classification.model_interface import model_config_parser
@@ -101,7 +101,7 @@ def train_eval_fn(FLAGS,
 									model_io_config=model_io_config,
 									opt_config=opt_config,
 									model_io_fn=model_io_fn,
-                                    # exclude_scope=kargs.get('exclude_scope', ""),
+									# exclude_scope=kargs.get('exclude_scope', ""),
 									not_storage_params=[],
 									target=kargs.get("input_target", ""),
 									num_train_steps=num_train_steps,
@@ -128,6 +128,24 @@ def train_eval_fn(FLAGS,
 		elif FLAGS.random_generator == "4":
 			input_fn_builder = tf_data_utils.gatedcnn_pretrain_input_fn_builder_v1
 			tf.logging.info("***** Running gatedcnn input fn builder *****")
+		elif FLAGS.random_generator == "5":
+			input_fn_builder = tf_pretrain_data_utils.input_fn_builder
+			data_config = Bunch({})
+			data_config.min_tok = 1
+			data_config.max_tok = 10
+			data_config.sep_id = 102
+			data_config.pad_id = 0
+			data_config.cls_id = 101
+			data_config.mask_id = 103
+			data_config.leak_ratio = 0.1
+			data_config.rand_ratio = 0.1
+			data_config.vocab_size = config.vocab_size
+			data_config.mask_prob = 0.15
+			data_config.sample_strategy = 'token_span'
+			data_config.truncate_seq = False
+			data_config.stride = 1
+			data_config.use_bfloat16 = False
+			tf.logging.info("***** Running efficiency input fn builder *****")
 		else:
 			input_fn_builder = tf_data_utils.input_fn_builder
 			tf.logging.info("***** Running fixed sample input fn builder *****")
@@ -139,7 +157,11 @@ def train_eval_fn(FLAGS,
 										FLAGS.max_length,
 										FLAGS.max_predictions_per_seq,
 										True,
-										num_cpu_threads=4)
+										num_cpu_threads=4,
+										FLAGS=data_config,
+										truncate_seq=data_config.truncate_seq, 
+										use_bfloat16=data_config.use_bfloat16,
+										stride=data_config.stride)
 			estimator.train(input_fn=input_features, max_steps=num_train_steps)
 		else:
 			tf.logging.info("***** Running evaluation *****")
@@ -148,7 +170,12 @@ def train_eval_fn(FLAGS,
 							input_files=dev_file,
 							max_seq_length=FLAGS.max_length,
 							max_predictions_per_seq=FLAGS.max_predictions_per_seq,
-							is_training=False)
+							is_training=False,
+							num_cpu_threads=4,
+							FLAGS=data_config,
+							truncate_seq=data_config.truncate_seq, 
+							use_bfloat16=data_config.use_bfloat16,
+							stride=data_config.stride)
 			tf.logging.info("***** Begining Running evaluation *****")
 			result = estimator.evaluate(input_fn=eval_input_fn, steps=max_eval_steps)
 			output_eval_file = os.path.join(checkpoint_dir, "eval_results.txt")

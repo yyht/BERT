@@ -129,7 +129,7 @@ def input_fn_builder(input_files,
 					 max_seq_length,
 					 max_predictions_per_seq,
 					 is_training,
-					 num_cpu_threads=4):
+					 num_cpu_threads=4, **kargs):
 	"""Creates an `input_fn` closure to be passed to TPUEstimator."""
 
 	def input_fn(params):
@@ -194,7 +194,7 @@ def electra_input_fn_builder(input_files,
 					 max_seq_length,
 					 max_predictions_per_seq,
 					 is_training,
-					 num_cpu_threads=4):
+					 num_cpu_threads=4, **kargs):
 	"""Creates an `input_fn` closure to be passed to TPUEstimator."""
 
 	def input_fn(params):
@@ -261,7 +261,7 @@ def bert_seq_input_fn_builder(input_files,
 					 max_seq_length,
 					 max_predictions_per_seq,
 					 is_training,
-					 num_cpu_threads=4):
+					 num_cpu_threads=4, **kargs):
 	"""Creates an `input_fn` closure to be passed to TPUEstimator."""
 
 	def input_fn(params):
@@ -318,7 +318,7 @@ def bert_mnli_input_fn_builder(input_files,
 					 max_seq_length,
 					 max_predictions_per_seq,
 					 is_training,
-					 num_cpu_threads=4):
+					 num_cpu_threads=4, **kargs):
 	"""Creates an `input_fn` closure to be passed to TPUEstimator."""
 
 	def input_fn(params):
@@ -375,7 +375,7 @@ def gatedcnn_pretrain_input_fn_builder(input_files,
 					 max_seq_length,
 					 max_predictions_per_seq,
 					 is_training,
-					 num_cpu_threads=4):
+					 num_cpu_threads=4, **kargs):
 	"""Creates an `input_fn` closure to be passed to TPUEstimator."""
 
 	def input_fn(params):
@@ -430,7 +430,7 @@ def gatedcnn_pretrain_input_fn_builder_v1(input_files,
 					 max_seq_length,
 					 max_predictions_per_seq,
 					 is_training,
-					 num_cpu_threads=4):
+					 num_cpu_threads=4, **kargs):
 	"""Creates an `input_fn` closure to be passed to TPUEstimator."""
 
 	def input_fn(params):

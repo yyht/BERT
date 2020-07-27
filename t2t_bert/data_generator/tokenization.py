@@ -374,13 +374,27 @@ class FullTokenizer(object):
 	def padding(self, token_id_lst, max_length, zero_padding=0):
 		return token_id_lst + [zero_padding] * (max_length - len(token_id_lst))
 		
+	def is_start_id(self, token_id):
+		token = self.inv_vocab[token_id]
+		return not token.startswith("##")
+
+	def is_start_token(self, token):
+		return not token.startswith("##")
+
+	def is_func_id(self, token_id):
+		token = self.inv_vocab[token_id]
+		return self.is_func_token(token)
+
+	def is_func_token(self, token):
+		return token != "[UNK]" and token.startswith("<") and token.endswith(">")
+
 class BasicTokenizer(object):
 	"""Runs basic tokenization (punctuation splitting, lower casing, etc.)."""
 
 	def __init__(self, do_lower_case=True, do_whole_word_mask=False):
 		"""Constructs a BasicTokenizer.
 		Args:
-		  do_lower_case: Whether to lower case the input.
+			do_lower_case: Whether to lower case the input.
 		"""
 		self.do_lower_case = do_lower_case
 		self.do_whole_word_mask = do_whole_word_mask
@@ -503,13 +517,13 @@ class WordpieceTokenizer(object):
 		This uses a greedy longest-match-first algorithm to perform tokenization
 		using the given vocabulary.
 		For example:
-		  input = "unaffable"
-		  output = ["un", "##aff", "##able"]
+			input = "unaffable"
+			output = ["un", "##aff", "##able"]
 		Args:
-		  text: A single token or whitespace separated tokens. This should have
+			text: A single token or whitespace separated tokens. This should have
 			already been passed through `BasicTokenizer.
 		Returns:
-		  A list of wordpiece tokens.
+			A list of wordpiece tokens.
 		"""
 
 		text = convert_to_unicode(text)
@@ -601,7 +615,7 @@ def _is_punctuation(char):
 	# Punctuation class but we treat them as punctuation anyways, for
 	# consistency.
 	if ((cp >= 33 and cp <= 47) or (cp >= 58 and cp <= 64) or
-	  (cp >= 91 and cp <= 96) or (cp >= 123 and cp <= 126)):
+		(cp >= 91 and cp <= 96) or (cp >= 123 and cp <= 126)):
 		return True
 	cat = unicodedata.category(char)
 	if cat.startswith("P"):

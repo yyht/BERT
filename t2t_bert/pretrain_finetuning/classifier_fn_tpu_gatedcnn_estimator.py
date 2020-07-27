@@ -154,8 +154,14 @@ def classifier_model_fn_builder(
 			seq_features[key] = features[key]
 		if 'input_ori_ids' in features:
 			seq_features['input_ids'] = features["input_ori_ids"]
+		elif 'origin_input' in features:
+			input_ori_ids = features['origin_input']
+			features["input_ori_ids"] = input_ori_ids
 		else:
 			features['input_ori_ids'] = seq_features['input_ids']
+		if 'masked_input' in features:
+			seq_features['input_ids'] = features['masked_input']
+			model_config.get("corrupted", True) = False
 
 		not_equal = tf.cast(tf.not_equal(features["input_ori_ids"], tf.zeros_like(features["input_ori_ids"])), tf.int32)
 		not_equal = tf.reduce_sum(not_equal, axis=-1)
@@ -167,7 +173,7 @@ def classifier_model_fn_builder(
 		casual_flag = model_config.get('is_casual', True)
 		tf.logging.info("***** is casual flag *****", str(casual_flag))
 
-		if not casual_flag:
+		if not casual_flag and model_config.get("corrupted", True):
 			[output_ids, 
 			sampled_binary_mask] = hmm_input_ids_generation(model_config,
 										features['input_ori_ids'],
@@ -226,7 +232,7 @@ def classifier_model_fn_builder(
 				backward_loss = tf.reduce_mean(per_backward_example_loss)
 				loss += backward_loss
 				tf.logging.info("***** using backward loss *****")
-		else:
+		elif not casual_flag and model_config.get("corrupted", True):
 			(masked_lm_loss,
 			masked_lm_example_loss, 
 			masked_lm_log_probs,
@@ -242,6 +248,24 @@ def classifier_model_fn_builder(
 										embedding_projection=model.get_embedding_projection_table())
 			loss = masked_lm_loss
 			tf.logging.info("***** using masked lm loss *****")
+		else:
+			masked_lm_positions = features["masked_lm_positions"]
+			masked_lm_ids = features["masked_lm_ids"]
+			masked_lm_weights = features["masked_lm_weights"]
+
+			(masked_lm_loss,
+			masked_lm_example_loss, 
+			masked_lm_log_probs,
+			masked_lm_mask) = pretrain.get_masked_lm_output(
+											model_config, 
+											model.get_sequence_output(), 
+											model.get_embedding_table(),
+											masked_lm_positions, 
+											masked_lm_ids, 
+											masked_lm_weights,
+											reuse=tf.AUTO_REUSE,
+											embedding_projection=model.get_embedding_projection_table(),
+											pretrain_loss_type="normal")
 		if kargs.get("unigram_disc", False):
 			[output_ids, 
 			sampled_binary_mask] = hmm_input_ids_generation(model_config,

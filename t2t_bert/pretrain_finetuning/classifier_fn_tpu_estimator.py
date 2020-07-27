@@ -114,6 +114,9 @@ def classifier_model_fn_builder(
 
 		model_api = model_zoo(model_config)
 		print(features)
+		if "pad_mask" in features:
+			input_mask = features['pad_mask']
+			features['input_mask'] = input_mask
 		if 'input_mask' not in features:
 			input_mask = tf.cast(tf.not_equal(features['input_ids_{}'.format(target)], 
 																			kargs.get('[PAD]', 0)), tf.int32)
@@ -135,7 +138,17 @@ def classifier_model_fn_builder(
 			features['segment_ids'] = features['segment_ids_{}'.format(target)]
 			features['input_ids'] = features['input_ids_{}'.format(target)]
 
-		input_ori_ids = features.get('input_ori_ids', None)
+		if 'input_ori_ids' in features:
+			input_ori_ids = features['input_ori_ids']
+		elif 'origin_input' in features:
+			input_ori_ids = features['origin_input']
+			features['input_ori_ids'] = features['origin_input']
+		else:
+			input_ori_ids = None
+		if 'masked_input' in features:
+			features['input_ids'] = features['masked_input']
+			model_config.get("corrupted", True) = False
+
 		if mode == tf.estimator.ModeKeys.TRAIN:
 			is_training = True
 			if input_ori_ids is not None and model_config.get("corrupted", True):
@@ -170,7 +183,7 @@ def classifier_model_fn_builder(
 		model_features = {}
 		for key in features:
 			model_features[key] = features[key]
-
+		
 		if model_config.get("model_type", "bert") == "funnelbert":
 			"""
 			funnel-bert needs opposite pad-mask as input
@@ -189,6 +202,11 @@ def classifier_model_fn_builder(
 				return_type = "encoder"
 				if_use_decoder = 'none'
 				tf.logging.info("***** apply encoder reconstruction *****")
+			if model_config.get("denoise_mode", "autoencoding") == "autoencoding":
+				model_features['input_ids'] = input_ori_ids
+				tf.logging.info("***** apply auto-encoding reconstruction *****")
+			elif model_config.get("denoise_mode", "autoencoding") == "denoise":
+				tf.logging.info("***** apply denoise reconstruction *****")
 
 		model = model_api(model_config, model_features, labels,
 							mode, target, reuse=tf.AUTO_REUSE,
@@ -250,7 +268,7 @@ def classifier_model_fn_builder(
 			loss_converage = model_config.get("loss_converage", 'global')
 			tf.logging.info(seq_masked_lm_fn)
 
-		if sampled_binary_mask is not None:
+		if input_ori_ids is not None and model_config.get("corrupted", True):
 			(masked_lm_loss,
 			masked_lm_example_loss, 
 			masked_lm_log_probs,
@@ -268,7 +286,6 @@ def classifier_model_fn_builder(
 										loss_converage=loss_converage)
 			masked_lm_ids = input_ori_ids
 		else:
-
 			masked_lm_positions = features["masked_lm_positions"]
 			masked_lm_ids = features["masked_lm_ids"]
 			masked_lm_weights = features["masked_lm_weights"]
