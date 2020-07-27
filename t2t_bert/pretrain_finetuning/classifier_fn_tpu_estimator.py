@@ -147,7 +147,7 @@ def classifier_model_fn_builder(
 			input_ori_ids = None
 		if 'masked_input' in features:
 			features['input_ids'] = features['masked_input']
-			model_config.get("corrupted", True) = False
+			model_config.corrupted = False
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
 			is_training = True
