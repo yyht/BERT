@@ -210,7 +210,11 @@ def classifier_model_fn_builder(
 					tf.logging.info("***** apply denoise reconstruction *****")
 			else:
 				tf.logging.info("***** apply mlm-denoise *****")
-				
+		else:
+			return_type = 'encoder'
+			if_use_decoder = 'none'
+			tf.logging.info("***** apply standard bert-mlm *****")
+
 		model = model_api(model_config, model_features, labels,
 							mode, target, reuse=tf.AUTO_REUSE,
 							if_use_decoder=if_use_decoder,
