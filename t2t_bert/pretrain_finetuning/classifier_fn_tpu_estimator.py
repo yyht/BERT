@@ -266,6 +266,8 @@ def classifier_model_fn_builder(
 				tf.logging.info("***** discriminator_mode: %s *****"%(discriminator_mode))
 				tf.logging.info("***** loss_converage: %s *****"%(loss_converage))
 				tf.logging.info(seq_masked_lm_fn)
+				model_config.corrupted = True
+				tf.logging.info("*** apply reconstruction ***")
 			else:
 				discriminator_mode = "ce_loss"
 				loss_converage = model_config.get("loss_converage", 'global')
@@ -304,14 +306,16 @@ def classifier_model_fn_builder(
 			masked_lm_log_probs,
 			masked_lm_mask) = masked_lm_fn(
 											model_config, 
-											model.get_sequence_output(), 
+											model.get_sequence_output(output_type=return_type), 
 											model.get_embedding_table(),
 											masked_lm_positions, 
 											masked_lm_ids, 
 											masked_lm_weights,
 											reuse=tf.AUTO_REUSE,
 											embedding_projection=model.get_embedding_projection_table(),
-											pretrain_loss_type="normal")
+											pretrain_loss_type="normal",
+											discriminator_mode=discriminator_mode,
+											loss_converage=loss_converage)
 			tf.logging.info("*** apply bert-like mlm loss ***")
 		
 		print(model_config.lm_ratio, '==mlm lm_ratio==')
