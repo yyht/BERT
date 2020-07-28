@@ -356,6 +356,7 @@ def bridge_layer(net_config, hiddens, input_mask,
 			cum_num_layer += (net_config.block_repeat_size[block_idx] *
 												net_config.block_param_size[block_idx])
 			layer_idx = cum_num_layer - 1
+			tf.logging.info("**** upsample layer id: %s **** "%(str(layer_idx)))
 			upsampled_hid = upsample(net_config,
 					hiddens[layer_idx], stride=stride, tgt_len=tgt_len)
 			upsampled_hids.append(upsampled_hid)
