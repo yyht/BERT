@@ -141,8 +141,8 @@ def train_eval_fn(FLAGS,
 			data_config.pad_id = 0
 			data_config.cls_id = 101
 			data_config.mask_id = 103
-			data_config.leak_ratio = 1.0
-			data_config.rand_ratio = 0.0
+			data_config.leak_ratio = 0.1
+			data_config.rand_ratio = 0.1
 			data_config.vocab_size = config.vocab_size
 			data_config.mask_prob = 0.25
 			data_config.sample_strategy = 'token_span'
