@@ -117,15 +117,19 @@ def train_eval_fn(FLAGS,
 		tf.logging.info("****** do train ******* %s", str(FLAGS.do_train))
 
 		if FLAGS.random_generator == "1":
+			data_config = Bunch({})
 			input_fn_builder = tf_data_utils.electra_input_fn_builder
 			tf.logging.info("***** Running random sample input fn builder *****")
 		elif FLAGS.random_generator == "2":
+			data_config = Bunch({})
 			input_fn_builder = tf_data_utils.bert_seq_input_fn_builder
 			tf.logging.info("***** Running bert seq input fn builder *****")
 		elif FLAGS.random_generator == "3":
+			data_config = Bunch({})
 			input_fn_builder = tf_data_utils.bert_mnli_input_fn_builder
 			tf.logging.info("***** Running bert seq input fn builder *****")
 		elif FLAGS.random_generator == "4":
+			data_config = Bunch({})
 			input_fn_builder = tf_data_utils.gatedcnn_pretrain_input_fn_builder_v1
 			tf.logging.info("***** Running gatedcnn input fn builder *****")
 		elif FLAGS.random_generator == "5":
