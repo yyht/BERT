@@ -140,11 +140,14 @@ def classifier_model_fn_builder(
 
 		if 'input_ori_ids' in features:
 			input_ori_ids = features['input_ori_ids']
+			tf.logging.info("***** original input ori ids *****")
 		elif 'origin_input' in features:
 			input_ori_ids = features['origin_input']
 			features['input_ori_ids'] = features['origin_input']
+			tf.logging.info("***** origin_input *****")
 		else:
 			input_ori_ids = None
+			tf.logging.info("***** no origin_input *****")
 		if 'masked_input' in features:
 			features['input_ids'] = features['masked_input']
 			model_config.corrupted = False
