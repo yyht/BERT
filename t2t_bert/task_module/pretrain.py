@@ -447,15 +447,15 @@ def denoise_autoencoder(config, input_tensor, output_weights,
 			print("==no need for embedding projection==")
 			input_tensor = input_tensor
 
-		input_tensor_norm = normalizing(input_tensor, 2)    # batch L emb
-		output_weights_norm = normalizing(output_weights, 1)    # batch  emb
-
-		logits = tf.einsum("abd,cd->abc", input_tensor_norm, output_weights_norm)
-
 		if kargs.get("discriminator_mode", None) == "gan":
 			pass
 		elif kargs.get("discriminator_mode", "ce_loss") == "ce_loss":
-			temperature = config.get("temperature", 30.0)
+			input_tensor_norm = normalizing(input_tensor, 2)    # batch L emb
+			output_weights_norm = normalizing(output_weights, 1)    # batch  emb
+
+			logits = tf.einsum("abd,cd->abc", input_tensor_norm, output_weights_norm)
+			temperature = config.get("temperature", 100.0)
+
 			log_probs = tf.nn.log_softmax(logits*temperature, 
 									dim=-1, name=None)
 
@@ -484,7 +484,47 @@ def denoise_autoencoder(config, input_tensor, output_weights,
 				numerator = tf.reduce_sum(all_label_weights * per_example_loss)
 				denominator = tf.reduce_sum(all_label_weights) + 1e-5
 				loss = numerator / denominator
+		elif kargs.get("discriminator_mode", "ce_loss") == "normal_ce_loss":
+			output_bias = tf.get_variable(
+				"output_bias",
+				shape=[config.vocab_size],
+				initializer=tf.zeros_initializer())
+			logits = tf.einsum("abd,cd->abc", input_tensor, output_weights)
+			logits = tf.nn.bias_add(logits, output_bias)
+
+			log_probs = tf.nn.log_softmax(logits, axis=-1)
+
+			# [batch_size*seq_len]
+			label_ids = tf.reshape(input_ori_ids, [-1])
+			# [batch_size*seq_len, vocab_size]
+			log_probs = tf.reshape(log_probs, [-1, config.vocab_size])
+
+			# [batch_size*seq_len, vocab_size]
+			one_hot_labels = tf.one_hot(
+				label_ids, depth=config.vocab_size, dtype=tf.float32)
+
+			# The `positions` tensor might be zero-padded (if the sequence is too
+			# short to have the maximum number of predictions). The `label_weights`
+			# tensor has a value of 1.0 for every real prediction and 0.0 for the
+			# padding predictions.
+			per_example_loss = -tf.reduce_sum(log_probs * one_hot_labels, axis=[-1])
+			if kargs.get("loss_converage", "local") == "local":
+				label_weights = tf.reshape(sampled_binary_mask, [-1])
+				numerator = tf.reduce_sum(label_weights * per_example_loss)
+				denominator = tf.reduce_sum(label_weights) + 1e-5
+				loss = numerator / denominator
+			elif kargs.get("loss_converage", "local") == "global":
+				all_label_weights = tf.reshape(tf.cast(input_mask, dtype=tf.float32), [-1])
+				numerator = tf.reduce_sum(all_label_weights * per_example_loss)
+				denominator = tf.reduce_sum(all_label_weights) + 1e-5
+				loss = numerator / denominator
+
 		elif kargs.get("discriminator_mode", "ce_loss") == "circle_loss":
+
+			input_tensor_norm = normalizing(input_tensor, 2)    # batch L emb
+			output_weights_norm = normalizing(output_weights, 1)    # batch  emb
+
+			logits = tf.einsum("abd,cd->abc", input_tensor_norm, output_weights_norm)
 
 			gamma = kargs.get("circle_loss_gamma", 64)
 			margin = kargs.get("circle_loss_margin", 0.25)
