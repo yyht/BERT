@@ -271,6 +271,12 @@ def classifier_model_fn_builder(
 				tf.logging.info(seq_masked_lm_fn)
 				model_config.corrupted = True
 				tf.logging.info("*** apply reconstruction ***")
+				if loss_converage in ['global']:
+					sampled_binary_mask = features['input_mask']
+					tf.logging.info("***** loss_converage: %s ***** with input-mask"%(loss_converage))
+				elif loss_converage in ['local']:
+					sampled_binary_mask = tf.reduce_sum(features['target_mapping'], axis=1)
+					tf.logging.info("***** loss_converage: %s ***** with target-mapping mask"%(loss_converage))
 			else:
 				discriminator_mode = model_config.get('discriminator_mode', "ce_loss")
 				loss_converage = model_config.get("loss_converage", 'global')
