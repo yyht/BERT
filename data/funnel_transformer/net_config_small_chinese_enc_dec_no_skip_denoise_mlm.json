@@ -5,7 +5,7 @@
     "d_inner": 1024,
     "d_model": 256,
     "decoder_size": "2",
-    "if_skip_connetion":false,
+    "if_skip_connetion":true,
     "pretrain_loss":"mlm",
     "corrupted":false,
 
