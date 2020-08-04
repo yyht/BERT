@@ -6,7 +6,7 @@
     "d_model": 256,
     "decoder_size": "2",
     "if_skip_connetion":false,
-    "pretrain_loss":"ae",
+    "pretrain_loss":"mlm",
     "corrupted":false,
 
     "truncate_seq":true,

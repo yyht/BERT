@@ -23,14 +23,14 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--with_char "no_char" \
 	--input_target "" \
 	--task_type "bert_pretrain" \
-	--max_predictions_per_seq 120 \
+	--max_predictions_per_seq 78 \
 	--ln_type "postln" \
 	--warmup "warmup" \
 	--decay "decay" \
 	--init_lr 1e-4 \
 	--num_tpu_cores 8 \
 	--do_train true \
-	--tpu_name "albert0" \
+	--tpu_name "albert1" \
 	--mode "pretrain" \
 	--random_generator "5"
 
