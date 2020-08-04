@@ -141,14 +141,16 @@ def train_eval_fn(FLAGS,
 			data_config.pad_id = 0
 			data_config.cls_id = 101
 			data_config.mask_id = 103
-			data_config.leak_ratio = 0.3
-			data_config.rand_ratio = 0.3
+			data_config.leak_ratio = 0.1
+			data_config.rand_ratio = 0.1
 			data_config.vocab_size = config.vocab_size
-			data_config.mask_prob = 0.25
+			data_config.mask_prob = 0.15
 			data_config.sample_strategy = 'token_span'
 			data_config.truncate_seq = False
 			data_config.stride = 1
 			data_config.use_bfloat16 = False
+			for key in data_config:
+				tf.logging.info("***** data config key, key:%s, value:%s"%(key, str(data_config[key])))
 			tf.logging.info("***** Running efficiency input fn builder *****")
 		else:
 			input_fn_builder = tf_data_utils.input_fn_builder
