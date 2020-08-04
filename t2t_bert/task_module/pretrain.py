@@ -432,12 +432,12 @@ def denoise_autoencoder(config, input_tensor, output_weights,
 					kernel_initializer=bert_modules.create_initializer(
 							config.initializer_range))
 
-			if config.get('ln_type', 'postln') == 'preln':
-				input_tensor = input_tensor
-			elif config.get('ln_type', 'postln') == 'postln':
-				input_tensor = bert_modules.layer_norm(input_tensor)
-			else:
-				input_tensor = bert_modules.layer_norm(input_tensor)
+			# if config.get('ln_type', 'postln') == 'preln':
+			# 	input_tensor = input_tensor
+			# elif config.get('ln_type', 'postln') == 'postln':
+			# 	input_tensor = bert_modules.layer_norm(input_tensor)
+			# else:
+			# 	input_tensor = bert_modules.layer_norm(input_tensor)
 
 		if embedding_projection is not None:
 			# batch x seq x hidden, embedding x hidden
