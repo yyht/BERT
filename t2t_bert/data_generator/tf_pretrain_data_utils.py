@@ -572,9 +572,10 @@ def _decode_record(FLAGS, record, num_predict,
 		[text_infilling_ids, 
 		text_infilling_mask] = prepare_text_infilling(masked_input, duplicate_ids=FLAGS.mask_id)
 		text_infilling_mask = tf.cast(text_infilling_mask, tf.float32)
+		example['infilling_pad_mask'] = example["pad_mask"]
 		example["pad_mask"] *= text_infilling_mask
 		example["masked_mask"] = tf.cast(tf.logical_or(tf.cast(example["masked_mask"], tf.bool), 
-																									tf.cast(text_infilling_mask, tf.bool)),
+																									tf.cast(example["pad_mask"], tf.bool)),
 																			tf.float32)
 		example['infilled_input'] = masked_input
 		tf.logging.info("**** prepare text_infilling_ids ****")
