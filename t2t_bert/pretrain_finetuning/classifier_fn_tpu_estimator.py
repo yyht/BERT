@@ -215,6 +215,8 @@ def classifier_model_fn_builder(
 					if 'infilled_input' in features:
 						model_features['input_ids'] = features['infilled_input']
 						tf.logging.info("***** apply etxt text_infilling reconstruction *****")
+						features['input_mask'] = features['infilling_pad_mask']
+						tf.logging.info("***** masked input-ids with infilling mask and rec-mask *****")
 					tf.logging.info("***** apply denoise reconstruction *****")
 			else:
 				tf.logging.info("***** apply mlm-denoise *****")
