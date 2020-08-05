@@ -50,9 +50,9 @@ special_symbols_mapping = collections.OrderedDict([
 def prepare_text_infilling(input_ids, duplicate_ids=103):
 	input_left_shift = tf.concat((input_ids[1:], [0]), axis=0)
 	mask_left_shift = tf.logical_or(tf.not_equal(input_ids - input_left_shift, 0), tf.not_equal(input_ids, duplicate_ids))
-	mask = tf.concat(([True], mask_left_shift[:-1]), axis=0)
-	dup_input_ids_out = tf.boolean_mask(input_ids, mask)
-	return dup_input_ids_out
+	dup_mask = tf.concat(([True], mask_left_shift[:-1]), axis=0)
+	dup_input_ids_out = tf.boolean_mask(input_ids, dup_mask)
+	return dup_input_ids_out, dup_mask
 	
 def _get_boundary_indices(tokenizer, seg, reverse=False):
 	"""Get all boundary indices of whole words."""
@@ -568,6 +568,17 @@ def _decode_record(FLAGS, record, num_predict,
 	pad_mask = tf.logical_or(origin_input_mask, is_pad)
 	example["pad_mask"] = 1.0 - tf.cast(pad_mask, tf.float32)
 
+	if FLAGS.get("prepare_text_infilling", False):
+		[text_infilling_ids, 
+		text_infilling_mask] = prepare_text_infilling(masked_input, duplicate_ids=FLAGS.mask_id)
+		text_infilling_mask = tf.cast(text_infilling_mask, tf.float32)
+		example["pad_mask"] *= text_infilling_mask
+		example["masked_mask"] = tf.cast(tf.logical_or(tf.cast(example["masked_mask"], tf.bool), 
+																									tf.cast(text_infilling_mask, tf.bool)),
+																			tf.float32)
+		example['infilled_input'] = masked_input
+		tf.logging.info("**** prepare text_infilling_ids ****")
+
 	# create target mapping
 	create_target_mapping(
 			example, is_target, seq_len, num_predict,
@@ -576,13 +587,6 @@ def _decode_record(FLAGS, record, num_predict,
 	example["masked_lm_positions"] = tf.argmax(example['target_mapping'], axis=-1)
 	example["masked_lm_weights"] = example['target_mask']
 	example["masked_lm_ids"] = example['target']
-
-	if FLAGS.get("prepare_text_infilling", False):
-		text_infilling_ids = prepare_text_infilling(masked_input, duplicate_ids=FLAGS.mask_id)
-		input_shape = inputs.shape.as_list()
-		text_infilling_ids.set_shape(input_shape)
-		example['infilled_input'] = text_infilling_ids
-		tf.logging.info("**** prepare text_infilling_ids ****")
 
 	# type cast for example
 	convert_example(example, use_bfloat16)
