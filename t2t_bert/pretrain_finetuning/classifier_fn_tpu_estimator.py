@@ -211,6 +211,11 @@ def classifier_model_fn_builder(
 					tf.logging.info("***** apply auto-encoding reconstruction *****")
 				elif model_config.get("denoise_mode", "autoencoding") == "denoise":
 					tf.logging.info("***** apply denoise reconstruction *****")
+				elif model_config.get("denoise_mode", "autoencoding") == "text_infilling":
+					if 'infilled_input' in features:
+						model_features['input_ids'] = features['infilled_input']
+						tf.logging.info("***** apply etxt text_infilling reconstruction *****")
+					tf.logging.info("***** apply denoise reconstruction *****")
 			else:
 				tf.logging.info("***** apply mlm-denoise *****")
 		else:

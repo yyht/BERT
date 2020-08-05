@@ -1,0 +1,3 @@
+python ../src/frozen_graph.py --saved_model_dir /data/xuht/1590508287/ --output_dir /data/xuht/1590508287/frozen_model --signature_def serving_default
+
+/notebooks/source/MNN/build/MNNConvert -f TF --modelFile /data/xuht/1590508287/frozen_model/frozen_graph.pb --MNNModel /data/xuht/1590508287/mnn_model/frozen_graph.mnn --bizCode sentence_embedding
