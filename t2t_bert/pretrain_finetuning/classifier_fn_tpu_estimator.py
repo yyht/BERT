@@ -116,7 +116,7 @@ def classifier_model_fn_builder(
 		print(features)
 		if "pad_mask" in features:
 			input_mask = features['pad_mask']
-			features['input_mask'] = input_mask
+			features['input_mask'] = tf.identity(input_mask)
 		if 'input_mask' not in features:
 			input_mask = tf.cast(tf.not_equal(features['input_ids_{}'.format(target)], 
 																			kargs.get('[PAD]', 0)), tf.int32)
@@ -124,13 +124,13 @@ def classifier_model_fn_builder(
 			if target:
 				features['input_mask_{}'.format(target)] = input_mask
 			else:
-				features['input_mask'] = input_mask
+				features['input_mask'] = tf.identity(input_mask)
 		if 'segment_ids' not in features:
 			segment_ids = tf.zeros_like(input_mask)
 			if target:
 				features['segment_ids_{}'.format(target)] = segment_ids
 			else:
-				features['segment_ids'] = segment_ids
+				features['segment_ids'] = tf.identity(segment_ids)
 
 		if target:
 			features['input_ori_ids'] = features['input_ids_{}'.format(target)]
@@ -149,7 +149,7 @@ def classifier_model_fn_builder(
 			input_ori_ids = None
 			tf.logging.info("***** no origin_input *****")
 		if 'masked_input' in features:
-			features['input_ids'] = features['masked_input']
+			features['input_ids'] = tf.identity(features['masked_input'])
 			model_config.corrupted = False
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
@@ -185,7 +185,7 @@ def classifier_model_fn_builder(
 
 		model_features = {}
 		for key in features:
-			model_features[key] = features[key]
+			model_features[key] = tf.identity(features[key])
 		
 		if model_config.get("model_type", "bert") == "funnelbert":
 			"""
@@ -207,15 +207,15 @@ def classifier_model_fn_builder(
 				tf.logging.info("***** apply encoder reconstruction *****")
 			if n_block > 1:
 				if model_config.get("denoise_mode", "autoencoding") == "autoencoding":
-					model_features['input_ids'] = input_ori_ids
+					model_features['input_ids'] = tf.identity(input_ori_ids)
 					tf.logging.info("***** apply auto-encoding reconstruction *****")
 				elif model_config.get("denoise_mode", "autoencoding") == "denoise":
 					tf.logging.info("***** apply denoise reconstruction *****")
 				elif model_config.get("denoise_mode", "autoencoding") == "text_infilling":
 					if 'infilled_input' in features:
-						model_features['input_ids'] = features['infilled_input']
+						model_features['input_ids'] = tf.identity(features['infilled_input'])
 						tf.logging.info("***** apply etxt text_infilling reconstruction *****")
-						features['input_mask'] = features['infilling_pad_mask']
+						features['input_mask'] = tf.identity(features['infilling_pad_mask'])
 						tf.logging.info("***** masked input-ids with infilling mask and rec-mask *****")
 					tf.logging.info("***** apply denoise reconstruction *****")
 			else:
@@ -279,7 +279,7 @@ def classifier_model_fn_builder(
 				model_config.corrupted = True
 				tf.logging.info("*** apply reconstruction ***")
 				if loss_converage in ['global']:
-					sampled_binary_mask = features['input_mask']
+					sampled_binary_mask = tf.identity(features['input_mask'])
 					tf.logging.info("***** loss_converage: %s ***** with input-mask"%(loss_converage))
 				elif loss_converage in ['local']:
 					sampled_binary_mask = tf.reduce_sum(features['target_mapping'], axis=1)
