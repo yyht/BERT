@@ -210,6 +210,7 @@ def init_attn_structures(net_config, attn_structures,
 	else:
 		if attn_structures is None:
 			print("==use new attention structures==")
+			print(hidden, "===hiddens===")
 			seq_len = tf.shape(hidden)[1]
 
 			if net_config.rel_attn_type == "factorized":
