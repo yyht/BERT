@@ -15,6 +15,11 @@ import tensorflow as tf
 
 # FLAGS = net_config.FLAGS
 
+from utils.bert import dropout_utils
+# from utils.bert.efficient_multihead_attention import efficient_attention_layer
+
+stable_dropout = dropout_utils.ReuseDropout()
+
 
 INF = 1e6
 EPS = 1e-9
@@ -220,20 +225,25 @@ def layer_norm_op(inputs,
 		return outputs
 
 def dropout_op(tensor, rate, training, *args, **kwargs):
-	dropout_name = kwargs.get('name', "")
-	# if dropout_name:
-	# 	output = stable_dropout.dropout(tensor, rate, dropout_name)
-	# else:
-	tf.logging.info("****** dropout name: %s, rate: %s, training: %s"%(dropout_name, str(rate), str(training)))
+
 	if rate is None or rate == 0.0 or not training:
 		tf.logging.info("****** original *******")
 		return tf.identity(tensor)
-	if training:
-		tf.logging.info("****** dropout *******")
-		return tf.nn.dropout(tensor, keep_prob=1.0 - rate)
+
+	dropout_name = kwargs.get('name', "")
+	if dropout_name:
+		tf.logging.info("****** reuse-dropout name: %s "%(dropout_name))
+		print("reuse-dropout name ", dropout_name, "==", tensor)
+		output = stable_dropout.dropout(tensor, rate, dropout_name)
+		return output
 	else:
-		tf.logging.info("****** original *******")
-		return tf.identity(tensor)
+		tf.logging.info("****** dropout name: %s, rate: %s, training: %s"%(dropout_name, str(rate), str(training)))
+		if training:
+			tf.logging.info("****** dropout *******")
+			return tf.nn.dropout(tensor, keep_prob=1.0 - rate)
+		else:
+			tf.logging.info("****** original *******")
+			return tf.identity(tensor)
 
 
 def gelu(x):
@@ -431,7 +441,8 @@ def rel_multihead_attn(net_config, q, k, v, pos_enc, seg_mat, attn_mask, d_model
 		attn_vec, attn_core_dict = rel_attn_core(net_config,
 				d_model, n_head, d_head, q, k, v, pos_enc, seg_mat, attn_mask,
 				attn_bias, dropatt, is_training, initializer, func_mask=func_mask,
-				rel_attn_type=rel_attn_type)
+				rel_attn_type=rel_attn_type,
+				name=name+"/rel_attn_core")
 
 		# post projection
 		attn_out = dense(attn_vec, d_model, initializer=initializer,
