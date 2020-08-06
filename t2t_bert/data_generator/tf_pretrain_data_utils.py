@@ -572,12 +572,26 @@ def _decode_record(FLAGS, record, num_predict,
 		[text_infilling_ids, 
 		text_infilling_mask] = prepare_text_infilling(masked_input, duplicate_ids=FLAGS.mask_id)
 		text_infilling_mask = tf.cast(text_infilling_mask, tf.float32)
+		
+		text_infilling_len = tf.reduce_sum(text_infilling_mask)
+		pad_tensor = tf.zeros((text_infilling_len, ), dtype=text_infilling_ids.dtype)
+		text_infilling_ids = tf.concat([text_infilling_ids, pad_tensor], axis=0)
+		text_infilling_mask = tf.concat([text_infilling_mask, tf.cast(pad_tensor, tf.float32)], axis=0)
+
+		tgt_shape = inputs.shape.as_list()
+		text_infilling_ids.set_shape(tgt_shape)
+		text_infilling_mask.set_shape(tgt_shape)
+		print(text_infilling_ids.get_shape(), text_infilling_mask.get_shape(), 
+				"===infilling shape=== vs tgt shape===", tgt_shape)
+
 		example['infilling_pad_mask'] = 1.0 - tf.cast(pad_mask, tf.float32)
-		example["pad_mask"] *= text_infilling_mask
-		example["masked_mask"] = tf.cast(tf.logical_or(tf.cast(example["masked_mask"], tf.bool), 
-																									tf.cast(example["pad_mask"], tf.bool)),
-																			tf.float32)
-		example['infilled_input'] = masked_input
+		example["pad_mask"] = text_infilling_mask
+		example['infilled_input'] = text_infilling_ids
+		# example["pad_mask"] *= text_infilling_mask
+		# example["masked_mask"] = tf.cast(tf.logical_or(tf.cast(example["masked_mask"], tf.bool), 
+		# 																							tf.cast(example["pad_mask"], tf.bool)),
+		# 																	tf.float32)
+		# example['infilled_input'] = masked_input
 		tf.logging.info("**** prepare text_infilling_ids ****")
 
 	# create target mapping
