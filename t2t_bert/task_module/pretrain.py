@@ -454,7 +454,7 @@ def denoise_autoencoder(config, input_tensor, output_weights,
 			output_weights_norm = normalizing(output_weights, 1)    # batch  emb
 
 			logits = tf.einsum("abd,cd->abc", input_tensor_norm, output_weights_norm)
-			temperature = config.get("temperature", 100.0)
+			temperature = config.get("temperature", 30.0)
 
 			log_probs = tf.nn.log_softmax(logits*temperature, 
 									dim=-1, name=None)
