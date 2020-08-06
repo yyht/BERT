@@ -577,13 +577,13 @@ def _decode_record(FLAGS, record, num_predict,
 		text_infilling_len = tf.cast(text_infilling_len, dtype=tf.int32)
 		text_infilling_ids = tf.boolean_mask(text_infilling_ids, tf.not_equal(text_infilling_ids, 0))
 
-		pad_tensor = tf.zeros((max_seq_length-text_infilling_len, ), dtype=text_infilling_ids.dtype)
+		pad_tensor = tf.zeros((max_seq_length-text_infilling_len), dtype=text_infilling_ids.dtype)
 		text_infilling_ids = tf.concat([text_infilling_ids, pad_tensor], axis=0)
 		text_infilling_mask_from_ids = tf.cast(tf.not_equal(text_infilling_ids, 0), dtype=tf.float32)
 
 		tgt_shape = inputs.shape.as_list()
 		text_infilling_ids.set_shape(tgt_shape)
-		text_infilling_mask.set_shape(tgt_shape)
+		text_infilling_mask_from_ids.set_shape(tgt_shape)
 		print(text_infilling_ids.get_shape(), 
 					text_infilling_mask_from_ids.get_shape(), 
 				"===infilling shape=== vs tgt shape===", 
