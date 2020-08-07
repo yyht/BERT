@@ -471,8 +471,14 @@ def funnelbert_encoder(model_config, features, labels,
 
 	model.build_pooler(reuse=reuse)
 	if kargs.get("if_use_decoder", "none_decoder") == 'use_decoder':
+		if model_config.get("denoise_mode", "autoencoding") == "text_infilling":
+			decoder_mask = None
+			tf.logging.info(" not using input-mask since we don't know exact length for text infilling")
+		else:
+			decoder_mask = tf.identity(input_mask)
+			tf.logging.info(" using input-mask since we know exact length ")
 		model.build_decoder(model.encoder_hiddens, 
-							input_ids, input_mask, 
+							input_ids, decoder_mask, 
 							segment_ids, 
 							is_training)
 

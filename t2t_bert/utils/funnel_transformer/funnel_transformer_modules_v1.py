@@ -249,6 +249,7 @@ def decoder(net_config,
 						output, seg_id, pos_id, is_training, 
 						attn_structures_name)
 	attn_mask = None if input_mask is None else input_mask[:, None, None]
+	print("==decoder attn mask==", attn_mask)
 
 	# Decoder layers
 	n_enc_param_layer = sum(net_config.block_param_size)
