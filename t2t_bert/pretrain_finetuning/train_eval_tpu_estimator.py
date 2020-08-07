@@ -93,6 +93,7 @@ def train_eval_fn(FLAGS,
 			model_fn_builder = classifier_model_fn_builder
 			tf.logging.info("****** bert mlm ******")
 
+		config.tgt_len = FLAGS.max_length
 		model_fn = model_fn_builder(config, 
 									num_classes, 
 									init_checkpoint, 

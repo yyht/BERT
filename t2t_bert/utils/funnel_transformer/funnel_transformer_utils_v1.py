@@ -346,8 +346,10 @@ def bridge_layer(net_config, hiddens, input_mask,
 	"""A bridge layer between encoder and decoder."""
 	net_config = net_config
 	ret_dict = {}
-
-	tgt_len = tf.shape(input_mask)[1]
+	if net_config.get("tgt_len", None):
+		tgt_len = net_config['tgt_len']
+	else:
+		tgt_len = tf.shape(input_mask)[1]
 	with tf.variable_scope("upsampling_layer", reuse=reuse):
 		# upsample hiddens based on the provided block indices
 		upsampled_hids = []
