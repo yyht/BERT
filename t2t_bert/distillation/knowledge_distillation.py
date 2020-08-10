@@ -5,6 +5,10 @@ from distillation import mdd_utils
 from distillation import relation_kd_utils
 from distillation import repo_distillation_utils
 
+"""
+https://github.com/sseung0703/Knowledge_distillation_via_TF2.0
+"""
+
 class KnowledgeDistillation(object):
 	def __init__(self, config={}):
 		self.config = config
