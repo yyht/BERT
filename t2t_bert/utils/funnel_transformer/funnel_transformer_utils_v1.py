@@ -21,7 +21,7 @@ def input_projection(net_config, input_embed, initializer):
 	if net_config.d_embed != net_config.d_model:
 		tf.logging.info("Project input embedding: %s -> %s",
 										net_config.d_embed, net_config.d_model)
-		output = ops.dense(
+		output = funnel_transformer_ops.dense(
 				output,
 				net_config.d_model,
 				inp_shape=net_config.d_embed,
