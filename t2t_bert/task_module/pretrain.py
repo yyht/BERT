@@ -491,6 +491,9 @@ def denoise_autoencoder(config, input_tensor, output_weights,
 				input_tensor = bert_modules.layer_norm(input_tensor)
 			else:
 				input_tensor = bert_modules.layer_norm(input_tensor)
+
+			tf.logging.info("== normal ce loss ==")
+
 			output_bias = tf.get_variable(
 				"output_bias",
 				shape=[config.vocab_size],
