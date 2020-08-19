@@ -485,6 +485,12 @@ def denoise_autoencoder(config, input_tensor, output_weights,
 				denominator = tf.reduce_sum(all_label_weights) + 1e-5
 				loss = numerator / denominator
 		elif kargs.get("discriminator_mode", "ce_loss") == "normal_ce_loss":
+			if config.get('ln_type', 'postln') == 'preln':
+				input_tensor = input_tensor
+			elif config.get('ln_type', 'postln') == 'postln':
+				input_tensor = bert_modules.layer_norm(input_tensor)
+			else:
+				input_tensor = bert_modules.layer_norm(input_tensor)
 			output_bias = tf.get_variable(
 				"output_bias",
 				shape=[config.vocab_size],
