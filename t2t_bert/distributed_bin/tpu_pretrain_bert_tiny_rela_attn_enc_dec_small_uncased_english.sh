@@ -7,7 +7,7 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--max_length 512 \
 	--train_file "english_corpus/pretrain_single_random_gan_uncased/chunk_0.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_1.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_2.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_3.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_4.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_5.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_6.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_7.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_8.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_9.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_10.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_11.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_12.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_13.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_14.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_15.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_16.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_17.tfrecords" \
 	--dev_file "english_corpus/pretrain_single_random_gan_uncased/chunk_18.tfrecords,english_corpus/pretrain_single_random_gan_uncased/chunk_19.tfrecords" \
-	--model_output "model/english/tiny/bert_small_span_mask_real_attn_net_config_tiny_enc_dec_no_skip_denoise_v1" \
+	--model_output "model/english/tiny/bert_small_span_mask_real_attn_net_config_tiny_enc_dec_no_skip_normal_ce" \
 	--epoch 40 \
 	--num_classes 2 \
 	--train_size 11000000 \
@@ -30,7 +30,7 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--init_lr 1e-4 \
 	--num_tpu_cores 8 \
 	--do_train true \
-	--tpu_name "albert1" \
+	--tpu_name "albert0" \
 	--mode "pretrain" \
 	--random_generator "5"
 

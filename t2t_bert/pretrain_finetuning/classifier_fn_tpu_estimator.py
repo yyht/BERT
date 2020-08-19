@@ -23,7 +23,7 @@ from pretrain_finetuning.token_discriminator import classifier as disc_classifie
 from pretrain_finetuning.token_generator import token_generator, random_input_ids_generation
 from pretrain_finetuning.token_generator_hmm import hmm_input_ids_generation, ngram_prob
 
-from utils.adversarial_utils import vat_utils
+# from utils.adversarial_utils import adversarial_utils
 
 def train_metric_fn(masked_lm_example_loss, masked_lm_log_probs, 
 					masked_lm_ids,
@@ -186,7 +186,7 @@ def classifier_model_fn_builder(
 		model_features = {}
 		for key in features:
 			model_features[key] = tf.identity(features[key])
-		
+
 		if model_config.get("model_type", "bert") == "funnelbert":
 			"""
 			funnel-bert needs opposite pad-mask as input
@@ -195,6 +195,7 @@ def classifier_model_fn_builder(
 			tf.logging.info("***** funnelbert needs reverse input-mask *****")
 			cls_token_type = model_config.get('seg_id_cls', 2) * tf.ones_like(model_features['segment_ids'][:, 0:1])
 			model_features['segment_ids'] = tf.concat([cls_token_type, model_features['segment_ids'][:, 1:]], axis=1)
+			model_features['normal_input_mask'] = tf.identity(model_features['input_mask'])
 
 			n_block = len(model_config.get('block_size', "4").split("_"))
 			if n_block > 1:
@@ -337,101 +338,48 @@ def classifier_model_fn_builder(
 		print(model_config.lm_ratio, '==mlm lm_ratio==')
 		loss = model_config.lm_ratio * masked_lm_loss #+ 0.0 * nsp_loss
 
-		if kargs.get("apply_vat", False):
+		# if kargs.get("apply_vat", False):
 
-			adv_features = {}
-			for key in features:
-				adv_features[key] = features[key]
+		# 	adv_features = {}
+		# 	for key in model_features:
+		# 		adv_features[key] = tf.identity(model_features[key])
 
-			if kargs.get("other_mask", True):
+		# 	unk_mask = tf.cast(tf.math.equal(adv_features['input_ids'], 100), tf.float32) # not replace unk
+		# 	cls_mask =  tf.cast(tf.math.equal(adv_features['input_ids'], 101), tf.float32) # not replace cls
+		# 	sep_mask = tf.cast(tf.math.equal(adv_features['input_ids'], 102), tf.float32) # not replace sep
+		# 	mask_mask = tf.cast(tf.math.equal(adv_features['input_ids'], 103), tf.float32) # not replace sep
+		# 	none_replace_mask =  unk_mask + cls_mask + sep_mask + mask_mask
+		# 	noise_mask = tf.cast(features['input_mask'], tf.float32) * (1-none_replace_mask)
+		# 	noise_mask = tf.expand_dims(noise_mask, axis=-1)
 
-				# ngram_list = kargs.get("ngram", [10, 5, 3])
-				# mask_prob_list = kargs.get("mask_prob", [0.3, 0.3, 0.3])
-				# ngram_ratio = kargs.get("ngram_ratio", [7, 1, 1])
-				# uniform_ratio = kargs.get("uniform_ratio", 0.6)
-				# tf.logging.info("****** dynamic ngram: %s, mask_prob: %s, mask_prior: %s, uniform_ratio: %s *******", 
-				# 		str(ngram_list), str(mask_prob_list), str(ngram_ratio), str(uniform_ratio))	
-				# tran_prob_list, hmm_tran_prob_list = [], []
-				# for ngram_sub, mask_prob_sub in zip(ngram_list, mask_prob_list):
-				# 	tran_prob, hmm_tran_prob = ngram_prob(ngram_sub, mask_prob_sub)
-				# 	tran_prob_list.append(tran_prob)
-				# 	hmm_tran_prob_list.append(hmm_tran_prob)
-				# mask_prior = []
-				# for ratio in ngram_ratio:
-				# 	actual_ratio = (1 - uniform_ratio) / sum(ngram_ratio) * ratio
-				# 	mask_prior.append(actual_ratio)
-				# mask_prior.append(uniform_ratio)
-				# mask_prior = np.array(mask_prior).astype(np.float32)
+		# 	vat_loss = adversarial_utils.adversarial_loss(
+		# 					model_config,
+		# 					model_api, 
+		# 					adv_features, 
+		# 					labels,
+		# 					adv_masked_lm_log_probs,
+		# 					mode,
+		# 					target,
+		# 					embedding_table=model.get_embedding_table(),
+		# 					noise_mask=noise_mask,
+		# 					embedding_seq_output=model.get_embedding_output(),
+		# 					sampled_binary_mask=sampled_binary_mask,
+		# 					num_power_iterations=1,
+		# 					noise_var=1e-5,
+		# 					step_size=1e-3,
+		# 					noise_gamma=1e-5,
+		# 					is_training=is_training,
+		# 					pretrain_loss_type='normal',
+		# 					project_norm_type="inf",
+		# 					vat_type="alum",
+		# 					adv_type="embedding_seq_output",
+		# 					stop_gradient=False,
+		# 					kl_inclusive=False,
+		# 					emb_adv_pos="emb_adv_post", # emb_adv_post
+		# 					**kargs)
 
-				tf.logging.info("***** adv unlabled data *****")
-				
-				[adv_output_ids, 
-				adv_sampled_binary_mask] = hmm_input_ids_generation(model_config,
-										adv_features['input_ori_ids'],
-										adv_features['input_mask'],
-										[tf.cast(tf.constant(hmm_tran_prob), tf.float32) for hmm_tran_prob in hmm_tran_prob_list],
-										mask_probability=0.3,
-										replace_probability=0.7,
-										original_probability=0.0,
-										mask_prior=tf.cast(tf.constant(mask_prior), tf.float32),
-										**kargs)
-				tf.logging.info("***** apply random sampling *****")
-				adv_features['input_ids'] = adv_output_ids
-
-				model = model_api(model_config, adv_features, labels,
-								mode, target, reuse=tf.AUTO_REUSE,
-								**kargs)
-
-				(adv_masked_lm_loss,
-				adv_masked_lm_example_loss, 
-				adv_masked_lm_log_probs,
-				adv_masked_lm_mask) = seq_masked_lm_fn(model_config, 
-											model.get_sequence_output(), 
-											model.get_embedding_table(),
-											adv_features['input_mask'], 
-											adv_features['input_ori_ids'], 
-											adv_features['input_ids'],
-											adv_sampled_binary_mask,
-											reuse=tf.AUTO_REUSE,
-											embedding_projection=model.get_embedding_projection_table(),
-											pretrain_loss_type="normal")
-
-			unk_mask = tf.cast(tf.math.equal(adv_features['input_ids'], 100), tf.float32) # not replace unk
-			cls_mask =  tf.cast(tf.math.equal(adv_features['input_ids'], 101), tf.float32) # not replace cls
-			sep_mask = tf.cast(tf.math.equal(adv_features['input_ids'], 102), tf.float32) # not replace sep
-			mask_mask = tf.cast(tf.math.equal(adv_features['input_ids'], 103), tf.float32) # not replace sep
-			none_replace_mask =  unk_mask + cls_mask + sep_mask + mask_mask
-			noise_mask = tf.cast(adv_features['input_mask'], tf.float32) * (1-none_replace_mask)
-			noise_mask = tf.expand_dims(noise_mask, axis=-1)
-
-			vat_loss = vat_utils.virtual_adversarial_loss(
-							model_config,
-							model_api, 
-							adv_features, 
-							labels,
-							adv_masked_lm_log_probs,
-							mode,
-							target,
-							embedding_table=model.get_embedding_table(),
-							noise_mask=noise_mask,
-							embedding_seq_output=model.get_embedding_output(),
-							sampled_binary_mask=adv_sampled_binary_mask,
-							num_power_iterations=1,
-							noise_var=10.0,
-							step_size=1.0,
-							noise_gamma=1e-5,
-							is_training=is_training,
-							pretrain_loss_type='normal',
-							project_norm_type="l2",
-							vat_type="vat",
-							adv_type="embedding_seq_output",
-							stop_gradient=False,
-							kl_inclusive=False,
-							emb_adv_pos="emb_adv_pre", # emb_adv_post
-							**kargs)
-
-			loss += kargs.get("vat_ratio", 1.0) * vat_loss
-			tf.logging.info("***** apply vat loss:%s *****" % (str(kargs.get("vat_ratio", 1))))
+		# 	loss += kargs.get("vat_ratio", 1.0) * vat_loss
+		# 	tf.logging.info("***** apply vat loss:%s *****" % (str(kargs.get("vat_ratio", 1))))
 		
 		model_io_fn = model_io.ModelIO(model_io_config)
 
