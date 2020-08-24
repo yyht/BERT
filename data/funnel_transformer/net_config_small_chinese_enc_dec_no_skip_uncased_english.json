@@ -8,6 +8,7 @@
     "if_skip_connetion":false,
     "pretrain_loss":"ae",
     "corrupted":false,
+    "bridge_layer":"deconv",
 
     "truncate_seq":true,
     "seg_id_cls":2,

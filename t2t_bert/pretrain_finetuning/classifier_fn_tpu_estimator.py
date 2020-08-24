@@ -22,7 +22,7 @@ from metric import tf_metrics
 from pretrain_finetuning.token_discriminator import classifier as disc_classifier
 from pretrain_finetuning.token_generator import token_generator, random_input_ids_generation
 from pretrain_finetuning.token_generator_hmm import hmm_input_ids_generation, ngram_prob
-
+from utils.sampling_utils.glancing_sampling_utils import glance_sample
 # from utils.adversarial_utils import adversarial_utils
 
 def train_metric_fn(masked_lm_example_loss, masked_lm_log_probs, 
@@ -334,6 +334,46 @@ def classifier_model_fn_builder(
 											discriminator_mode=discriminator_mode,
 											loss_converage=loss_converage)
 			tf.logging.info("*** apply bert-like mlm loss ***")
+
+			if kargs.get("glancing_training", "none") == "none":
+				tf.logging.info("*** no need glancing_training ***")
+			else:
+				tf.logging.info("*** glancing_training ***")
+				[
+					output_ids, 
+					none_glanced_masked_lm_ids,
+					none_glanced_masked_lm_positions,
+					none_glanced_lm_weights
+				] = glance_sample(masked_lm_log_probs,
+							features["masked_lm_ids"],
+							features["masked_lm_positions"],
+							features["masked_lm_weights"],
+							model_features['input_ids'],
+							model_features['input_ori_ids'],
+							features['input_mask'],
+							opt_config.get('num_train_steps', 100000),
+							model_config.vocab_size)
+
+				model_features['input_ids'] = tf.identity(output_ids)
+				model = model_api(model_config, model_features, labels,
+							mode, target, reuse=tf.AUTO_REUSE,
+							if_use_decoder=if_use_decoder,
+							**kargs)
+				(masked_lm_loss,
+				masked_lm_example_loss, 
+				masked_lm_log_probs,
+				masked_lm_mask) = masked_lm_fn(
+												model_config, 
+												model.get_sequence_output(output_type=return_type), 
+												model.get_embedding_table(),
+												none_glanced_masked_lm_ids, 
+												none_glanced_masked_lm_positions, 
+												none_glanced_lm_weights,
+												reuse=tf.AUTO_REUSE,
+												embedding_projection=model.get_embedding_projection_table(),
+												pretrain_loss_type="normal",
+												discriminator_mode=discriminator_mode,
+												loss_converage=loss_converage)
 		
 		print(model_config.lm_ratio, '==mlm lm_ratio==')
 		loss = model_config.lm_ratio * masked_lm_loss #+ 0.0 * nsp_loss

@@ -212,7 +212,7 @@ def encoder(net_config,
 						prefix = "block_{}/layer_{}/repeat_{}".format(
 								block_idx, layer_idx, repeat_idx)
 						funnel_transformer_ops.update_ret_dict(ret_dict, layer_dict, prefix)
-
+	print("==length of hiddens==", len(hiddens))
 	return output, hiddens, ret_dict, attn_structures
 
 def decoder(net_config, 
@@ -229,10 +229,21 @@ def decoder(net_config,
 	"""Decode a compressed sequence into a full sequence."""
 	net_config = net_config
 	ret_dict = {}
-
-	output, bridge_dict = funnel_transformer_utils.bridge_layer(
-			net_config,
-			hiddens, input_mask, reuse=reuse)
+	if net_config.get("bridge_layer", "upsampling") == 'upsampling':
+		output, bridge_dict = funnel_transformer_utils.bridge_layer(
+				net_config,
+				hiddens, input_mask, reuse=reuse)
+		tf.logging.info(" using orginal upsampling ")
+	elif net_config.get("bridge_layer", "upsampling") == "deconv":
+		output, bridge_dict = funnel_transformer_utils.bridge_deconv_layer(
+				net_config,
+				hiddens, input_mask, reuse=reuse)
+		tf.logging.info(" using deconv ")
+	else:
+		output, bridge_dict = funnel_transformer_utils.bridge_layer(
+				net_config,
+				hiddens, input_mask, reuse=reuse)
+		tf.logging.info(" using orginal upsampling ")
 	funnel_transformer_ops.update_ret_dict(ret_dict, bridge_dict, "bridge")
 
 	if net_config.decoder_depth == 0:
