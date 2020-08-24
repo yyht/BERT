@@ -22,6 +22,7 @@ def glance_sample(masked_decode_logits,
 				**kargs):
 
 	# [batch_size, masked_seq_length]
+	print(masked_decode_logits.get_shape(), "==masked_decode_logits shape==")
 	input_shape = bert_utils.get_shape_list(masked_lm_weights)
 	# [batch_size, seq_length]
 	input_ids_shape = bert_utils.get_shape_list(input_ids)
