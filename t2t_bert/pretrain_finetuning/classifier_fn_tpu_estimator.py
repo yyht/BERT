@@ -354,8 +354,11 @@ def classifier_model_fn_builder(
 							opt_config.get('num_train_steps', 100000),
 							model_config.vocab_size)
 
-				model_features['input_ids'] = tf.identity(output_ids)
-				model = model_api(model_config, model_features, labels,
+				glance_model_features = {}
+				for key in model_features:
+					glance_model_features[key] = tf.identity(model_features[key])
+				glance_model_features['input_ids'] = tf.identity(output_ids)
+				glance_model = model_api(model_config, glance_model_features, labels,
 							mode, target, reuse=tf.AUTO_REUSE,
 							if_use_decoder=if_use_decoder,
 							**kargs)
@@ -364,8 +367,8 @@ def classifier_model_fn_builder(
 				masked_lm_log_probs,
 				masked_lm_mask) = masked_lm_fn(
 												model_config, 
-												model.get_sequence_output(output_type=return_type), 
-												model.get_embedding_table(),
+												glance_model.get_sequence_output(output_type=return_type), 
+												glance_model.get_embedding_table(),
 												none_glanced_masked_lm_ids, 
 												none_glanced_masked_lm_positions, 
 												none_glanced_lm_weights,
