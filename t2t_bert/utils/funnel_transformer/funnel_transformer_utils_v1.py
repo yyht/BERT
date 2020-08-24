@@ -3,6 +3,9 @@ import numpy as np
 
 from utils.funnel_transformer import funnel_transformer_ops_v1 as funnel_transformer_ops
 from utils.funnel_transformer import tf_utils
+from utils.textcnn import conv1d_transpose
+
+from utils.bert import bert_utils
 
 def check_tf_version():
 	version = tf.__version__
@@ -376,6 +379,50 @@ def bridge_layer(net_config, hiddens, input_mask,
 			tf.logging.info("**** not apply if_skip_connetion **** ")
 
 	return output, ret_dict
+
+def bridge_deconv_layer(net_config, hiddens, input_mask,
+								reuse=tf.AUTO_REUSE):
+	net_config = net_config
+	ret_dict = {}
+	if net_config.get("tgt_len", None):
+		tgt_len = net_config['tgt_len']
+	else:
+		tgt_len = tf.shape(input_mask)[1]
+	with tf.variable_scope("upsampling_layer", reuse=reuse):
+		features = hiddens[-1]
+		input_shape = bert_utils.get_shape_list(features)
+		# [kernel_width, output_depth, input_depth]
+		filters = tf.get_variable(
+						"upsample_filter",
+						shape=[4, input_shape[-1], input_shape[-1]])
+		output_shape = [input_shape[0], tgt_len, input_shape[-1]]
+		block_size = sum(net_config.block_size.split("_"))
+		strides = np.power(net_config.pooling_size, block_size-1)
+		if check_tf_version():
+			upsampled_hidden = tf.nn.conv1d_transpose(
+										features,
+										filters,
+										output_shape,
+										strides,
+										padding='SAME')
+			tf.logging.info(" using tf conv1d_transpose")
+		else:
+			upsampled_hidden = conv1d_transpose.conv1d_transpose(
+										features,
+										filters,
+										output_shape,
+										strides,
+										padding='SAME')
+			tf.logging.info(" using tf-out conv1d_transpose")
+		unpooled_hidden = upsampled_hids[0]
+		if_skip_connetion = net_config.get('if_skip_connetion', True)
+		if if_skip_connetion:
+			tf.logging.info("**** apply if_skip_connetion **** ")
+			output = upsampled_hidden + unpooled_hidden
+		else:
+			output = upsampled_hidden
+			tf.logging.info("**** not apply if_skip_connetion **** ")
+		return output, ret_dict
 
 def tfmxl_layer(net_config, q, k, v, pos_enc, seg_mat, attn_mask, 
 								is_training,
