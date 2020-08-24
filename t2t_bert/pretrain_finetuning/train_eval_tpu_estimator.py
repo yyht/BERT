@@ -151,6 +151,7 @@ def train_eval_fn(FLAGS,
 			data_config.truncate_seq = False
 			data_config.stride = 1
 			data_config.use_bfloat16 = False
+			FLAGS.max_predictions_per_seq = int(data_config.mask_prob*FLAGS.max_length)
 			for key in data_config:
 				tf.logging.info("***** data config key, key:%s, value:%s"%(key, str(data_config[key])))
 			tf.logging.info("***** Running efficiency input fn builder *****")
