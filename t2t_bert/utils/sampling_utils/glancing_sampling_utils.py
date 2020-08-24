@@ -39,7 +39,7 @@ def glance_sample(masked_decode_logits,
 	masked_not_equal_ids *= masked_lm_weights
 
 	init_rate = 0.5
-	final_rate = 0.3
+	final_rate = 0.5
 
 	if kargs.get("ratio_fn", "linear_decay") == "linear_decay":
 		ratio = tf.train.polynomial_decay(
