@@ -33,10 +33,20 @@ def glance_sample(masked_decode_logits,
 	# [batch_size x masked_seq_length, vocab_size] => [batch_size, masked_seq_length]
 	masked_decode_logits = tf.reshape(masked_decode_logits, input_shape+[vocab_size])
 	masked_decoded_labels = tf.argmax(masked_decode_logits, axis=-1, output_type=masked_lm_ids.dtype)
+	
+	tf.logging.info(masked_decode_logits)
+	tf.logging.info("==masked_decode_logits==info")
+
+	tf.logging.info(masked_decoded_labels)
+	tf.logging.info("==masked_decoded_labels==info")
+
 	masked_not_equal_ids = tf.not_equal(masked_lm_ids, masked_decoded_labels)
 	masked_not_equal_ids = tf.cast(masked_not_equal_ids, tf.float32)
 	masked_lm_weights = tf.cast(masked_lm_weights, tf.float32)
 	masked_not_equal_ids *= masked_lm_weights
+
+	tf.logging.info(masked_not_equal_ids)
+	tf.logging.info("==masked_not_equal_ids==info")
 
 	init_rate = 0.5
 	final_rate = 0.5
@@ -58,8 +68,21 @@ def glance_sample(masked_decode_logits,
 		tf.logging.info("==constant rate== %s"%(str(init_rate)))
 
 	glance_hamming_distance = tf.reduce_sum(masked_not_equal_ids, axis=-1)
+	
+	tf.logging.info(glance_hamming_distance)
+	tf.logging.info("==glance_hamming_distance==info")
+
 	glance_num = ratio * tf.cast(glance_hamming_distance, dtype=tf.float32)
 	glance_ratio = glance_num / (1e-10+tf.reduce_sum(masked_lm_weights, axis=-1))
+
+	tf.logging.info(masked_lm_weights)
+	tf.logging.info("==masked_lm_weights==info")
+
+	tf.logging.info(glance_num)
+	tf.logging.info("==glance_num==info")
+
+	tf.logging.info(glance_ratio)
+	tf.logging.info("==glance_ratio==info")
 
 	sample_probs = tf.ones_like(masked_lm_weights) * masked_lm_weights
 	sample_probs = tf.expand_dims(glance_ratio, axis=-1) * tf.cast(sample_probs, tf.float32)
@@ -68,10 +91,22 @@ def glance_sample(masked_decode_logits,
 	glanced_mask = noise_dist.sample()
 	glanced_mask = tf.cast(glanced_mask, tf.float32)
 
+	tf.logging.info(glanced_mask)
+	tf.logging.info("==glanced_mask==info")
+
 	none_glanced_lm_weights = (1-glanced_mask) * masked_lm_weights
 	glanced_masked_lm_positions = tf.cast(glanced_mask, dtype=masked_lm_positions.dtype) * masked_lm_positions
 	none_glanced_masked_lm_positions = (1-tf.cast(glanced_mask, dtype=masked_lm_positions.dtype)) * masked_lm_positions
 	none_glanced_masked_lm_ids = (1-tf.cast(glanced_mask, dtype=masked_lm_ids.dtype)) * masked_lm_ids
+
+	tf.logging.info(none_glanced_lm_weights)
+	tf.logging.info("==none_glanced_lm_weights==info")
+
+	tf.logging.info(none_glanced_masked_lm_positions)
+	tf.logging.info("==none_glanced_masked_lm_positions==info")
+
+	tf.logging.info(none_glanced_masked_lm_ids)
+	tf.logging.info("==none_glanced_masked_lm_ids==info")
 
 	glanced_target_mapping = tf.one_hot(glanced_masked_lm_positions, 
 										input_ids_shape[-1],
@@ -80,12 +115,29 @@ def glance_sample(masked_decode_logits,
 	glanced_target_mapping *= glanced_target_mask
 	glanced_token_position_mask = tf.reduce_sum(glanced_target_mapping, axis=1)
 
+	tf.logging.info(glanced_token_position_mask)
+	tf.logging.info("==glanced_token_position_mask==info")
+
 	output_ids = (1-glanced_token_position_mask) * input_ids + glanced_token_position_mask * input_ori_ids
 	
+	if not kargs.get('use_tpu', True):
+		tf.summary.scalar('glance_ratio', tf.reduce_sum(tf.cast(glance_ratio, tf.float32)) / (1e-10+input_shape[0]))
+		tf.summary.scalar('glanced_num', tf.reduce_sum(tf.cast(glanced_mask, tf.float32))  / (1e-10+input_shape[0]))
+		tf.summary.scalar('hamming_distance', tf.reduce_sum(tf.cast(glance_hamming_distance, tf.float32))  / (1e-10+input_shape[0]))
+		before_glance_not_equal = tf.cast(tf.not_equal(input_ids, input_ori_ids), dtype=tf.float32)
+		before_glance_not_equal = tf.reduce_sum(before_glance_not_equal*tf.cast(input_mask, dtype=before_glance_not_equal.dtype))
+		tf.summary.scalar('before_glance_not_equal', tf.reduce_sum(before_glance_not_equal)  / (1e-10+input_shape[0]))
+	
+		after_glance_not_equal = tf.cast(tf.not_equal(output_ids, input_ori_ids), dtype=tf.float32)
+		after_glance_not_equal = tf.reduce_sum(after_glance_not_equal*tf.cast(input_mask, dtype=after_glance_not_equal.dtype))
+		tf.summary.scalar('after_glance_not_equal', tf.reduce_sum(after_glance_not_equal)  / (1e-10+input_shape[0]))
+
+		tf.summary.scalar('before_glance_lm_weights', tf.reduce_sum(masked_lm_weights)  / (1e-10+input_shape[0]))
+		tf.summary.scalar('after_glance_lm_weights', tf.reduce_sum(none_glanced_lm_weights)  / (1e-10+input_shape[0]))
+
 	return [output_ids, 
 			none_glanced_masked_lm_ids,
 			none_glanced_masked_lm_positions,
-			none_glanced_lm_weights
-			]
+			none_glanced_lm_weights]
 
 

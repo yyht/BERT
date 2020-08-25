@@ -1,12 +1,12 @@
 config_file=./BERT/data/textcnn/textcnn_multilingual_embedding_light_dgcnn_v1_bi.json
-init_checkpoint=sentence_pair/pretrain_gatedcnn_lm/cpc_cls/vae_bow/pretrained_light_dgcnn/normal/disc_bi_ligthconv_v1_circle_loss/model.ckpt-1546842
+init_checkpoint=sentence_pair/pretrain_gatedcnn_lm/cpc_cls/vae_bow/pretrained_light_dgcnn/normal/disc_bi_ligthconv_v1_circle_loss/model.ckpt-1078102
 vocab_file=sentence_pair/vocab_mbert.txt
 label_id=./BERT/data/lazada_multilingual/label_dict.json
 max_length=128
 train_file=lazada/new_data/20190415/data/train_tfrecords
 dev_file=lazada/new_data/20190415/data/dev_tfrecords
 model_output=sentence_pair/pretrain_gatedcnn_lm/cpc_cls/vae_bow/pretrained_light_dgcnn/normal/disc_bi_ligthconv_v1_circle_loss/
-export_dir=sentence_pair/pretrain_gatedcnn_lm/cpc_cls/vae_bow/pretrained_light_dgcnn/normal/disc_bi_ligthconv_v1_circle_loss/export/1546842/1024
+export_dir=sentence_pair/pretrain_gatedcnn_lm/cpc_cls/vae_bow/pretrained_light_dgcnn/normal/disc_bi_ligthconv_v1_circle_loss/export/1078102/1024
 epoch=100
 num_classes=4
 train_size=1000000

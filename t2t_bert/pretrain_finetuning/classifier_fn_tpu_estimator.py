@@ -12,6 +12,7 @@ except:
 import tensorflow as tf
 import numpy as np
 from optimizer import optimizer
+from optimizer import distributed_optimizer
 from model_io import model_io
 
 from task_module import classifier
@@ -335,7 +336,7 @@ def classifier_model_fn_builder(
 											loss_converage=loss_converage)
 			tf.logging.info("*** apply bert-like mlm loss ***")
 
-			if kargs.get("glancing_training", "glancing_training") == "none":
+			if kargs.get("glancing_training", "none") == "none":
 				tf.logging.info("*** no need glancing_training ***")
 			else:
 				tf.logging.info("*** glancing_training ***")
@@ -352,7 +353,8 @@ def classifier_model_fn_builder(
 							model_features['input_ori_ids'],
 							features['input_mask'],
 							opt_config.get('num_train_steps', 100000),
-							model_config.vocab_size)
+							model_config.vocab_size,
+							**kargs)
 
 				glance_model_features = {}
 				for key in model_features:
@@ -469,17 +471,35 @@ def classifier_model_fn_builder(
 										not_storage_params=not_storage_params)
 			pretrained_tvars.extend(disc_pretrain_tvars)
 		
+		# if load_pretrained == "yes":
+		# 	scaffold_fn = model_io_fn.load_pretrained(pretrained_tvars, 
+		# 									init_checkpoint,
+		# 									exclude_scope=exclude_scope,
+		# 									use_tpu=1)
+		# else:
+		# 	scaffold_fn = None
+
 		if load_pretrained == "yes":
+			use_tpu = 1 if kargs.get('use_tpu', False) else 0
 			scaffold_fn = model_io_fn.load_pretrained(pretrained_tvars, 
 											init_checkpoint,
 											exclude_scope=exclude_scope,
-											use_tpu=1)
+											use_tpu=use_tpu)
 		else:
 			scaffold_fn = None
 
 		if mode == tf.estimator.ModeKeys.TRAIN:
 						
-			optimizer_fn = optimizer.Optimizer(opt_config)
+			# optimizer_fn = optimizer.Optimizer(opt_config)
+
+			if kargs.get('use_tpu', False):
+				optimizer_fn = optimizer.Optimizer(opt_config)
+				use_tpu = 1
+				tf.logging.info("***** using tpu with tpu-captiable optimizer *****")
+			else:
+				optimizer_fn = distributed_optimizer.Optimizer(opt_config)
+				use_tpu = 0
+				tf.logging.info("***** using gpu with gpu-captiable optimizer *****")
 						
 			tvars = pretrained_tvars
 			model_io_fn.print_params(tvars, string=", trainable params")
@@ -505,13 +525,25 @@ def classifier_model_fn_builder(
 				# 	tf.summary.scalar(key, train_metric_dict[key])
 				# tf.summary.scalar('learning_rate', optimizer_fn.learning_rate)
 
+				# estimator_spec = tf.contrib.tpu.TPUEstimatorSpec(
+				# 				mode=mode,
+				# 				loss=loss,
+				# 				train_op=train_op,
+				# 				scaffold_fn=scaffold_fn)
+
+			if kargs.get('use_tpu', False):
 				estimator_spec = tf.contrib.tpu.TPUEstimatorSpec(
 								mode=mode,
 								loss=loss,
 								train_op=train_op,
 								scaffold_fn=scaffold_fn)
+			else:
+				estimator_spec = tf.estimator.EstimatorSpec(
+								mode=mode, 
+								loss=loss, 
+								train_op=train_op)
 
-				return estimator_spec
+			return estimator_spec
 
 		elif mode == tf.estimator.ModeKeys.EVAL:
 

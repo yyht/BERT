@@ -9,7 +9,10 @@ try:
 	from .model_mdd_distillation import model_fn_builder as mdd_distillation_fn_builder
 	from .model_relation_distillation import model_fn_builder as rkd_distillation_fn_builder
 	from distributed_pair_sentence_classification.interaction_rkd_distillation_model_fn import model_fn_builder as interaction_rkd_distillation
-	from pretrain_finetuning.classifier_fn_estimator import classifier_model_fn_builder as bert_pretrain_finetuning
+	# from pretrain_finetuning.classifier_fn_estimator import classifier_model_fn_builder as bert_pretrain_finetuning
+	
+	from pretrain_finetuning.classifier_fn_tpu_estimator import classifier_model_fn_builder as bert_pretrain_finetuning
+
 	from .model_distillation_adv_adaptation import model_fn_builder as model_distillation_adv_adaptation_build_fn 
 	from distributed_gpt.model_fn import model_fn_builder as gpt_lm_builder_fn
 	from chid_nlpcc2019.model_fn import model_fn_builder as chid_model_fn_builder
@@ -27,7 +30,10 @@ except:
 	from model_mdd_distillation import model_fn_builder as mdd_distillation_fn_builder
 	from model_relation_distillation import model_fn_builder as rkd_distillation_fn_builder
 	from distributed_pair_sentence_classification.interaction_rkd_distillation_model_fn import model_fn_builder as interaction_rkd_distillation
-	from pretrain_finetuning.classifier_fn_estimator import classifier_model_fn_builder as bert_pretrain_finetuning
+	# from pretrain_finetuning.classifier_fn_estimator import classifier_model_fn_builder as bert_pretrain_finetuning
+	
+	from pretrain_finetuning.classifier_fn_tpu_estimator import classifier_model_fn_builder as bert_pretrain_finetuning
+
 	from model_distillation_adv_adaptation import model_fn_builder as model_distillation_adv_adaptation_build_fn 
 	from distributed_gpt.model_fn import model_fn_builder as gpt_lm_builder_fn
 	from chid_nlpcc2019.model_fn import model_fn_builder as chid_model_fn_builder
