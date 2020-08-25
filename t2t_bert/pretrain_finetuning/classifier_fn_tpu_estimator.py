@@ -354,7 +354,7 @@ def classifier_model_fn_builder(
 							features['input_mask'],
 							opt_config.get('num_train_steps', 100000),
 							model_config.vocab_size,
-							**kargs)
+							use_tpu=kargs.get('use_tpu', False))
 
 				glance_model_features = {}
 				for key in model_features:
