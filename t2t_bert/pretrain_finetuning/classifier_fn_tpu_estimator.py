@@ -336,18 +336,18 @@ def classifier_model_fn_builder(
 											loss_converage=loss_converage)
 			tf.logging.info("*** apply bert-like mlm loss ***")
 
-			if kargs.get("glancing_training", "none") == "none":
+			if kargs.get("glancing_training", "glancing_training") == "none":
 				tf.logging.info("*** no need glancing_training ***")
 			else:
 				tf.logging.info("*** glancing_training ***")
 				[
 					output_ids, 
-					none_glanced_masked_lm_ids,
 					none_glanced_masked_lm_positions,
+					none_glanced_masked_lm_ids,
 					none_glanced_lm_weights
 				] = glance_sample(masked_lm_log_probs,
-							features["masked_lm_ids"],
 							features["masked_lm_positions"],
+							features["masked_lm_ids"],
 							features["masked_lm_weights"],
 							model_features['input_ids'],
 							model_features['input_ori_ids'],
@@ -371,8 +371,8 @@ def classifier_model_fn_builder(
 												model_config, 
 												glance_model.get_sequence_output(output_type=return_type), 
 												glance_model.get_embedding_table(),
-												none_glanced_masked_lm_ids, 
-												none_glanced_masked_lm_positions, 
+												none_glanced_masked_lm_positions,
+												none_glanced_masked_lm_ids,
 												none_glanced_lm_weights,
 												reuse=tf.AUTO_REUSE,
 												embedding_projection=model.get_embedding_projection_table(),
