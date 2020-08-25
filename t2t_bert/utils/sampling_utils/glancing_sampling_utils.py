@@ -11,8 +11,8 @@ def check_tf_version():
 		return False
 
 def glance_sample(masked_decode_logits,
-				masked_lm_ids,
 				masked_lm_positions,
+				masked_lm_ids,
 				masked_lm_weights,
 				input_ids,
 				input_ori_ids,
@@ -136,8 +136,8 @@ def glance_sample(masked_decode_logits,
 		tf.summary.scalar('after_glance_lm_weights', tf.reduce_sum(none_glanced_lm_weights)  / (1e-10+input_shape[0]))
 
 	return [output_ids, 
-			none_glanced_masked_lm_ids,
 			none_glanced_masked_lm_positions,
+			none_glanced_masked_lm_ids,
 			none_glanced_lm_weights]
 
 
