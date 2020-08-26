@@ -374,6 +374,16 @@ flags.DEFINE_string(
 	"if apply distillation"
 	)
 
+flags.DEFINE_string(
+	"confusion_set_path", "none",
+	"if apply distillation"
+	)
+
+flags.DEFINE_string(
+	"confusion_set_mask_path", "none",
+	"if apply distillation"
+	)
+
 
 def main(_):
 

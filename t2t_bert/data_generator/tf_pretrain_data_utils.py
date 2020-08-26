@@ -10,6 +10,7 @@ import collections
 
 import numpy as np
 import tensorflow as tf
+from data_generator.tf_data_utils_confusion_set import confusion_set_sample
 
 def check_tf_version():
 	version = tf.__version__
@@ -477,7 +478,17 @@ def discrepancy_correction(FLAGS, inputs, is_target, tgt_len):
 		change_to_rand = tf.logical_and(change_to_rand, is_target)
 		rand_ids = tf.random.uniform([tgt_len], maxval=FLAGS.vocab_size,
 																 dtype=masked_ids.dtype)
-		masked_ids = tf.where(change_to_rand, rand_ids, masked_ids)
+		if FLAGS.get('confusion_matrix', None) is not None and FLAGS.get('confusion_mask_matrix', None) is not None:
+			output_ids = confusion_set_sample(rand_ids, 
+												tgt_len,
+												FLAGS.confusion_matrix, 
+												FLAGS.confusion_mask_matrix
+												)
+			tf.logging.info("==mixture confusion set sampling==")
+		else:
+			output_ids = tf.identity(rand_ids)
+			tf.logging.info("==random set sampling==")
+		masked_ids = tf.where(change_to_rand, output_ids, masked_ids)
 
 	return masked_ids
 

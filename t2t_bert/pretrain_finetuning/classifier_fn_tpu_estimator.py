@@ -336,7 +336,8 @@ def classifier_model_fn_builder(
 											loss_converage=loss_converage)
 			tf.logging.info("*** apply bert-like mlm loss ***")
 
-			if kargs.get("glancing_training", "glancing_training") == "none":
+			# glancing_training
+			if kargs.get("glancing_training", "none") == "none":
 				tf.logging.info("*** no need glancing_training ***")
 			else:
 				tf.logging.info("*** glancing_training ***")
