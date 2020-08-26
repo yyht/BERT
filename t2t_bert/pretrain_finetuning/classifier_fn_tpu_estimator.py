@@ -296,7 +296,7 @@ def classifier_model_fn_builder(
 			tf.logging.info(seq_masked_lm_fn)
 			tf.logging.info(masked_lm_fn)
 
-		if input_ori_ids is not None and model_config.get("corrupted", True):
+		if input_ori_ids is not None and model_config.get("corrupted", True) or model_config.get("all_tokens", False):
 			(masked_lm_loss,
 			masked_lm_example_loss, 
 			masked_lm_log_probs,
@@ -337,7 +337,7 @@ def classifier_model_fn_builder(
 			tf.logging.info("*** apply bert-like mlm loss ***")
 
 			# glancing_training
-			if kargs.get("glancing_training", "none") == "none":
+			if kargs.get("glancing_training", "glancing_training") == "none":
 				tf.logging.info("*** no need glancing_training ***")
 			else:
 				tf.logging.info("*** glancing_training ***")
