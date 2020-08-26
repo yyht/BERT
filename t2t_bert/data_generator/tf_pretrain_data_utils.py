@@ -640,6 +640,11 @@ def input_fn_builder(
 					 stride=1):
 	"""Creates an `input_fn` closure to be passed to TPUEstimator."""
 	def input_fn(params):
+		if FLAGS.get('confusion_matrix', None) is not None and FLAGS.get('confusion_mask_matrix', None) is not None:
+			FLAGS.confusion_matrix = tf.constant(FLAGS.confusion_matrix, dtype=tf.int32)
+			FLAGS.confusion_mask_matrix = tf.constant(FLAGS.confusion_mask_matrix, dtype=tf.int32)
+			tf.logging.info("==convert confusion set to tf-tensor==")
+
 		"""The actual input function."""
 		batch_size = params["batch_size"]
 
