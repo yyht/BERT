@@ -31,7 +31,9 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--do_train true \
 	--tpu_name "albert1" \
 	--mode "pretrain" \
-	--random_generator "5"
+	--random_generator "5" \
+	--confusion_set_path "./data/chinese_L-12_H-768_A-12/vocab_confusion_id.txt" \
+	--confusion_set_mask_path "./data/chinese_L-12_H-768_A-12/vocab_confusion_id_mask.txt"
 
 
 

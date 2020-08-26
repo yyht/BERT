@@ -4,6 +4,8 @@ import tensorflow as tf
 from optimizer import distributed_optimizer as optimizer
 from data_generator import distributed_tf_data_utils as tf_data_utils
 from data_generator import tf_pretrain_data_utils
+from data_generator import tf_data_utils_confusion_set
+
 
 # try:
 # 	from .bert_model_fn import model_fn_builder
@@ -271,7 +273,22 @@ def train_eval_fn(FLAGS,
 											worker_count=worker_count,
 											task_index=task_index)
 			elif kargs.get("parse_type", "parse_dynamic") == 'parse_dynamic':
+				
+				try:
+					[confusion_matrix,
+					confusion_mask_matrix] = tf_data_utils_confusion_set.load_confusion_set(FLAGS.confusion_set_path,
+																FLAGS.confusion_set_mask_path)
+				# confusion_matrix = tf.convert_to_tensor(confusion_matrix, dtype=tf.int32)
+				# confusion_mask_matrix = tf.convert_to_tensor(confusion_mask_matrix, dtype=tf.int32)
+					tf.logging.info("***** Running confusion set sampling *****")
+				except:
+					confusion_matrix = None
+					confusion_mask_matrix = None
+					tf.logging.info("***** Running random sampling *****")
+
 				data_config = Bunch({})
+				data_config.confusion_matrix = confusion_matrix
+				data_config.confusion_mask_matrix = confusion_mask_matrix
 				data_config.min_tok = 1
 				data_config.max_tok = 10
 				data_config.sep_id = 102
@@ -279,7 +296,7 @@ def train_eval_fn(FLAGS,
 				data_config.cls_id = 101
 				data_config.mask_id = 103
 				data_config.leak_ratio = 0.1
-				data_config.rand_ratio = 0.1
+				data_config.rand_ratio = 0.5
 				data_config.vocab_size = config.vocab_size
 				data_config.mask_prob = 0.15
 				data_config.sample_strategy = 'token_span'

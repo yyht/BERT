@@ -139,8 +139,8 @@ def train_eval_fn(FLAGS,
 				[confusion_matrix,
 				confusion_mask_matrix] = tf_data_utils_confusion_set.load_confusion_set(FLAGS.confusion_set_path,
 															FLAGS.confusion_set_mask_path)
-				confusion_matrix = tf.convert_to_tensor(confusion_matrix, dtype=tf.int32)
-				confusion_mask_matrix = tf.convert_to_tensor(confusion_mask_matrix, dtype=tf.int32)
+				# confusion_matrix = tf.convert_to_tensor(confusion_matrix, dtype=tf.int32)
+				# confusion_mask_matrix = tf.convert_to_tensor(confusion_mask_matrix, dtype=tf.int32)
 				tf.logging.info("***** Running confusion set sampling *****")
 			except:
 				confusion_matrix = None
