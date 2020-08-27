@@ -223,7 +223,9 @@ class Bert(object):
 						initializer_range=self.config.initializer_range,
 						do_return_all_layers=True,
 						attention_fixed_size=self.config.get('attention_fixed_size', None),
-						dropout_name=dropout_name)
+						dropout_name=dropout_name,
+						structural_attentions=kargs.get("structural_attentions", "none"),
+						is_training=kargs.get("is_training", False))
 
 	def build_pooler(self, *args,**kargs):
 		reuse = kargs["reuse"]

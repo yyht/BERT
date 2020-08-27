@@ -227,6 +227,6 @@ def sequential_glance_sample(
 		after_glance_not_equal = tf.cast(tf.not_equal(output_ids, input_ori_ids), dtype=tf.float32)
 		after_glance_not_equal = tf.reduce_sum(after_glance_not_equal*tf.cast(input_mask, dtype=after_glance_not_equal.dtype))
 		tf.summary.scalar('after_glance_not_equal', tf.reduce_sum(after_glance_not_equal)  / (1e-10+input_shape[0]))
-	return [output_ids]
+	return [output_ids, glanced_mask]
 
 
