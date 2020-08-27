@@ -482,7 +482,8 @@ def discrepancy_correction(FLAGS, inputs, is_target, tgt_len):
 			output_ids = confusion_set_sample(rand_ids, 
 												tgt_len,
 												FLAGS.confusion_matrix, 
-												FLAGS.confusion_mask_matrix
+												FLAGS.confusion_mask_matrix,
+												0.3
 												)
 			tf.logging.info("==mixture confusion set sampling==")
 		else:

@@ -27,7 +27,8 @@ def load_confusion_set(vocab_confusion_set,
 
 def confusion_set_sample(rand_ids, tgt_len,
 						vocab_confusion_matrix, 
-						vocab_confusion_mask):
+						vocab_confusion_mask,
+						switch_ratio=0.5):
 	sampled_confusion_set = tf.nn.embedding_lookup(vocab_confusion_matrix, rand_ids)
 	sampled_confusion_set_mask = tf.nn.embedding_lookup(vocab_confusion_mask, rand_ids)
 	sampled_confusion_set_mask_prob = tf.cast(sampled_confusion_set_mask, tf.float32)
@@ -40,7 +41,9 @@ def confusion_set_sample(rand_ids, tgt_len,
 	sampled_onehot_ids = tf.one_hot(tf.squeeze(sampled_ids, axis=-1), confusion_matrix_shape[-1])
 	confusion_output_ids = tf.reduce_sum(tf.cast(sampled_onehot_ids, dtype=rand_ids.dtype)*tf.cast(sampled_confusion_set, dtype=rand_ids.dtype), axis=-1)
 	
-	confusion_prob_ids = tf.random.uniform([tgt_len], maxval=2, dtype=rand_ids.dtype)
+	# confusion_prob_ids = tf.random.uniform([tgt_len], maxval=2, dtype=rand_ids.dtype)
+	confusion_prob = tf.random.uniform([tgt_len], dtype=tf.float32)
+	confusion_prob_ids = tf.cast(confusion_prob > switch_ratio, dtype=rand_ids.dtype)
 	output_ids = confusion_output_ids * confusion_prob_ids + (1-confusion_prob_ids) * rand_ids
 
 	return output_ids

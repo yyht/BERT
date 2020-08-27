@@ -14,6 +14,8 @@ import numpy as np
 from utils.bert import bert_utils
 from utils.bert import layer_norm_utils
 from utils.bert import dropout_utils
+from utils.attention_selection import attention_selection_utils
+
 # from utils.bert.efficient_multihead_attention import efficient_attention_layer
 
 stable_dropout = dropout_utils.ReuseDropout()
@@ -548,7 +550,9 @@ def attention_layer(from_tensor,
 										from_seq_length=None,
 										to_seq_length=None,
 										attention_fixed_size=None,
-										dropout_name=None):
+										dropout_name=None,
+										structural_attentions="none",
+										is_training=False):
 	"""Performs multi-headed attention from `from_tensor` to `to_tensor`.
 
 	This is an implementation of multi-headed attention based on "Attention
@@ -691,18 +695,38 @@ def attention_layer(from_tensor,
 	attention_scores = tf.multiply(attention_scores,
 									1.0 / math.sqrt(float(attention_head_size)))
 
-	if attention_mask is not None:
+	if structural_attentions == "structural_attentions":
 		# `attention_mask` = [B, 1, F, T]
-		attention_mask = tf.expand_dims(attention_mask, axis=[1])
+		tf.logging.info("==apply structural_attentions==")
+		if attention_mask is not None:
+			attention_mask = tf.expand_dims(attention_mask, axis=[1])
+		else:
+			attention_mask = None
+		if is_training:
+			mode = tf.estimator.ModeKeys.TRAIN
+		else:
+			mode = None
+		attention_scores = attention_selection_utils.attention_group_sampling(
+							attention_scores, 
+							attention_mask,
+							mode,
+							temperatures=0.01,
+							sample_type="straight_through")
 
-		# Since attention_mask is 1.0 for positions we want to attend and 0.0 for
-		# masked positions, this operation will create a tensor which is 0.0 for
-		# positions we want to attend and -10000.0 for masked positions.
-		adder = (1.0 - tf.cast(attention_mask, tf.float32)) * -10000.0
+	else:
+		tf.logging.info("==apply global attention==")
+		if attention_mask is not None:
+			# `attention_mask` = [B, 1, F, T]
+			attention_mask = tf.expand_dims(attention_mask, axis=[1])
 
-		# Since we are adding it to the raw scores before the softmax, this is
-		# effectively the same as removing these entirely.
-		attention_scores += adder
+			# Since attention_mask is 1.0 for positions we want to attend and 0.0 for
+			# masked positions, this operation will create a tensor which is 0.0 for
+			# positions we want to attend and -10000.0 for masked positions.
+			adder = (1.0 - tf.cast(attention_mask, tf.float32)) * -10000.0
+
+			# Since we are adding it to the raw scores before the softmax, this is
+			# effectively the same as removing these entirely.
+			attention_scores += adder
 
 	# Normalize the attention scores to probabilities.
 	# `attention_probs` = [B, N, F, T]
@@ -756,7 +780,9 @@ def efficient_attention_layer(from_tensor,
 										from_seq_length=None,
 										to_seq_length=None,
 										attention_fixed_size=None,
-										dropout_name=None):
+										dropout_name=None,
+										structural_attentions="none",
+										is_training=False):
 	"""Performs multi-headed attention from `from_tensor` to `to_tensor`.
 
 	This is an implementation of multi-headed attention based on "Attention
@@ -945,7 +971,9 @@ def transformer_efficient_model(input_tensor,
 						initializer_range=0.02,
 						do_return_all_layers=False,
 						attention_fixed_size=None,
-						dropout_name=None):
+						dropout_name=None,
+						structural_attentions="none",
+						is_training=False):
 	"""Multi-headed, multi-layer Transformer from "Attention is All You Need".
 
 	This is almost an exact implementation of the original Transformer encoder.
@@ -1122,7 +1150,9 @@ def transformer_model(input_tensor,
 						initializer_range=0.02,
 						do_return_all_layers=False,
 						attention_fixed_size=None,
-						dropout_name=None):
+						dropout_name=None,
+						structural_attentions="none",
+						is_training=False):
 	"""Multi-headed, multi-layer Transformer from "Attention is All You Need".
 
 	This is almost an exact implementation of the original Transformer encoder.
@@ -1207,7 +1237,10 @@ def transformer_model(input_tensor,
 						attention_dropout_name = dropout_name + "/layer_%d/attention/self" % layer_idx
 					else:
 						attention_dropout_name = None
-
+					if layer_idx == 0:
+						structural_attentions_args = structural_attentions
+					else:
+						structural_attentions_args = "none"
 					[attention_head, 
 					attention_scores,
 					value_layer] = attention_layer(
@@ -1223,7 +1256,9 @@ def transformer_model(input_tensor,
 							from_seq_length=seq_length,
 							to_seq_length=seq_length,
 							attention_fixed_size=attention_fixed_size,
-							dropout_name=attention_dropout_name)
+							dropout_name=attention_dropout_name,
+							structural_attentions=structural_attentions_args,
+							is_training=is_training)
 					attention_heads.append(attention_head)
 					all_attention_scores.append(attention_scores)
 					all_value_outputs.append(value_layer)
@@ -1299,7 +1334,9 @@ def transformer_rezero_model(input_tensor,
 						initializer_range=0.02,
 						do_return_all_layers=False,
 						attention_fixed_size=None,
-						dropout_name=None):
+						dropout_name=None,
+						structural_attentions="none",
+						is_training=False):
 	
 	"""Multi-headed, multi-layer Transformer from "Attention is All You Need".
 
@@ -1402,7 +1439,9 @@ def transformer_rezero_model(input_tensor,
 							from_seq_length=seq_length,
 							to_seq_length=seq_length,
 							attention_fixed_size=attention_fixed_size,
-							dropout_name=attention_dropout_name)
+							dropout_name=attention_dropout_name,
+							structural_attentions=structural_attentions,
+							is_training=is_training)
 					attention_heads.append(attention_head)
 					all_attention_scores.append(attention_scores)
 					all_value_outputs.append(value_layer)

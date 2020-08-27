@@ -59,10 +59,12 @@ def bert_encoder(model_config, features, labels,
 		hidden_dropout_prob = model_config.hidden_dropout_prob
 		attention_probs_dropout_prob = model_config.attention_probs_dropout_prob
 		dropout_prob = model_config.dropout_prob
+		is_training = True
 	else:
 		hidden_dropout_prob = 0.0
 		attention_probs_dropout_prob = 0.0
 		dropout_prob = 0.0
+		is_training = False
 
 	if kargs.get('use_token_type', True):
 		tf.logging.info(" use token type ")
@@ -87,7 +89,9 @@ def bert_encoder(model_config, features, labels,
 						attention_probs_dropout_prob,
 						reuse=reuse,
 						attention_type=kargs.get('attention_type', 'normal_attention'),
-						reuse_mask=kargs.get("reuse_mask", True))
+						reuse_mask=kargs.get("reuse_mask", True),
+						structural_attentions=model_config.get("structural_attentions", "none"),
+						is_training=is_training)
 	model.build_pooler(reuse=reuse)
 
 	return model
