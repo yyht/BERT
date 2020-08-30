@@ -1237,7 +1237,7 @@ def transformer_model(input_tensor,
 						attention_dropout_name = dropout_name + "/layer_%d/attention/self" % layer_idx
 					else:
 						attention_dropout_name = None
-					if layer_idx in list(range(num_hidden_layers)):
+					if layer_idx in [0]:
 						structural_attentions_args = structural_attentions
 					else:
 						structural_attentions_args = "none"
