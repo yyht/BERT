@@ -319,10 +319,10 @@ def classifier_model_fn_builder(
 			masked_lm_ids = features["masked_lm_ids"]
 			masked_lm_weights = features["masked_lm_weights"]
 
-			(masked_lm_loss,
-			masked_lm_example_loss, 
-			masked_lm_log_probs,
-			masked_lm_mask) = masked_lm_fn(
+			(pre_masked_lm_loss,
+			pre_masked_lm_example_loss, 
+			pre_masked_lm_log_probs,
+			pre_masked_lm_mask) = masked_lm_fn(
 											model_config, 
 											model.get_sequence_output(output_type=return_type), 
 											model.get_embedding_table(),
@@ -339,6 +339,7 @@ def classifier_model_fn_builder(
 			# glancing_training
 			if kargs.get("glancing_training", "none") == "none":
 				tf.logging.info("*** no need glancing_training ***")
+				masked_lm_loss = tf.identity(pre_masked_lm_loss)
 			else:
 				tf.logging.info("*** glancing_training ***")
 				[
@@ -346,7 +347,7 @@ def classifier_model_fn_builder(
 					none_glanced_masked_lm_positions,
 					none_glanced_masked_lm_ids,
 					none_glanced_lm_weights
-				] = glance_sample(masked_lm_log_probs,
+				] = glance_sample(pre_masked_lm_log_probs,
 							features["masked_lm_positions"],
 							features["masked_lm_ids"],
 							features["masked_lm_weights"],
@@ -365,10 +366,10 @@ def classifier_model_fn_builder(
 							mode, target, reuse=tf.AUTO_REUSE,
 							if_use_decoder=if_use_decoder,
 							**kargs)
-				(masked_lm_loss,
-				masked_lm_example_loss, 
-				masked_lm_log_probs,
-				masked_lm_mask) = masked_lm_fn(
+				(glance_masked_lm_loss,
+				glance_masked_lm_example_loss, 
+				glance_masked_lm_log_probs,
+				glance_masked_lm_mask) = masked_lm_fn(
 												model_config, 
 												glance_model.get_sequence_output(output_type=return_type), 
 												glance_model.get_embedding_table(),
@@ -380,7 +381,7 @@ def classifier_model_fn_builder(
 												pretrain_loss_type="normal",
 												discriminator_mode=discriminator_mode,
 												loss_converage=loss_converage)
-		
+				masked_lm_loss = tf.identity(glance_masked_lm_loss)
 		print(model_config.lm_ratio, '==mlm lm_ratio==')
 		loss = model_config.lm_ratio * masked_lm_loss #+ 0.0 * nsp_loss
 

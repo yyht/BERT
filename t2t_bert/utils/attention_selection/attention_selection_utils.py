@@ -116,8 +116,7 @@ def attention_group_sampling(attention_scores,
 		tf.logging.info("==attention_scores== info")
 		gumbel_noise_v1 = sample_gumbel(attention_scores_shape)
 		gumbel_noise_v2 = sample_gumbel(attention_scores_shape)
-		log_sigmoid_logits = -tf.nn.softplus(-attention_scores)
-		gumbel_noise = log_sigmoid_logits+gumbel_noise_v1-gumbel_noise_v2
+		gumbel_noise = attention_scores+gumbel_noise_v1-gumbel_noise_v2
 		sampled_logprob_temp = tf.nn.sigmoid(gumbel_noise/ratio)
 		# [B, N, F, T]
 		sampled_hard_id = tf.cast(sampled_logprob_temp > 0.5, dtype=attention_scores.dtype)
@@ -149,7 +148,7 @@ def attention_group_sampling(attention_scores,
 		else:
 			selected_attention_mask = sampled_hard_id * tf.ones_like(attention_scores)
 	# [B, N, F, T]
-	adder = (1.0 - tf.cast(selected_attention_mask, tf.float32)) * -1e20
+	adder = (1.0 - selected_attention_mask) * -100000.0
 	# Since we are adding it to the raw scores before the softmax, this is
 	# effectively the same as removing these entirely.
 	attention_scores += adder
