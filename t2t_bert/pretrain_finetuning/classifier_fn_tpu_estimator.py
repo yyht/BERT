@@ -337,7 +337,7 @@ def classifier_model_fn_builder(
 			tf.logging.info("*** apply bert-like mlm loss ***")
 
 			# glancing_training
-			if kargs.get("glancing_training", "none") == "none":
+			if kargs.get("glancing_training", "glancing_training") == "none":
 				tf.logging.info("*** no need glancing_training ***")
 				masked_lm_loss = tf.identity(pre_masked_lm_loss)
 			else:
