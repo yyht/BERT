@@ -735,8 +735,11 @@ def attention_layer(from_tensor,
 
 	# This is actually dropping out entire tokens to attend to, which might
 	# seem a bit unusual, but is taken from the original Transformer paper.
-
-	attention_probs = dropout(attention_probs, attention_probs_dropout_prob, dropout_name=dropout_name)
+	if structural_attentions not in ["structural_attentions"]:
+		attention_probs = dropout(attention_probs, attention_probs_dropout_prob, dropout_name=dropout_name)
+		tf.logging.info("==apply attention-scores dropout==")
+	else:
+		tf.logging.info("==not apply attention-scores dropout==")
 
 	# `value_layer` = [B, T, N, H]
 	value_layer = tf.reshape(
@@ -1237,7 +1240,7 @@ def transformer_model(input_tensor,
 						attention_dropout_name = dropout_name + "/layer_%d/attention/self" % layer_idx
 					else:
 						attention_dropout_name = None
-					if layer_idx in [0]:
+					if layer_idx in list(range(num_hidden_layers)):
 						structural_attentions_args = structural_attentions
 					else:
 						structural_attentions_args = "none"

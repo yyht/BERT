@@ -145,33 +145,54 @@ def classifier_model_fn_builder(
 		if target:
 			features['input_ori_ids'] = features['input_ids_{}'.format(target)]
 			features['input_ids'] = features['input_ids_{}'.format(target)]
-		sequence_mask = tf.cast(tf.not_equal(features['input_ori_ids'], 
-													kargs.get('[PAD]', 0)), tf.int32)
-		features['input_mask'] = sequence_mask
-		
-		seq_features = {}
-		for key in features:
-			seq_features[key] = features[key]
-		if 'input_ori_ids' in features:
-			seq_features['input_ids'] = features["input_ori_ids"]
-		elif 'origin_input' in features:
-			input_ori_ids = features['origin_input']
-			features["input_ori_ids"] = input_ori_ids
-		else:
-			features['input_ori_ids'] = seq_features['input_ids']
-		if 'masked_input' in features:
-			seq_features['input_ids'] = features['masked_input']
-			model_config.corrupted = False
-
-		not_equal = tf.cast(tf.not_equal(features["input_ori_ids"], tf.zeros_like(features["input_ori_ids"])), tf.int32)
-		not_equal = tf.reduce_sum(not_equal, axis=-1)
-		loss_mask = tf.cast(tf.not_equal(not_equal, tf.zeros_like(not_equal)), tf.float32)
-		
-		if not kargs.get('use_tpu', False):
-			tf.summary.scalar('loss_mask', tf.reduce_sum(loss_mask))
 
 		casual_flag = model_config.get('is_casual', True)
 		tf.logging.info("***** is casual flag *****", str(casual_flag))
+
+		if 'input_ori_ids' in features:
+			input_ori_ids = features['input_ori_ids']
+			tf.logging.info("***** original input ori ids *****")
+		elif 'origin_input' in features:
+			input_ori_ids = features['origin_input']
+			features['input_ori_ids'] = tf.identity(features['origin_input'])
+			tf.logging.info("***** origin_input *****")
+		else:
+			input_ori_ids = features['input_ids']
+			features['input_ori_ids'] = tf.identity(input_ori_ids)
+			tf.logging.info("***** no origin_input *****")
+
+		seq_features = {}
+		for key in features:
+			seq_features[key] = tf.identity(features[key])
+		tf.logging.info(seq_features)
+
+		if input_ori_ids is not None and 'input_mask' not in features:
+			sequence_mask = tf.cast(tf.not_equal(input_ori_ids, 
+												kargs.get('[PAD]', 0)), 
+												tf.int32)
+			features['input_mask'] = sequence_mask
+			tf.logging.info("***** none-casual and not provided input-mask *****")
+
+		if 'masked_input' in features and not casual_flag:
+			seq_features['input_ids'] = features['masked_input']
+			model_config.corrupted = False
+			tf.logging.info("***** none-casual-mask with masked-input *****")
+		if casual_flag :
+			model_config.corrupted = False
+			tf.logging.info("***** casual-mask *****")
+			if input_ori_ids is not None:
+				seq_features['input_ids'] = tf.identity(input_ori_ids)
+				tf.logging.info("***** casual-mask ori-input-ids *****")
+			else:
+				tf.logging.info("***** casual-mask ori-input-ids *****")
+				
+		if input_ori_ids is not None:
+			not_equal = tf.cast(tf.not_equal(input_ori_ids, tf.zeros_like(features["input_ori_ids"])), tf.int32)
+			not_equal = tf.reduce_sum(not_equal, axis=-1)
+			loss_mask = tf.cast(tf.not_equal(not_equal, tf.zeros_like(not_equal)), tf.float32)
+			
+			if not kargs.get('use_tpu', False):
+				tf.summary.scalar('loss_mask', tf.reduce_sum(loss_mask))
 
 		if not casual_flag and model_config.get("corrupted", True):
 			[output_ids, 

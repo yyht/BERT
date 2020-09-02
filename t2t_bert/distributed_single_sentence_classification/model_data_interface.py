@@ -226,9 +226,13 @@ def data_interface(FLAGS):
 		print(FLAGS.model_type, "===model type===", FLAGS.task_type)
 		if FLAGS.task_type in ['gatedcnn_seq_lm']:
 			name_to_features = {
-				"input_ids_b":
-						tf.FixedLenFeature([FLAGS.max_length], tf.int64)
-				}
+				"input_ori_ids":
+					tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+				"input_mask":
+					tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+				"segment_ids":
+					tf.FixedLenFeature([FLAGS.max_length], tf.int64)
+				} 
 
 	return name_to_features
 
