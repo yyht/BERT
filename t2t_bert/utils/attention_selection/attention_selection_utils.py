@@ -101,15 +101,15 @@ def attention_group_sampling(attention_scores,
 	if mode == tf.estimator.ModeKeys.TRAIN:
 		global_step = tf.train.get_or_create_global_step()
 
-		# ratio = tf.train.polynomial_decay(
-		# 								10.0,
-		# 								global_step,
-		# 								100000,
-		# 								end_learning_rate=0.01,
-		# 								power=1.0,
-		# 								cycle=False)
+		ratio = tf.train.polynomial_decay(
+										10.0,
+										global_step,
+										100000,
+										end_learning_rate=0.01,
+										power=1.0,
+										cycle=False)
 
-		ratio = temperatures
+		# ratio = temperatures
 
 		attention_scores_shape = bert_utils.get_shape_list(attention_scores)
 		tf.logging.info(attention_scores)
@@ -133,9 +133,9 @@ def attention_group_sampling(attention_scores,
 			tf.logging.info("==apply straight_through structural_attentions==")
 		# [B, N, F, T]
 		if attention_mask is not None:
-			selected_attention_mask = selected_group * tf.cast(attention_mask, dtype=tf.float32)
+			selected_group = selected_group * tf.cast(attention_mask, dtype=tf.float32)
 		else:
-			selected_attention_mask = selected_group * tf.ones_like(attention_scores)
+			selected_group = selected_group * tf.ones_like(attention_scores)
 
 	else:
 		sampled_logprob_temp = tf.nn.sigmoid(attention_scores)
@@ -144,11 +144,11 @@ def attention_group_sampling(attention_scores,
 
 		# [B, N, F, T]
 		if attention_mask is not None:
-			selected_attention_mask = sampled_hard_id * tf.cast(attention_mask, dtype=tf.float32)
+			selected_group = sampled_hard_id * tf.cast(attention_mask, dtype=tf.float32)
 		else:
-			selected_attention_mask = sampled_hard_id * tf.ones_like(attention_scores)
+			selected_group = sampled_hard_id * tf.ones_like(attention_scores)
 	# [B, N, F, T]
-	adder = (1.0 - selected_attention_mask) * -100000.0
+	adder = (1.0 - attention_mask) * -100000.0 + tf.log(selected_group+1e-10)
 	# Since we are adding it to the raw scores before the softmax, this is
 	# effectively the same as removing these entirely.
 	attention_scores += adder
