@@ -1,4 +1,10 @@
 
+import tensorflow as tf
+"""
+https://gitlab.aiacademy.tw/at081045/at081-group5/blob/master/FasterRCNN_BBB/models/official/utils/accelerator/tpu.py
+"""
+
+
 def construct_scalar_host_call(metric_dict, model_dir, prefix=""):
 	"""Construct a host call to log scalars when training on TPU.
 
