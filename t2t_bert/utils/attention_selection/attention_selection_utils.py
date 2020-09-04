@@ -196,7 +196,7 @@ def attention_group_sampling(from_tensor,
 				initializer=create_initializer(initializer_range))
 	
 	# [B, N, F, T] 
-	attention_scores = scale*tf.reduce_sum(tf.tanh(query_layer_ + key_layer_), axis=-1)
+	attention_scores = tf.reduce_sum(scale*tf.tanh(query_layer_ + key_layer_), axis=-1)
 	
 	if mode == tf.estimator.ModeKeys.TRAIN:
 		global_step = tf.train.get_or_create_global_step()
