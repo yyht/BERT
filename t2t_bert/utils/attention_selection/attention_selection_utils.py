@@ -125,6 +125,11 @@ def attention_group_sampling(from_tensor,
 	from_shape = bert_utils.get_shape_list(from_tensor, expected_rank=[2, 3])
 	to_shape = bert_utils.get_shape_list(to_tensor, expected_rank=[2, 3])
 
+	print(from_shape, to_shape, "====from shape, and to shape====")
+	tf.logging(from_tensor)
+	tf.logging(to_tensor)
+	tf.logging("==from tensor, to tensor==")
+
 	if len(from_shape) != len(to_shape):
 		raise ValueError(
 				"The rank of `from_tensor` must match the rank of `to_tensor`.")
