@@ -1,6 +1,6 @@
 import tensorflow as tf
 import numpy as np
-
+import math
 from utils.bert import bert_utils
 
 """
