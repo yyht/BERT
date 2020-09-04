@@ -109,6 +109,7 @@ def attention_group_sampling(from_tensor,
 							size_per_head=512,
 							initializer_range=0.02,
 							key_act=None,
+							query_act=None,
 							temperatures=0.1,
 							sample_type="straight_through",
 							**kargs):
@@ -151,12 +152,8 @@ def attention_group_sampling(from_tensor,
 	from_tensor_2d = bert_utils.reshape_to_matrix(from_tensor)
 	to_tensor_2d = bert_utils.reshape_to_matrix(to_tensor)
 
-	if attention_fixed_size:
-		attention_head_size = attention_fixed_size
-		tf.logging.info("==apply attention_fixed_size==")
-	else:
-		attention_head_size = size_per_head
-		tf.logging.info("==apply attention_original_size==")
+	attention_head_size = size_per_head
+	tf.logging.info("==apply attention_original_size==")
 
 	# `query_layer` = [B*F, N*H]
 	query_layer = tf.layers.dense(
