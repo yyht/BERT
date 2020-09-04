@@ -26,10 +26,10 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--ln_type "postln" \
 	--warmup "warmup" \
 	--decay "decay" \
-	--init_lr 2e-4 \
+	--init_lr 1e-4 \
 	--num_tpu_cores 8 \
 	--do_train true \
-	--tpu_name "albert4" \
+	--tpu_name "albert0" \
 	--mode "pretrain" \
 	--random_generator "5" \
 	--confusion_set_path "./data/chinese_L-12_H-768_A-12/vocab_confusion_id.txt" \
