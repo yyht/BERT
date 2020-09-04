@@ -707,9 +707,14 @@ def attention_layer(from_tensor,
 		else:
 			mode = None
 		attention_scores = attention_selection_utils.attention_group_sampling(
-							attention_scores, 
+							from_tensor, 
+							to_tensor,
 							attention_mask,
 							mode,
+							num_attention_heads=num_attention_heads,
+							size_per_head=size_per_head,
+							initializer_range=initializer_range,
+							key_act=key_act,
 							temperatures=0.01,
 							sample_type="straight_through")
 
