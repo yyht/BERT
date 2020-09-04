@@ -715,9 +715,10 @@ def attention_layer(from_tensor,
 							from_seq_length=from_seq_length,
 							to_seq_length=to_seq_length,
 							num_attention_heads=num_attention_heads,
-							size_per_head=size_per_head,
+							size_per_head=attention_head_size,
 							initializer_range=initializer_range,
 							key_act=key_act,
+							query_act=query_act,
 							temperatures=0.01,
 							sample_type="straight_through")
 
