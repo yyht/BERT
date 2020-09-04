@@ -25,6 +25,11 @@ def sample_gumbel(shape, samples=1, eps=1e-20):
 	# return -tf.log(-tf.log(U + eps) + eps)
 	return -tf.log(-tf.log(U))
 
+def create_initializer(initializer_range=0.02):
+	"""Creates a `truncated_normal_initializer` with the given range."""
+	return tf.truncated_normal_initializer(stddev=initializer_range)
+
+
 # def attention_group_sampling(attention_scores, 
 # 							attention_mask,
 # 							mode,
@@ -93,9 +98,14 @@ def sample_gumbel(shape, samples=1, eps=1e-20):
 # 	selected_attention_scores += adder
 # 	return selected_attention_scores
 
-def attention_group_sampling(attention_scores, 
+def attention_group_sampling(from_tensor, 
+							to_tensor,
 							attention_mask,
 							mode,
+							num_attention_heads=1,
+							size_per_head=512,
+							initializer_range=0.02,
+							key_act=None,
 							temperatures=0.1,
 							sample_type="straight_through",
 							**kargs):
@@ -103,6 +113,74 @@ def attention_group_sampling(attention_scores,
 	# `attention_scores` = [B, N, F, T]
 	# `attention_mask` = [B, 1, F, T]
 	"""
+
+	def transpose_for_scores(input_tensor, batch_size, num_attention_heads,
+													 seq_length, width):
+		output_tensor = tf.reshape(
+				input_tensor, [batch_size, seq_length, num_attention_heads, width])
+
+		output_tensor = tf.transpose(output_tensor, [0, 2, 1, 3])
+		return output_tensor
+
+	from_shape = bert_utils.get_shape_list(from_tensor, expected_rank=[2, 3])
+	to_shape = bert_utils.get_shape_list(to_tensor, expected_rank=[2, 3])
+
+	if len(from_shape) != len(to_shape):
+		raise ValueError(
+				"The rank of `from_tensor` must match the rank of `to_tensor`.")
+
+	if len(from_shape) == 3:
+		batch_size = from_shape[0]
+		from_seq_length = from_shape[1]
+		to_seq_length = to_shape[1]
+	elif len(from_shape) == 2:
+		if (batch_size is None or from_seq_length is None or to_seq_length is None):
+			raise ValueError(
+					"When passing in rank 2 tensors to attention_layer, the values "
+					"for `batch_size`, `from_seq_length`, and `to_seq_length` "
+					"must all be specified.")
+
+	from_tensor_2d = bert_utils.reshape_to_matrix(from_tensor)
+	to_tensor_2d = bert_utils.reshape_to_matrix(to_tensor)
+
+	if attention_fixed_size:
+		attention_head_size = attention_fixed_size
+		tf.logging.info("==apply attention_fixed_size==")
+	else:
+		attention_head_size = size_per_head
+		tf.logging.info("==apply attention_original_size==")
+
+	# `query_layer` = [B*F, N*H]
+	query_layer = tf.layers.dense(
+			from_tensor_2d,
+			num_attention_heads * attention_head_size,
+			activation=query_act,
+			name="query_switch",
+			kernel_initializer=create_initializer(initializer_range))
+
+	# `key_layer` = [B*T, N*H]
+	key_layer = tf.layers.dense(
+			to_tensor_2d,
+			num_attention_heads * attention_head_size,
+			activation=key_act,
+			name="key_switch",
+			kernel_initializer=create_initializer(initializer_range))
+
+	# `query_layer` = [B, N, F, H]
+	query_layer = transpose_for_scores(query_layer, batch_size,
+									 num_attention_heads, 
+									 from_seq_length,
+									 attention_head_size)
+
+	# `key_layer` = [B, N, T, H]
+	key_layer = transpose_for_scores(key_layer, batch_size, 
+									num_attention_heads,
+									to_seq_length, 
+									attention_head_size)
+
+	# [B, N, F, T]
+	attention_scores = tf.matmul(query_layer, key_layer, transpose_b=True)
+
 	if mode == tf.estimator.ModeKeys.TRAIN:
 		global_step = tf.train.get_or_create_global_step()
 
@@ -144,6 +222,7 @@ def attention_group_sampling(attention_scores,
 		adder = (1.0 - attention_mask) * -100000.0 + tf.log(selected_group+1e-10)
 	
 	else:
+		tf.logging.info("==apply hard structural_attentions==")
 		sampled_logprob_temp = tf.nn.sigmoid(attention_scores)
 		# [B, N, F, T]
 		sampled_hard_id = tf.cast(sampled_logprob_temp > 0.5, dtype=attention_scores.dtype)
