@@ -193,7 +193,7 @@ def attention_group_sampling(from_tensor,
 										10.0,
 										global_step,
 										100000,
-										end_learning_rate=0.01,
+										end_learning_rate=0.1,
 										power=1.0,
 										cycle=False)
 
