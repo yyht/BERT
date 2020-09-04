@@ -3,6 +3,10 @@ import numpy as np
 
 from utils.bert import bert_utils
 
+"""
+https://github.com/wouterkool/stochastic-beam-search/blob/stochastic-beam-search/fairseq/gumbel.py
+"""
+
 def check_tf_version():
 	version = tf.__version__
 	print("==tf version==", version)
@@ -93,7 +97,8 @@ def attention_group_sampling(attention_scores,
 							attention_mask,
 							mode,
 							temperatures=0.1,
-							sample_type="straight_through"):
+							sample_type="straight_through",
+							**kargs):
 	"""
 	# `attention_scores` = [B, N, F, T]
 	# `attention_mask` = [B, 1, F, T]
@@ -117,7 +122,7 @@ def attention_group_sampling(attention_scores,
 		gumbel_noise_v1 = sample_gumbel(attention_scores_shape)
 		gumbel_noise_v2 = sample_gumbel(attention_scores_shape)
 		gumbel_noise = attention_scores+gumbel_noise_v1-gumbel_noise_v2
-		sampled_logprob_temp = tf.nn.sigmoid(gumbel_noise/ratio)
+		sampled_logprob_temp = tf.nn.sigmoid(gumbel_noise/ratio) * tf.cast(attention_mask, dtype=attention_scores.dtype)
 		# [B, N, F, T]
 		sampled_hard_id = tf.cast(sampled_logprob_temp > 0.5, dtype=attention_scores.dtype)
 
@@ -136,7 +141,8 @@ def attention_group_sampling(attention_scores,
 			selected_group = selected_group * tf.cast(attention_mask, dtype=tf.float32)
 		else:
 			selected_group = selected_group * tf.ones_like(attention_scores)
-
+		adder = (1.0 - attention_mask) * -100000.0 + tf.log(selected_group+1e-10)
+	
 	else:
 		sampled_logprob_temp = tf.nn.sigmoid(attention_scores)
 		# [B, N, F, T]
@@ -147,8 +153,9 @@ def attention_group_sampling(attention_scores,
 			selected_group = sampled_hard_id * tf.cast(attention_mask, dtype=tf.float32)
 		else:
 			selected_group = sampled_hard_id * tf.ones_like(attention_scores)
+	
+		adder = (1.0 - selected_group) * -100000.0
 	# [B, N, F, T]
-	adder = (1.0 - attention_mask) * -100000.0 + tf.log(selected_group+1e-10)
 	# Since we are adding it to the raw scores before the softmax, this is
 	# effectively the same as removing these entirely.
 	attention_scores += adder

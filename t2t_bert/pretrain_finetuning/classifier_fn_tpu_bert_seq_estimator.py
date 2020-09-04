@@ -238,7 +238,7 @@ def classifier_model_fn_builder(
 											model.get_sequence_output_logits(),
 											sequence_mask
 									])
-			        print("===tpu metric==", tpu_eval_metrics, "==tpu metric++")
+				print("===tpu metric==", tpu_eval_metrics, "==tpu metric++")
 
 			if kargs.get('use_tpu', False):
 				estimator_spec = tf.contrib.tpu.TPUEstimatorSpec(
@@ -274,8 +274,8 @@ def classifier_model_fn_builder(
 										swap_memory=True,
 										seq_type=kargs.get("seq_type", "seq2seq"),
 										mask_type=kargs.get("mask_type", "seq2seq"),
-                    					attention_type=kargs.get('attention_type', 'normal_attention')
-                    					)
+										attention_type=kargs.get('attention_type', 'normal_attention')
+										)
 				# stop_gradient output:
 				# samples, mask_sequence, presents, logits, final
 				
