@@ -81,7 +81,7 @@
     "clip_norm":10,
     "use_pretrained":true,
     "is_casual":true,
-    "vocab_size":119547,
+    "vocab_size":25056,
     "emb_size":64,
     "emb_char_size":64,
     "scope":"textcnn",
