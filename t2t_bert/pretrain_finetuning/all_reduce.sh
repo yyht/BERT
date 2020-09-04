@@ -53,7 +53,7 @@ pai -name tensorflow1120
 	-Dtags='bert'
 	-DentryFile='./BERT/t2t_bert/distributed_bin/all_reduce_train_eval_api.py' 
 	-DgpuRequired=100
-	-DhyperParameters='file:///Users/xuhaotian/Desktop/my_work/BERT/t2t_bert/pretrain_finetuning/bert_glance_mlm'
+	-DhyperParameters='file:///Users/xuhaotian/Desktop/my_work/BERT/t2t_bert/pretrain_finetuning/gatedcnn_lm_pretrain_seq'
 	-Dbuckets='oss://alg-misc/BERT/?role_arn=acs:ram::1265628042679515:role/yuefeng2&host=cn-hangzhou.oss-internal.aliyun-inc.com';
 "
 echo "${pai_command}"

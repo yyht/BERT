@@ -159,19 +159,17 @@ def attention_group_sampling(from_tensor,
 	query_layer = tf.layers.dense(
 			from_tensor_2d,
 			num_attention_heads * attention_head_size,
-			activation=None,
+			activation=tf.tanh,
 			name="query_switch",
-			kernel_initializer=create_initializer(initializer_range),
-			use_bias=False)
+			kernel_initializer=create_initializer(initializer_range))
 
 	# `key_layer` = [B*T, N*H]
 	key_layer = tf.layers.dense(
 			to_tensor_2d,
 			num_attention_heads * attention_head_size,
-			activation=None,
+			activation=tf.tanh,
 			name="key_switch",
-			kernel_initializer=create_initializer(initializer_range),
-			use_bias=False)
+			kernel_initializer=create_initializer(initializer_range))
 
 	# `query_layer` = [B, N, F, H]
 	query_layer = transpose_for_scores(query_layer, batch_size,
@@ -184,19 +182,11 @@ def attention_group_sampling(from_tensor,
 									num_attention_heads,
 									to_seq_length, 
 									attention_head_size)
-
-	# `query_layer` = [B, N, F, 1, H]
-	query_layer_ = tf.expand_dims(query_layer, 3)
-	# `key_layer` =   [B, N, 1, T, H]
-	key_layer_ = tf.expand_dims(key_layer, 2)
-
-	scale = tf.get_variable(
-				"scale_switch",
-				shape=[attention_head_size],
-				initializer=create_initializer(initializer_range))
 	
-	# [B, N, F, T] 
-	attention_scores = tf.reduce_sum(scale*tf.tanh(query_layer_ + key_layer_), axis=-1)
+	# `attention_scores` = [B, N, F, T]
+	attention_scores = tf.matmul(query_layer, key_layer, transpose_b=True)
+	attention_scores = tf.multiply(attention_scores,
+									1.0 / math.sqrt(float(attention_head_size)))
 	
 	if mode == tf.estimator.ModeKeys.TRAIN:
 		global_step = tf.train.get_or_create_global_step()
