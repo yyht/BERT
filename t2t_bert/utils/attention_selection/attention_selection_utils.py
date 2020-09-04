@@ -102,6 +102,9 @@ def attention_group_sampling(from_tensor,
 							to_tensor,
 							attention_mask,
 							mode,
+							batch_size=None,
+							from_seq_length=None,
+							to_seq_length=None,
 							num_attention_heads=1,
 							size_per_head=512,
 							initializer_range=0.02,
@@ -126,9 +129,9 @@ def attention_group_sampling(from_tensor,
 	to_shape = bert_utils.get_shape_list(to_tensor, expected_rank=[2, 3])
 
 	print(from_shape, to_shape, "====from shape, and to shape====")
-	tf.logging(from_tensor)
-	tf.logging(to_tensor)
-	tf.logging("==from tensor, to tensor==")
+	tf.logging.info(from_tensor)
+	tf.logging.info(to_tensor)
+	tf.logging.info("==from tensor, to tensor==")
 
 	if len(from_shape) != len(to_shape):
 		raise ValueError(
