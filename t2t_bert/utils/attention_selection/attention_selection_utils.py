@@ -190,9 +190,13 @@ def attention_group_sampling(from_tensor,
 	# `key_layer` =   [B, N, 1, T, H]
 	key_layer_ = tf.expand_dims(key_layer, 2)
 
-	attention_scores = tf.reduce_sum(tf.tanh(query_layer_ + key_layer_), axis=-1)
-	attention_scores = tf.multiply(attention_scores,
-									1.0 / math.sqrt(float(attention_head_size)))
+	scale = tf.get_variable(
+				"scale_switch",
+				shape=[attention_head_size],
+				initializer=create_initializer(initializer_range))
+	
+	# [B, N, F, T] 
+	attention_scores = scale*tf.reduce_sum(tf.tanh(query_layer_ + key_layer_), axis=-1)
 	
 	if mode == tf.estimator.ModeKeys.TRAIN:
 		global_step = tf.train.get_or_create_global_step()
