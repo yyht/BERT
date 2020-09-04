@@ -185,7 +185,8 @@ def attention_group_sampling(from_tensor,
 
 	# [B, N, F, T]
 	attention_scores = tf.matmul(query_layer, key_layer, transpose_b=True)
-
+	attention_scores = tf.multiply(attention_scores,
+									1.0 / math.sqrt(float(attention_head_size)))
 	if mode == tf.estimator.ModeKeys.TRAIN:
 		global_step = tf.train.get_or_create_global_step()
 
