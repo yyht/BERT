@@ -94,8 +94,6 @@ def mixed_dynamic_conv_attention_layer(from_tensor,
 				attention_mask=None,
 				from_mask=None,
 				to_mask=None,
-				from_mask=None,
-				to_mask=None,
 				num_attention_heads=1,
 				size_per_head=512,
 				query_act=None,
@@ -263,7 +261,13 @@ def mixed_dynamic_conv_attention_layer(from_tensor,
 	from_tensor_mask = tf.expand_dims(from_tensor_mask, axis=-1)
 	from_tensor_mask = tf.cast(from_tensor_mask, dtype=tf.float32)
 
-	from_tensor *= from_tensor_mask
+	if len(from_shape) == 3:
+		from_tensor *= from_tensor_mask
+	else:
+		from_tensor = tf.reshape(
+				from_tensor,
+				[batch_size * from_seq_length, num_attention_heads * attention_head_size])
+		from_tensor *= from_tensor_mask
 	conv_key_layer = gated_conv1d_op(from_tensor, 
 								filters=num_attention_heads * attention_head_size, 
 								kernel_size=kernel_size, 
