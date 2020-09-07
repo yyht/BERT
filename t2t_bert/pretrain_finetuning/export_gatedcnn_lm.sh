@@ -2,8 +2,8 @@ CUDA_VISIBLE_DEVICES="" python ./t2t_bert/pretrain_finetuning/export_api.py \
  --buckets "/data/xuht" \
  --config_file "/data/xuht/ae_lightcnn/textcnn_multilingual_embedding_light_dgcnn.json" \
  --model_dir "ae_lightcnn/export" \
- --init_checkpoint "ae_lightcnn/model.ckpt-850000" \
- --model_output "ae_lightcnn/model.ckpt-850000" \
+ --init_checkpoint "ae_lightcnn/model.ckpt-2800000" \
+ --model_output "ae_lightcnn/model.ckpt-2800000" \
  --max_length 64 \
  --export_dir "ae_lightcnn/export" \
  --num_classes 2 \

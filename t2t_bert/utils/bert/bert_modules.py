@@ -720,7 +720,7 @@ def attention_layer(from_tensor,
 							key_act=key_act,
 							query_act=query_act,
 							temperatures=0.01,
-							sample_type="straight_through")
+							sample_type="soft")
 
 	else:
 		tf.logging.info("==apply global attention==")

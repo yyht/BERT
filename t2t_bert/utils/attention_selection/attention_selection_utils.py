@@ -185,9 +185,8 @@ def attention_group_sampling(from_tensor,
 	
 	# `attention_scores` = [B, N, F, T]
 	attention_scores = tf.matmul(query_layer, key_layer, transpose_b=True)
-	attention_scores = tf.multiply(attention_scores,
-									1.0 / math.sqrt(float(attention_head_size)))
-	
+	# attention_scores = tf.multiply(attention_scores,
+	# 								1.0 / math.sqrt(float(attention_head_size)))
 	if mode == tf.estimator.ModeKeys.TRAIN:
 		global_step = tf.train.get_or_create_global_step()
 
@@ -226,7 +225,7 @@ def attention_group_sampling(from_tensor,
 			selected_group = selected_group * tf.cast(attention_mask, dtype=tf.float32)
 		else:
 			selected_group = selected_group * tf.ones_like(attention_scores)
-		adder = (1.0 - attention_mask) * -100000.0 + tf.log(selected_group+1e-10)
+		adder = (1.0 - attention_mask) * -100000.0 + tf.log(selected_group+1e-20)
 	
 	else:
 		tf.logging.info("==apply hard structural_attentions==")
