@@ -5,6 +5,29 @@ import numpy as np
 from utils.textcnn import light_conv_utils
 from utils.bert import bert_utils
 
+from utils.bert import dropout_utils
+
+stable_dropout = dropout_utils.ReuseDropout()
+
+def dropout(input_tensor, dropout_prob, dropout_name=None):
+	"""Perform dropout.
+
+	Args:
+		input_tensor: float Tensor.
+		dropout_prob: Python float. The probability of dropping out a value (NOT of
+			*keeping* a dimension as in `tf.nn.dropout`).
+
+	Returns:
+		A version of `input_tensor` with dropout applied.
+	"""
+	if dropout_prob is None or dropout_prob == 0.0:
+		return tf.identity(input_tensor)
+	if dropout_name:
+		output = stable_dropout.dropout(input_tensor, dropout_prob, dropout_name)
+	else:
+		output = tf.nn.dropout(input_tensor, 1.0 - dropout_prob)
+	return output
+
 def dynamic_conv_layer(
 				from_tensor,
 				from_mask=None,
@@ -158,7 +181,7 @@ def dynamic_conv_layer(
 									dynamic_kernel)
 
 	# [batch_size, num_attention_heads, seq_length, kernel_size]
-	normalized_dynamic_kernel = tf.exp(tf.log_softmax(dynamic_conv_kernel, axis=-1))
+	normalized_dynamic_kernel = tf.exp(tf.nn.log_softmax(dynamic_conv_kernel, axis=-1))
 	normalized_dynamic_kernel = dropout(normalized_dynamic_kernel, 
 										attention_probs_dropout_prob, 
 										dropout_name=dropout_name+"_conv")
