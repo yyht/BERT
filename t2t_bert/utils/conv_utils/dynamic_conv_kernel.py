@@ -264,10 +264,13 @@ def dynamic_conv_layer(from_tensor,
 	indices = tf.expand_dims(indices, axis=0)
 
 	batch_one = tf.ones((from_seq_length, 1), dtype=indices.dtype)
-	batch_index = tf.einsum("ab,bc->ac", batch_one, indices)
+	batch_index = tf.einsum("ab,bc->ac", 
+							tf.cast(batch_one, dtype=tf.float32),
+							tf.cast(indices, dtype=tf.float32)
+							)
 
 	incremental_index = tf.transpose(tf.expand_dims(indices_i[:from_seq_length], axis=0))
-	indices += incremental_index
+	indices += tf.cast(incremental_index, indices.dtype)
 	
 	indices = tf.reshape(indices, [-1])
 
