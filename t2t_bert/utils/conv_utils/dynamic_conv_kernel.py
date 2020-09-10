@@ -193,7 +193,7 @@ def dynamic_conv_layer(from_tensor,
 	else:
 		from_tensor = tf.reshape(
 				from_tensor,
-				[batch_size, from_seq_length, num_attention_heads * attention_head_size])
+				[batch_size, from_seq_length, -1])
 		from_tensor *= from_tensor_mask
 	conv_key_layer = gated_conv1d_op(from_tensor, 
 								filters=num_attention_heads * attention_head_size, 
