@@ -203,7 +203,7 @@ def dynamic_conv_layer(from_tensor,
 									 attention_head_size)
 
 	value_layer = transpose_for_scores(value_layer, batch_size,
-									 from_seq_length
+									 from_seq_length,
 									 num_attention_heads, 
 									 attention_head_size)
 	
