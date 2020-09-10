@@ -283,6 +283,8 @@ def dynamic_conv_layer(from_tensor,
 							[0,0]])
 
 	# [1, to_seq_length*kernel_size]
+	padded_value_layer = tf.reshape(padded_value_layer, 
+									[batch_size, -1, num_attention_heads * attention_head_size])
 	conv_span_output = bert_utils.gather_indexes(padded_value_layer, indices)
 	conv_span_output = tf.reshape(conv_span_output, 
 								[batch_size, 
