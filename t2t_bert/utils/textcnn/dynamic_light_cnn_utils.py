@@ -126,11 +126,11 @@ def dynamic_conv_layer(
 								padding=padding, 
 								activation=None, 
 								strides=strides, 
-								reuse=True, 
+								reuse=None, 
 								name="glu_conv", 
 								kernel_initializer=None,
 								dilation_rate=dilation_rate,
-								is_training=True)
+								is_training=is_training)
 	conv_key_layer *= from_tensor_mask
 
 	# [batch_size, num_attention_heads, seq_length, width]
