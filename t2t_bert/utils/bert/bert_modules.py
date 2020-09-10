@@ -1410,7 +1410,7 @@ def conv_transformer_model(input_tensor,
 		attention_head_size = int(hidden_size / num_attention_heads / 2)
 		tf.logging.info("==apply size of attention-heads scale==")
 	else:
-		attention_head_size =  = int(hidden_size / num_attention_heads)
+		attention_head_size = int(hidden_size / num_attention_heads)
 		num_attention_heads = int(num_attention_heads / 2)
 	
 	input_shape = bert_utils.get_shape_list(input_tensor, expected_rank=3)
