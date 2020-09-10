@@ -1403,7 +1403,7 @@ def conv_transformer_model(input_tensor,
 					"heads (%d)" % (hidden_size, num_attention_heads))
 
 	if model_config.get("num_attention_heads_scale", True):
-		attention_head_size =  = int(hidden_size / num_attention_heads)
+		attention_head_size = int(hidden_size / num_attention_heads)
 		num_attention_heads = int(num_attention_heads / 2)
 		tf.logging.info("==apply numbers of attention-heads scale==")
 	elif model_config.get("attention_head_size_scale", False):
