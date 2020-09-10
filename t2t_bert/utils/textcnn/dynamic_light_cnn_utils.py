@@ -164,16 +164,16 @@ def dynamic_conv_layer(
 										dropout_name=dropout_name+"_conv")
 	# [1, from_seq_length+kernel_size-1]
 	indices_i = tf.range(from_seq_length+kernel_size-1, delta=1)
-    indices = tf.reverse(indices_i[0:kernel_size], axis=[-1])
-    indices = tf.expand_dims(indices, axis=0)
+	indices = tf.reverse(indices_i[0:kernel_size], axis=[-1])
+	indices = tf.expand_dims(indices, axis=0)
 
-    batch_one = tf.ones((from_seq_length, 1), dtype=indices.dtype)
-    batch_index = tf.einsum("ab,bc->ac", batch_one, indices)
+	batch_one = tf.ones((from_seq_length, 1), dtype=indices.dtype)
+	batch_index = tf.einsum("ab,bc->ac", batch_one, indices)
 
-    incremental_index = tf.transpose(tf.expand_dims(indices_i[:from_seq_length], axis=0))
-    indices += incremental_index
-    
-    indices = tf.reshape(indices, [-1])
+	incremental_index = tf.transpose(tf.expand_dims(indices_i[:from_seq_length], axis=0))
+	indices += incremental_index
+	
+	indices = tf.reshape(indices, [-1])
 
 	# padded_value_layer: [batch_size, num_attention_heads, seq_length+kernel_size-1, attention_head_size]
 	if is_casual:

@@ -197,6 +197,7 @@ class Bert(object):
 
 				if self.config.get("conv_bert", True):
 					transformer_model = bert_modules.conv_transformer_model
+					tf.logging.info("****** conv_transformer_model *******")
 
 				if embedding_output is not None:
 					embedding_seq_output = embedding_output
@@ -210,7 +211,6 @@ class Bert(object):
 					tf.logging.info("****** reuse mask: %s *******" % (dropout_name))
 				else:
 					dropout_name = None
-
 
 				[self.all_encoder_layers,
 				self.all_attention_scores,
