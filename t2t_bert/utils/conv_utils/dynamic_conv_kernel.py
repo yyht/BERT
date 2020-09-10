@@ -203,8 +203,8 @@ def dynamic_conv_layer(from_tensor,
 									 attention_head_size)
 
 	value_layer = transpose_for_scores(value_layer, batch_size,
+									 from_seq_length
 									 num_attention_heads, 
-									 from_seq_length,
 									 attention_head_size)
 	
 	from_tensor_mask = tf.expand_dims(from_mask, axis=-1)
@@ -274,18 +274,22 @@ def dynamic_conv_layer(from_tensor,
 	
 	indices = tf.reshape(indices, [-1])
 
-	# padded_value_layer: [batch_size, num_attention_heads, from_seq_length+kernel_size-1, attention_head_size]
-	# value_layer       : [batch_size, num_attention_heads, from_seq_length, attention_head_size]
+	# padded_value_layer: [batch_size, from_seq_length+kernel_size-1, num_attention_heads, attention_head_size]
+	# value_layer       : [batch_size, from_seq_length, num_attention_heads, attention_head_size]
 	padded_value_layer = tf.pad(value_layer, 
 							[[0, 0], 
+							[int((kernel_size-1)/2) ,int((kernel_size-1)/2)]
 							[0, 0], 
-							[int((kernel_size-1)/2) ,int((kernel_size-1)/2)], 
-							[0,0]])
+							[0, 0]])
+	tf.logging.info(padded_value_layer, "==padded_value_layer==")
 
 	# [1, to_seq_length*kernel_size]
 	padded_value_layer = tf.reshape(padded_value_layer, 
 									[batch_size, -1, num_attention_heads * attention_head_size])
+	
+	tf.logging.info(padded_value_layer, "==reshape padded_value_layer==")
 	conv_span_output = bert_utils.gather_indexes(padded_value_layer, indices)
+	tf.logging.info(conv_span_output, "==conv_span_output==")
 	conv_span_output = tf.reshape(conv_span_output, 
 								[batch_size, 
 								num_attention_heads,
@@ -293,10 +297,13 @@ def dynamic_conv_layer(from_tensor,
 								kernel_size,
 								attention_head_size
 								])
+	tf.logging.info(conv_span_output, "==reshape conv_span_output==")
 	
 	# dynamic_conv_kernel: [batch_size, num_attention_heads, from_seq_length, kernel_size]
 	# conv_span_output:    [batch_size, num_attention_heads, from_seq_length, kernel_size, attention_head_size]
 	conv_output = tf.einsum("abcd,abcde->abce", normalized_dynamic_kernel, conv_span_output)
+	tf.logging.info(conv_output, "==conv_output==")
+
 	# [batch_size, num_attention_heads, from_seq_length, attention_head_size]
 	conv_output = tf.transpose(conv_output, [0, 2, 1, 3])
 	if do_return_2d_tensor:
