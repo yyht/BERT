@@ -89,7 +89,7 @@ def gated_conv1d_op(inputs,
 	conv = conv_linear * conv_gated
 	return conv
 
-def mixed_dynamic_conv_attention_layer(from_tensor,
+def dynamic_conv_layer(from_tensor,
 				to_tensor,
 				attention_mask=None,
 				from_mask=None,
@@ -111,8 +111,9 @@ def mixed_dynamic_conv_attention_layer(from_tensor,
 				is_training=False,
 				kernel_size=10,
 				strides=1,
-				dilation_rate=1,
-				scale_ratio=0.5):
+				dilation_rate=1):
+	
+	initializer = create_initializer(initializer_range=0.02)
 
 	def transpose_for_scores(input_tensor, batch_size, num_attention_heads,
 													 seq_length, width):
@@ -154,10 +155,6 @@ def mixed_dynamic_conv_attention_layer(from_tensor,
 		attention_head_size = size_per_head
 		tf.logging.info("==apply attention_original_size==")
 
-	if scale_ratio < 1:
-		num_attention_heads = tf.cast(num_attention_heads * ratio, dtype=tf.int32)
-		tf.logging.info("==scale num_attention_heads==", num_attention_heads)
-
 	from_tensor_2d = bert_utils.reshape_to_matrix(from_tensor)
 	to_tensor_2d = bert_utils.reshape_to_matrix(to_tensor)
 
@@ -169,17 +166,9 @@ def mixed_dynamic_conv_attention_layer(from_tensor,
 			name="query",
 			kernel_initializer=create_initializer(initializer_range))
 
-	# `key_layer` = [B*T, N*H]
-	key_layer = tf.layers.dense(
-			to_tensor_2d,
-			num_attention_heads * attention_head_size,
-			activation=key_act,
-			name="key",
-			kernel_initializer=create_initializer(initializer_range))
-
 	# `value_layer` = [B*T, N*H]
 	value_layer = tf.layers.dense(
-			to_tensor_2d,
+			from_tensor_2d,
 			num_attention_heads * attention_head_size,
 			activation=value_act,
 			name="value",
@@ -191,74 +180,12 @@ def mixed_dynamic_conv_attention_layer(from_tensor,
 									 from_seq_length,
 									 attention_head_size)
 
-	# `key_layer` = [B, N, T, H]
-	key_layer = transpose_for_scores(key_layer, batch_size, 
-									num_attention_heads,
-									to_seq_length, 
-									attention_head_size)
-
-	# Take the dot product between "query" and "key" to get the raw
-	# attention scores.
-	# `attention_scores` = [B, N, F, T]
-	attention_scores = tf.matmul(query_layer, key_layer, transpose_b=True)
-	attention_scores = tf.multiply(attention_scores,
-									1.0 / math.sqrt(float(attention_head_size)))
-
-	if attention_mask is not None:
-		# `attention_mask` = [B, 1, F, T]
-		attention_mask = tf.expand_dims(attention_mask, axis=[1])
-
-		# Since attention_mask is 1.0 for positions we want to attend and 0.0 for
-		# masked positions, this operation will create a tensor which is 0.0 for
-		# positions we want to attend and -10000.0 for masked positions.
-		adder = (1.0 - tf.cast(attention_mask, tf.float32)) * -10000.0
-
-		# Since we are adding it to the raw scores before the softmax, this is
-		# effectively the same as removing these entirely.
-		attention_scores += adder
-
-	# Normalize the attention scores to probabilities.
-	# `attention_probs` = [B, N, F, T]
-	# attention_probs = tf.nn.softmax(attention_scores)
-	attention_probs = tf.exp(tf.nn.log_softmax(attention_scores))
-
-	# This is actually dropping out entire tokens to attend to, which might
-	# seem a bit unusual, but is taken from the original Transformer paper.
-	attention_probs = dropout(attention_probs, attention_probs_dropout_prob, dropout_name=dropout_name)
-
-	# `value_layer` = [B, T, N, H]
-	value_layer = tf.reshape(
-			value_layer,
-			[batch_size, to_seq_length, num_attention_heads, attention_head_size])
-
-	# `value_layer` = [B, N, T, H]
-	value_layer = tf.transpose(value_layer, [0, 2, 1, 3])
-
-	# `context_layer` = [B, N, F, H]
-	context_layer = tf.matmul(attention_probs, value_layer)
-
-	# `context_layer` = [B, F, N, H]
-	context_layer = tf.transpose(context_layer, [0, 2, 1, 3])
-
-	if do_return_2d_tensor:
-		# `context_layer` = [B*F, N*V]
-		context_layer = tf.reshape(
-				context_layer,
-				[batch_size * from_seq_length, num_attention_heads * attention_head_size])
-	else:
-		# `context_layer` = [B, F, N*V]
-		context_layer = tf.reshape(
-				context_layer,
-				[batch_size, from_seq_length, num_attention_heads * attention_head_size])
-
-	# dynamic-span-conv: key_layer
-	# [batch_size, seq_length, num_attention_heads x width]
-	if from_mask is not None:
-		from_tensor_mask = from_mask
-	else:
-		from_tensor_mask = tf.squeeze(attention_mask[:, 0:1, :])
+	value_layer = transpose_for_scores(value_layer, batch_size,
+									 num_attention_heads, 
+									 from_seq_length,
+									 attention_head_size)
 	
-	from_tensor_mask = tf.expand_dims(from_tensor_mask, axis=-1)
+	from_tensor_mask = tf.expand_dims(from_mask, axis=-1)
 	from_tensor_mask = tf.cast(from_tensor_mask, dtype=tf.float32)
 
 	if len(from_shape) == 3:
@@ -266,7 +193,7 @@ def mixed_dynamic_conv_attention_layer(from_tensor,
 	else:
 		from_tensor = tf.reshape(
 				from_tensor,
-				[batch_size * from_seq_length, num_attention_heads * attention_head_size])
+				[batch_size, from_seq_length, num_attention_heads * attention_head_size])
 		from_tensor *= from_tensor_mask
 	conv_key_layer = gated_conv1d_op(from_tensor, 
 								filters=num_attention_heads * attention_head_size, 
@@ -276,17 +203,18 @@ def mixed_dynamic_conv_attention_layer(from_tensor,
 								strides=strides, 
 								reuse=True, 
 								name="glu_conv", 
-								kernel_initializer=None,
+								kernel_initializer=initializer,
 								dilation_rate=dilation_rate,
-								is_training=True)
+								is_training=is_training)
 	conv_key_layer *= from_tensor_mask
 
-	# [batch_size, num_attention_heads, seq_length, width]
+	# [batch_size, from_seq_length, num_attention_heads, attention_head_size]
 	conv_key_layer = tf.reshape(conv_key_layer, 
 												[batch_size,
 												from_seq_length,
 												num_attention_heads,
 												attention_head_size])
+	# [batch_size, num_attention_heads, from_seq_length, attention_head_size]
 	conv_key_layer = tf.transpose(conv_key_layer, [0, 2, 1, 3])
 
 	# dynamic-kernel-generator
@@ -298,30 +226,31 @@ def mixed_dynamic_conv_attention_layer(from_tensor,
 				shape=[num_attention_heads, kernel_size, attention_head_size],
 				initializer=create_initializer(initializer_range))
 
-	# [batch_size, num_attention_heads, seq_length, kernel_size]
+	# [batch_size, num_attention_heads, from_seq_length, attention_head_size]
+	# [num_attention_heads, kernel_size, attention_head_size]
 	dynamic_conv_kernel = tf.einsum("abcd,bfd->abcf", 
 									dynamic_kernel_generator, 
 									dynamic_kernel)
-	# [batch_size, num_attention_heads, seq_length, kernel_size]
+	# [batch_size, num_attention_heads, from_seq_length, kernel_size]
 	normalized_dynamic_kernel = tf.exp(tf.log_softmax(dynamic_conv_kernel, axis=-1))
 	normalized_dynamic_kernel = dropout(normalized_dynamic_kernel, 
 										attention_probs_dropout_prob, 
 										dropout_name=dropout_name+"_conv")
-	# [1, 1, seq_length, seq_length]
-	band_matrix = tf.matrix_band_part(tf.ones((
-							from_seq_length+kernel_size-1, 
-							from_seq_length+kernel_size-1)), 
-							0, kernel_size-1)
 
-	# [to_seq_length, to_seq_length+(kernel_size-1)]
-	final_bank_matrix = band_matrix[:-(kernel_size-1), :]
+	indices_i = tf.range(from_seq_length+kernel_size-1, delta=1)
+	indices = tf.reverse(indices_i[0:kernel_size], axis=[-1])
+	indices = tf.expand_dims(indices, axis=0)
 
-	indices = tf.contrib.framework.argsort(final_bank_matrix, direction='DESCENDING')
-	# [to_seq_length, kernel_size]
-	indices = indices[:, :kernel_size]
-	indices = tf.reverse(indices, axis=[-1])
+	batch_one = tf.ones((from_seq_length, 1), dtype=indices.dtype)
+	batch_index = tf.einsum("ab,bc->ac", batch_one, indices)
 
-	# padded_value_layer: [batch_size, num_attention_heads, seq_length+kernel_size-1, attention_head_size]
+	incremental_index = tf.transpose(tf.expand_dims(indices_i[:from_seq_length], axis=0))
+	indices += incremental_index
+	
+	indices = tf.reshape(indices, [-1])
+
+	# padded_value_layer: [batch_size, num_attention_heads, from_seq_length+kernel_size-1, attention_head_size]
+	# value_layer       : [batch_size, num_attention_heads, from_seq_length, attention_head_size]
 	padded_value_layer = tf.pad(value_layer, 
 							[[0, 0], 
 							[0, 0], 
@@ -329,7 +258,6 @@ def mixed_dynamic_conv_attention_layer(from_tensor,
 							[0,0]])
 
 	# [1, to_seq_length*kernel_size]
-	indices = tf.expand_dims(tf.reshape(indices, [-1]), axis=0)
 	conv_span_output = bert_utils.gather_indexes(padded_value_layer, indices)
 	conv_span_output = tf.reshape(conv_span_output, 
 								[batch_size, 
@@ -339,9 +267,10 @@ def mixed_dynamic_conv_attention_layer(from_tensor,
 								attention_head_size
 								])
 	
-	# dynamic_conv_kernel:[batch_size, num_attention_heads, seq_length, kernel_size]
-	# conv_span_output:    [batch_size, num_attention_heads, seq_length, kernel_size, attention_head_size]
+	# dynamic_conv_kernel: [batch_size, num_attention_heads, from_seq_length, kernel_size]
+	# conv_span_output:    [batch_size, num_attention_heads, from_seq_length, kernel_size, attention_head_size]
 	conv_output = tf.einsum("abcd,abcde->abce", normalized_dynamic_kernel, conv_span_output)
+	# [batch_size, num_attention_heads, from_seq_length, attention_head_size]
 	conv_output = tf.transpose(conv_output, [0, 2, 1, 3])
 	if do_return_2d_tensor:
 		# `context_layer` = [B*F, N*V]
@@ -354,5 +283,4 @@ def mixed_dynamic_conv_attention_layer(from_tensor,
 				conv_output,
 				[batch_size, from_seq_length, num_attention_heads * attention_head_size])
 
-	final_context_layer = tf.concat([context_layer, conv_output_layer], axis=-1)
-	return final_context_layer, final_context_layer, value_layer
+	return conv_output_layer

@@ -15,6 +15,7 @@ from utils.bert import bert_utils
 from utils.bert import layer_norm_utils
 from utils.bert import dropout_utils
 from utils.attention_selection import attention_selection_utils
+from utils.conv_utils import dynamic_conv_kernel
 
 # from utils.bert.efficient_multihead_attention import efficient_attention_layer
 
@@ -985,7 +986,10 @@ def transformer_efficient_model(input_tensor,
 						attention_fixed_size=None,
 						dropout_name=None,
 						structural_attentions="none",
-						is_training=False):
+						is_training=False,
+						model_config={},
+						from_mask=None,
+						to_mask=None):
 	"""Multi-headed, multi-layer Transformer from "Attention is All You Need".
 
 	This is almost an exact implementation of the original Transformer encoder.
@@ -1164,7 +1168,10 @@ def transformer_model(input_tensor,
 						attention_fixed_size=None,
 						dropout_name=None,
 						structural_attentions="none",
-						is_training=False):
+						is_training=False,
+						model_config={},
+						from_mask=None,
+						to_mask=None):
 	"""Multi-headed, multi-layer Transformer from "Attention is All You Need".
 
 	This is almost an exact implementation of the original Transformer encoder.
@@ -1334,6 +1341,228 @@ def transformer_model(input_tensor,
 		final_output = bert_utils.reshape_from_matrix(prev_output, input_shape)
 		return final_output, all_attention_scores, all_value_outputs
 
+def conv_transformer_model(input_tensor,
+						attention_mask=None,
+						hidden_size=768,
+						num_hidden_layers=12,
+						num_attention_heads=12,
+						intermediate_size=3072,
+						intermediate_act_fn=gelu,
+						hidden_dropout_prob=0.1,
+						attention_probs_dropout_prob=0.1,
+						initializer_range=0.02,
+						do_return_all_layers=False,
+						attention_fixed_size=None,
+						dropout_name=None,
+						structural_attentions="none",
+						is_training=False,
+						model_config={},
+						from_mask=None,
+						to_mask=None):
+	"""Multi-headed, multi-layer Transformer from "Attention is All You Need".
+
+	This is almost an exact implementation of the original Transformer encoder.
+
+	See the original paper:
+	https://arxiv.org/abs/1706.03762
+
+	Also see:
+	https://github.com/tensorflow/tensor2tensor/blob/master/tensor2tensor/models/transformer.py
+
+	Args:
+		input_tensor: float Tensor of shape [batch_size, seq_length, hidden_size].
+		attention_mask: (optional) int32 Tensor of shape [batch_size, seq_length,
+			seq_length], with 1 for positions that can be attended to and 0 in
+			positions that should not be.
+		hidden_size: int. Hidden size of the Transformer.
+		num_hidden_layers: int. Number of layers (blocks) in the Transformer.
+		num_attention_heads: int. Number of attention heads in the Transformer.
+		intermediate_size: int. The size of the "intermediate" (a.k.a., feed
+			forward) layer.
+		intermediate_act_fn: function. The non-linear activation function to apply
+			to the output of the intermediate/feed-forward layer.
+		hidden_dropout_prob: float. Dropout probability for the hidden layers.
+		attention_probs_dropout_prob: float. Dropout probability of the attention
+			probabilities.
+		initializer_range: float. Range of the initializer (stddev of truncated
+			normal).
+		do_return_all_layers: Whether to also return all layers or just the final
+			layer.
+
+	Returns:
+		float Tensor of shape [batch_size, seq_length, hidden_size], the final
+		hidden layer of the Transformer.
+
+	Raises:
+		ValueError: A Tensor shape or parameter is invalid.
+	"""
+	if not attention_fixed_size:
+		if hidden_size % num_attention_heads != 0:
+			raise ValueError(
+					"The hidden size (%d) is not a multiple of the number of attention "
+					"heads (%d)" % (hidden_size, num_attention_heads))
+
+	if model_config.get("num_attention_heads_scale", True):
+		attention_head_size =  = int(hidden_size / num_attention_heads)
+		num_attention_heads = int(num_attention_heads / 2)
+		tf.logging.info("==apply numbers of attention-heads scale==")
+	elif model_config.get("attention_head_size_scale", False):
+		attention_head_size = int(hidden_size / num_attention_heads / 2)
+		tf.logging.info("==apply size of attention-heads scale==")
+	else:
+		attention_head_size =  = int(hidden_size / num_attention_heads)
+		num_attention_heads = int(num_attention_heads / 2)
+	
+	input_shape = bert_utils.get_shape_list(input_tensor, expected_rank=3)
+	batch_size = input_shape[0]
+	seq_length = input_shape[1]
+	input_width = input_shape[2]
+
+	# The Transformer performs sum residuals on all layers so the input needs
+	# to be the same as the hidden size.
+	# if input_width != hidden_size:
+	# 	raise ValueError("The width of the input tensor (%d) != hidden size (%d)" %
+	# 									 (input_width, hidden_size))
+
+	if input_width != hidden_size:
+		input_tensor = dense_layer_2d(
+		input_tensor, hidden_size, create_initializer(initializer_range),
+		None, name="embedding_hidden_mapping_in")
+
+		tf.logging.info("==apply embedding linear projection==")
+
+	# We keep the representation as a 2D tensor to avoid re-shaping it back and
+	# forth from a 3D tensor to a 2D tensor. Re-shapes are normally free on
+	# the GPU/CPU but may not be free on the TPU, so we want to minimize them to
+	# help the optimizer.
+	prev_output = bert_utils.reshape_to_matrix(input_tensor)
+
+	all_layer_outputs = []
+	all_attention_scores = []
+	all_value_outputs = []
+
+	for layer_idx in range(num_hidden_layers):
+		with tf.variable_scope("layer_%d" % layer_idx):
+			layer_input = prev_output
+
+			with tf.variable_scope("attention"):
+				attention_heads = []
+				with tf.variable_scope("self"):
+
+					if dropout_name:
+						attention_dropout_name = dropout_name + "/layer_%d/attention/self" % layer_idx
+					else:
+						attention_dropout_name = None
+					if layer_idx in list(range(num_hidden_layers)):
+						structural_attentions_args = structural_attentions
+					else:
+						structural_attentions_args = "none"
+					[attention_head, 
+					attention_scores,
+					value_layer] = attention_layer(
+							from_tensor=layer_input,
+							to_tensor=layer_input,
+							attention_mask=attention_mask,
+							num_attention_heads=num_attention_heads,
+							size_per_head=attention_head_size,
+							attention_probs_dropout_prob=attention_probs_dropout_prob,
+							initializer_range=initializer_range,
+							do_return_2d_tensor=True,
+							batch_size=batch_size,
+							from_seq_length=seq_length,
+							to_seq_length=seq_length,
+							attention_fixed_size=attention_fixed_size,
+							dropout_name=attention_dropout_name,
+							structural_attentions=structural_attentions_args,
+							is_training=is_training)
+
+					conv_head = dynamic_conv_kernel.dynamic_conv_layer(
+							from_tensor=layer_input,
+							to_tensor=layer_input,
+							attention_mask=attention_mask,
+							from_mask=from_mask,
+							to_mask=to_mask,
+							num_attention_heads=num_attention_heads,
+							size_per_head=attention_head_size,
+							attention_probs_dropout_prob=attention_probs_dropout_prob,
+							initializer_range=initializer_range,
+							do_return_2d_tensor=True,
+							batch_size=batch_size,
+							from_seq_length=seq_length,
+							to_seq_length=seq_length,
+							attention_fixed_size=attention_fixed_size,
+							dropout_name=attention_dropout_name,
+							structural_attentions=structural_attentions_args,
+							is_training=is_training,
+							kernel_size=model_config.get('kernel_size', 9),
+							strides=model_config.get('stride', 1),
+							dilation_rate=model_config.get('stride', 1))
+
+					attention_head = tf.concat([attention_head, conv_head], axis=-1)
+
+					attention_heads.append(attention_head)
+					all_attention_scores.append(attention_scores)
+					all_value_outputs.append(value_layer)
+
+				attention_output = None
+				if len(attention_heads) == 1:
+					attention_output = attention_heads[0]
+				else:
+					# In the case where we have other sequences, we just concatenate
+					# them to the self-attention head before the projection.
+					attention_output = tf.concat(attention_heads, axis=-1)
+
+				# Run a linear projection of `hidden_size` then add a residual
+				# with `layer_input`.
+				with tf.variable_scope("output"):
+
+					if dropout_name:
+						output_dropout_name = dropout_name + "/layer_%d/attention/output" % layer_idx
+					else:
+						output_dropout_name = None
+
+					attention_output = tf.layers.dense(
+							attention_output,
+							hidden_size,
+							kernel_initializer=create_initializer(initializer_range))
+					attention_output = dropout(attention_output, hidden_dropout_prob, dropout_name=output_dropout_name)
+					attention_output = layer_norm(attention_output + layer_input)
+
+			# The activation is only applied to the "intermediate" hidden layer.
+			with tf.variable_scope("intermediate"):
+				intermediate_output = tf.layers.dense(
+						attention_output,
+						intermediate_size,
+						activation=intermediate_act_fn,
+						kernel_initializer=create_initializer(initializer_range))
+
+			# Down-project back to `hidden_size` then add the residual.
+			with tf.variable_scope("output"):
+
+				if dropout_name:
+					output_dropout_name = dropout_name + "/layer_%d/output" % layer_idx
+				else:
+					output_dropout_name = None
+
+				layer_output = tf.layers.dense(
+						intermediate_output,
+						hidden_size,
+						kernel_initializer=create_initializer(initializer_range))
+				layer_output = dropout(layer_output, hidden_dropout_prob, dropout_name=output_dropout_name)
+				layer_output = layer_norm(layer_output + attention_output)
+				prev_output = layer_output
+				all_layer_outputs.append(layer_output)
+
+	if do_return_all_layers:
+		final_outputs = []
+		for layer_output in all_layer_outputs:
+			final_output = bert_utils.reshape_from_matrix(layer_output, input_shape)
+			final_outputs.append(final_output)
+		return final_outputs, all_attention_scores, all_value_outputs
+	else:
+		final_output = bert_utils.reshape_from_matrix(prev_output, input_shape)
+		return final_output, all_attention_scores, all_value_outputs
+
 def transformer_rezero_model(input_tensor,
 						attention_mask=None,
 						hidden_size=768,
@@ -1348,7 +1577,10 @@ def transformer_rezero_model(input_tensor,
 						attention_fixed_size=None,
 						dropout_name=None,
 						structural_attentions="none",
-						is_training=False):
+						is_training=False,
+						model_config={},
+						from_mask=None,
+						to_mask=None):
 	
 	"""Multi-headed, multi-layer Transformer from "Attention is All You Need".
 

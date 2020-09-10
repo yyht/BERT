@@ -195,6 +195,10 @@ class Bert(object):
 					tf.logging.info("****** normal attention *******")
 					transformer_model = bert_modules.transformer_model
 
+				if self.config.get("conv_bert", True):
+					transformer_model = bert_modules.conv_transformer_model
+					tf.logging.info("****** conv_transformer_model *******")
+
 				if embedding_output is not None:
 					embedding_seq_output = embedding_output
 					tf.logging.info("****** outer-embedding_seq_output *******")
@@ -225,7 +229,10 @@ class Bert(object):
 						attention_fixed_size=self.config.get('attention_fixed_size', None),
 						dropout_name=dropout_name,
 						structural_attentions=kargs.get("structural_attentions", "none"),
-						is_training=kargs.get("is_training", False))
+						is_training=kargs.get("is_training", False),
+						model_config=self.config,
+						from_mask=input_mask,
+						to_mask=input_mask)
 
 	def build_pooler(self, *args,**kargs):
 		reuse = kargs["reuse"]
