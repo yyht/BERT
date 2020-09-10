@@ -84,11 +84,30 @@ def dynamic_conv_layer(
 			name="value",
 			kernel_initializer=create_initializer(initializer_range))
 
+	# `query_layer` = [B, N, F, H]
+	query_layer = transpose_for_scores(query_layer, batch_size,
+									 num_attention_heads, 
+									 from_seq_length,
+									 attention_head_size)
+
+	# `query_layer` = [B, N, F, H]
+	value_layer = transpose_for_scores(value_layer, batch_size,
+									 num_attention_heads, 
+									 from_seq_length,
+									 attention_head_size)
+
 	# dynamic-span-conv: key_layer
 	# [batch_size, seq_length, num_attention_heads x width]
 	
 	from_tensor_mask = tf.expand_dims(from_mask, axis=-1)
 	from_tensor_mask = tf.cast(from_tensor_mask, dtype=tf.float32)
+
+	if len(from_shape) == 3:
+		from_tensor *= from_tensor_mask
+	else:
+		from_tensor = tf.reshape(
+				from_tensor,
+				[batch_size, from_seq_length, num_attention_heads * attention_head_size])
 
 	from_tensor *= from_tensor_mask
 
@@ -132,28 +151,29 @@ def dynamic_conv_layer(
 				shape=[num_attention_heads, kernel_size, attention_head_size],
 				initializer=create_initializer(initializer_range))
 
-	# [batch_size, num_attention_heads, seq_length, kernel_size]
+	# [batch_size, num_attention_heads, from_seq_length, attention_head_size]
+	# [num_attention_heads, kernel_size, attention_head_size]
 	dynamic_conv_kernel = tf.einsum("abcd,bfd->abcf", 
 									dynamic_kernel_generator, 
 									dynamic_kernel)
+
 	# [batch_size, num_attention_heads, seq_length, kernel_size]
 	normalized_dynamic_kernel = tf.exp(tf.log_softmax(dynamic_conv_kernel, axis=-1))
 	normalized_dynamic_kernel = dropout(normalized_dynamic_kernel, 
 										attention_probs_dropout_prob, 
 										dropout_name=dropout_name+"_conv")
-	# [1, 1, seq_length, seq_length]
-	band_matrix = tf.matrix_band_part(tf.ones((
-							from_seq_length+kernel_size-1, 
-							from_seq_length+kernel_size-1)), 
-							0, kernel_size-1)
+	# [1, from_seq_length+kernel_size-1]
+	indices_i = tf.range(from_seq_length+kernel_size-1, delta=1)
+    indices = tf.reverse(indices_i[0:kernel_size], axis=[-1])
+    indices = tf.expand_dims(indices, axis=0)
 
-	# [to_seq_length, to_seq_length+(kernel_size-1)]
-	final_bank_matrix = band_matrix[:-(kernel_size-1), :]
+    batch_one = tf.ones((from_seq_length, 1), dtype=indices.dtype)
+    batch_index = tf.einsum("ab,bc->ac", batch_one, indices)
 
-	indices = tf.contrib.framework.argsort(final_bank_matrix, direction='DESCENDING')
-	# [to_seq_length, kernel_size]
-	indices = indices[:, :kernel_size]
-	indices = tf.reverse(indices, axis=[-1])
+    incremental_index = tf.transpose(tf.expand_dims(indices_i[:from_seq_length], axis=0))
+    indices += incremental_index
+    
+    indices = tf.reshape(indices, [-1])
 
 	# padded_value_layer: [batch_size, num_attention_heads, seq_length+kernel_size-1, attention_head_size]
 	if is_casual:
@@ -171,7 +191,6 @@ def dynamic_conv_layer(
 								[0,0]])
 
 	# [1, to_seq_length*kernel_size]
-	indices = tf.expand_dims(tf.reshape(indices, [-1]), axis=0)
 	conv_span_output = bert_utils.gather_indexes(padded_value_layer, indices)
 	conv_span_output = tf.reshape(conv_span_output, 
 								[batch_size, 
