@@ -278,7 +278,7 @@ def dynamic_conv_layer(from_tensor,
 	# value_layer       : [batch_size, from_seq_length, num_attention_heads, attention_head_size]
 	padded_value_layer = tf.pad(value_layer, 
 							[[0, 0], 
-							[int((kernel_size-1)/2) ,int((kernel_size-1)/2)]
+							[int((kernel_size-1)/2) ,int((kernel_size-1)/2)],
 							[0, 0], 
 							[0, 0]])
 	tf.logging.info(padded_value_layer, "==padded_value_layer==")
