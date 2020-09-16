@@ -185,7 +185,7 @@ def dynamic_conv_layer(from_tensor,
 			from_tensor_2d,
 			num_attention_heads * attention_head_size,
 			activation=query_act,
-			name="query",
+			name="conv_query",
 			kernel_initializer=create_initializer(initializer_range))
 
 	# `value_layer` = [B*T, N*H]
@@ -193,7 +193,7 @@ def dynamic_conv_layer(from_tensor,
 			from_tensor_2d,
 			num_attention_heads * attention_head_size,
 			activation=value_act,
-			name="value",
+			name="conv_value",
 			kernel_initializer=create_initializer(initializer_range))
 
 	# `query_layer` = [B, N, F, H]
