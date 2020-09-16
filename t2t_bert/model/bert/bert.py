@@ -195,7 +195,7 @@ class Bert(object):
 					tf.logging.info("****** normal attention *******")
 					transformer_model = bert_modules.transformer_model
 
-				if self.config.get("conv_bert", True):
+				if self.config.get("conv_bert", False):
 					transformer_model = bert_modules.conv_transformer_model
 					tf.logging.info("****** conv_transformer_model *******")
 
