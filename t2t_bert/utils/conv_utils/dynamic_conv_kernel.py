@@ -314,6 +314,7 @@ def dynamic_conv_layer(from_tensor,
 
 	# [batch_size, num_attention_heads, from_seq_length, attention_head_size]
 	conv_output = tf.transpose(conv_output, [0, 2, 1, 3])
+	conv_output *= tf.expand_dims(from_tensor_mask, axis=-1)
 	if do_return_2d_tensor:
 		# `context_layer` = [B*F, N*V]
 		conv_output_layer = tf.reshape(
