@@ -298,12 +298,13 @@ def dynamic_conv_layer(from_tensor,
 
 	conv_span_output = tf.reshape(conv_span_output, 
 								[batch_size, 
-								num_attention_heads,
 								from_seq_length,
 								kernel_size,
+								num_attention_heads,
 								attention_head_size
 								])
 	tf.logging.info(conv_span_output)
+	conv_span_output = tf.transpose(conv_span_output, [0,3,1,2,4])
 	tf.logging.info("==reshape conv_span_output==")
 
 	# dynamic_conv_kernel: [batch_size, num_attention_heads, from_seq_length, kernel_size]
