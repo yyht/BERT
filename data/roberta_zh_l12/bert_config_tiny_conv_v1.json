@@ -19,5 +19,5 @@
   "corrupted":false,
   "num_attention_heads_scale":true,
   "conv_bert":true,
-  "kernel_size":3
+  "kernel_size":5
 }
