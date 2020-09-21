@@ -229,6 +229,7 @@ def dynamic_conv_layer(
 							normalized_dynamic_kernel, 
 							conv_span_output)
 	conv_output = tf.transpose(conv_output, [0, 2, 1, 3])
+	conv_output *= tf.expand_dims(from_tensor_mask, axis=-1)
 	if do_return_2d_tensor:
 		# `context_layer` = [B*F, N*V]
 		conv_output_layer = tf.reshape(
@@ -241,3 +242,156 @@ def dynamic_conv_layer(
 				[batch_size, from_seq_length, num_attention_heads * attention_head_size])
 
 	return conv_output_layer
+
+
+def dynamic_dgcnn(x, input_mask,
+			num_attention_heads=1,
+			size_per_head=512,
+			query_act=None,
+			key_act=None,
+			value_act=None,
+			attention_probs_dropout_prob=0.0,
+			initializer_range=0.02,
+			do_return_2d_tensor=False,
+			batch_size=None,
+			from_seq_length=None,
+			attention_fixed_size=None,
+			dropout_name=None,
+			structural_attentions="none",
+			scale_ratio=0.5,
+			num_layers=2, 
+			dilation_rates=[1,2],
+			strides=[1,1],
+			num_filters=[64,64],
+			kernel_sizes=[3,3], 
+			is_training=False,
+			scope_name="textcnn", 
+			reuse=False, 
+			activation=tf.nn.relu,
+			is_casual=False,
+			padding='SAME',
+			layer_wise_pos=False,
+			):
+
+	print(num_filters, '===num_filters===')
+
+	# input_mask: batch_size, seq
+
+	# initializer = tf.glorot_uniform_initializer()
+	initializer = create_initializer(initializer_range=0.02)
+
+	input_mask = tf.cast(input_mask, dtype=tf.float32)
+	outter_input_mask = tf.expand_dims(input_mask, axis=-1)
+
+	padding_type = padding
+
+	if is_training:
+		attention_probs_dropout_prob = attention_probs_dropout_prob
+	else:
+		attention_probs_dropout_prob = 0.0
+
+	if is_casual:
+		left_pad = dilation_rates[0] * (kernel_sizes[0] - 1)
+		inputs = tf.pad(x, [[0, 0], [left_pad, 0], [0, 0]])
+		padding = 'VALID'
+		tf.logging.info("==casual valid padding==")
+	else:
+		inputs = x
+		# left_pad = int(dilation_rates[0] * (kernel_sizes[0] - 1) / 2)
+		# right_pad = int(dilation_rates[0] * (kernel_sizes[0] - 1) / 2)
+		# print(left_pad, right_pad, '===projection===')
+		# inputs = tf.pad(x, [[0, 0], [left_pad, right_pad], [0, 0]])
+		# padding = 'VALID'
+		padding = 'SAME'
+
+	if is_training:
+		dropout_rate = 0.1
+	else:
+		dropout_rate = 0.0
+
+	if layer_wise_pos:
+		inputs = position_utils.add_timing_signal_1d(inputs)
+		tf.logging.info("==layer-wise position encoding==")
+
+	with tf.variable_scope(scope_name, reuse=reuse):
+		inputs = gated_conv1d_op(inputs,
+						filters=num_filters[0],
+						kernel_size=kernel_sizes[0],
+						padding=padding,
+						activation=None,
+						strides=1,
+						reuse=reuse, 
+						dilation_rate=1,
+						name="gated_conv",
+						kernel_initializer=initializer, #tf.truncated_normal_initializer(stddev=0.1),
+						is_training=is_training)
+		if padding_type == 'SAME':
+			inputs *= outter_input_mask
+		residual_inputs = inputs
+
+	for (dilation_rate, 
+		layer, 
+		kernel_size, 
+		stride, 
+		num_filter) in zip(dilation_rates, 
+							range(num_layers), 
+							kernel_sizes,
+							strides, 
+							num_filters):
+		layer_scope_name = "%s_layer_%s"%(str(scope_name), str(layer))
+		output_shape = bert_utils.get_shape_list(inputs, expected_rank=3)
+		with tf.variable_scope(layer_scope_name, reuse=reuse):
+			if dilation_rate > 1:
+				stride = 1
+			
+			tf.logging.info("==kernel_size:%s, num_filter:%s, stride:%s, dilation_rate:%s==", str(kernel_size), 
+										str(num_filter), str(stride), str(dilation_rate))
+			if layer_wise_pos:
+				inputs = position_utils.add_timing_signal_1d(inputs)
+				tf.logging.info("==layer-wise position encoding==")
+			gatedcnn_outputs = dynamic_conv_layer(
+								inputs,
+								from_mask=input_mask,
+								num_attention_heads=num_attention_heads,
+								size_per_head=size_per_head,
+								query_act=None,
+								key_act=None,
+								value_act=None,
+								attention_probs_dropout_prob=attention_probs_dropout_prob,
+								initializer_range=0.02,
+								do_return_2d_tensor=False,
+								batch_size=None,
+								from_seq_length=None,
+								attention_fixed_size=None,
+								dropout_name=None,
+								structural_attentions="none",
+								is_training=is_training,
+								kernel_size=kernel_size,
+								strides=stride,
+								dilation_rate=dilation_rate,
+								scale_ratio=1.0,
+								is_casual=is_casual)
+
+			# The activation is only applied to the "intermediate" hidden layer.
+			with tf.variable_scope("intermediate"):
+				intermediate_output = tf.layers.dense(
+						gatedcnn_outputs,
+						num_filter*4,
+						activation=tf.nn.relu,
+						kernel_initializer=create_initializer(0.02))
+
+			# Down-project back to `hidden_size` then add the residual.
+			with tf.variable_scope("output"):
+				layer_output = tf.layers.dense(
+						intermediate_output,
+						num_filter,
+						kernel_initializer=create_initializer(0.02))
+
+			layer_output = tf.nn.dropout(layer_output, 1-dropout_rate)
+			inputs = layer_norm(layer_output + gatedcnn_outputs)
+
+			if padding_type == 'SAME':
+				inputs *= outter_input_mask
+			residual_inputs = inputs
+	
+	return inputs

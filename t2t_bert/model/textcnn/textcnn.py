@@ -10,6 +10,7 @@ from utils.qanet.qanet_layers import highway
 from utils.dsmm.tf_common.nn_module import encode, attend, mlp_layer
 from utils.bert import bert_utils
 from utils.esim import esim_utils
+from utils.textcnn import dynamic_light_cnn_utils
 
 class TextCNN(base_model.BaseModel):
 	def __init__(self, config):
@@ -416,6 +417,73 @@ class TextCNN(base_model.BaseModel):
 												padding=self.config.get('padding', 'same'),
 												layer_wise_pos=self.config.get('layer_wise_pos', False)
 												)
+				pooled_output = []
+				if self.config.get('is_casual', True):
+					self.forward_backward_repres = self.sequence_output[:,:-2]
+					seq_mask = tf.cast(input_mask[:, 2:], dtype=tf.int32)
+					tf.logging.info("***** casual concat *****")
+				else:
+					self.forward_backward_repres = self.sequence_output
+					tf.logging.info("***** none-casual concat *****")
+					seq_mask = tf.cast(input_mask, dtype=tf.int32)
+
+				input_mask = tf.cast(input_mask, tf.float32)
+				for pooling_method in self.config['pooling_method']:
+					if pooling_method == 'avg':
+						avg_repres = dgcnn_utils.mean_pooling(self.forward_backward_repres, 
+																seq_mask)
+						pooled_output.append(avg_repres)
+						tf.logging.info("***** avg pooling *****")
+					elif pooling_method == 'max':
+						max_repres = dgcnn_utils.max_pooling(self.forward_backward_repres, 
+																seq_mask)
+						pooled_output.append(max_repres)
+						tf.logging.info("***** max pooling *****")
+					elif pooling_method == 'last':
+						last_repres = dgcnn_utils.last_pooling(self.forward_backward_repres, 
+																seq_mask)
+						pooled_output.append(last_repres)
+						tf.logging.info("***** last pooling *****")
+					elif pooling_method == 'multidim_atten':
+						multidim_repres = dgcnn_utils.multidim_attention_pooling(
+																self.forward_backward_repres, 
+																seq_mask, 
+																is_training, 
+																scope=None)
+						pooled_output.append(multidim_repres)
+						tf.logging.info("***** multidim_atten pooling *****")
+				self.output = tf.concat(pooled_output, axis=-1)
+			elif kargs.get("cnn_type", 'textcnn') == 'dynamic_light_dgcnn':
+				self.sequence_output = dynamic_dgcnn(
+							sent_repres, 
+							input_mask,
+							num_attention_heads=self.config.get('num_attention_heads', 1),
+							size_per_head=self.config.get('size_per_head', 64),
+							query_act=None,
+							key_act=None,
+							value_act=None,
+							attention_probs_dropout_prob=self.config.get('attention_probs_dropout_prob', 0.2),
+							initializer_range=0.02,
+							do_return_2d_tensor=False,
+							batch_size=None,
+							from_seq_length=None,
+							attention_fixed_size=None,
+							dropout_name=None,
+							structural_attentions="none",
+							scale_ratio=self.config.get('scale_ratio', 1.0),
+							num_layers=self.config['cnn_num_layers'], 
+							dilation_rates=self.config.get('cnn_dilation_rates', [1,2]),
+							strides=self.config.get('cnn_dilation_rates', [1,1]),
+							num_filters=self.config.get('cnn_num_filters', [128,128]), 
+							kernel_sizes=self.config.get('cnn_filter_sizes', [3,3]), 
+							is_training=is_training,
+							scope_name="textcnn/forward", 
+							reuse=tf.AUTO_REUSE, 
+							activation=tf.nn.relu,
+							is_casual=self.config['is_casual'],
+							padding=self.config.get('padding', 'same'),
+							layer_wise_pos=self.config.get('layer_wise_pos', False)
+							)
 				pooled_output = []
 				if self.config.get('is_casual', True):
 					self.forward_backward_repres = self.sequence_output[:,:-2]
