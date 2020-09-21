@@ -153,6 +153,11 @@ def data_interface(FLAGS):
 				"input_ids":tf.FixedLenFeature([FLAGS.max_length], tf.int64),
 				"label_ids":tf.FixedLenFeature([FLAGS.num_classes], tf.int64)
 			}
+		elif FLAGS.task_type == "single_sentence_multilabel_classification_bert_v1":
+			name_to_features = {
+				"input_ids":tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+				"labels":tf.FixedLenFeature([FLAGS.num_classes], tf.int64)
+			}
 		elif FLAGS.task_type  == 'embed_sentence_classification':
 			name_to_features = {
 				"input_ids_a":tf.FixedLenFeature([FLAGS.max_length], tf.int64),
