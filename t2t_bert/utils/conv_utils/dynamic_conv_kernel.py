@@ -133,7 +133,8 @@ def dynamic_conv_layer(from_tensor,
 				is_training=False,
 				kernel_size=10,
 				strides=1,
-				dilation_rate=1):
+				dilation_rate=1,
+				share_or_not=True):
 	
 	initializer = create_initializer(initializer_range=0.02)
 
@@ -181,6 +182,13 @@ def dynamic_conv_layer(from_tensor,
 	to_tensor_2d = bert_utils.reshape_to_matrix(to_tensor)
 
 	# `query_layer` = [B*F, N*H]
+	if share_or_not:
+		query_layer_name = "query"
+		value_layer_name = "value"
+	else:
+		query_layer_name = "conv_query"
+		value_layer_name = "conv_value"
+		
 	query_layer = tf.layers.dense(
 			from_tensor_2d,
 			num_attention_heads * attention_head_size,

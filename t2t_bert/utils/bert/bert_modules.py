@@ -1496,7 +1496,8 @@ def conv_transformer_model(input_tensor,
 							is_training=is_training,
 							kernel_size=model_config.get('kernel_size', 9),
 							strides=model_config.get('stride', 1),
-							dilation_rate=model_config.get('dilation_rate', 1))
+							dilation_rate=model_config.get('dilation_rate', 1),
+							share_or_not=model_config.get('share_or_not', True))
 
 					attention_head = tf.concat([attention_head, conv_head], axis=-1)
 
