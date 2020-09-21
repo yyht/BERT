@@ -202,7 +202,7 @@ def dynamic_conv_layer(
 	if is_casual:
 		padded_value_layer = tf.pad(value_layer, 
 								[[0, 0], 
-								[0, 0]，
+								[0, 0],
 								[(kernel_size - 1), 0], 
 								[0, 0]])
 		tf.logging.info("==casual valid padding==")

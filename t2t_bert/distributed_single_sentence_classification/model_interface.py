@@ -197,6 +197,11 @@ def model_config_parser(FLAGS):
 			config.classifier = FLAGS.classifier
 			config.output_layer = FLAGS.output_layer
 
+		try:
+			config.loss = FLAGS.loss
+		except:
+			config.loss = "entropy"
+
 	elif FLAGS.model_type in ["textlstm", "textlstm_distillation"]:
 		from data_generator import load_w2v
 		w2v_path = os.path.join(FLAGS.buckets, FLAGS.w2v_path)

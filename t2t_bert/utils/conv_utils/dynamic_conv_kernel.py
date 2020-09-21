@@ -181,14 +181,14 @@ def dynamic_conv_layer(from_tensor,
 	from_tensor_2d = bert_utils.reshape_to_matrix(from_tensor)
 	to_tensor_2d = bert_utils.reshape_to_matrix(to_tensor)
 
-	# `query_layer` = [B*F, N*H]
+	# query_layer = [B*F, N*H]
 	if share_or_not:
 		query_layer_name = "query"
 		value_layer_name = "value"
 	else:
 		query_layer_name = "conv_query"
 		value_layer_name = "conv_value"
-		
+
 	query_layer = tf.layers.dense(
 			from_tensor_2d,
 			num_attention_heads * attention_head_size,
@@ -196,7 +196,7 @@ def dynamic_conv_layer(from_tensor,
 			name="query",
 			kernel_initializer=create_initializer(initializer_range))
 
-	# `value_layer` = [B*T, N*H]
+	# value_layer = [B*T, N*H]
 	value_layer = tf.layers.dense(
 			from_tensor_2d,
 			num_attention_heads * attention_head_size,
@@ -204,7 +204,7 @@ def dynamic_conv_layer(from_tensor,
 			name="value",
 			kernel_initializer=create_initializer(initializer_range))
 
-	# `query_layer` = [B, N, F, H]
+	# query_layer = [B, N, F, H]
 	query_layer = transpose_for_scores(query_layer, batch_size,
 									 num_attention_heads, 
 									 from_seq_length,

@@ -101,7 +101,7 @@ def classifier(config, pooled_output,
 																tf.stop_gradient(tf.cast(labels, tf.float32)), 
 																logits)
 			loss = tf.reduce_mean(per_example_loss)
-		
+			print("==apply circle_loss for multilabel==")
 		return (loss, per_example_loss, logits)
 	else:
 		raise NotImplementedError()

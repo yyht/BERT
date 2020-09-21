@@ -367,7 +367,7 @@ def train_eval_fn(FLAGS,
 		model_estimator = tf.estimator.Estimator(
 						model_fn=model_fn,
 						model_dir=checkpoint_dir,
-						params=params,
+						# params=params,
 						config=run_config)
 
 		train_being_time = time.time()
