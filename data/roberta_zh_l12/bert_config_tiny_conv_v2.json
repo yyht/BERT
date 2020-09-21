@@ -1,23 +1,27 @@
-{
-  "attention_probs_dropout_prob": 0.1, 
-  "directionality": "bidi", 
-  "hidden_act": "gelu", 
-  "hidden_dropout_prob": 0.1, 
-  "hidden_size": 312, 
-  "initializer_range": 0.02, 
-  "intermediate_size": 1200, 
-  "max_position_embeddings": 512, 
-  "num_attention_heads": 12, 
-  "num_hidden_layers": 4, 
-  "pooler_fc_size": 312, 
-  "pooler_num_attention_heads": 12, 
-  "pooler_num_fc_layers": 3, 
-  "pooler_size_per_head": 128,
-  "pooler_type": "first_token_transform",
-  "type_vocab_size": 2,
-  "vocab_size": 21128,
-  "corrupted":false,
-  "num_attention_heads_scale":true,
-  "conv_bert":true,
-  "kernel_size":3
-}
+WARNING:tensorflow:From /home/htxu91/source/BERT/t2t_bert/optimizer/optimizer_utils.py:15: The name tf.train.Optimizer is deprecated. Please use tf.compat.v1.train.Optimizer instead.
+
+WARNING:tensorflow:From /home/htxu91/source/BERT/t2t_bert/utils/funnel_transformer/funnel_transformer_utils_v1.py:348: The name tf.AUTO_REUSE is deprecated. Please use tf.compat.v1.AUTO_REUSE instead.
+
+WARNING:tensorflow:
+The TensorFlow contrib module will not be included in TensorFlow 2.0.
+For more information, please see:
+  * https://github.com/tensorflow/community/blob/master/rfcs/20180907-contrib-sunset.md
+  * https://github.com/tensorflow/addons
+  * https://github.com/tensorflow/io (for I/O related ops)
+If you depend on functionality not listed there, please file an issue.
+
+('/home/htxu91/source/BERT', '==father path==')
+['/home/htxu91/source/BERT/t2t_bert/distributed_bin', '/usr/lib/python2.7', '/usr/lib/python2.7/plat-x86_64-linux-gnu', '/usr/lib/python2.7/lib-tk', '/usr/lib/python2.7/lib-old', '/usr/lib/python2.7/lib-dynload', '/usr/local/lib/python2.7/dist-packages', '/usr/lib/python2.7/dist-packages', '/home/htxu91/source/BERT', '/home/htxu91/source/BERT/t2t_bert']
+Traceback (most recent call last):
+  File "./t2t_bert/distributed_bin/tpu_train_eval_api.py", line 30, in <module>
+    from pretrain_finetuning import train_eval_tpu_estimator
+  File "/home/htxu91/source/BERT/t2t_bert/pretrain_finetuning/train_eval_tpu_estimator.py", line 11, in <module>
+    from distributed_single_sentence_classification.model_interface import model_config_parser
+  File "/home/htxu91/source/BERT/t2t_bert/distributed_single_sentence_classification/model_interface.py", line 1, in <module>
+    from distributed_encoder.bert_encoder import bert_encoder
+  File "/home/htxu91/source/BERT/t2t_bert/distributed_encoder/bert_encoder.py", line 9, in <module>
+    from model.textcnn import textcnn
+  File "/home/htxu91/source/BERT/t2t_bert/model/textcnn/textcnn.py", line 13, in <module>
+    from utils.textcnn import dynamic_light_cnn_utils
+  File "/home/htxu91/source/BERT/t2t_bert/utils/textcnn/dynamic_light_cnn_utils.py", line 205
+SyntaxError: Non-ASCII character '\xef' in file /home/htxu91/source/BERT/t2t_bert/utils/textcnn/dynamic_light_cnn_utils.py on line 205, but no encoding declared; see http://python.org/dev/peps/pep-0263/ for details
