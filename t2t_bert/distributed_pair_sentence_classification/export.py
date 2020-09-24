@@ -29,7 +29,7 @@ def export_model(FLAGS,
 	with tf.gfile.Open(FLAGS.label_id, "r") as frobj:
 		label_dict = json.load(frobj)
 
-	num_classes = len(label_dict["id2label"])
+	num_classes = FLAGS.num_classes
 
 	def serving_input_receiver_fn():
 		receiver_features = data_interface_server(FLAGS)

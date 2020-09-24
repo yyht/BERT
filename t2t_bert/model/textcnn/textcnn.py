@@ -400,7 +400,7 @@ class TextCNN(base_model.BaseModel):
 						tf.logging.info("***** multidim_atten pooling *****")
 				self.output = tf.concat(pooled_output, axis=-1)
 			elif kargs.get("cnn_type", 'textcnn') == 'light_dgcnn':
-				print("==cnn type==", kargs.get("cnn_type", 'textcnn'), self.config)
+				print("==cnn type==", kargs.get("cnn_type", 'textcnn'))
 				self.sequence_output = light_conv_utils.dgcnn(
 												sent_repres, 
 												input_mask,

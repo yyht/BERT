@@ -186,7 +186,7 @@ def model_config_parser(FLAGS):
 		config.char_embedding = None
 		config.model_type = FLAGS.model_type
 		config.dropout_prob = config.dropout_rate
-		config.init_lr = config.learning_rate
+		config.init_lr = FLAGS.init_lr
 		config.use_pretrained = use_pretrained
 		config.label_type = FLAGS.label_type
 		if is_extral_symbol == 1:
@@ -199,8 +199,10 @@ def model_config_parser(FLAGS):
 
 		try:
 			config.loss = FLAGS.loss
+			config.apply_cpc = FLAGS.apply_cpc
 		except:
 			config.loss = "entropy"
+			config.apply_cpc = "none"
 
 	elif FLAGS.model_type in ["textlstm", "textlstm_distillation"]:
 		from data_generator import load_w2v

@@ -166,11 +166,11 @@ def model_fn_builder(model,
 		print("==cosine_score shape==", cosine_score.get_shape())
 		loss_mask = tf.cast(features["{}_loss_multipiler".format(task_type)], tf.float32)
 		
-		if task_type == 'xquad':
-			neg_true_mask = tf.cast(triplet_loss_utils._get_anchor_negative_triplet_mask(label_ids), tf.float32)
-			pos_true_mask = (1.0 - neg_true_mask) * tf.expand_dims(loss_mask, axis=-1) * tf.expand_dims(loss_mask, axis=0)
-			neg_true_mask = neg_true_mask * tf.expand_dims(loss_mask, axis=-1) * tf.expand_dims(loss_mask, axis=0)
-		elif task_type in ['wsdm', 'brand_search']:
+		# if task_type == 'xquad':
+		# 	neg_true_mask = tf.cast(triplet_loss_utils._get_anchor_negative_triplet_mask(label_ids), tf.float32)
+		# 	pos_true_mask = (1.0 - neg_true_mask) * tf.expand_dims(loss_mask, axis=-1) * tf.expand_dims(loss_mask, axis=0)
+		# 	neg_true_mask = neg_true_mask * tf.expand_dims(loss_mask, axis=-1) * tf.expand_dims(loss_mask, axis=0)
+		if task_type in ['wsdm', 'brand_search', 'xquad']:
 			pos_label_mask = tf.cast(features["{}_label_ids".format(task_type)], dtype=tf.float32)
 			pos_label_mask = tf.expand_dims(pos_label_mask, axis=0)  #* tf.expand_dims(pos_label_mask, axis=0)
 			[not_equal_mask, equal_mask] = get_labels_of_similarity(
