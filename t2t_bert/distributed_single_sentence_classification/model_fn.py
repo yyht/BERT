@@ -128,7 +128,8 @@ def model_fn_builder(
 				cosine_score = tf.matmul(feat, tf.transpose(feat)) / 0.1
 				tf.logging.info("****** apply simclr projection and. l2 normalize *******")
 			else:
-				cosine_score = tf.matmul(feat, tf.transpose(feat))
+				feat = tf.nn.l2_normalize(feat+1e-20, axis=-1)
+				cosine_score = tf.matmul(feat, tf.transpose(feat)) / 0.1
 				tf.logging.info("****** apply raw feat *******")
 			cosine_score_neg = neg_true_mask * cosine_score
 			cosine_score_pos = -pos_true_mask * cosine_score
@@ -157,6 +158,10 @@ def model_fn_builder(
 		tvars = model_io_fn.get_params(model_config.scope, 
 										not_storage_params=not_storage_params)
 
+		if model_config.scope in ['textcnn']:
+			emb_tvars = model_io_fn.get_params("textcnn_token_embedding", 
+										not_storage_params=not_storage_params)
+			tvars.extend(emb_tvars)
 		try:
 			params_size = model_io_fn.count_params(model_config.scope)
 			print("==total params==", params_size)
@@ -239,7 +244,10 @@ def model_fn_builder(
 			# 				)
 			if model_config.get('label_type', 'single_label') == 'multi_label':
 				print("==apply multi_label==")
-				prob = tf.nn.sigmoid(logits)
+				if model_config.get("loss", "entropy") == "entropy":
+					prob = tf.nn.sigmoid(logits)
+				elif model_config.get("loss", "entropy") == "circle_loss":
+					prob = tf.nn.sigmoid(logits)
 				estimator_spec = tf.estimator.EstimatorSpec(
 										mode=mode,
 										predictions={

@@ -320,6 +320,7 @@ def multilabel_categorical_crossentropy(y_true, y_pred):
 	y_true = [0,1],
 	1 stands for target class,
 	0 stands for none-target class
+    y_pred > 0
 	"""
 	y_pred = (1 - 2 * y_true) * y_pred
 	y_pred_neg = y_pred - y_true * 1e12

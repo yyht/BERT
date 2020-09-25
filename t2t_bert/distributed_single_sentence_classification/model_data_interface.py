@@ -143,6 +143,11 @@ def data_interface(FLAGS):
 				"input_ids_a":tf.FixedLenFeature([FLAGS.max_length], tf.int64),
 				"label_ids":tf.FixedLenFeature([], tf.int64)
 			}
+		elif FLAGS.task_type == "single_sentence_classification_bert":
+			name_to_features = {
+				"input_ids":tf.FixedLenFeature([FLAGS.max_length], tf.int64),
+				"label_ids":tf.FixedLenFeature([], tf.int64)
+			}
 		elif FLAGS.task_type == "single_sentence_multilabel_classification":
 			name_to_features = {
 				"input_ids_a":tf.FixedLenFeature([FLAGS.max_length], tf.int64),
@@ -152,11 +157,6 @@ def data_interface(FLAGS):
 			name_to_features = {
 				"input_ids":tf.FixedLenFeature([FLAGS.max_length], tf.int64),
 				"label_ids":tf.FixedLenFeature([FLAGS.num_classes], tf.int64)
-			}
-		elif FLAGS.task_type == "single_sentence_multilabel_classification_bert_v1":
-			name_to_features = {
-				"input_ids":tf.FixedLenFeature([FLAGS.max_length], tf.int64),
-				"labels":tf.FixedLenFeature([FLAGS.num_classes], tf.int64)
 			}
 		elif FLAGS.task_type  == 'embed_sentence_classification':
 			name_to_features = {
@@ -350,6 +350,11 @@ def data_interface_server(FLAGS):
 			receiver_tensors = {
 				"input_ids_a":tf.placeholder(tf.int32, [None, FLAGS.max_length], name='input_ids_a'),
 				"label_ids":tf.placeholder(tf.int32, [None, FLAGS.num_classes], name='label_ids')
+			}
+		elif FLAGS.task_type == "single_sentence_classification_bert":
+			name_to_features = {
+				"input_ids":tf.placeholder(tf.int32, [None, FLAGS.max_length], name='input_ids'),
+				"label_ids":tf.placeholder(tf.int32, [None], name='label_ids')
 			}
 		elif FLAGS.task_type == "single_sentence_multilabel_classification_bert":
 			receiver_tensors = {

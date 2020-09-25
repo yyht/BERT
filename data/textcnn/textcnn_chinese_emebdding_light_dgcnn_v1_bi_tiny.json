@@ -65,7 +65,7 @@
     "hidden_units":300,
     "num_heads":4,
 
-    "pooling_method":["avg"],
+    "pooling_method":["avg", "max", "multidim_atten"],
     "cnn_timedistributed":false,
     "cnn_filter_sizes":[3, 3, 3, 3],
     "cnn_num_filters":[256, 256, 256, 256],

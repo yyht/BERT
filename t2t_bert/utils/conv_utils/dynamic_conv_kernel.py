@@ -87,7 +87,7 @@ def gated_conv1d_op(inputs,
 		scope = name+"_linear",
 		padding=padding,
 		bias = True, 
-		is_training = True, 
+		is_training = is_training, 
 		reuse = reuse,
 		activation = None,
 		kernel_initializer = kernel_initializer,
@@ -101,7 +101,7 @@ def gated_conv1d_op(inputs,
 		scope = name+"_gated",
 		padding=padding,
 		bias = True, 
-		is_training = True, 
+		is_training = is_training, 
 		reuse = reuse,
 		activation = tf.nn.sigmoid,
 		kernel_initializer = kernel_initializer,
@@ -193,7 +193,7 @@ def dynamic_conv_layer(from_tensor,
 			from_tensor_2d,
 			num_attention_heads * attention_head_size,
 			activation=query_act,
-			name="query",
+			name=query_layer_name,
 			kernel_initializer=create_initializer(initializer_range))
 
 	# value_layer = [B*T, N*H]
@@ -201,7 +201,7 @@ def dynamic_conv_layer(from_tensor,
 			from_tensor_2d,
 			num_attention_heads * attention_head_size,
 			activation=value_act,
-			name="value",
+			name=value_layer_name,
 			kernel_initializer=create_initializer(initializer_range))
 
 	# query_layer = [B, N, F, H]
@@ -225,6 +225,7 @@ def dynamic_conv_layer(from_tensor,
 				from_tensor,
 				[batch_size, from_seq_length, -1])
 		from_tensor *= from_tensor_mask
+
 	conv_key_layer = gated_conv1d_op(from_tensor, 
 								filters=num_attention_heads * attention_head_size, 
 								kernel_size=kernel_size, 
@@ -236,6 +237,7 @@ def dynamic_conv_layer(from_tensor,
 								kernel_initializer=initializer,
 								dilation_rate=dilation_rate,
 								is_training=is_training)
+
 	conv_key_layer *= from_tensor_mask
 
 	# [batch_size, from_seq_length, num_attention_heads, attention_head_size]
