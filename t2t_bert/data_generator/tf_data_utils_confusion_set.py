@@ -43,7 +43,9 @@ def confusion_set_sample(rand_ids, tgt_len,
 	
 	# confusion_prob_ids = tf.random.uniform([tgt_len], maxval=2, dtype=rand_ids.dtype)
 	confusion_prob = tf.random.uniform([tgt_len], dtype=tf.float32)
-	confusion_prob_ids = tf.cast(confusion_prob > switch_ratio, dtype=rand_ids.dtype)
+	
+	confusion_prob_ids = tf.cast(sampled_confusion_set_mask_prob <= 0.5, dtype=rand_ids.dtype)
+	# confusion_prob_ids = tf.cast(confusion_prob > switch_ratio, dtype=rand_ids.dtype)
 	output_ids = confusion_output_ids * confusion_prob_ids + (1-confusion_prob_ids) * rand_ids
 
 	return output_ids

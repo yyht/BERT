@@ -157,7 +157,7 @@ def train_eval_fn(FLAGS,
 			data_config.cls_id = 101
 			data_config.mask_id = 103
 			data_config.leak_ratio = 0.1
-			data_config.rand_ratio = 0.1
+			data_config.rand_ratio = 0.8
 			data_config.vocab_size = config.vocab_size
 			data_config.mask_prob = 0.15
 			data_config.prepare_text_infilling = True
