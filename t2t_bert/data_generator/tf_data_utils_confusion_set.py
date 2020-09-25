@@ -42,9 +42,9 @@ def confusion_set_sample(rand_ids, tgt_len,
 	confusion_output_ids = tf.reduce_sum(tf.cast(sampled_onehot_ids, dtype=rand_ids.dtype)*tf.cast(sampled_confusion_set, dtype=rand_ids.dtype), axis=-1)
 	
 	# confusion_prob_ids = tf.random.uniform([tgt_len], maxval=2, dtype=rand_ids.dtype)
-	confusion_prob = tf.random.uniform([tgt_len], dtype=tf.float32)
-	tf.logging.info(confusion_prob)
-	confusion_prob_ids = tf.cast(sampled_confusion_set_mask_prob <= 0.5, dtype=rand_ids.dtype)
+	# confusion_prob = tf.random.uniform([tgt_len], dtype=tf.float32)
+	# tf.logging.info(confusion_prob)
+	confusion_prob_ids = tf.cast(tf.reduce_max(sampled_confusion_set_mask_prob, axis=-1) <= 0.5, dtype=rand_ids.dtype)
 	tf.logging.info(confusion_prob_ids)
 	tf.logging.info(confusion_output_ids)
 	tf.logging.info(rand_ids)
