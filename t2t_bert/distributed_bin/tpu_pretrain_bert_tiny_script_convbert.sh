@@ -1,6 +1,6 @@
 nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--buckets "gs://yyht_source/pretrain" \
-	--config_file "./data/roberta_zh_l12/bert_config_tiny_conv_v2.json" \
+	--config_file "./data/roberta_zh_l12/bert_config_tiny_conv.json" \
 	--init_checkpoint "model/tiny/bert_tiny_with_single_random_adam_decay_40_mixed_mask/model.ckpt-1145800" \
 	--vocab_file "./data/chinese_L-12_H-768_A-12/vocab.txt" \
 	--label_id "./data/lcqmc/label_dict.json" \
