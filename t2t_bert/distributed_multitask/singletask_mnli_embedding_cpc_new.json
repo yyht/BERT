@@ -131,7 +131,7 @@
 		"dev_file":"multi_task/data/sentence_pair/lcqmc/dev.txt",
 		"test_file":"multi_task/data/sentence_pair/lcqmc/test.txt",
 		"label_id":"multi_task/data/sentence_pair/lcqmc/label_dict.json",
-		"train_result_file":"sentence_pair/brand_name_search/brand_train_tfrecord",
+		"train_result_file":"sentence_pair/brand_name_search/brand_train_tfrecord_v1",
 		"test_result_file":"sentence_pair/XNLI-MT-1.0/multitask_mnli_train_new.tfrecords",
 		"dev_result_file":"sentence_pair/XNLI-MT-1.0/multitask_mnli_train_new.tfrecords",
 		"data_type":"sentence_pair",
