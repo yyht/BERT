@@ -20,5 +20,6 @@
   "num_attention_heads_scale":true,
   "conv_bert":true,
   "kernel_size":9,
+  "model_type":"conv_transformer",
   "share_or_not":true
 }
