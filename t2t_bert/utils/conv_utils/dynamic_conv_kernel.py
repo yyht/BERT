@@ -189,6 +189,7 @@ def dynamic_conv_layer(from_tensor,
 		query_layer_name = "conv_query"
 		value_layer_name = "conv_value"
 
+	# query_layer = [B*T, N*H]
 	query_layer = tf.layers.dense(
 			from_tensor_2d,
 			num_attention_heads * attention_head_size,
@@ -210,6 +211,7 @@ def dynamic_conv_layer(from_tensor,
 									 from_seq_length,
 									 attention_head_size)
 
+	# query_layer = [B, F, N, H]
 	value_layer = transpose_for_scores(value_layer, batch_size,
 									 from_seq_length,
 									 num_attention_heads, 
@@ -226,17 +228,32 @@ def dynamic_conv_layer(from_tensor,
 				[batch_size, from_seq_length, -1])
 		from_tensor *= from_tensor_mask
 
-	conv_key_layer = gated_conv1d_op(from_tensor, 
-								filters=num_attention_heads * attention_head_size, 
-								kernel_size=kernel_size, 
-								padding="SAME", 
-								activation=None, 
-								strides=strides, 
-								reuse=None, 
-								name="glu_conv", 
-								kernel_initializer=initializer,
-								dilation_rate=dilation_rate,
-								is_training=is_training)
+	# conv_key_layer = gated_conv1d_op(from_tensor, 
+	# 							filters=num_attention_heads * attention_head_size, 
+	# 							kernel_size=kernel_size, 
+	# 							padding="SAME", 
+	# 							activation=None, 
+	# 							strides=strides, 
+	# 							reuse=None, 
+	# 							name="glu_conv", 
+	# 							kernel_initializer=initializer,
+	# 							dilation_rate=dilation_rate,
+	# 							is_training=is_training)
+
+	conv_key_layer = depthwise_separable_convolution(
+						inputs=from_tensor,
+						kernel_size=[kernel_size, 1],
+						num_filters=num_attention_heads*attention_head_size,
+						scope="conv_key",
+						padding="SAME", 
+						bias=True, 
+						is_training=is_training, 
+						reuse=None,
+						activation=None,
+						kernel_initializer=initializer,
+						strides=strides,
+						dilation_rate=dilation_rate
+						)
 
 	conv_key_layer *= from_tensor_mask
 

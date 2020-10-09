@@ -352,7 +352,7 @@ def data_interface_server(FLAGS):
 				"label_ids":tf.placeholder(tf.int32, [None, FLAGS.num_classes], name='label_ids')
 			}
 		elif FLAGS.task_type == "single_sentence_classification_bert":
-			name_to_features = {
+			receiver_tensors = {
 				"input_ids":tf.placeholder(tf.int32, [None, FLAGS.max_length], name='input_ids'),
 				"label_ids":tf.placeholder(tf.int32, [None], name='label_ids')
 			}

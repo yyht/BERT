@@ -19,5 +19,5 @@
   "num_attention_heads_scale":true,
   "conv_bert":true,
   "kernel_size":5,
-  "share_or_not":false
+  "share_or_not":true
 }
