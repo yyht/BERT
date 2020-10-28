@@ -1,6 +1,6 @@
 nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--buckets "gs://yyht_source/pretrain" \
-	--config_file "./data/textcnn/textcnn_chinese_emebdding_light_dgcnn_v1_bi_tiny.json" \
+	--config_file "./data/textcnn/text_chinese_embedding_light_dgcnn_v1_bi_tiny_aug.json" \
 	--init_checkpoint "model/gatedcnn_seq/gatedcnn_seq_light_v1_chinese_tiny/model.ckpt-976550" \
 	--vocab_file "./data/chinese_L-12_H-768_A-12/vocab.txt" \
 	--label_id "./data/lcqmc/label_dict.json" \
