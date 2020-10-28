@@ -149,7 +149,7 @@ def train_eval_fn(FLAGS,
 			input_fn_builder = tf_pretrain_data_utils.input_fn_builder
 			data_config = Bunch({})
 			data_config.min_tok = 1
-			data_config.max_tok = 10
+			data_config.max_tok = 3
 			data_config.confusion_matrix = confusion_matrix
 			data_config.confusion_mask_matrix = confusion_mask_matrix
 			data_config.sep_id = 102
@@ -159,7 +159,7 @@ def train_eval_fn(FLAGS,
 			data_config.leak_ratio = 0.1
 			data_config.rand_ratio = 0.8
 			data_config.vocab_size = config.vocab_size
-			data_config.mask_prob = 0.15
+			data_config.mask_prob = 0.05
 			data_config.prepare_text_infilling = True
 			data_config.sample_strategy = 'token_span'
 			data_config.truncate_seq = False
