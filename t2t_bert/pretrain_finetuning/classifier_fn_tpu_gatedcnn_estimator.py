@@ -287,6 +287,7 @@ def classifier_model_fn_builder(
 											reuse=tf.AUTO_REUSE,
 											embedding_projection=model.get_embedding_projection_table(),
 											pretrain_loss_type="normal")
+			loss = masked_lm_loss
 		if kargs.get("unigram_disc", False):
 			[output_ids, 
 			sampled_binary_mask] = hmm_input_ids_generation(model_config,
