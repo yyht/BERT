@@ -1,11 +1,11 @@
-config_file=./BERT/data/roberta_zh_l12/bert_config_tiny.json
+config_file=./BERT/data/roberta_zh_l12/bert_config_tiny_1_layer.json
 init_checkpoint=bert_pretrain/open_domain/pretrained_model/roberta/roberta_tiny_312/model.ckpt-1145800
 vocab_file=chinese_L-12_H-768_A-12/vocab.txt
 label_id=./BERT/data/green/label_dict.json
 max_length=128
 train_file=jingfeng_ugc/ugc_shocking_train
 dev_file=jingfeng_ugc/ugc_shocking_test
-model_output=jingfeng_ugc/roberta_tiny_v1/
+model_output=jingfeng_ugc/roberta_tiny_1_layer/
 epoch=10
 label_type='single_label'
 loss='focal_loss'

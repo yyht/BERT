@@ -274,6 +274,17 @@ class Optimizer(object):
 						exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"],
 						include_in_weight_decay=["r_s_bias", "r_r_bias", "r_w_bias"]
 						)
+		elif opt_type == "adam_belief_weight_decay_exclude":
+			print("==apply adam belief weight decay==")
+			opt = adam_weight_decay_exclude_utils.AdamBeliefWOptimizer(
+						weight_decay=self.config.get("opt_decay_rate", 0.01),
+						learning_rate=learning_rate,
+						beta1=self.config.get("beta_1", 0.9),
+						beta2=self.config.get("beta_2", 0.999),
+						epsilon=self.config.get("epsilon", 1e-6),
+						exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"],
+						include_in_weight_decay=["r_s_bias", "r_r_bias", "r_w_bias"]
+						)
 		elif opt_type == "pai_soar_adam_decay":
 			print("==apply pai soar adam decay==")
 			opt = pai_soar_optimizer_utils.AdamWeightDecayOptimizer(

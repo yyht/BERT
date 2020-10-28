@@ -222,6 +222,16 @@ class Optimizer(object):
 							   include_in_weight_decay=["r_s_bias", "r_r_bias", "r_w_bias"],
 							   name="LAMBOptimizer")
 			tf.logging.info("***** apply lamb_v1 *****")
+		elif opt_type == 'adad_belief':
+			opt = optimizer_utils.AdamBeliefWeightDecayOptimizer(learning_rate,
+							   weight_decay_rate=self.config.get("opt_decay_rate", 0.01),
+							   beta_1=self.config.get("beta_1", 0.9),
+							   beta_2=self.config.get("beta_2", 0.999),
+							   epsilon=self.config.get("epsilon", 1e-6),
+							   exclude_from_weight_decay=["LayerNorm", "layer_norm", "bias"],
+							   include_in_weight_decay=["r_s_bias", "r_r_bias", "r_w_bias"],
+							   name="AdamBeliefWeightDecayOptimizer")
+			tf.logging.info("***** apply adam_belief *****")
 		elif opt_type == 'radam':
 			opt = radam_utils.RAdamOptimizer(learning_rate=learning_rate,
 						 beta1=self.config.get("beta_1", 0.9),

@@ -404,3 +404,54 @@ class AdamWOptimizer(DecoupledWeightDecayExtension, adam.AdamOptimizer):
 					include_in_weight_decay,
 					learning_rate=learning_rate, beta1=beta1, beta2=beta2,
 				epsilon=epsilon, use_locking=use_locking, name=name)
+
+from optimizer.adam_belief_utils import AdaBeliefOptimizer
+class AdamBeliefWOptimizer(DecoupledWeightDecayExtension, AdaBeliefOptimizer):
+	"""Optimizer that implements the Adam algorithm with weight decay.
+
+	This is an implementation of the AdamW optimizer described in "Fixing
+	Weight Decay Regularization in Adam" by Loshchilov & Hutter
+	(https://arxiv.org/abs/1711.05101)
+	([pdf])(https://arxiv.org/pdf/1711.05101.pdf).
+
+	It computes the update step of `train.AdamOptimizer` and additionally decays
+	the variable. Note that this is different from adding L2 regularization on
+	the variables to the loss: it regularizes variables with large
+	gradients more than L2 regularization would, which was shown to yield better
+	training loss and generalization error in the paper above.
+
+	For further information see the documentation of the Adam Optimizer.
+
+	Note that this optimizer can also be instantiated as
+	```python
+	extend_with_weight_decay(tf.train.AdamOptimizer, weight_decay=weight_decay)
+	```
+	"""
+
+	def __init__(self, weight_decay, exclude_from_weight_decay, 
+								include_in_weight_decay=None,
+							 learning_rate=0.001, beta1=0.9, beta2=0.999,
+							 epsilon=1e-8, use_locking=False, name="AdamBelief"):
+		"""Construct a new AdamW optimizer.
+
+		For further information see the documentation of the Adam Optimizer.
+
+		Args:
+			weight_decay:  A `Tensor` or a floating point value.  The weight decay.
+			learning_rate: A Tensor or a floating point value.  The learning rate.
+			beta1: A float value or a constant float tensor.
+				The exponential decay rate for the 1st moment estimates.
+			beta2: A float value or a constant float tensor.
+				The exponential decay rate for the 2nd moment estimates.
+			epsilon: A small constant for numerical stability. This epsilon is
+				"epsilon hat" in the Kingma and Ba paper (in the formula just before
+				Section 2.1), not the epsilon in Algorithm 1 of the paper.
+			use_locking: If True use locks for update operations.
+			name: Optional name for the operations created when applying gradients.
+				Defaults to "Adam".
+		"""
+		super(AdamBeliefWOptimizer, self).__init__(
+				weight_decay, exclude_from_weight_decay, 
+					include_in_weight_decay,
+					learning_rate=learning_rate, beta1=beta1, beta2=beta2,
+				epsilon=epsilon, use_locking=use_locking, name=name)

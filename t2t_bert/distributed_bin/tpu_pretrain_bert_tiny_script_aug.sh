@@ -7,7 +7,7 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--max_length 512 \
 	--train_file "data_single_hard_gan/chunk_0.tfrecords,data_single_hard_gan/chunk_1.tfrecords,data_single_hard_gan/chunk_2.tfrecords,data_single_hard_gan/chunk_3.tfrecords,data_single_hard_gan/chunk_4.tfrecords,data_single_hard_gan/chunk_5.tfrecords,data_single_hard_gan/chunk_6.tfrecords,data_single_hard_gan/chunk_7.tfrecords,data_single_hard_gan/chunk_8.tfrecords,data_single_hard_gan/chunk_9.tfrecords,data_single_hard_gan/chunk_10.tfrecords,data_single_hard_gan/chunk_11.tfrecords,data_single_hard_gan/chunk_12.tfrecords,data_single_hard_gan/chunk_13.tfrecords,data_single_hard_gan/chunk_14.tfrecords,data_single_hard_gan/chunk_15.tfrecords,data_single_hard_gan/chunk_16.tfrecords,data_single_hard_gan/chunk_17.tfrecords" \
 	--dev_file "data_single_hard_gan/chunk_18.tfrecords,data_single_hard_gan/chunk_19.tfrecords" \
-	--model_output "model/tiny/bert_tiny_span_mask_confussion_set_aug_v1" \
+	--model_output "model/tiny/bert_tiny_span_mask_confussion_set_aug_v2" \
 	--epoch 40 \
 	--num_classes 2 \
 	--train_size 11000000 \
@@ -29,11 +29,11 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--init_lr 1e-4 \
 	--num_tpu_cores 8 \
 	--do_train true \
-	--tpu_name "albert0" \
+	--tpu_name "albert2" \
 	--mode "pretrain" \
 	--random_generator "5" \
-	--confusion_set_path "./data/chinese_L-12_H-768_A-12/aug_vocab_confusion_id.txt" \
-	--confusion_set_mask_path "./data/chinese_L-12_H-768_A-12/aug_vocab_confusion_id_mask.txt"
+	--confusion_set_path "./data/chinese_L-12_H-768_A-12/aug_vocab_confusion_id_v1.txt" \
+	--confusion_set_mask_path "./data/chinese_L-12_H-768_A-12/aug_vocab_confusion_id_mask_v1.txt"
 
 
 
