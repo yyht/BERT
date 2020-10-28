@@ -502,6 +502,8 @@ def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
     segment_ids = features["segment_ids"]
     label_ids = features["label_ids"]
 
+    segment_ids = tf.zeros_like(segment_ids)
+
     is_training = (mode == tf.estimator.ModeKeys.TRAIN)
 
     (total_loss, per_example_loss, logits) = create_model(
