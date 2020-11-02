@@ -551,7 +551,7 @@ def _decode_record(FLAGS, record, num_predict,
 		record_spec["boundary"] = tf.VarLenFeature(tf.int64)
 
 	example = tf.parse_single_example(record, record_spec)
-	if input_type == "normal"
+	if input_type == "normal":
 		inputs = example.pop("input_ori_ids")
 	elif input_type == "gatedcnn":
 		inputs = example.pop("input_ids_b")
