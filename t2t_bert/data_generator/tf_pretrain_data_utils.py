@@ -436,7 +436,7 @@ def _online_sample_masks(FLAGS,
 
 	tf.logging.info("Online sample with strategy: `%s`.", FLAGS.sample_strategy)
 	if FLAGS.sample_strategy == "single_token":
-		return _single_token_mask(inputs, tgt_len, num_predict)
+		return _single_token_mask(FLAGS, inputs, tgt_len, num_predict)
 	else:
 		if FLAGS.sample_strategy == "whole_word":
 			assert boundary is not None, "whole word sampling requires `boundary`"

@@ -161,7 +161,7 @@ def train_eval_fn(FLAGS,
 			data_config.vocab_size = config.vocab_size
 			data_config.mask_prob = 0.15
 			data_config.prepare_text_infilling = True
-			data_config.sample_strategy = 'single_span'
+			data_config.sample_strategy = 'single_token'
 			data_config.truncate_seq = False
 			data_config.stride = 1
 			data_config.use_bfloat16 = False
