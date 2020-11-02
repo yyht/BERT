@@ -159,7 +159,7 @@ def train_eval_fn(FLAGS,
 			data_config.leak_ratio = 0.1
 			data_config.rand_ratio = 0.4
 			data_config.vocab_size = config.vocab_size
-			data_config.mask_prob = 0.05
+			data_config.mask_prob = 0.15
 			data_config.prepare_text_infilling = True
 			data_config.sample_strategy = 'single_span'
 			data_config.truncate_seq = False
@@ -185,7 +185,7 @@ def train_eval_fn(FLAGS,
 										truncate_seq=data_config.truncate_seq, 
 										use_bfloat16=data_config.use_bfloat16,
 										stride=data_config.stride,
-										input_type="gatedcnn")
+										input_type="normal")
 			estimator.train(input_fn=input_features, max_steps=num_train_steps)
 		else:
 			tf.logging.info("***** Running evaluation *****")
