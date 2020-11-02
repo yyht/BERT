@@ -529,20 +529,32 @@ def _decode_record(FLAGS, record, num_predict,
 									seq_len, 
 									use_bfloat16=False, 
 									truncate_seq=False, 
-									stride=1):
+									stride=1,
+									input_type='normal'):
 	max_seq_length = seq_len
-	record_spec = {
-				"input_ori_ids":
-						tf.FixedLenFeature([max_seq_length], tf.int64),
-				"segment_ids":
-						tf.FixedLenFeature([max_seq_length], tf.int64)
-	}
+	if input_type == "normal"
+		record_spec = {
+					"input_ori_ids":
+							tf.FixedLenFeature([max_seq_length], tf.int64),
+					"segment_ids":
+							tf.FixedLenFeature([max_seq_length], tf.int64)
+		}
+	elif input_type == "gatedcnn":
+		record_spec = {
+					"input_ids_a":
+							tf.FixedLenFeature([max_seq_length], tf.int64),
+					"input_ids_b":
+							tf.FixedLenFeature([max_seq_length], tf.int64)
+		}
 	if FLAGS.sample_strategy in ["whole_word", "word_span"]:
 		tf.logging.info("Add `boundary` spec for %s", FLAGS.sample_strategy)
 		record_spec["boundary"] = tf.VarLenFeature(tf.int64)
 
 	example = tf.parse_single_example(record, record_spec)
-	inputs = example.pop("input_ori_ids")
+	if input_type == "normal"
+		inputs = example.pop("input_ori_ids")
+	elif input_type == "gatedcnn":
+		inputs = example.pop("input_ids_b")
 	print(inputs.get_shape(), "==inputs shape==")
 	if FLAGS.sample_strategy in ["whole_word", "word_span"]:
 		boundary = tf.sparse.to_dense(example.pop("boundary"))
@@ -638,7 +650,8 @@ def input_fn_builder(
 					 FLAGS,
 					 truncate_seq=False, 
 					 use_bfloat16=False,
-					 stride=1):
+					 stride=1,
+					 input_type="normal"):
 	"""Creates an `input_fn` closure to be passed to TPUEstimator."""
 	def input_fn(params):
 		if FLAGS.get('confusion_matrix', None) is not None and FLAGS.get('confusion_mask_matrix', None) is not None:
@@ -684,7 +697,8 @@ def input_fn_builder(
 									max_seq_length, 
 									use_bfloat16=use_bfloat16, 
 									truncate_seq=truncate_seq, 
-									stride=stride),
+									stride=stride,
+									input_type=input_type),
 						batch_size=batch_size,
 						num_parallel_batches=num_cpu_threads,
 						drop_remainder=True))
