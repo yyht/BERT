@@ -7,7 +7,7 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--max_length 512 \
 	--train_file "data_single_hard_gan/chunk_0.tfrecords,data_single_hard_gan/chunk_1.tfrecords,data_single_hard_gan/chunk_2.tfrecords,data_single_hard_gan/chunk_3.tfrecords,data_single_hard_gan/chunk_4.tfrecords,data_single_hard_gan/chunk_5.tfrecords,data_single_hard_gan/chunk_6.tfrecords,data_single_hard_gan/chunk_7.tfrecords,data_single_hard_gan/chunk_8.tfrecords,data_single_hard_gan/chunk_9.tfrecords,data_single_hard_gan/chunk_10.tfrecords,data_single_hard_gan/chunk_11.tfrecords,data_single_hard_gan/chunk_12.tfrecords,data_single_hard_gan/chunk_13.tfrecords,data_single_hard_gan/chunk_14.tfrecords,data_single_hard_gan/chunk_15.tfrecords,data_single_hard_gan/chunk_16.tfrecords,data_single_hard_gan/chunk_17.tfrecords" \
 	--dev_file "data_single_hard_gan/chunk_18.tfrecords,data_single_hard_gan/chunk_19.tfrecords" \
-	--model_output "model/gatedcnn_seq/gatedcnn_seq_light_v1_chinese_tiny_latest" \
+	--model_output "model/gatedcnn_seq/gatedcnn_seq_light_v1_chinese_tiny_latest_v1" \
 	--epoch 50 \
 	--num_classes 2 \
 	--train_size 10000000 \
@@ -36,7 +36,7 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--mask_type "left2right" \
 	--random_generator "5" \
 	--confusion_set_path "./data/chinese_L-12_H-768_A-12/vocab_adv_augment_confusion_id_v1.txt" \
-	--confusion_set_mask_path "./data/chinese_L-12_H-768_A-12/vocab_adv_augment_confusion_id_v1.txt"
+	--confusion_set_mask_path "./data/chinese_L-12_H-768_A-12/vocab_adv_augment_confusion_id_mask_v1.txt"
 
 
 
