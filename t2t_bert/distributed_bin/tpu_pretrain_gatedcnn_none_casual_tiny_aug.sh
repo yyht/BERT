@@ -30,7 +30,7 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--init_lr 1e-4 \
 	--do_train true \
 	--num_tpu_cores 8 \
-	--tpu_name "albert3" \
+	--tpu_name "albert0" \
 	--mode "pretrain" \
 	--seq_type "seq2seq" \
 	--mask_type "left2right" \
