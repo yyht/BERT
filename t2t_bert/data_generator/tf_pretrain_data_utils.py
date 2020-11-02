@@ -532,7 +532,7 @@ def _decode_record(FLAGS, record, num_predict,
 									stride=1,
 									input_type='normal'):
 	max_seq_length = seq_len
-	if input_type == "normal"
+	if input_type == "normal":
 		record_spec = {
 					"input_ori_ids":
 							tf.FixedLenFeature([max_seq_length], tf.int64),
