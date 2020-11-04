@@ -553,7 +553,8 @@ def attention_layer(from_tensor,
 										attention_fixed_size=None,
 										dropout_name=None,
 										structural_attentions="none",
-										is_training=False):
+										is_training=False,
+										**kargs):
 	"""Performs multi-headed attention from `from_tensor` to `to_tensor`.
 
 	This is an implementation of multi-headed attention based on "Attention

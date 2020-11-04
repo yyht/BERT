@@ -2,6 +2,7 @@ import numpy as np
 import tensorflow as tf
 from utils.bert import bert_utils
 from utils.bert import bert_modules
+from utils.bert import hard_attention_modules
 import copy
 
 
@@ -182,15 +183,18 @@ class Bert(object):
 				# Run the stacked transformer.
 				# `sequence_output` shape = [batch_size, seq_length, hidden_size].
 
-				if kargs.get('attention_type', 'efficient_attention') == 'normal_attention':
+				if kargs.get('attention_type', 'normal_attention') == 'normal_attention':
 					tf.logging.info("****** normal attention *******")
 					transformer_model = bert_modules.transformer_model
-				elif kargs.get('attention_type', 'efficient_attention') == 'efficient_attention':
+				elif kargs.get('attention_type', 'normal_attention') == 'efficient_attention':
 					tf.logging.info("****** efficient attention *******")
 					transformer_model = bert_modules.transformer_efficient_model
-				elif kargs.get('attention_type', 'efficient_attention') == 'rezero_transformer':
+				elif kargs.get('attention_type', 'normal_attention') == 'rezero_transformer':
 					transformer_model = bert_modules.transformer_rezero_model
 					tf.logging.info("****** rezero_transformer *******")
+				elif kargs.get("attention_type", 'normal_attention') == 'hard_attention':
+					transformer_model = hard_attention_modules.transformer_model
+					tf.logging.info("****** hard attention *******")
 				else:
 					tf.logging.info("****** normal attention *******")
 					transformer_model = bert_modules.transformer_model
