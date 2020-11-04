@@ -251,7 +251,7 @@ def hard_attention(attention_scores,
 	multihead_attention_mask = tf.cast(multihead_attention_mask, dtype=tf.float32)
 	multihead_attention_mask *= value_output_mask
 
-	attention_adder = (1.0 - multihead_attention_mask, tf.float32) * -10000.0
+	attention_adder = (1.0 - multihead_attention_mask) * -10000.0
 
 	# Since we are adding it to the raw scores before the softmax, this is
 	# effectively the same as removing these entirely.
