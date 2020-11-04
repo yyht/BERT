@@ -206,7 +206,7 @@ def attention_layer(from_tensor,
 		value_layer = tf.reshape(
 				value_layer,
 				[batch_size, to_seq_length, num_attention_heads * attention_head_size])
-
+	tf.logging.info("==apply hard attention attention-logits==")
 	return attention_scores, value_layer
 
 def hard_attention(attention_scores,
@@ -243,6 +243,7 @@ def hard_attention(attention_scores,
 	value_output_norm_prob = tf.nn.softmax(value_output_norm+value_adder)
 	threshold = tf.cast(value_len * num_attention_heads, dtype=tf.float32)
 	# [batch_size, num_attention_heads, to_seq_length]
+	tf.logging.info("==apply hard attention dynamic threshold==")
 	norm_mask = tf.cast(tf.greater(value_output_norm_prob, 1.0 / threshold), dtype=tf.float32)
 	# [batch_size, num_attention_heads, 1, to_seq_length]
 	value_output_mask = tf.expand_dims(norm_mask, axis=[2])
@@ -261,6 +262,7 @@ def hard_attention(attention_scores,
 	
 	# `context_layer` = [B, N, F, H]
 	context_layer = tf.matmul(attention_probs, value_output)
+	tf.logging.info("==apply hard attention with spare attention-score==")
 
 	# `context_layer` = [B, F, N, H]
 	context_layer = tf.transpose(context_layer, [0, 2, 1, 3])
