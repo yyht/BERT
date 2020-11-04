@@ -268,15 +268,15 @@ def hard_attention(attention_scores,
 	if do_return_2d_tensor:
 		# `context_layer` = [B*F, N*V]
 		context_layer = tf.reshape(
-				value_layer,
+				context_layer,
 				[batch_size * from_seq_length, num_attention_heads * attention_head_size])
 	else:
 		# `context_layer` = [B, F, N*V]
 		context_layer = tf.reshape(
-				value_layer,
+				context_layer,
 				[batch_size, from_seq_length, num_attention_heads * attention_head_size])
 
-	return attention_scores, value_layer
+	return attention_scores, context_layer
 
 def transformer_model(input_tensor,
 						attention_mask=None,
@@ -385,7 +385,7 @@ def transformer_model(input_tensor,
 					else:
 						structural_attentions_args = "none"
 
-					[attention_scores,
+					[attention_scores_logits,
 					value_layer] = attention_layer(
 							from_tensor=layer_input,
 							to_tensor=layer_input,
@@ -402,7 +402,6 @@ def transformer_model(input_tensor,
 							dropout_name=attention_dropout_name,
 							structural_attentions=structural_attentions_args,
 							is_training=is_training)
-					all_attention_scores.append(attention_scores)
 					all_value_outputs.append(value_layer)
 
 				# Run a linear projection of `hidden_size` then add a residual
@@ -419,8 +418,9 @@ def transformer_model(input_tensor,
 							hidden_size,
 							kernel_initializer=bert_modules.create_initializer(initializer_range))
 					
-					attention_output = hard_attention(
-								attention_scores=attention_scores,
+					[attention_scores, 
+					attention_output] = hard_attention(
+								attention_scores=attention_scores_logits,
 								value_output=value_output,
 								attention_mask=attention_mask, 
 								batch_size=batch_size,
@@ -429,6 +429,7 @@ def transformer_model(input_tensor,
 								num_attention_heads=num_attention_heads,
 								attention_head_size=attention_head_size,
 								do_return_2d_tensor=True)
+					all_attention_scores.append(attention_scores)
 
 					attention_output = bert_modules.dropout(attention_output, hidden_dropout_prob, dropout_name=output_dropout_name)
 					attention_output = bert_modules.layer_norm(attention_output + layer_input)
