@@ -35,8 +35,8 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--seq_type "seq2seq" \
 	--mask_type "left2right" \
 	--random_generator "5" \
-	--confusion_set_path "./data/chinese_L-12_H-768_A-12/aug_vocab_confusion_id_v1.txt" \
-	--confusion_set_mask_path "./data/chinese_L-12_H-768_A-12/aug_vocab_confusion_id_mask_v1.txt"
+	--confusion_set_path "./data/chinese_L-12_H-768_A-12/vocab_adv_augment_confusion_id_v1.txt" \
+	--confusion_set_mask_path "./data/chinese_L-12_H-768_A-12/vocab_adv_augment_confusion_id_mask_v1.txt"
 
 
 
