@@ -241,7 +241,7 @@ def hard_attention(attention_scores,
 	# effectively the same as removing these entirely.
 	# [batch_size, num_attention_heads, seq_length]
 	value_output_norm_prob = tf.nn.softmax(value_output_norm+value_adder)
-	threshold = tf.cast(value_len * num_attention_heads, dtype=tf.float32)
+	threshold = tf.cast(value_len, dtype=tf.float32)
 	# [batch_size, num_attention_heads, to_seq_length]
 	tf.logging.info("==apply hard attention dynamic threshold==")
 	norm_mask = tf.cast(tf.greater(value_output_norm_prob, 1.0 / threshold), dtype=tf.float32)
