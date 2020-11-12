@@ -990,7 +990,8 @@ def transformer_efficient_model(input_tensor,
 						is_training=False,
 						model_config={},
 						from_mask=None,
-						to_mask=None):
+						to_mask=None,
+						**kargs):
 	"""Multi-headed, multi-layer Transformer from "Attention is All You Need".
 
 	This is almost an exact implementation of the original Transformer encoder.
@@ -1172,7 +1173,8 @@ def transformer_model(input_tensor,
 						is_training=False,
 						model_config={},
 						from_mask=None,
-						to_mask=None):
+						to_mask=None,
+						**kargs):
 	"""Multi-headed, multi-layer Transformer from "Attention is All You Need".
 
 	This is almost an exact implementation of the original Transformer encoder.
@@ -1359,7 +1361,8 @@ def conv_transformer_model(input_tensor,
 						is_training=False,
 						model_config={},
 						from_mask=None,
-						to_mask=None):
+						to_mask=None,
+						**kargs):
 	"""Multi-headed, multi-layer Transformer from "Attention is All You Need".
 
 	This is almost an exact implementation of the original Transformer encoder.

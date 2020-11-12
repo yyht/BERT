@@ -3,6 +3,7 @@ import tensorflow as tf
 from utils.bert import bert_utils
 from utils.bert import bert_modules
 from utils.bert import hard_attention_modules
+from utils.bert import conv_bert_modules
 import copy
 
 
@@ -199,10 +200,12 @@ class Bert(object):
 					tf.logging.info("****** normal attention *******")
 					transformer_model = bert_modules.transformer_model
 
-				if self.config.get("conv_bert", False):
+				if self.config.get("conv_bert", 'official_conv_bert') == 'my_conv_bert':
 					transformer_model = bert_modules.conv_transformer_model
 					tf.logging.info("****** conv_transformer_model *******")
-
+				elif self.config.get("conv_bert", 'official_conv_bert') == 'official_conv_bert':
+					transformer_model = conv_bert_modules.transformer_model
+					tf.logging.info("****** official conv_transformer_model *******")
 				if embedding_output is not None:
 					embedding_seq_output = embedding_output
 					tf.logging.info("****** outer-embedding_seq_output *******")
@@ -236,7 +239,10 @@ class Bert(object):
 						is_training=kargs.get("is_training", False),
 						model_config=self.config,
 						from_mask=input_mask,
-						to_mask=input_mask)
+						to_mask=input_mask,
+						conv_kernel_size=self.config.get('kernel_size', 9),
+						head_ratio=self.config.get('head_ratio', 2),
+                      	conv_type=self.config.get('conv_type', "noconv"))
 
 	def build_pooler(self, *args,**kargs):
 		reuse = kargs["reuse"]
