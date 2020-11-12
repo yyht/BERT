@@ -21,7 +21,7 @@
   "conv_bert":"official_conv_bert",
   "head_ratio":2,
   "kernel_size":9,
-  "conv_type":"noconv",
+  "conv_type":"sdconv",
   "model_type":"conv_transformer",
   "share_or_not":true
 }
