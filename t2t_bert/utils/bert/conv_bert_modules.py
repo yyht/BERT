@@ -208,8 +208,8 @@ def attention_layer(from_tensor,
     return output_tensor
 
 
-  from_shape = get_shape_list(from_tensor, expected_rank=[2, 3])
-  to_shape = get_shape_list(to_tensor, expected_rank=[2, 3])
+  from_shape = bert_utils.get_shape_list(from_tensor, expected_rank=[2, 3])
+  to_shape = bert_utils.get_shape_list(to_tensor, expected_rank=[2, 3])
 
   if len(from_shape) != len(to_shape):
     raise ValueError(
@@ -466,7 +466,7 @@ def transformer_model(input_tensor,
         "heads (%d)" % (hidden_size, num_attention_heads))
 
   attention_head_size = int(hidden_size / num_attention_heads)
-  input_shape = get_shape_list(input_tensor, expected_rank=3)
+  input_shape = bert_utils.get_shape_list(input_tensor, expected_rank=3)
   batch_size = input_shape[0]
   seq_length = input_shape[1]
   input_width = input_shape[2]
