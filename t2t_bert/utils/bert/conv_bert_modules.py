@@ -233,8 +233,8 @@ def attention_layer(from_tensor,
   #   N = `num_attention_heads`
   #   H = `size_per_head`
 
-  from_tensor_2d = reshape_to_matrix(from_tensor)
-  to_tensor_2d = reshape_to_matrix(to_tensor)
+  from_tensor_2d = bert_utils.reshape_to_matrix(from_tensor)
+  to_tensor_2d = bert_utils.reshape_to_matrix(to_tensor)
 
 
   new_num_attention_heads = int(num_attention_heads/head_ratio)
@@ -282,7 +282,7 @@ def attention_layer(from_tensor,
         name="conv_attn_key")
 
     # [B*T, N*H]
-    key_conv_attn_layer = reshape_to_matrix(key_conv_attn_layer)
+    key_conv_attn_layer = bert_utils.reshape_to_matrix(key_conv_attn_layer)
 
     conv_attn_layer = tf.multiply(key_conv_attn_layer, query_layer)
 
@@ -481,7 +481,7 @@ def transformer_model(input_tensor,
   # forth from a 3D tensor to a 2D tensor. Re-shapes are normally free on
   # the GPU/CPU but may not be free on the TPU, so we want to minimize them to
   # help the optimizer.
-  prev_output = reshape_to_matrix(input_tensor)
+  prev_output = bert_utils.reshape_to_matrix(input_tensor)
 
   attn_maps = []
   all_layer_outputs = []
