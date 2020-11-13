@@ -17,8 +17,7 @@
   "type_vocab_size": 2,
   "vocab_size": 21128,
   "corrupted":false,
-  "conv_bert":"none",
-  
+  "conv_bert":"none"
 }
 
 
