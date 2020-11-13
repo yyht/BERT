@@ -567,6 +567,14 @@ def _decode_record(FLAGS, record, num_predict,
                     "input_ids_b":
                             tf.FixedLenFeature([max_seq_length], tf.int64)
         }
+    elif input_type == 'normal_so':
+        record_spec = {
+                    "input_ori_ids":
+                            tf.FixedLenFeature([max_seq_length], tf.int64),
+                    "segment_ids":
+                            tf.FixedLenFeature([max_seq_length], tf.int64),
+                    "label":tf.FixedLenFeature([], tf.int64)
+        }
     if FLAGS.sample_strategy in ["whole_word", "word_span"]:
         tf.logging.info("Add `boundary` spec for %s", FLAGS.sample_strategy)
         record_spec["boundary"] = tf.VarLenFeature(tf.int64)
@@ -574,8 +582,15 @@ def _decode_record(FLAGS, record, num_predict,
     example = tf.parse_single_example(record, record_spec)
     if input_type == "normal":
         inputs = example.pop("input_ori_ids")
+        label = None
     elif input_type == "gatedcnn":
         inputs = example.pop("input_ids_b")
+        label = None
+    elif input_type == 'normal_so':
+        inputs = example.pop("input_ori_ids")
+        label = example.pop("label")
+    else:
+        label = None
     print(inputs.get_shape(), "==inputs shape==")
     if FLAGS.sample_strategy in ["whole_word", "word_span"]:
         boundary = tf.sparse.to_dense(example.pop("boundary"))
@@ -609,6 +624,10 @@ def _decode_record(FLAGS, record, num_predict,
 
     origin_input_mask = tf.equal(inputs, FLAGS.pad_id)
     masked_input *= (1 - tf.cast(origin_input_mask, dtype=tf.int64))
+
+    if label is not None:
+        example['label'] = label
+        tf.logging.info("== adding sentence order classification ==")
 
     example["masked_input"] = masked_input
     example["origin_input"] = inputs

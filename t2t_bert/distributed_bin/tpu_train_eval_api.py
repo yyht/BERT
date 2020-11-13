@@ -384,6 +384,11 @@ flags.DEFINE_string(
 	"if apply distillation"
 	)
 
+flags.DEFINE_string(
+	"train_file_path", "none",
+	"if apply distillation"
+	)
+
 
 def main(_):
 
@@ -391,9 +396,17 @@ def main(_):
 
 	init_checkpoint = os.path.join(FLAGS.buckets, FLAGS.init_checkpoint)
 	train_file = []
-	for file in FLAGS.train_file.split(","):
-		train_file_path = os.path.join(FLAGS.buckets, file)
-		train_file.append(train_file_path)
+	try:
+		with tf.gfile.GFile(FLAGS.train_file_path, "r") as reader:
+			for line in reader:
+				content = line.strip()
+				train_file_path = os.path.join(FLAGS.buckets, content)
+		print(train_file_path)
+	except:
+		for file in FLAGS.train_file.split(","):
+			train_file_path = os.path.join(FLAGS.buckets, file)
+			train_file.append(train_file_path)
+		print(train_file_path)
 
 	dev_file = []
 	for file in FLAGS.dev_file.split(","):

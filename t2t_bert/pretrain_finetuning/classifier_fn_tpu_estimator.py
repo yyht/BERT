@@ -242,12 +242,13 @@ def classifier_model_fn_builder(
 		else:
 			scope = model_config.scope
 
-		# (nsp_loss, 
-		# nsp_per_example_loss, 
-		# nsp_log_prob) = pretrain.get_next_sentence_output(model_config,
-		# 								model.get_pooled_output(),
-		# 								features['next_sentence_labels'],
-		# 								reuse=tf.AUTO_REUSE)
+		if 'label' in model_features:
+			(nsp_loss, 
+			nsp_per_example_loss, 
+			nsp_log_prob) = pretrain.get_next_sentence_output(model_config,
+											model.get_pooled_output(),
+											features['label'],
+											reuse=tf.AUTO_REUSE)
 
 		# masked_lm_positions = features["masked_lm_positions"]
 		# masked_lm_ids = features["masked_lm_ids"]
@@ -384,7 +385,8 @@ def classifier_model_fn_builder(
 				masked_lm_loss = tf.identity(glance_masked_lm_loss)
 		print(model_config.lm_ratio, '==mlm lm_ratio==')
 		loss = model_config.lm_ratio * masked_lm_loss #+ 0.0 * nsp_loss
-
+		if 'label' in model_features:
+			loss += nsp_loss
 		# if kargs.get("apply_vat", False):
 
 		# 	adv_features = {}
@@ -437,6 +439,10 @@ def classifier_model_fn_builder(
 									not_storage_params=not_storage_params)
 
 		pretrained_tvars.extend(lm_pretrain_tvars)
+		if 'label' in model_features:
+			nsp_pretrain_tvars = model_io_fn.get_params("cls/seq_relationship", 
+									not_storage_params=not_storage_params)
+			pretrained_tvars.extend(nsp_pretrain_tvars)
 
 		if kargs.get("unigram_disc", False):
 			[output_ids, 
