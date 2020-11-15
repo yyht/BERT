@@ -24,6 +24,7 @@ from pretrain_finetuning.token_discriminator import classifier as disc_classifie
 from pretrain_finetuning.token_generator import token_generator, random_input_ids_generation
 from pretrain_finetuning.token_generator_hmm import hmm_input_ids_generation, ngram_prob
 from utils.sampling_utils.glancing_sampling_utils import glance_sample
+from task_module import mixup_represt_learning
 # from utils.adversarial_utils import adversarial_utils
 
 def train_metric_fn(masked_lm_example_loss, masked_lm_log_probs, 
@@ -387,6 +388,37 @@ def classifier_model_fn_builder(
 		loss = model_config.lm_ratio * masked_lm_loss #+ 0.0 * nsp_loss
 		if 'label' in model_features:
 			loss += nsp_loss
+
+		if kargs.get("apply_mixup", "none") == 'mixup':
+
+			mixup_features = {}
+			for key in features:
+				mixup_features[key] = tf.identity(model_features[key])
+			mixup_features['input_ids'] = tf.identity(features['origin_input'])
+			mixup_model = model_api(model_config, mixup_features, labels,
+								mode, target, reuse=tf.AUTO_REUSE,
+								if_use_decoder=if_use_decoder,
+								**kargs)
+
+			tpu_context = params['context'] if 'context' in params else None
+			simclr_config = {
+				"proj_out_dim":model_config.hidden_size * 4,
+				"proj_head_mode":"nonlinear",
+				"num_proj_layers":2
+			}
+			contrast_loss = mixup_represt_learning.mixup_dsal_plus(
+					config=simclr_config,
+					 hidden=mixup_model.get_sequence_output(),
+			        input_mask=mixup_features['input_mask'],
+			        temperature=0.1,
+			        hidden_norm=True,
+			        masked_repres=None,
+			        is_training=is_training,
+			        beta=0.5,
+			        use_bn=True,
+			        tpu_context=tpu_context,
+			        weights=1.0)
+			loss += contrast_loss
 		# if kargs.get("apply_vat", False):
 
 		# 	adv_features = {}
