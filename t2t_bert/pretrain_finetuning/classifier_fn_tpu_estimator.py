@@ -404,7 +404,7 @@ def classifier_model_fn_builder(
 			simclr_config = Bunch({
 							"proj_out_dim":model_config.hidden_size * 4,
 							"proj_head_mode":"nonlinear",
-							"num_proj_layers":2
+							"num_proj_layers":1
 						})
 			contrast_loss = mixup_represt_learning.mixup_dsal_plus(
 					config=simclr_config,
