@@ -149,6 +149,9 @@ def random_mixup(hidden, sampled_hidden, beta=0.5):
     mix = tf.distributions.Beta(beta, beta).sample([batch_size, 1])
     mix = tf.cast(tf.maximum(mix, 1 - mix), tf.float32)
 
+    tf.logging.info(hidden)
+    tf.logging.info(sampled_hidden)
+
     xmix_linear = hidden * mix + sampled_hidden * (1.0 - mix)
     xmix_geometric = tf.pow(hidden, mix) * tf.pow(sampled_hidden, (1.0 - mix))
 
