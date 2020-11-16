@@ -199,7 +199,8 @@ def mixup_dsal_plus(config,
         use_bn=True,
         tpu_context=None,
         weights=1.0,
-        sent_repres_mode='cls'):
+        sent_repres_mode='cls',
+        negative_mode='local'):
     input_shape_list = bert_utils.get_shape_list(hidden, expected_rank=[2, 3])
     batch_size = input_shape_list[0]
     hidden_dims = input_shape_list[-1]
@@ -232,8 +233,12 @@ def mixup_dsal_plus(config,
 
     # [2*batch_size, hidden_dims]
     if simlr_contrastive_loss_fn:
-      contrastive_loss_fn = simlr_contrastive_loss_fn
-      tf.logging.info("== apply tpu-simclr cross batch ==")
+      if negative_mode == 'local':
+        contrastive_loss_fn = my_contrastive_loss
+        tf.logging.info("== apply tpu-simclr local batch ==")
+      else:
+        contrastive_loss_fn = simlr_contrastive_loss_fn
+        tf.logging.info("== apply tpu-simclr cross batch ==")
     else:
       contrastive_loss_fn = my_contrastive_loss
       tf.logging.info("== apply simclr local batch ==")
