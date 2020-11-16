@@ -13,14 +13,17 @@ import tensorflow as tf
 from loss import loss_utils
 
 try:
-  from utils.contrastive_utils import add_contrastive_loss as simlr_contrastive_loss_fn
+  from task_module.contrastive_utils import add_contrastive_loss as simlr_contrastive_loss_fn
+  tf.logging.info("** export multi-tpu simclr **")
 except:
   simlr_contrastive_loss_fn = None
+  tf.logging.info("** using single-tpu simclr **")
 
 """
 https://github.com/google-research/mixmatch/blob/master/mixup.py
 https://github.com/google-research/simclr/blob/master/model.py
 """
+LARGE_NUM = 1e9
 
 def linear_layer(x,
                  is_training,
