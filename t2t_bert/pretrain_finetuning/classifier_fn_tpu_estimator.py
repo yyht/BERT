@@ -410,7 +410,7 @@ def classifier_model_fn_builder(
 					config=simclr_config,
 					 hidden=mixup_model.get_sequence_output(),
 			        input_mask=features['input_mask'],
-			        temperature=0.5,
+			        temperature=0.1,
 			        hidden_norm=True,
 			        masked_repres=None,
 			        is_training=is_training,
