@@ -189,7 +189,7 @@ def mixup_dsal_plus(config,
     seq_length = input_shape_list[1]
     hidden_dims = input_shape_list[2]
 
-    hidden_mask = tf.cast(input_mask[:, None], dtype=tf.float32)
+    hidden_mask = tf.cast(input_mask[:, :, None], dtype=tf.float32)
     mean_pooling = tf.reduce_sum(hidden_mask*hidden, axis=1)
     mean_pooling /= tf.reduce_sum(hidden_mask, axis=1)
 
