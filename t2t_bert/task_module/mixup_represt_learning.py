@@ -11,6 +11,7 @@ import re
 import six
 import tensorflow as tf
 from loss import loss_utils
+from task_module.global_batch_norm import batch_norm_relu 
 
 try:
   from task_module.contrastive_utils import add_contrastive_loss as simlr_contrastive_loss_fn
@@ -25,7 +26,7 @@ https://github.com/google-research/simclr/blob/master/model.py
 """
 LARGE_NUM = 1e9
 
-def linear_layer(x,
+def linear_layer(FLAGS, x,
                  is_training,
                  num_classes,
                  use_bias=True,
@@ -50,7 +51,7 @@ def linear_layer(x,
         use_bias=use_bias and not use_bn,
         kernel_initializer=tf.random_normal_initializer(stddev=.01))
     if use_bn:
-      x = resnet.batch_norm_relu(x, is_training, relu=False, center=use_bias)
+      x = batch_norm_relu(FLAGS, x, is_training, relu=False, center=use_bias)
     x = tf.identity(x, '%s_out' % name)
   return x
 
@@ -80,7 +81,7 @@ def projection_head(FLAGS, hiddens, is_training,
         hiddens = linear_layer(
             hiddens, is_training, dim,
             use_bias=bias_relu, use_bn=use_bn, name='nl_%d'%j)
-        hiddens = tf.nn.relu(hiddens) if bias_relu else hiddens
+        hiddens = tf.tanh(hiddens) if bias_relu else hiddens
         hiddens_list.append(hiddens)
     else:
       raise ValueError('Unknown head projection mode {}'.format(

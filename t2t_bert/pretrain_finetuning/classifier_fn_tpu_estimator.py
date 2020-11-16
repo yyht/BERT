@@ -394,7 +394,7 @@ def classifier_model_fn_builder(
 			mixup_features = {}
 			for key in features:
 				mixup_features[key] = tf.identity(model_features[key])
-			mixup_features['input_ids'] = tf.identity(features['origin_input'])
+			mixup_features['input_ids'] = tf.identity(input_ori_ids)
 			mixup_model = model_api(model_config, mixup_features, labels,
 								mode, target, reuse=tf.AUTO_REUSE,
 								if_use_decoder=if_use_decoder,
@@ -409,7 +409,7 @@ def classifier_model_fn_builder(
 			contrast_loss = mixup_represt_learning.mixup_dsal_plus(
 					config=simclr_config,
 					 hidden=mixup_model.get_sequence_output(),
-			        input_mask=mixup_features['input_mask'],
+			        input_mask=features['input_mask'],
 			        temperature=0.5,
 			        hidden_norm=True,
 			        masked_repres=None,
