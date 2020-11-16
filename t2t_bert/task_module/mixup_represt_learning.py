@@ -205,7 +205,7 @@ def mixup_dsal_plus(config,
     hidden_dims = input_shape_list[-1]
 
     if sent_repres_mode == 'cls':
-      sent_repres = tf.squezze(tf.identity(hidden[:, 0:1, :]))
+      sent_repres = tf.squeeze(tf.identity(hidden[:, 0:1, :]))
       tf.logging.info("== apply cls-sent_repres ==")
     elif sent_repres_mode == 'mean_pooling':
       hidden_mask = tf.cast(input_mask[:, :, None], dtype=tf.float32)
