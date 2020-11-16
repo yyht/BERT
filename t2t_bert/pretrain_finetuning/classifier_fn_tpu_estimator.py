@@ -421,7 +421,7 @@ def classifier_model_fn_builder(
 			        tpu_context=tpu_context,
 			        weights=1.0,
 			        sent_repres_mode='cls',
-			        negative_mode='local')
+			        negative_mode='global')
 			loss += contrast_loss
 		# if kargs.get("apply_vat", False):
 
