@@ -125,7 +125,7 @@ def my_contrastive_loss(hidden,
       hidden = tf.nn.l2_normalize(hidden, -1)
     hidden1, hidden2 = tf.split(hidden, 2, 0)
 
-    batch_size = bert_utils.get_shape_list(hidden, expected_rank=[2,3])[0]
+    batch_size = bert_utils.get_shape_list(hidden1, expected_rank=[2,3])[0]
 
     hidden1_large = hidden1
     hidden2_large = hidden2
