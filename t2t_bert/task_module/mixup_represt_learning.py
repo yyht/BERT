@@ -94,8 +94,8 @@ def _sample_from_softmax(logits, disallow=None):
   if disallow is not None:
     logits -= 1000.0 * disallow
   uniform_noise = tf.random.uniform(
-     bert_utils.get_shape_list(logits), minval=0, maxval=1)
-  gumbel_noise = -tf.log(-tf.log(uniform_noise + 1e-9) + 1e-9)
+     bert_utils.get_shape_list(logits), minval=1e-10, maxval=1-1e-10)
+  gumbel_noise = -tf.log(-tf.log(uniform_noise + 1e-10) + 1e-10)
   return tf.one_hot(tf.argmax(tf.nn.softmax(logits + gumbel_noise), -1,
                               output_type=tf.int32), logits.shape[-1])
 
@@ -202,9 +202,11 @@ def mixup_dsal_plus(config,
     seq_length = input_shape_list[1]
     hidden_dims = input_shape_list[2]
 
-    hidden_mask = tf.cast(input_mask[:, :, None], dtype=tf.float32)
-    mean_pooling = tf.reduce_sum(hidden_mask*hidden, axis=1)
-    mean_pooling /= tf.reduce_sum(hidden_mask, axis=1)
+    # hidden_mask = tf.cast(input_mask[:, :, None], dtype=tf.float32)
+    # mean_pooling = tf.reduce_sum(hidden_mask*hidden, axis=1)
+    # mean_pooling /= (1e-10 + tf.reduce_sum(hidden_mask, axis=1))
+
+    mean_pooling = tf.identity(hidden)
 
     # [batch_size, hidden_dims]
     [positive_1_repres, 
