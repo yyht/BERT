@@ -415,7 +415,7 @@ def classifier_model_fn_builder(
 			        masked_repres=None,
 			        is_training=is_training,
 			        beta=0.5,
-			        use_bn=True,
+			        use_bn=False,
 			        tpu_context=tpu_context,
 			        weights=1.0)
 			loss += contrast_loss
