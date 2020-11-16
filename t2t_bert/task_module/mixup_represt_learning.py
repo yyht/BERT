@@ -90,7 +90,7 @@ def _sample_from_softmax(logits, disallow=None):
   if disallow is not None:
     logits -= 1000.0 * disallow
   uniform_noise = tf.random.uniform(
-     get_shape_list(logits), minval=0, maxval=1)
+     bert_utils.get_shape_list(logits), minval=0, maxval=1)
   gumbel_noise = -tf.log(-tf.log(uniform_noise + 1e-9) + 1e-9)
   return tf.one_hot(tf.argmax(tf.nn.softmax(logits + gumbel_noise), -1,
                               output_type=tf.int32), logits.shape[-1])
@@ -103,7 +103,11 @@ def _sample_positive(features, batch_size):
 
   sampled_onthot = _sample_from_softmax(logits, disallow_mask)
   positive_ids = tf.argmax(sampled_onthot, axis=-1, output_type=tf.int32)
-  sampled_feature = tf.gather_nd(features, positive_ids[:, None])
+  # sampled_feature = tf.gather_nd(features, positive_ids[:, None])
+
+  batch_idx = tf.expand_dims(tf.cast(tf.range(batch_size), tf.int32), axis=-1)
+  gather_index = tf.concat([batch_idx, positive_ids[:, None]], axis=-1)
+  mixup_noise = tf.gather_nd(mixup_matrix, gather_index)
   return sampled_feature, positive_ids
 
 def my_contrastive_loss(hidden,
