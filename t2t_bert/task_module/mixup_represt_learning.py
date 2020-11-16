@@ -152,14 +152,14 @@ def random_mixup(hidden, sampled_hidden, beta=0.5):
     batch_size = hidden_shape_list[0]
     
     # mix = tf.distributions.Beta(beta, beta).sample([batch_size, 1])
-    uniform_noise = tf.random.uniform([], minval=0.6, maxval=1)
+    uniform_noise = tf.random.uniform([], minval=0.8, maxval=1)
     mix = tf.cast(tf.maximum(uniform_noise, 1 - uniform_noise), tf.float32)
 
     tf.logging.info(hidden)
     tf.logging.info(sampled_hidden)
 
     xmix_linear = hidden * mix + sampled_hidden * (1.0 - mix)
-    xmix_geometric = tf.pow(hidden, mix) * tf.pow(sampled_hidden, (1.0 - mix))
+    # xmix_geometric = tf.pow(hidden, mix) * tf.pow(sampled_hidden, (1.0 - mix))
 
     binary_noise_dist = tf.distributions.Bernoulli(probs=mix * tf.ones_like(hidden), 
                                                 dtype=tf.float32)
@@ -167,7 +167,8 @@ def random_mixup(hidden, sampled_hidden, beta=0.5):
     binary_mask = tf.cast(binary_mask, tf.float32)
     xmix_binary = hidden * binary_mask +  sampled_hidden * (1.0 - binary_mask)
 
-    mixup_noise_sample = [xmix_linear, xmix_geometric, xmix_binary]
+    # mixup_noise_sample = [xmix_linear, xmix_geometric, xmix_binary]
+    mixup_noise_sample = [xmix_linear, xmix_binary]
     # [batch_size, len(mixup_noise_sample), hidden_dims]
     mixup_matrix = tf.stack(mixup_noise_sample, axis=1)
 
