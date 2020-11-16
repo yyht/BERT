@@ -41,6 +41,7 @@ def add_contrastive_loss(hidden,
 
   # Gather hidden1/hidden2 across replicas and create local labels.
   if tpu_context is not None:
+    tf.logging.info("** apply cross tpu gather **")
     hidden1_large = tpu_cross_replica_concat(hidden1, tpu_context)
     hidden2_large = tpu_cross_replica_concat(hidden2, tpu_context)
     enlarged_batch_size = tf.shape(hidden1_large)[0]
