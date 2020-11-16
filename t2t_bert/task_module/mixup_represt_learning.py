@@ -81,7 +81,7 @@ def projection_head(FLAGS, hiddens, is_training,
         hiddens = linear_layer(FLAGS,
             hiddens, is_training, dim,
             use_bias=bias_relu, use_bn=use_bn, name='nl_%d'%j)
-        hiddens = tf.tanh(hiddens) if bias_relu else hiddens
+        hiddens = tf.nn.relu(hiddens) if bias_relu else hiddens
         hiddens_list.append(hiddens)
     else:
       raise ValueError('Unknown head projection mode {}'.format(
