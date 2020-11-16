@@ -161,7 +161,8 @@ def random_mixup(hidden, sampled_hidden, beta=0.5):
     xmix_linear = hidden * mix + sampled_hidden * (1.0 - mix)
     # xmix_geometric = tf.pow(hidden, mix) * tf.pow(sampled_hidden, (1.0 - mix))
 
-    binary_noise_dist = tf.distributions.Bernoulli(probs=mix * tf.ones_like(hidden), 
+    binary_noise = tf.random.uniform([], minval=0.8, maxval=1)
+    binary_noise_dist = tf.distributions.Bernoulli(probs=binary_noise * tf.ones_like(hidden), 
                                                 dtype=tf.float32)
     binary_mask = binary_noise_dist.sample()
     binary_mask = tf.cast(binary_mask, tf.float32)
