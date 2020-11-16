@@ -197,10 +197,9 @@ def mixup_dsal_plus(config,
         use_bn=True,
         tpu_context=None,
         weights=1.0):
-    input_shape_list = bert_utils.get_shape_list(hidden, expected_rank=3)
+    input_shape_list = bert_utils.get_shape_list(hidden, expected_rank=[2, 3])
     batch_size = input_shape_list[0]
-    seq_length = input_shape_list[1]
-    hidden_dims = input_shape_list[2]
+    hidden_dims = input_shape_list[-1]
 
     # hidden_mask = tf.cast(input_mask[:, :, None], dtype=tf.float32)
     # mean_pooling = tf.reduce_sum(hidden_mask*hidden, axis=1)
