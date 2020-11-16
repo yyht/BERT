@@ -420,7 +420,7 @@ def classifier_model_fn_builder(
 			        use_bn=False,
 			        tpu_context=tpu_context,
 			        weights=1.0)
-			loss += 0.1*contrast_loss
+			loss += contrast_loss
 		# if kargs.get("apply_vat", False):
 
 		# 	adv_features = {}
