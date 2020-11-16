@@ -105,9 +105,10 @@ def _sample_positive(features, batch_size):
   positive_ids = tf.argmax(sampled_onthot, axis=-1, output_type=tf.int32)
   # sampled_feature = tf.gather_nd(features, positive_ids[:, None])
 
-  batch_idx = tf.expand_dims(tf.cast(tf.range(batch_size), tf.int32), axis=-1)
-  gather_index = tf.concat([batch_idx, positive_ids[:, None]], axis=-1)
-  sampled_feature = tf.gather_nd(features, gather_index)
+  # batch_idx = tf.expand_dims(tf.cast(tf.range(batch_size), tf.int32), axis=-1)
+  # gather_index = tf.concat([batch_idx, positive_ids[:, None]], axis=-1)
+  # sampled_feature = tf.gather_nd(features, gather_index)
+  sampled_feature = tf.gather_nd(features, positive_ids[:, None])
   return sampled_feature, positive_ids
 
 def my_contrastive_loss(hidden,
