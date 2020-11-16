@@ -66,7 +66,7 @@ def projection_head(FLAGS, hiddens, is_training,
     if FLAGS.proj_head_mode == 'none':
       pass  # directly use the output hiddens as hiddens.
     elif FLAGS.proj_head_mode == 'linear':
-      hiddens = linear_layer(
+      hiddens = linear_layer(FLAGS,
           hiddens, is_training, out_dim,
           use_bias=False, use_bn=use_bn, name='l_0')
       hiddens_list.append(hiddens)
@@ -78,7 +78,7 @@ def projection_head(FLAGS, hiddens, is_training,
         else:
           # for the final layer, neither bias nor relu is used.
           dim, bias_relu = FLAGS.proj_out_dim, False
-        hiddens = linear_layer(
+        hiddens = linear_layer(FLAGS,
             hiddens, is_training, dim,
             use_bias=bias_relu, use_bn=use_bn, name='nl_%d'%j)
         hiddens = tf.tanh(hiddens) if bias_relu else hiddens
