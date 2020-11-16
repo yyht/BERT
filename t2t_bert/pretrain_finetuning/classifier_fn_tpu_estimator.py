@@ -14,7 +14,7 @@ import numpy as np
 from optimizer import optimizer
 from optimizer import distributed_optimizer
 from model_io import model_io
-
+from bunch import Bunch
 from task_module import classifier
 from task_module import tsa_pretrain
 import tensorflow as tf
@@ -401,11 +401,11 @@ def classifier_model_fn_builder(
 								**kargs)
 
 			tpu_context = params['context'] if 'context' in params else None
-			simclr_config = {
-				"proj_out_dim":model_config.hidden_size * 4,
-				"proj_head_mode":"nonlinear",
-				"num_proj_layers":2
-			}
+			simclr_config = Bunch({
+							"proj_out_dim":model_config.hidden_size * 4,
+							"proj_head_mode":"nonlinear",
+							"num_proj_layers":2
+						})
 			contrast_loss = mixup_represt_learning.mixup_dsal_plus(
 					config=simclr_config,
 					 hidden=mixup_model.get_sequence_output(),
