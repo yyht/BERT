@@ -147,7 +147,7 @@ def random_mixup(hidden, sampled_hidden, beta=0.5):
     batch_size = hidden_shape_list[0]
     
     mix = tf.distributions.Beta(beta, beta).sample([batch_size, 1])
-    mix = tf.maximum(mix, 1 - mix)
+    mix = tf.cast(tf.maximum(mix, 1 - mix), tf.float32)
 
     xmix_linear = hidden * mix + sampled_hidden * (1.0 - mix)
     xmix_geometric = tf.pow(hidden, mix) * tf.pow(sampled_hidden, (1.0 - mix))
