@@ -337,7 +337,7 @@ def _token_span_mask(FLAGS, inputs, tgt_len, num_predict, stride=1):
     round_to_int = lambda x: tf.cast(tf.round(x), tf.int64)
 
     # Sample span lengths from a zipf distribution 
-    # with different span-length
+    #with different span-length
     max_token = np.random.choice([3,5,7,10])
 
     span_len_seq = np.arange(FLAGS.min_tok, max_token + 1)

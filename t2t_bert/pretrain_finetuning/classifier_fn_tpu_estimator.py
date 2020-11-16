@@ -389,7 +389,7 @@ def classifier_model_fn_builder(
 		if 'label' in model_features:
 			loss += nsp_loss
 
-		if kargs.get("apply_mixup", "none") == 'mixup':
+		if kargs.get("apply_mixup", "mixup") == 'mixup':
 
 			mixup_features = {}
 			for key in features:
@@ -475,6 +475,11 @@ def classifier_model_fn_builder(
 			nsp_pretrain_tvars = model_io_fn.get_params("cls/seq_relationship", 
 									not_storage_params=not_storage_params)
 			pretrained_tvars.extend(nsp_pretrain_tvars)
+
+		if kargs.get("apply_mixup", "mixup") == 'mixup':
+			simclr_pretrain_tvars = model_io_fn.get_params("cls/simclr_projection_head", 
+									not_storage_params=not_storage_params)
+			pretrained_tvars.extend(simclr_pretrain_tvars)
 
 		if kargs.get("unigram_disc", False):
 			[output_ids, 
