@@ -410,7 +410,7 @@ def classifier_model_fn_builder(
 						})
 			contrast_loss = mixup_represt_learning.mixup_dsal_plus(
 					config=simclr_config,
-					 hidden=mixup_model.get_pooled_output(),
+					 hidden=mixup_model.get_sequence_output(),
 			        input_mask=features['input_mask'],
 			        temperature=0.1,
 			        hidden_norm=True,
@@ -419,7 +419,8 @@ def classifier_model_fn_builder(
 			        beta=0.5,
 			        use_bn=False,
 			        tpu_context=tpu_context,
-			        weights=1.0)
+			        weights=1.0,
+			        sent_repres_mode='cls')
 			loss += contrast_loss
 		# if kargs.get("apply_vat", False):
 

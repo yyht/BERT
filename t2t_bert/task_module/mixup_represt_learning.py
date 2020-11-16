@@ -198,25 +198,29 @@ def mixup_dsal_plus(config,
         beta=0.5,
         use_bn=True,
         tpu_context=None,
-        weights=1.0):
+        weights=1.0,
+        sent_repres_mode='cls'):
     input_shape_list = bert_utils.get_shape_list(hidden, expected_rank=[2, 3])
     batch_size = input_shape_list[0]
     hidden_dims = input_shape_list[-1]
 
-    # hidden_mask = tf.cast(input_mask[:, :, None], dtype=tf.float32)
-    # mean_pooling = tf.reduce_sum(hidden_mask*hidden, axis=1)
-    # mean_pooling /= (1e-10 + tf.reduce_sum(hidden_mask, axis=1))
-
-    mean_pooling = tf.identity(hidden)
+    if sent_repres_mode == 'cls':
+      sent_repres = tf.squezze(tf.identity(hidden[:, 0:1, :]))
+      tf.logging.info("== apply cls-sent_repres ==")
+    elif sent_repres_mode == 'mean_pooling':
+      hidden_mask = tf.cast(input_mask[:, :, None], dtype=tf.float32)
+      sent_repres = tf.reduce_sum(hidden_mask*hidden, axis=1)
+      sent_repres /= (1e-10 + tf.reduce_sum(hidden_mask, axis=1))
+      tf.logging.info("== apply mean-pooling-sent_repres ==")
 
     # [batch_size, hidden_dims]
     [positive_1_repres, 
-    positive_1_ids] = _sample_positive(mean_pooling, batch_size)
-    xmix_a = random_mixup(mean_pooling, positive_1_repres, beta=beta)
+    positive_1_ids] = _sample_positive(sent_repres, batch_size)
+    xmix_a = random_mixup(sent_repres, positive_1_repres, beta=beta)
     
     [positive_2_repres, 
-    positive_2_ids] = _sample_positive(mean_pooling, batch_size)
-    xmix_b = random_mixup(mean_pooling, positive_2_repres, beta=beta)
+    positive_2_ids] = _sample_positive(sent_repres, batch_size)
+    xmix_b = random_mixup(sent_repres, positive_2_repres, beta=beta)
 
     xmix_features = tf.concat([xmix_a, xmix_b], 0)  # (num_transforms * bsz, h, w, c)
 
