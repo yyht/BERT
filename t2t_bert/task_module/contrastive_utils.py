@@ -69,6 +69,9 @@ def add_contrastive_loss(hidden,
       labels, tf.concat([logits_ba, logits_bb], 1), weights=weights)
   loss = loss_a + loss_b
 
+  tf.logging.info(logits_ab)
+  tf.logging.info(labels)
+
   return loss, logits_ab, labels
 
 
