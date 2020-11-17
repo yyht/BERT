@@ -108,6 +108,7 @@ def train_eval_fn(FLAGS,
 									target=kargs.get("input_target", ""),
 									num_train_steps=num_train_steps,
 									use_tpu=True,
+									checkpoint_dir=checkpoint_dir,
 									**kargs)
 
 		estimator = tf.contrib.tpu.TPUEstimator(

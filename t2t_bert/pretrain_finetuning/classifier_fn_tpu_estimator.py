@@ -25,6 +25,8 @@ from pretrain_finetuning.token_generator import token_generator, random_input_id
 from pretrain_finetuning.token_generator_hmm import hmm_input_ids_generation, ngram_prob
 from utils.sampling_utils.glancing_sampling_utils import glance_sample
 from task_module import mixup_represt_learning
+
+from task_module import model_utils
 # from utils.adversarial_utils import adversarial_utils
 
 def train_metric_fn(masked_lm_example_loss, masked_lm_log_probs, 
@@ -89,6 +91,7 @@ def classifier_model_fn_builder(
 						exclude_scope="",
 						not_storage_params=[],
 						target="a",
+						checkpoint_dir="",
 						**kargs):
 	model_config.tsa = 'exp_schedule'
 	model_config.num_train_steps = opt_config.num_train_steps
@@ -243,6 +246,8 @@ def classifier_model_fn_builder(
 		else:
 			scope = model_config.scope
 
+		monitor_dict = {}
+
 		if 'label' in model_features:
 			(nsp_loss, 
 			nsp_per_example_loss, 
@@ -250,6 +255,8 @@ def classifier_model_fn_builder(
 											model.get_pooled_output(),
 											features['label'],
 											reuse=tf.AUTO_REUSE)
+
+			monitor_dict['nsp_loss'] = nsp_loss
 
 		# masked_lm_positions = features["masked_lm_positions"]
 		# masked_lm_ids = features["masked_lm_ids"]
@@ -342,6 +349,7 @@ def classifier_model_fn_builder(
 			if kargs.get("glancing_training", "none") == "none":
 				tf.logging.info("*** no need glancing_training ***")
 				masked_lm_loss = tf.identity(pre_masked_lm_loss)
+				monitor_dict['mlm_loss'] = masked_lm_loss
 			else:
 				tf.logging.info("*** glancing_training ***")
 				[
@@ -384,6 +392,7 @@ def classifier_model_fn_builder(
 												discriminator_mode=discriminator_mode,
 												loss_converage=loss_converage)
 				masked_lm_loss = tf.identity(glance_masked_lm_loss)
+				monitor_dict['glanced_mlm_loss'] = masked_lm_loss
 		print(model_config.lm_ratio, '==mlm lm_ratio==')
 		loss = model_config.lm_ratio * masked_lm_loss #+ 0.0 * nsp_loss
 		if 'label' in model_features:
@@ -391,14 +400,18 @@ def classifier_model_fn_builder(
 
 		if kargs.get("apply_mixup", "none") == 'mixup':
 
-			mixup_features = {}
-			for key in features:
-				mixup_features[key] = tf.identity(model_features[key])
-			mixup_features['input_ids'] = tf.identity(input_ori_ids)
-			mixup_model = model_api(model_config, mixup_features, labels,
-								mode, target, reuse=tf.AUTO_REUSE,
-								if_use_decoder=if_use_decoder,
-								**kargs)
+			if kargs.get("mixup_mode", "clean") == 'clean':
+				mixup_features = {}
+				for key in features:
+					mixup_features[key] = tf.identity(model_features[key])
+				mixup_features['input_ids'] = tf.identity(input_ori_ids)
+				mixup_model = model_api(model_config, mixup_features, labels,
+									mode, target, reuse=tf.AUTO_REUSE,
+									if_use_decoder=if_use_decoder,
+									**kargs)
+				sequence_output = mixup_model.get_sequence_output()
+			else:
+				sequence_output = model.get_sequence_output()
 
 			tpu_context = params['context'] if 'context' in params else None
 			simclr_config = Bunch({
@@ -410,18 +423,19 @@ def classifier_model_fn_builder(
 						})
 			contrast_loss = mixup_represt_learning.mixup_dsal_plus(
 					config=simclr_config,
-					 hidden=mixup_model.get_sequence_output(),
-			        input_mask=features['input_mask'],
-			        temperature=0.1,
-			        hidden_norm=True,
-			        masked_repres=None,
-			        is_training=is_training,
-			        beta=0.5,
-			        use_bn=False,
-			        tpu_context=tpu_context,
-			        weights=1.0,
-			        sent_repres_mode='cls',
-			        negative_mode='global')
+					hidden=sequence_output,
+					input_mask=features['input_mask'],
+					temperature=0.1,
+					hidden_norm=True,
+					masked_repres=None,
+					is_training=is_training,
+					beta=0.5,
+					use_bn=False,
+					tpu_context=tpu_context,
+					weights=1.0,
+					sent_repres_mode='cls',
+					negative_mode='global')
+			monitor_dict['contrast_loss'] = contrast_loss
 			loss += contrast_loss
 		# if kargs.get("apply_vat", False):
 
@@ -519,6 +533,8 @@ def classifier_model_fn_builder(
 			disc_pretrain_tvars = model_io_fn.get_params("cls/discriminator_predictions", 
 										not_storage_params=not_storage_params)
 			pretrained_tvars.extend(disc_pretrain_tvars)
+
+			monitor_dict['disc_loss'] = disc_loss
 		
 		# if load_pretrained == "yes":
 		# 	scaffold_fn = model_io_fn.load_pretrained(pretrained_tvars, 
@@ -581,10 +597,33 @@ def classifier_model_fn_builder(
 				# 				scaffold_fn=scaffold_fn)
 
 			if kargs.get('use_tpu', False):
+
+				#### Creating host calls
+				if monitor_dict:
+					try:
+						import tensorflow.compat.v2 as tf2
+						host_call = model_utils.construct_scalar_host_call_v2(
+							monitor_dict=monitor_dict,
+							model_dir=checkpoint_dir,
+							prefix="train/",
+							reduce_fn=tf.reduce_mean)
+					except:
+						try:
+							host_call = model_utils.construct_scalar_host_call_v1(
+								monitor_dict=monitor_dict,
+								model_dir=checkpoint_dir,
+								prefix="train/")
+						except:
+							host_call = None
+				else:
+					host_call = None
+				tf.logging.info(host_call)
+
 				estimator_spec = tf.contrib.tpu.TPUEstimatorSpec(
 								mode=mode,
 								loss=loss,
 								train_op=train_op,
+								host_call=host_call,
 								scaffold_fn=scaffold_fn)
 			else:
 				estimator_spec = tf.estimator.EstimatorSpec(
