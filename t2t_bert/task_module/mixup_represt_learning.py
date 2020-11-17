@@ -144,6 +144,8 @@ def my_contrastive_loss(hidden,
     loss_b = tf.losses.softmax_cross_entropy(
         labels, tf.concat([logits_ba, logits_bb], 1), weights=weights)
     loss = loss_a + loss_b
+    tf.logging.info(logits_ab)
+    tf.logging.info(labels)
     return loss, logits_ab, labels
 
 def random_mixup(hidden, sampled_hidden, beta=0.5):
