@@ -200,7 +200,8 @@ def mixup_dsal_plus(config,
         tpu_context=None,
         weights=1.0,
         sent_repres_mode='cls',
-        negative_mode='local'):
+        negative_mode='local',
+        monitor_dict={}):
     input_shape_list = bert_utils.get_shape_list(hidden, expected_rank=[2, 3])
     batch_size = input_shape_list[0]
     hidden_dims = input_shape_list[-1]
@@ -242,9 +243,15 @@ def mixup_dsal_plus(config,
     else:
       contrastive_loss_fn = my_contrastive_loss
       tf.logging.info("== apply simclr local batch ==")
-    [loss, logits_ab, labels] = contrastive_loss_fn(xmix_hiddens,
+    [contrast_loss, logits_con, labels_con] = contrastive_loss_fn(xmix_hiddens,
                      hidden_norm=hidden_norm,
                      temperature=temperature,
                      tpu_context=tpu_context,
                      weights=weights)
-    return loss
+
+    contrast_acc = tf.equal(tf.argmax(labels_con, 1), tf.argmax(logits_con, axis=1))
+    contrast_acc = tf.reduce_mean(tf.cast(contrast_acc, tf.float32))
+
+    monitor_dict['contrast_acc'] = contrast_acc
+
+    return contrast_loss, monitor_dict

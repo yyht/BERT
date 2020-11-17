@@ -421,7 +421,7 @@ def classifier_model_fn_builder(
 							"global_bn":True,
 							"batch_norm_decay":0.9
 						})
-			contrast_loss = mixup_represt_learning.mixup_dsal_plus(
+			contrast_loss, monitor_dict = mixup_represt_learning.mixup_dsal_plus(
 					config=simclr_config,
 					hidden=sequence_output,
 					input_mask=features['input_mask'],
@@ -434,7 +434,8 @@ def classifier_model_fn_builder(
 					tpu_context=tpu_context,
 					weights=1.0,
 					sent_repres_mode='cls',
-					negative_mode='global')
+					negative_mode='global',
+					monitor_dict=monitor_dict)
 			monitor_dict['contrast_loss'] = contrast_loss
 			loss += contrast_loss
 		# if kargs.get("apply_vat", False):
@@ -600,6 +601,9 @@ def classifier_model_fn_builder(
 
 				#### Creating host calls
 				if monitor_dict:
+					for key in monitor_dict:
+						tf.logging.info(monitor_dict[key])
+						tf.logging.info("== monitor scalar:%s =="%(str(key)))
 					try:
 						import tensorflow.compat.v2 as tf2
 						host_call = model_utils.construct_scalar_host_call_v2(
