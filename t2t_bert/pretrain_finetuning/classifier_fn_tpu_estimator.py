@@ -436,7 +436,7 @@ def classifier_model_fn_builder(
 					sent_repres_mode='cls',
 					negative_mode='global')
 			monitor_dict['contrast_loss'] = contrast_loss
-			loss += contrast_loss
+			loss += 5*contrast_loss
 		# if kargs.get("apply_vat", False):
 
 		# 	adv_features = {}
