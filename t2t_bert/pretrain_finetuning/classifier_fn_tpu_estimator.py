@@ -398,7 +398,7 @@ def classifier_model_fn_builder(
 		if 'label' in model_features:
 			loss += nsp_loss
 
-		if kargs.get("apply_mixup", "none") == 'mixup':
+		if kargs.get("apply_mixup", "apply_mixup") == 'mixup':
 
 			if kargs.get("mixup_mode", "clean") == 'clean':
 				mixup_features = {}
