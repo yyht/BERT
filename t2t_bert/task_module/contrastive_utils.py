@@ -71,6 +71,9 @@ def add_contrastive_loss(hidden,
 
   tf.logging.info(logits_ab)
   tf.logging.info(labels)
+  tf.logging.info(logits_aa)
+  tf.logging.info(hidden1_large)
+  tf.logging.info(hidden2_large)
 
   return loss, logits_ab, labels
 
