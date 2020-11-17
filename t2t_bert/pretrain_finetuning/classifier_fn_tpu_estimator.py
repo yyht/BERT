@@ -607,12 +607,14 @@ def classifier_model_fn_builder(
 							model_dir=checkpoint_dir,
 							prefix="train/",
 							reduce_fn=tf.reduce_mean)
+						tf.logging.info("** using tf2 host-call **")
 					except:
 						try:
 							host_call = model_utils.construct_scalar_host_call_v1(
 								monitor_dict=monitor_dict,
 								model_dir=checkpoint_dir,
 								prefix="train/")
+							tf.logging.info("** using tf1 host-call **")
 						except:
 							host_call = None
 				else:
