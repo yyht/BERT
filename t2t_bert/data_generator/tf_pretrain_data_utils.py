@@ -338,7 +338,7 @@ def _token_span_mask(FLAGS, inputs, tgt_len, num_predict, stride=1):
 
     # Sample span lengths from a zipf distribution 
     #with different span-length
-    span_len_seq = np.arange(FLAGS.min_tok, FLAGS.max_token + 1)
+    span_len_seq = np.arange(FLAGS.min_tok, FLAGS.max_tok + 1)
     # span_len_seq = np.arange(FLAGS.min_tok, FLAGS.max_tok + 1)
     probs = np.array([1.0 /  (i + 1) for i in span_len_seq])
 
