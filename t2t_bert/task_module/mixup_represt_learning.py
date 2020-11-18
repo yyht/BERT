@@ -164,7 +164,7 @@ def random_mixup(hidden, sampled_hidden, beta=0.5):
     hidden_dims = hidden_shape_list[-1]
 
     # mix = tf.distributions.Beta(beta, beta).sample([batch_size, 1])
-    uniform_noise = tf.random.uniform([batch_size, 1], minval=0.7, maxval=1)
+    uniform_noise = tf.random.uniform([batch_size, 1], minval=0.9, maxval=1)
     mix = tf.cast(tf.maximum(uniform_noise, 1 - uniform_noise), tf.float32)
 
     tf.logging.info(hidden)
