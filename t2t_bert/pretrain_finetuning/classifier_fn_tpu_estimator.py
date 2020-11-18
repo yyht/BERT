@@ -400,7 +400,7 @@ def classifier_model_fn_builder(
 
 		if kargs.get("apply_mixup", "mixup") == 'mixup':
 
-			if kargs.get("mixup_mode", "clean") == 'clean':
+			if kargs.get("mixup_mode", "noise") == 'clean':
 				mixup_features = {}
 				for key in features:
 					mixup_features[key] = tf.identity(model_features[key])
