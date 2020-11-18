@@ -144,7 +144,7 @@ def my_contrastive_loss(hidden,
     loss_b = tf.losses.softmax_cross_entropy(
         labels, tf.concat([logits_ba, logits_bb], 1), weights=weights)
     loss = loss_a + loss_b
-    
+
     tf.logging.info(hidden1)
     tf.logging.info(hidden2)
     tf.logging.info(logits_ab)
@@ -163,7 +163,7 @@ def random_mixup(hidden, sampled_hidden, beta=0.5):
     batch_size = hidden_shape_list[0]
     
     # mix = tf.distributions.Beta(beta, beta).sample([batch_size, 1])
-    uniform_noise = tf.random.uniform([], minval=0.6, maxval=1)
+    uniform_noise = tf.random.uniform([], minval=0.8, maxval=1)
     mix = tf.cast(tf.maximum(uniform_noise, 1 - uniform_noise), tf.float32)
 
     tf.logging.info(hidden)
@@ -172,7 +172,7 @@ def random_mixup(hidden, sampled_hidden, beta=0.5):
     xmix_linear = hidden * mix + sampled_hidden * (1.0 - mix)
     # xmix_geometric = tf.pow(hidden, mix) * tf.pow(sampled_hidden, (1.0 - mix))
 
-    binary_noise = tf.random.uniform([], minval=0.6, maxval=1)
+    binary_noise = tf.random.uniform([], minval=0.8, maxval=1)
     binary_noise_dist = tf.distributions.Bernoulli(probs=binary_noise * tf.ones_like(hidden), 
                                                 dtype=tf.float32)
     binary_mask = binary_noise_dist.sample()
