@@ -149,7 +149,7 @@ def train_eval_fn(FLAGS,
 				tf.logging.info("***** Running random sampling *****")
 			input_fn_builder = tf_pretrain_data_utils.input_fn_builder
 			data_config = Bunch({})
-			data_config.min_tok = 2
+			data_config.min_tok = 1
 			data_config.max_tok = 10
 			data_config.confusion_matrix = confusion_matrix
 			data_config.confusion_mask_matrix = confusion_mask_matrix
