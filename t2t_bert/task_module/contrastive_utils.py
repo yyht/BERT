@@ -45,8 +45,12 @@ def add_contrastive_loss(hidden,
     hidden1_large = tpu_cross_replica_concat(hidden1, tpu_context)
     hidden2_large = tpu_cross_replica_concat(hidden2, tpu_context)
     enlarged_batch_size = tf.shape(hidden1_large)[0]
+    tf.logging.info(enlarged_batch_size)
+    tf.logging.info("** enlarged_batch_size **")
     # TODO(iamtingchen): more elegant way to convert u32 to s32 for replica_id.
     replica_id = tf.cast(tf.cast(xla.replica_id(), tf.uint32), tf.int32)
+    tf.logging.info(replica_id)
+    tf.logging.info("** replica_id **")
     labels_idx = tf.range(batch_size) + replica_id * batch_size
     labels = tf.one_hot(labels_idx, enlarged_batch_size * 2)
     masks = tf.one_hot(labels_idx, enlarged_batch_size)

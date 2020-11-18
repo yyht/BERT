@@ -103,7 +103,7 @@ def _sample_positive(features, batch_size):
 
   logits = tf.log(1./tf.ones((batch_size, batch_size), dtype=tf.float32)/batch_size)
   # [batch_size, batch_size]
-  disallow_mask = tf.eye((batch_size))
+  disallow_mask = tf.one_hot(tf.range(batch_size), batch_size)
 
   sampled_onthot = _sample_from_softmax(logits, disallow_mask)
   positive_ids = tf.argmax(sampled_onthot, axis=-1, output_type=tf.int32)
