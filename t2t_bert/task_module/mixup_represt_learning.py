@@ -164,7 +164,7 @@ def random_mixup(hidden, sampled_hidden, beta=0.5):
     hidden_dims = hidden_shape_list[-1]
 
     # mix = tf.distributions.Beta(beta, beta).sample([batch_size, 1])
-    uniform_noise = tf.random.uniform([batch_size, 1], minval=0.7, maxval=1)
+    uniform_noise = tf.random.uniform([batch_size, 1], minval=0.9, maxval=1)
     mix = tf.cast(tf.maximum(uniform_noise, 1 - uniform_noise), tf.float32)
 
     tf.logging.info(hidden)
@@ -173,7 +173,7 @@ def random_mixup(hidden, sampled_hidden, beta=0.5):
     xmix_linear = hidden * mix + sampled_hidden * (1.0 - mix)
     # xmix_geometric = tf.pow(hidden, mix) * tf.pow(sampled_hidden, (1.0 - mix))
 
-    binary_noise = tf.random.uniform([batch_size, hidden_dims], minval=0.5, maxval=1)
+    binary_noise = tf.random.uniform([batch_size, hidden_dims], minval=0.7, maxval=1)
     binary_noise_dist = tf.distributions.Bernoulli(probs=binary_noise, 
                                                 dtype=tf.float32)
     binary_mask = binary_noise_dist.sample()
