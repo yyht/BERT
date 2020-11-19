@@ -332,7 +332,12 @@ def _word_span_mask(FLAGS, inputs, tgt_len, num_predict, boundary, stride=1):
 
 def _token_span_mask(FLAGS, inputs, tgt_len, num_predict, stride=1):
     """Sample token spans as prediction targets."""
-    non_pad_len = tgt_len + 1 - stride
+
+    input_mask = tf.cast(tf.not_equal(inputs, FLAGS.pad_id), dtype=tf.int64)
+    num_tokens = tf.cast(tf.reduce_sum(input_mask, -1), tf.int64)
+    num_predict = tf.cast(num_predict, tf.int64)
+
+    non_pad_len = num_tokens + 1 - stride
     chunk_len_fp = tf.cast(non_pad_len / num_predict, dtype=tf.float32)
     round_to_int = lambda x: tf.cast(tf.round(x), tf.int64)
 
@@ -340,7 +345,7 @@ def _token_span_mask(FLAGS, inputs, tgt_len, num_predict, stride=1):
     #with different span-length
     span_len_seq = np.arange(FLAGS.min_tok, 5*(FLAGS.max_tok-1), 5)
     probs = np.array([(1.0) / (i + 1) for i in span_len_seq])
-    probs = probs[::-1]
+    # probs = probs[::-1]
     # probs = np.array([(1.0) * i for i in span_len_seq])
     # probs = np.array([(1.+0.1*i) for index, i in enumerate(span_len_seq) if index <= len(span_len_seq)-2]+[FLAGS.max_tok*2.0])
 
@@ -349,13 +354,13 @@ def _token_span_mask(FLAGS, inputs, tgt_len, num_predict, stride=1):
     if check_tf_version():
         span_lens = tf.random.categorical(
                 logits=logits[None],
-                num_samples=num_predict,
+                num_samples=tf.cast(num_predict, tf.int32),
                 dtype=tf.int64,
         )[0] + FLAGS.min_tok
     else:
         span_lens = tf.multinomial(
                 logits=logits[None],
-                num_samples=num_predict,
+                num_samples=tf.cast(num_predict, tf.int32),
                 output_dtype=tf.int64,
         )[0] + FLAGS.min_tok
 
