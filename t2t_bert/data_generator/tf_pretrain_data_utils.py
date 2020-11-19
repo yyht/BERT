@@ -345,7 +345,13 @@ def _token_span_mask(FLAGS, inputs, tgt_len, num_predict, stride=1):
     #with different span-length
     # span_len_seq = np.arange(FLAGS.min_tok, 5*(FLAGS.max_tok-1), 5)
     span_len_seq = np.arange(FLAGS.min_tok, FLAGS.max_tok+1)
-    probs = np.array([(1.0) / (i + 1) for i in span_len_seq])
+    # probs = np.array([(1.0) / (i + 1) for i in span_len_seq])
+    probs = np.array([(1.0*(i))  for i in span_len_seq])
+    for index, i in enumerate(span_len_seq):
+        if i in [3]:
+            probs[index] = probs[-1]
+        elif i in [5, 7]:
+            probs[index] = min(probs[5], probs[7])
     # probs = probs[::-1]
     # probs = np.array([(1.0) * i for i in span_len_seq])
     # probs = np.array([(1.+0.1*i) for index, i in enumerate(span_len_seq) if index <= len(span_len_seq)-2]+[FLAGS.max_tok*2.0])
