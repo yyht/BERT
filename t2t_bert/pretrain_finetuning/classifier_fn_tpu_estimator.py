@@ -422,13 +422,13 @@ def classifier_model_fn_builder(
 							"batch_norm_decay":0.9,
 							"hidden_act":"gelu",
 							"initializer_range":0.02,
-							
+
 						})
 			contrast_loss, monitor_dict = mixup_represt_learning.mixup_dsal_plus(
 					config=simclr_config,
 					hidden=sequence_output,
 					input_mask=features['input_mask'],
-					temperature=0.1,
+					temperature=1.0,
 					hidden_norm=True,
 					masked_repres=None,
 					is_training=is_training,
