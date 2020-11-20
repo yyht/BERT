@@ -203,7 +203,8 @@ def random_mixup_modified(hidden, sampled_hidden_a, sampled_hidden_b, beta=0.5):
 
     tf.logging.info(mixup_matrix)
 
-    mixup_matrix_shape = bert_utils.get_shape_list(mixup_matrix, expected_rank=[2,3])
+    mixup_matrix_shape = bert_utils.get_shape_list(mixup_matrix, 
+                                        expected_rank=[2,3,4])
 
     batch_size = mixup_matrix_shape[0]
     noise_num = mixup_matrix_shape[1]
@@ -309,7 +310,11 @@ def mixup_dsal_plus(config,
 
     [positive_2_repres, 
     positive_2_ids] = _sample_positive(sent_repres, batch_size)
-    xmix_features = random_mixup_modified(sent_repres, positive_1_repres, positive_2_repres, beta=beta)
+
+    xmix_features = random_mixup_modified(sent_repres, 
+                                positive_1_repres, 
+                                positive_2_repres, 
+                                beta=beta)
 
     with tf.variable_scope('cls/simclr_projection_head', reuse=tf.AUTO_REUSE):
       xmix_hiddens = projection_head(config, 
