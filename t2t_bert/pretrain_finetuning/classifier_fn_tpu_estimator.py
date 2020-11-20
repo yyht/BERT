@@ -419,7 +419,10 @@ def classifier_model_fn_builder(
 							"proj_head_mode":"nonlinear",
 							"num_proj_layers":2,
 							"global_bn":True,
-							"batch_norm_decay":0.9
+							"batch_norm_decay":0.9,
+							"hidden_act":"gelu",
+							"initializer_range":0.02,
+							
 						})
 			contrast_loss, monitor_dict = mixup_represt_learning.mixup_dsal_plus(
 					config=simclr_config,

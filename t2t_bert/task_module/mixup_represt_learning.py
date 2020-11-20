@@ -2,7 +2,6 @@ from utils.bert import bert_utils
 from utils.bert import bert_modules
 
 import numpy as np
-
 import collections
 import copy
 import json
@@ -284,6 +283,17 @@ def mixup_dsal_plus(config,
     batch_size = input_shape_list[0]
     hidden_dims = input_shape_list[-1]
 
+    with tf.variable_scope('cls/simclr_projection_head', reuse=tf.AUTO_REUSE):
+      with tf.variable_scope("transform"):
+        hidden = tf.layers.dense(
+            hidden,
+            units=hidden_dims,
+            activation=bert_modules.get_activation(config.hidden_act),
+            kernel_initializer=bert_modules.create_initializer(
+                config.initializer_range))
+
+        hidden = bert_modules.layer_norm(hidden)
+
     if sent_repres_mode == 'cls':
       sent_repres = tf.squeeze(tf.identity(hidden[:, 0:1, :]))
       tf.logging.info("== apply cls-sent_repres ==")
@@ -305,6 +315,7 @@ def mixup_dsal_plus(config,
     # xmix_features = tf.concat([xmix_a, xmix_b], 0)  # (num_transforms * bsz, h, w, c)
 
     # [batch_size, hidden_dims]
+
     [positive_1_repres, 
     positive_1_ids] = _sample_positive(sent_repres, batch_size)
 
