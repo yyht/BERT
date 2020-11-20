@@ -191,14 +191,14 @@ def random_mixup_modified(hidden, sampled_hidden_a, sampled_hidden_b, beta=0.5):
     linear_feat_b = linear_mixup(hidden, sampled_hidden_b, beta)
     binary_feat_b = binary_mixup(hidden, sampled_hidden_b, beta)
 
-    # [batch_size, 2_ab, hidden_dims]
-    linear_mixup_noise = tf.stack([linear_feat_a, linear_feat_b], axis=1)
-    binary_mixup_noise = tf.stack([binary_feat_a, binary_feat_b], axis=1)
+    # [batch_size, hidden_dims, 2_ab]
+    linear_mixup_noise = tf.stack([linear_feat_a, linear_feat_b], axis=-1)
+    binary_mixup_noise = tf.stack([binary_feat_a, binary_feat_b], axis=-1)
 
     tf.logging.info(linear_mixup_noise)
     tf.logging.info(binary_mixup_noise)
 
-    # [batch_size, 2_linear_binary, 2_ab, hidden_dims]
+    # [batch_size, 2_linear_binary, hidden_dims, 2_ab]
     mixup_matrix = tf.stack([linear_mixup_noise, binary_mixup_noise], axis=1)
 
     tf.logging.info(mixup_matrix)
@@ -219,7 +219,7 @@ def random_mixup_modified(hidden, sampled_hidden_a, sampled_hidden_b, beta=0.5):
 
     mixup_noise = tf.gather_nd(mixup_matrix, gather_index)
 
-    noise_lst = tf.unstack(mixup_noise, axis=1)
+    noise_lst = tf.unstack(mixup_noise, axis=-1)
     xmix_features = tf.concat(noise_lst, axis=0)
     return xmix_features
 
