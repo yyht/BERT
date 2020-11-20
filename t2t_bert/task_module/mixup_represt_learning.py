@@ -195,8 +195,13 @@ def random_mixup_modified(hidden, sampled_hidden_a, sampled_hidden_b, beta=0.5):
     linear_mixup_noise = tf.stack([linear_feat_a, linear_feat_b], axis=1)
     binary_mixup_noise = tf.stack([binary_feat_a, binary_feat_b], axis=1)
 
+    tf.logging.info(linear_mixup_noise)
+    tf.logging.info(binary_mixup_noise)
+
     # [batch_size, 2_linear_binary, 2_ab, hidden_dims]
-    mixup_matrix = tf.stack([linear_mixup_noise, mixup_noise_sample], axis=1)
+    mixup_matrix = tf.stack([linear_mixup_noise, binary_mixup_noise], axis=1)
+
+    tf.logging.info(mixup_matrix)
 
     mixup_matrix_shape = bert_utils.get_shape_list(mixup_matrix, expected_rank=[2,3])
 
