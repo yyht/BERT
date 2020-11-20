@@ -157,6 +157,66 @@ def my_contrastive_loss(hidden,
 
     return loss, logits_ab, labels
 
+def linear_mixup(hidden, sampled_hidden, beta=0.5):
+    hidden_shape_list = bert_utils.get_shape_list(hidden, expected_rank=[2,3])
+    batch_size = hidden_shape_list[0]
+    hidden_dims = hidden_shape_list[-1]
+
+    uniform_noise = tf.random.uniform([batch_size, 1], minval=0.9, maxval=1)
+    mix = tf.cast(tf.maximum(uniform_noise, 1 - uniform_noise), tf.float32)
+
+    tf.logging.info(hidden)
+    tf.logging.info(sampled_hidden)
+
+    xmix_linear = hidden * mix + sampled_hidden * (1.0 - mix)
+    return xmix_linear
+
+def binary_mixup(hidden, sampled_hidden, beta=0.5):
+    hidden_shape_list = bert_utils.get_shape_list(hidden, expected_rank=[2,3])
+    batch_size = hidden_shape_list[0]
+    hidden_dims = hidden_shape_list[-1]
+
+    binary_noise = tf.random.uniform([batch_size, hidden_dims], minval=0.7, maxval=1)
+    binary_noise_dist = tf.distributions.Bernoulli(probs=binary_noise, 
+                                                dtype=tf.float32)
+    binary_mask = binary_noise_dist.sample()
+    binary_mask = tf.cast(binary_mask, tf.float32)
+    xmix_binary = hidden * binary_mask +  sampled_hidden * (1.0 - binary_mask)
+    return xmix_binary
+
+def random_mixup_modified(hidden, sampled_hidden_a, sampled_hidden_b, beta=0.5):
+    linear_feat_a = linear_mixup(hidden, sampled_hidden_a, beta)
+    binary_feat_a = binary_mixup(hidden, sampled_hidden_a, beta)
+
+    linear_feat_b = linear_mixup(hidden, sampled_hidden_b, beta)
+    binary_feat_b = binary_mixup(hidden, sampled_hidden_b, beta)
+
+    # [batch_size, 2_ab, hidden_dims]
+    linear_mixup_noise = tf.stack([linear_feat_a, linear_feat_b], axis=1)
+    binary_mixup_noise = tf.stack([binary_feat_a, binary_feat_b], axis=1)
+
+    # [batch_size, 2_linear_binary, 2_ab, hidden_dims]
+    mixup_matrix = tf.stack([linear_mixup_noise, mixup_noise_sample], axis=1)
+
+    mixup_matrix_shape = bert_utils.get_shape_list(mixup_matrix, expected_rank=[2,3])
+
+    batch_size = mixup_matrix_shape[0]
+    noise_num = mixup_matrix_shape[1]
+
+    sample_prob = tf.ones((batch_size, noise_num), dtype=tf.float32)/noise_num
+    mixup_noise_idx = tf.multinomial(tf.log(sample_prob)+1e-10,
+              num_samples=1,
+              output_dtype=tf.int32) # batch x 1
+
+    batch_idx = tf.expand_dims(tf.cast(tf.range(batch_size), tf.int32), axis=-1)
+    gather_index = tf.concat([batch_idx, mixup_noise_idx], axis=-1)
+
+    mixup_noise = tf.gather_nd(mixup_matrix, gather_index)
+
+    noise_lst = tf.unstack(mixup_noise, axis=1)
+    xmix_features = tf.concat(noise_lst, axis=0)
+    return xmix_features
+
 def random_mixup(hidden, sampled_hidden, beta=0.5):
 
     hidden_shape_list = bert_utils.get_shape_list(hidden, expected_rank=[2,3])
@@ -228,15 +288,23 @@ def mixup_dsal_plus(config,
       tf.logging.info("== apply mean-pooling-sent_repres ==")
 
     # [batch_size, hidden_dims]
+    # [positive_1_repres, 
+    # positive_1_ids] = _sample_positive(sent_repres, batch_size)
+    # xmix_a = random_mixup(sent_repres, positive_1_repres, beta=beta)
+    
+    # [positive_2_repres, 
+    # positive_2_ids] = _sample_positive(sent_repres, batch_size)
+    # xmix_b = random_mixup(sent_repres, positive_2_repres, beta=beta)
+
+    # xmix_features = tf.concat([xmix_a, xmix_b], 0)  # (num_transforms * bsz, h, w, c)
+
+    # [batch_size, hidden_dims]
     [positive_1_repres, 
     positive_1_ids] = _sample_positive(sent_repres, batch_size)
-    xmix_a = random_mixup(sent_repres, positive_1_repres, beta=beta)
-    
+
     [positive_2_repres, 
     positive_2_ids] = _sample_positive(sent_repres, batch_size)
-    xmix_b = random_mixup(sent_repres, positive_2_repres, beta=beta)
-
-    xmix_features = tf.concat([xmix_a, xmix_b], 0)  # (num_transforms * bsz, h, w, c)
+    xmix_features = random_mixup_modified(sent_repres, positive_1_repres, positive_2_repres, beta=beta)
 
     with tf.variable_scope('cls/simclr_projection_head', reuse=tf.AUTO_REUSE):
       xmix_hiddens = projection_head(config, 
