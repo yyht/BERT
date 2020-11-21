@@ -389,7 +389,7 @@ flags.DEFINE_string(
 	"if apply distillation"
 	)
 
-
+import random
 def main(_):
 
 	tf.enable_resource_variables()
@@ -407,6 +407,7 @@ def main(_):
 			train_file_path = os.path.join(FLAGS.buckets, file)
 			train_file.append(train_file_path)
 		print(train_file_path)
+	random.shuffle(train_file)
 
 	dev_file = []
 	for file in FLAGS.dev_file.split(","):
