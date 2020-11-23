@@ -330,7 +330,8 @@ def mixup_dsal_plus(config,
     with tf.variable_scope('cls/simclr_projection_head', reuse=tf.AUTO_REUSE):
       xmix_hiddens = projection_head(config, 
                               xmix_features, 
-                              is_training, 
+                              is_training,
+                              use_bn=use_bn, 
                               name='head_contrastive')
 
     # [2*batch_size, hidden_dims]

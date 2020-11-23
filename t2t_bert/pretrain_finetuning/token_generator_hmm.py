@@ -18,6 +18,7 @@ def ngram_prob(ngram, mask_prob):
 	ngram_mask_prob = mask_prob / (expected_ngram+1e-10)
 	for i, value in enumerate(prob):
 		prob[i] *= (ngram_mask_prob)
+	print(prob)
 
 	all_prob = [1-ngram_mask_prob] + prob
 	prob_size = int((1+len(prob)) / 2 * len(prob) + 1)
