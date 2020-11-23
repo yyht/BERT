@@ -398,7 +398,7 @@ def classifier_model_fn_builder(
 		if 'label' in model_features:
 			loss += nsp_loss
 
-		if kargs.get("apply_mixup", "none") == 'mixup':
+		if kargs.get("apply_mixup", "mixup") == 'mixup':
 
 			if kargs.get("mixup_mode", "noise") == 'clean':
 				mixup_features = {}
@@ -433,10 +433,10 @@ def classifier_model_fn_builder(
 					masked_repres=None,
 					is_training=is_training,
 					beta=0.5,
-					use_bn=False,
+					use_bn=True,
 					tpu_context=tpu_context,
 					weights=1.0,
-					sent_repres_mode='cls',
+					sent_repres_mode='mean_pooling',
 					negative_mode='global',
 					monitor_dict=monitor_dict)
 			monitor_dict['contrast_loss'] = contrast_loss
