@@ -397,7 +397,7 @@ def main(_):
 	init_checkpoint = os.path.join(FLAGS.buckets, FLAGS.init_checkpoint)
 	train_file = []
 	# try:
-	with tf.gfile.GFile(FLAGS.train_file_path, "r") as reader:
+	with tf.gfile.GFile(os.path.join(FLAGS.buckets, FLAGS.train_file_path), "r") as reader:
 		for index, line in enumerate(reader):
 			content = line.strip()
 			train_file_path = os.path.join(FLAGS.buckets, content)
