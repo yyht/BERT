@@ -401,13 +401,16 @@ def main(_):
 			for line in reader:
 				content = line.strip()
 				train_file_path = os.path.join(FLAGS.buckets, content)
-		print(train_file_path)
+				train_file.append(train_file_path)
+		print(train_file)
 	except:
 		for file in FLAGS.train_file.split(","):
 			train_file_path = os.path.join(FLAGS.buckets, file)
 			train_file.append(train_file_path)
 		print(train_file_path)
 	random.shuffle(train_file)
+
+	tf.logging.info("** total data file:%s **"%(str(len(train_file))))
 
 	dev_file = []
 	for file in FLAGS.dev_file.split(","):
