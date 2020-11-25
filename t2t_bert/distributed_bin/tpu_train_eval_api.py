@@ -396,18 +396,18 @@ def main(_):
 
 	init_checkpoint = os.path.join(FLAGS.buckets, FLAGS.init_checkpoint)
 	train_file = []
-	try:
-		with tf.gfile.GFile(FLAGS.train_file_path, "r") as reader:
-			for line in reader:
-				content = line.strip()
-				train_file_path = os.path.join(FLAGS.buckets, content)
-				train_file.append(train_file_path)
-		print(train_file)
-	except:
-		for file in FLAGS.train_file.split(","):
-			train_file_path = os.path.join(FLAGS.buckets, file)
+	# try:
+	with tf.gfile.GFile(FLAGS.train_file_path, "r") as reader:
+		for index, line in enumerate(reader):
+			content = line.strip()
+			train_file_path = os.path.join(FLAGS.buckets, content)
 			train_file.append(train_file_path)
-		print(train_file_path)
+	print(train_file)
+	# except:
+	# 	for file in FLAGS.train_file.split(","):
+	# 		train_file_path = os.path.join(FLAGS.buckets, file)
+	# 		train_file.append(train_file_path)
+	# 	print(train_file_path)
 	random.shuffle(train_file)
 
 	tf.logging.info("** total data file:%s **"%(str(len(train_file))))
