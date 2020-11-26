@@ -578,8 +578,8 @@ def _decode_record(FLAGS, record, num_predict,
         record_spec = {
                     "input_ori_ids":
                             tf.FixedLenFeature([max_seq_length], tf.int64),
-                    # "segment_ids":
-                    #         tf.FixedLenFeature([max_seq_length], tf.int64)
+                    "segment_ids":
+                            tf.FixedLenFeature([max_seq_length], tf.int64)
         }
     elif input_type == "gatedcnn":
         record_spec = {
