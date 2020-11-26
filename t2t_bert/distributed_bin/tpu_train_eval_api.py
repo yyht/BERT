@@ -403,7 +403,7 @@ def main(_):
 			train_file_path = os.path.join(FLAGS.buckets, content)
 			train_file.append(train_file_path)
 	print(train_file)
-	train_file = [train_file[0]]
+	# train_file = [train_file[0]]
 	# except:
 	# 	for file in FLAGS.train_file.split(","):
 	# 		train_file_path = os.path.join(FLAGS.buckets, file)
