@@ -601,7 +601,7 @@ def classifier_model_fn_builder(
 				# 				scaffold_fn=scaffold_fn)
 
 			if kargs.get('use_tpu', False):
-
+				if_apply_monitor = False
 				#### Creating host calls
 				if monitor_dict:
 					for key in monitor_dict:
@@ -632,7 +632,7 @@ def classifier_model_fn_builder(
 								mode=mode,
 								loss=loss,
 								train_op=train_op,
-								host_call=host_call,
+								host_call=host_call if if_apply_monitor else None,
 								scaffold_fn=scaffold_fn)
 			else:
 				estimator_spec = tf.estimator.EstimatorSpec(
