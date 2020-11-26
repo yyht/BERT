@@ -355,13 +355,13 @@ def _token_span_mask(FLAGS, inputs, tgt_len, num_predict, stride=1):
 
     # probs = probs[::-1]
     # probs = np.array([(1.0) * i for i in span_len_seq])
-    # probs = np.array([(1.+0.1*i) for index, i in enumerate(span_len_seq) if index <= len(span_len_seq)-2]+[FLAGS.max_tok*2.0])
+    # probs = np.array([(1.+  0.1*i) for index, i in enumerate(span_len_seq) if index <= len(span_len_seq)-2]+[FLAGS.max_tok*2.0])
 
     probs /= np.sum(probs)
 
     tf.logging.info(probs)
     tf.logging.info("** probs **")
-    
+
     logits = tf.constant(np.log(probs), dtype=tf.float32)
     if check_tf_version():
         span_lens = tf.random.categorical(
@@ -578,8 +578,8 @@ def _decode_record(FLAGS, record, num_predict,
         record_spec = {
                     "input_ori_ids":
                             tf.FixedLenFeature([max_seq_length], tf.int64),
-                    "segment_ids":
-                            tf.FixedLenFeature([max_seq_length], tf.int64)
+                    # "segment_ids":
+                    #         tf.FixedLenFeature([max_seq_length], tf.int64)
         }
     elif input_type == "gatedcnn":
         record_spec = {
