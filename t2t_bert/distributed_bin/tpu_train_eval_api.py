@@ -409,7 +409,7 @@ def main(_):
 	# 		train_file_path = os.path.join(FLAGS.buckets, file)
 	# 		train_file.append(train_file_path)
 	# 	print(train_file_path)
-	# random.shuffle(train_file)
+	random.shuffle(train_file)
 
 	tf.logging.info("** total data file:%s **"%(str(len(train_file))))
 
