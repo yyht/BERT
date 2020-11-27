@@ -351,7 +351,8 @@ def _token_span_mask(FLAGS, inputs, tgt_len, num_predict, stride=1):
         if i in [3]:
             probs[index] = probs[-1]
         elif i in [5, 7]:
-            probs[index] = min(probs[5], probs[7])
+            probs[index] = min(probs[(span_len_seq == 5).argmax()],
+                                probs[(span_len_seq == 7).argmax()])
 
     # probs = probs[::-1]
     # probs = np.array([(1.0) * i for i in span_len_seq])
