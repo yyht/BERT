@@ -401,6 +401,7 @@ def main(_):
 		for index, line in enumerate(reader):
 			content = line.strip()
 			train_file_path = os.path.join(FLAGS.buckets, content)
+			tf.logging.info("** train file:%s **"%(train_file_path))
 			train_file.append(train_file_path)
 	# print(train_file)
 	# train_file = [train_file[0]]
