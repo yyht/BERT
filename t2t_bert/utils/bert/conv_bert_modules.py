@@ -124,7 +124,9 @@ def attention_layer(from_tensor,
                     to_seq_length=None, 
                     conv_kernel_size=9,
                     head_ratio=2,
-                    conv_type=1):
+                    conv_type=1,
+                    from_tensor_mask=None,
+                    to_tensor_mask=None):
   """Performs several types of attention
   1) multi-headed attention from `from_tensor` to `to_tensor`.
 
@@ -270,9 +272,16 @@ def attention_layer(from_tensor,
 
   if conv_type in ['sdconv']:
     # [B,T, N*H]
-    key_conv_attn_layer = reshape_for_conv(to_tensor_2d, batch_size, num_attention_heads*head_ratio,
+    key_conv_attn_layer_input = reshape_for_conv(to_tensor_2d, batch_size, num_attention_heads*head_ratio,
                                     to_seq_length, size_per_head)
-    key_conv_attn_layer = tf.layers.separable_conv1d(key_conv_attn_layer,
+
+    if from_tensor_mask is not None and to_tensor_mask is not None:
+      to_tensor_2d_mask = tf.cast(to_tensor_mask, tf.float32)[:, :, None]
+      from_tensor_2d_mask = tf.cast(from_tensor_mask, tf.float32)[:, :, None]
+      key_conv_attn_layer_input *= to_tensor_2d_mask
+      tf.logging.info("== apply conv seq-masking on sequence padding ==")
+
+    key_conv_attn_layer = tf.layers.separable_conv1d(key_conv_attn_layer_input,
         num_attention_heads * size_per_head,
         conv_kernel_size,
         padding='same',
@@ -281,10 +290,24 @@ def attention_layer(from_tensor,
         pointwise_initializer=create_initializer(initializer_range),
         name="conv_attn_key")
 
+    if from_tensor_mask is not None and to_tensor_mask is not None:
+      key_conv_attn_layer *= to_tensor_2d_mask
+      tf.logging.info("== apply conv seq-masking on sequence padding ==")
+
     # [B*T, N*H]
     key_conv_attn_layer = bert_utils.reshape_to_matrix(key_conv_attn_layer)
 
-    conv_attn_layer = tf.multiply(key_conv_attn_layer, query_layer)
+    # conv_attn_layer = tf.multiply(key_conv_attn_layer, query_layer)
+
+    query_gate = tf.layers.dense(
+        from_tensor_2d,
+        num_attention_heads * size_per_head,
+        activation=None,
+        name="query_gate",
+        kernel_initializer=create_initializer(initializer_range))
+
+    conv_gated = tf.nn.sigmoid(tf.nn.dropout(query_gate, 1-dropout_rate))
+    conv_attn_layer = key_conv_attn_layer * conv_gated + query_layer * (1-conv_gated)
 
     # [B*T, N*K]
     conv_kernel_layer = tf.layers.dense(
@@ -309,6 +332,9 @@ def attention_layer(from_tensor,
         kernel_initializer=create_initializer(initializer_range))
     # [B,T, N*H]
     conv_out_layer = tf.reshape(conv_out_layer,[batch_size,to_seq_length,num_attention_heads * size_per_head])
+    if from_tensor_mask is not None and to_tensor_mask is not None:
+      conv_out_layer *= to_tensor_2d_mask
+      tf.logging.info("== apply conv seq-masking on sequence padding ==")
 
     conv_out_layer = tf.pad(conv_out_layer, paddings, "CONSTANT")
     # unfold [B,T, N*H, K]
@@ -320,7 +346,6 @@ def attention_layer(from_tensor,
 
     conv_out_layer = tf.reshape(unfold_conv_out_layer,
       [batch_size*to_seq_length*num_attention_heads ,size_per_head, conv_kernel_size])
-
 
     conv_out_layer = tf.matmul(conv_out_layer, conv_kernel_layer)
 
@@ -505,7 +530,9 @@ def transformer_model(input_tensor,
               to_seq_length=seq_length,
               conv_kernel_size=conv_kernel_size,
               head_ratio=head_ratio,
-              conv_type=conv_type)
+              conv_type=conv_type,
+              from_tensor_mask=kargs.get('from_tensor_mask', None),
+              to_tensor_mask=kargs.get('to_tensor_mask', None))
           attention_heads.append(attention_head)
           attn_maps.append(probs)
           all_value_outputs.append(value_layer)

@@ -337,7 +337,7 @@ def _token_span_mask(FLAGS, inputs, tgt_len, num_predict, stride=1):
     num_tokens = tf.cast(tf.reduce_sum(input_mask, -1), tf.int64)
     num_predict = tf.cast(num_predict, tf.int64)
 
-    non_pad_len = num_tokens + 1 - stride
+    non_pad_len = num_tokens + 1 - stride + 10
     chunk_len_fp = tf.cast(non_pad_len / num_predict, dtype=tf.float32)
     round_to_int = lambda x: tf.cast(tf.round(x), tf.int64)
 
