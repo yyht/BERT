@@ -420,7 +420,7 @@ def main(_):
 		dev_file.append(dev_file_path)
 	checkpoint_dir = os.path.join(FLAGS.buckets, FLAGS.model_output)
 
-	print(init_checkpoint, train_file, dev_file, checkpoint_dir)
+	print(init_checkpoint, train_file[0:1], dev_file[0:1], checkpoint_dir)
 
 	tpu_cluster_resolver = None
 	if FLAGS.use_tpu and FLAGS.tpu_name:
