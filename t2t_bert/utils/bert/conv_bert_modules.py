@@ -321,7 +321,7 @@ def attention_layer(from_tensor,
       [batch_size*to_seq_length*num_attention_heads, conv_kernel_size, 1])
     
     # conv_kernel_layer = tf.nn.softmax(conv_kernel_layer, axis=1)
-    attention_probs = tf.exp(tf.nn.log_softmax(conv_kernel_layer+1e-10))
+    attention_probs = tf.exp(tf.nn.log_softmax(conv_kernel_layer+1e-10, axis=-1))
     
     paddings = tf.constant([[0, 0,], [int((conv_kernel_size-1)/2), int((conv_kernel_size-1)/2)],[0,0]])
     
