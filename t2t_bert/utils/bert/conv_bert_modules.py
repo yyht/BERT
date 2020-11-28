@@ -302,7 +302,7 @@ def attention_layer(from_tensor,
     query_gate = tf.layers.dense(
         from_tensor_2d,
         num_attention_heads * size_per_head,
-        activation=None,
+        activation=value_act,
         name="conv_query_gate",
         kernel_initializer=create_initializer(initializer_range))
 
