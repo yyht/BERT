@@ -320,7 +320,8 @@ def attention_layer(from_tensor,
     conv_kernel_layer = tf.reshape(conv_kernel_layer, 
       [batch_size*to_seq_length*num_attention_heads, conv_kernel_size, 1])
     
-    conv_kernel_layer = tf.nn.softmax(conv_kernel_layer, axis=1)
+    # conv_kernel_layer = tf.nn.softmax(conv_kernel_layer, axis=1)
+    attention_probs = tf.exp(tf.nn.log_softmax(conv_kernel_layer+1e-10))
     
     paddings = tf.constant([[0, 0,], [int((conv_kernel_size-1)/2), int((conv_kernel_size-1)/2)],[0,0]])
     
@@ -383,7 +384,8 @@ def attention_layer(from_tensor,
 
   # Normalize the attention scores to probabilities.
   # `attention_probs` = [B, N, F, T]
-  attention_probs = tf.nn.softmax(attention_scores)
+  # attention_probs = tf.nn.softmax(attention_scores)
+  attention_probs = tf.exp(tf.nn.log_softmax(attention_scores+1e-10))
 
   # This is actually dropping out entire tokens to attend to, which might
   # seem a bit unusual, but is taken from the original Transformer paper.
