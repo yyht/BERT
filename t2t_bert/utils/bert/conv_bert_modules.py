@@ -303,7 +303,7 @@ def attention_layer(from_tensor,
         from_tensor_2d,
         num_attention_heads * size_per_head,
         activation=None,
-        name="query_gate",
+        name="conv_query_gate",
         kernel_initializer=create_initializer(initializer_range))
 
     conv_gated = tf.nn.sigmoid(tf.nn.dropout(query_gate, 1-dropout_rate))
