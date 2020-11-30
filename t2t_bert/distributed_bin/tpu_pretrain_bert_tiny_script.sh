@@ -9,7 +9,7 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--dev_file "data_single_hard_gan/chunk_18.tfrecords,data_single_hard_gan/chunk_19.tfrecords" \
 	--model_output "model/tiny/roberta_tiny_50G_whole" \
 	--epoch 10 \
-	--train_file_path "chinese_simplified_whole_sentence_v2_32/chinese_simplified_whole_sentence_file.txt" \
+	--train_file_path "chinese_simplified_whole_sentence_v3_32/chinese_simplified_whole_sentence_file.txt" \
 	--num_classes 2 \
 	--train_size 51000000 \
 	--eval_size 1100000 \
