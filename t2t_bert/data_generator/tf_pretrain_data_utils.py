@@ -748,7 +748,6 @@ def input_fn_builder(
                             tf.data.TFRecordDataset,
                             sloppy=is_training,
                             cycle_length=cycle_length))
-            d = d.apply(tf.data.experimental.ignore_errors())
         else:
             d = tf.data.TFRecordDataset(input_files)
             # Since we evaluate for a fixed number of steps we don't want to encounter
@@ -771,6 +770,7 @@ def input_fn_builder(
                         batch_size=batch_size,
                         num_parallel_batches=num_cpu_threads,
                         drop_remainder=True))
+        d = d.apply(tf.data.experimental.ignore_errors())
         return d
 
     return input_fn
