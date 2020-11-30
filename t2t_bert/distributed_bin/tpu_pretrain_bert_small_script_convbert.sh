@@ -13,7 +13,7 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--num_classes 2 \
 	--train_size 51000000 \
 	--eval_size 1100000 \
-	--batch_size 512 \
+	--batch_size 256 \
 	--model_type "bert" \
 	--if_shard 1 \
 	--is_debug 1 \
@@ -27,7 +27,7 @@ nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--ln_type "postln" \
 	--warmup "warmup" \
 	--decay "decay" \
-	--init_lr 2e-5 \
+	--init_lr 1e-4 \
 	--num_tpu_cores 8 \
 	--do_train true \
 	--tpu_name "albert4" \
