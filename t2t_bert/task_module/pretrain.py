@@ -11,6 +11,7 @@ import re
 import six
 import tensorflow as tf
 from loss import loss_utils
+from loss.entfox import sparse_entmax15_loss_with_logits
 
 def check_tf_version():
 	version = tf.__version__
@@ -209,25 +210,37 @@ def get_masked_lm_output(config, input_tensor, output_weights, positions,
 		label_ids = tf.reshape(label_ids, [-1])
 		label_weights = tf.reshape(label_weights, [-1])
 
-		one_hot_labels = tf.one_hot(
-				label_ids, depth=config.vocab_size, dtype=tf.float32)
+		if kargs.get("pretrain_loss_type", "normal") == "entmax":
+			one_hot_labels = tf.one_hot(
+					label_ids, depth=config.vocab_size, dtype=tf.float32)
+			per_example_loss = entmax15_loss_with_logits(one_hot_labels, logits)
+			numerator = tf.reduce_sum(label_weights * per_example_loss)
+			denominator = tf.reduce_sum(label_weights) + 1e-5
+			loss = numerator / denominator
 
-		# per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-		# 											labels=tf.stop_gradient(label_ids),
-		# 											logits=logits)
-		per_example_loss = -tf.reduce_sum(log_probs * one_hot_labels, axis=[-1])
+			tf.logging.info("**** entmax for mlm loss ****")
 
-		numerator = tf.reduce_sum(label_weights * per_example_loss)
-		denominator = tf.reduce_sum(label_weights) + 1e-5
+		elif kargs.get("pretrain_loss_type", "normal") == "normal":
+			one_hot_labels = tf.one_hot(
+					label_ids, depth=config.vocab_size, dtype=tf.float32)
 
-		# The `positions` tensor might be zero-padded (if the sequence is too
-		# short to have the maximum number of predictions). The `label_weights`
-		# tensor has a value of 1.0 for every real prediction and 0.0 for the
-		# padding predictions.
-		# per_example_loss = -tf.reduce_sum(log_probs * one_hot_labels, axis=[-1])
-		# numerator = tf.reduce_sum(label_weights * per_example_loss)
-		# denominator = tf.reduce_sum(label_weights) + 1e-5
-		loss = numerator / denominator
+			# per_example_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+			# 											labels=tf.stop_gradient(label_ids),
+			# 											logits=logits)
+			per_example_loss = -tf.reduce_sum(log_probs * one_hot_labels, axis=[-1])
+
+			numerator = tf.reduce_sum(label_weights * per_example_loss)
+			denominator = tf.reduce_sum(label_weights) + 1e-5
+
+			# The `positions` tensor might be zero-padded (if the sequence is too
+			# short to have the maximum number of predictions). The `label_weights`
+			# tensor has a value of 1.0 for every real prediction and 0.0 for the
+			# padding predictions.
+			# per_example_loss = -tf.reduce_sum(log_probs * one_hot_labels, axis=[-1])
+			# numerator = tf.reduce_sum(label_weights * per_example_loss)
+			# denominator = tf.reduce_sum(label_weights) + 1e-5
+			loss = numerator / denominator
+			tf.logging.info("**** normal loss for mlm loss ****")
 		if kargs.get("pretrain_loss_type", "normal") == "gradient_penalty":
 			# output_weights is embedding_matrix
 			gp = tf.reduce_sum(tf.gradients(loss, [output_weights])[0]**2)
