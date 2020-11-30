@@ -736,7 +736,7 @@ def input_fn_builder(
         if is_training:
             d = tf.data.Dataset.from_tensor_slices(tf.constant(input_files))
             d = d.repeat()
-            d = d.shuffle(buffer_size=len(input_files))
+            d = d.shuffle(buffer_size=1024)
 
             # `cycle_length` is the number of parallel files that get read.
             cycle_length = min(num_cpu_threads, len(input_files))
@@ -748,7 +748,7 @@ def input_fn_builder(
                             tf.data.TFRecordDataset,
                             sloppy=is_training,
                             cycle_length=cycle_length))
-            d = d.shuffle(buffer_size=100)
+            d = d.apply(tf.data.experimental.ignore_errors())
         else:
             d = tf.data.TFRecordDataset(input_files)
             # Since we evaluate for a fixed number of steps we don't want to encounter
