@@ -1,0 +1,20 @@
+('/home/htxu91/source/BERT', '==father path==')
+['/home/htxu91/source/BERT/t2t_bert/distributed_bin', '/usr/lib/python2.7', '/usr/lib/python2.7/plat-x86_64-linux-gnu', '/usr/lib/python2.7/lib-tk', '/usr/lib/python2.7/lib-old', '/usr/lib/python2.7/lib-dynload', '/usr/local/lib/python2.7/dist-packages', '/usr/lib/python2.7/dist-packages', '/home/htxu91/source/BERT', '/home/htxu91/source/BERT/t2t_bert']
+Traceback (most recent call last):
+  File "./t2t_bert/distributed_bin/tpu_train_eval_api.py", line 29, in <module>
+    import tensorflow as tf
+  File "/usr/local/lib/python2.7/dist-packages/tensorflow/__init__.py", line 99, in <module>
+    from tensorflow_core import *
+  File "/usr/local/lib/python2.7/dist-packages/tensorflow_core/__init__.py", line 28, in <module>
+    from tensorflow.python import pywrap_tensorflow  # pylint: disable=unused-import
+  File "/usr/local/lib/python2.7/dist-packages/tensorflow/__init__.py", line 50, in __getattr__
+    module = self._load()
+  File "/usr/local/lib/python2.7/dist-packages/tensorflow/__init__.py", line 44, in _load
+    module = _importlib.import_module(self.__name__)
+  File "/usr/lib/python2.7/importlib/__init__.py", line 37, in import_module
+    __import__(name)
+  File "/usr/local/lib/python2.7/dist-packages/tensorflow_core/python/__init__.py", line 52, in <module>
+    from tensorflow.core.framework.graph_pb2 import *
+  File "/usr/local/lib/python2.7/dist-packages/tensorflow_core/core/framework/graph_pb2.py", line 5, in <module>
+    import sys
+KeyboardInterrupt
