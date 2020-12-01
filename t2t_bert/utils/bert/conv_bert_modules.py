@@ -287,8 +287,8 @@ def attention_layer(from_tensor,
         conv_kernel_size,
         padding='same',
         activation=value_act,
-        # depthwise_initializer=create_initializer(1/conv_kernel_size),
-        depthwise_initializer=create_initializer(initializer_range),
+        depthwise_initializer=create_initializer(1/conv_kernel_size),
+        # depthwise_initializer=create_initializer(initializer_range),
         pointwise_initializer=create_initializer(initializer_range),
         name="conv_attn_key")
 
