@@ -126,7 +126,8 @@ def attention_layer(from_tensor,
                     head_ratio=2,
                     conv_type=1,
                     from_tensor_mask=None,
-                    to_tensor_mask=None):
+                    to_tensor_mask=None,
+                    conv_method='gate'):
   """Performs several types of attention
   1) multi-headed attention from `from_tensor` to `to_tensor`.
 
@@ -297,18 +298,23 @@ def attention_layer(from_tensor,
 
     # [B*T, N*H]
     key_conv_attn_layer = bert_utils.reshape_to_matrix(key_conv_attn_layer)
+    if conv_method == 'dot':
+      conv_attn_layer = tf.multiply(key_conv_attn_layer, query_layer)
+      tf.logging.info("== apply conv dot query_layer ==")
+    elif conv_method == 'gate':
+      query_gate = tf.layers.dense(
+          from_tensor_2d,
+          num_attention_heads * size_per_head,
+          activation=value_act,
+          name="conv_query_gate",
+          kernel_initializer=create_initializer(initializer_range))
 
-    # conv_attn_layer = tf.multiply(key_conv_attn_layer, query_layer)
-
-    query_gate = tf.layers.dense(
-        from_tensor_2d,
-        num_attention_heads * size_per_head,
-        activation=value_act,
-        name="conv_query_gate",
-        kernel_initializer=create_initializer(initializer_range))
-
-    conv_gated = tf.nn.sigmoid(tf.nn.dropout(query_gate, 1-attention_probs_dropout_prob))
-    conv_attn_layer = key_conv_attn_layer * conv_gated + query_layer * (1-conv_gated)
+      conv_gated = tf.nn.sigmoid(tf.nn.dropout(query_gate, 1-attention_probs_dropout_prob))
+      conv_attn_layer = key_conv_attn_layer * conv_gated + query_layer * (1-conv_gated)
+      tf.logging.info("== apply conv gate query_layer ==")
+    else:
+      conv_attn_layer = tf.multiply(key_conv_attn_layer, query_layer)
+      tf.logging.info("== apply conv dot query_layer ==")
 
     # [B*T, N*K]
     conv_kernel_layer = tf.layers.dense(
@@ -535,7 +541,8 @@ def transformer_model(input_tensor,
               head_ratio=head_ratio,
               conv_type=conv_type,
               from_tensor_mask=kargs.get('from_tensor_mask', None),
-              to_tensor_mask=kargs.get('to_tensor_mask', None))
+              to_tensor_mask=kargs.get('to_tensor_mask', None),
+              conv_method=kargs.get('conv_method', "dot"))
           attention_heads.append(attention_head)
           attn_maps.append(probs)
           all_value_outputs.append(value_layer)

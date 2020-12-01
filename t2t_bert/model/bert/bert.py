@@ -244,7 +244,8 @@ class Bert(object):
 						head_ratio=self.config.get('head_ratio', 2),
                       	conv_type=self.config.get('conv_type', "noconv"),
                       	from_tensor_mask=input_mask,
-                    	to_tensor_mask=input_mask)
+                    	to_tensor_mask=input_mask,
+                    	conv_method=self.config.get('conv_method', "dot"))
 
 	def build_pooler(self, *args,**kargs):
 		reuse = kargs["reuse"]

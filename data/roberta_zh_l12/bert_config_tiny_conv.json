@@ -21,5 +21,6 @@
   "conv_bert":true,
   "kernel_size":9,
   "model_type":"conv_transformer",
-  "share_or_not":true
+  "share_or_not":true,
+  "conv_method":"gate"
 }

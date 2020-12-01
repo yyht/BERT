@@ -23,5 +23,6 @@
   "kernel_size":9,
   "conv_type":"sdconv",
   "model_type":"official_conv_transformer",
-  "share_or_not":true
+  "share_or_not":true,
+  "conv_method":"gate"
 }
