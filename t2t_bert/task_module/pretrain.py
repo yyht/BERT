@@ -11,7 +11,7 @@ import re
 import six
 import tensorflow as tf
 from loss import loss_utils
-from loss.entfox import sparse_entmax15_loss_with_logits
+from loss.entfox import sparse_entmax15_loss_with_logits, entmax15_loss_with_logits
 
 def check_tf_version():
 	version = tf.__version__
