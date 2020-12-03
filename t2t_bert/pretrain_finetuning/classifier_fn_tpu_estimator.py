@@ -648,7 +648,7 @@ def classifier_model_fn_builder(
                 #               scaffold_fn=scaffold_fn)
 
             if kargs.get('use_tpu', False):
-                if_apply_monitor = False
+                if_apply_monitor = True
                 #### Creating host calls
                 if monitor_dict:
                     for key in monitor_dict:
