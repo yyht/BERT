@@ -440,9 +440,9 @@ def classifier_model_fn_builder(
                                             discriminator_mode=discriminator_mode,
                                             loss_converage=loss_converage)
 
-            kl_div_a = kl_divergence_with_logit(tf.stop_gradient(mixup_masked_lm_log_probs),
+            kl_div_a = kl_divergence_with_logit(tf.identity(mixup_masked_lm_log_probs),
                                     pre_masked_lm_log_probs)
-            kl_div_b = kl_divergence_with_logit(tf.stop_gradient(pre_masked_lm_log_probs),
+            kl_div_b = kl_divergence_with_logit(tf.identity(pre_masked_lm_log_probs),
                                     mixup_masked_lm_log_probs)
 
             numerator_a = tf.reduce_sum(mixup_masked_lm_mask[:, None] * kl_div_a)
