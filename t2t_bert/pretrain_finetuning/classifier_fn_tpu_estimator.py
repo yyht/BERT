@@ -91,6 +91,9 @@ def kl_divergence_with_logit(q_logit, p_logit):
     qlogp = tf.reduce_sum(tf.exp(q_logit) * p_logit, -1)
     return qlogq - qlogp
 
+def mse(q_logit, p_logit):
+    return tf.reduce_sum(tf.pow(q_logit-p_logit, 2.0))
+
 def classifier_model_fn_builder(
                         model_config,
                         num_labels,
@@ -410,12 +413,12 @@ def classifier_model_fn_builder(
             loss += nsp_loss
 
         if kargs.get("apply_mixup_embedding", "mixup_embed") == 'mixup_embed':
-            embedding_table = (model.get_embedding_table())
+            embedding_table = tf.identity(model.get_embedding_table())
             original_embedding = tf.identity(model.get_embedding_output())
             feature_shape = bert_utils.get_shape_list(original_embedding, expected_rank=[2,3])
             batch_size = feature_shape[0]
             sampled_feature, positive_ids = mixup_represt_learning._sample_positive(original_embedding, batch_size)
-            uniform_noise = tf.random.uniform([batch_size, feature_shape[1], 1], minval=0.7, maxval=1)
+            uniform_noise = tf.random.uniform([batch_size, feature_shape[1], 1], minval=0.5, maxval=1)
             mix = tf.cast(tf.maximum(uniform_noise, 1 - uniform_noise), tf.float32)
 
             mixup_embedding = original_embedding * mix + sampled_feature * (1.0 - mix)
@@ -456,7 +459,7 @@ def classifier_model_fn_builder(
             monitor_dict['embed_mixup_a'] = kl_div_loss_a
             monitor_dict['embed_mixup_b'] = kl_div_loss_b
 
-            loss += 0.7 * (kl_div_loss_a+kl_div_loss_b)
+            loss += (kl_div_loss_a+kl_div_loss_b)
 
         if kargs.get("apply_mixup", "none") == 'mixup':
 
