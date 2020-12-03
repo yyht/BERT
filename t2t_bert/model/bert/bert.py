@@ -68,9 +68,20 @@ class Bert(object):
 					embedding_flag = False
 					tf.logging.info("****** outer-mixup-embedding_seq_output *******")
 				
-				if len(input_shape) == 3 and embedding_flag: 
-					tf.logging.info("****** 3D embedding matmul *******")
-					(self.embedding_output_word, self.embedding_table) = bert_modules.gumbel_embedding_lookup(
+				if embedding_flag:
+					tf.logging.info("****** inner-mixup-embedding_seq_output *******")
+					if len(input_shape) == 3: 
+						tf.logging.info("****** 3D embedding matmul *******")
+						(self.embedding_output_word, self.embedding_table) = bert_modules.gumbel_embedding_lookup(
+								input_ids=input_ids,
+								vocab_size=self.config.vocab_size,
+								embedding_size=projection_width,
+								initializer_range=self.config.initializer_range,
+								word_embedding_name="word_embeddings",
+								use_one_hot_embeddings=self.config.use_one_hot_embeddings,
+								embedding_table_adv=embedding_table_adv)
+					elif len(input_shape) == 2:
+						(self.embedding_output_word, self.embedding_table) = bert_modules.embedding_lookup(
 							input_ids=input_ids,
 							vocab_size=self.config.vocab_size,
 							embedding_size=projection_width,
@@ -78,24 +89,17 @@ class Bert(object):
 							word_embedding_name="word_embeddings",
 							use_one_hot_embeddings=self.config.use_one_hot_embeddings,
 							embedding_table_adv=embedding_table_adv)
-				elif len(input_shape) == 2:
-					(self.embedding_output_word, self.embedding_table) = bert_modules.embedding_lookup(
-						input_ids=input_ids,
-						vocab_size=self.config.vocab_size,
-						embedding_size=projection_width,
-						initializer_range=self.config.initializer_range,
-						word_embedding_name="word_embeddings",
-						use_one_hot_embeddings=self.config.use_one_hot_embeddings,
-						embedding_table_adv=embedding_table_adv)
+					else:
+						(self.embedding_output_word, self.embedding_table) = bert_modules.embedding_lookup(
+							input_ids=input_ids,
+							vocab_size=self.config.vocab_size,
+							embedding_size=projection_width,
+							initializer_range=self.config.initializer_range,
+							word_embedding_name="word_embeddings",
+							use_one_hot_embeddings=self.config.use_one_hot_embeddings,
+							embedding_table_adv=embedding_table_adv)
 				else:
-					(self.embedding_output_word, self.embedding_table) = bert_modules.embedding_lookup(
-						input_ids=input_ids,
-						vocab_size=self.config.vocab_size,
-						embedding_size=projection_width,
-						initializer_range=self.config.initializer_range,
-						word_embedding_name="word_embeddings",
-						use_one_hot_embeddings=self.config.use_one_hot_embeddings,
-						embedding_table_adv=embedding_table_adv)
+					tf.logging.info("****** outter-mixup-embedding_seq_output *******")
 
 		if embedding_seq_adv is not None and kargs.get("emb_adv_pos", "emb_adv_post") == "emb_adv_pre":
 			if not kargs.get("stop_gradient", False):
