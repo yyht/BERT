@@ -342,7 +342,8 @@ def classifier_model_fn_builder(
 											embedding_projection=model.get_embedding_projection_table(),
 											pretrain_loss_type="normal",
 											discriminator_mode=discriminator_mode,
-											loss_converage=loss_converage)
+											loss_converage=loss_converage,
+											pretrain_loss_type='entmax')
 			tf.logging.info("*** apply bert-like mlm loss ***")
 
 			# glancing_training
