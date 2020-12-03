@@ -92,7 +92,8 @@ def bert_encoder(model_config, features, labels,
 						attention_type=kargs.get('attention_type', 'normal_attention'),
 						reuse_mask=kargs.get("reuse_mask", True),
 						structural_attentions=model_config.get("structural_attentions", "none"),
-						is_training=is_training)
+						is_training=is_training,
+						embedding_mixup_v1=kargs.get("embedding_mixup_v1", None))
 	model.build_pooler(reuse=reuse)
 
 	return model

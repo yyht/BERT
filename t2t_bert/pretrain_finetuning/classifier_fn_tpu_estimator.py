@@ -418,21 +418,22 @@ def classifier_model_fn_builder(
             feature_shape = bert_utils.get_shape_list(original_embedding, expected_rank=[2,3])
             batch_size = feature_shape[0]
             sampled_feature, positive_ids = mixup_represt_learning._sample_positive(original_embedding, batch_size)
-            uniform_noise = tf.random.uniform([batch_size, feature_shape[1], 1], minval=0.5, maxval=1)
+            uniform_noise = tf.random.uniform(feature_shape, minval=0.5, maxval=1)
             mix = tf.cast(tf.maximum(uniform_noise, 1 - uniform_noise), tf.float32)
 
             mixup_embedding = original_embedding * mix + sampled_feature * (1.0 - mix)
-            model = model_api(model_config, model_features, labels,
+            model_mixup = model_api(model_config, model_features, labels,
                             mode, target, reuse=tf.AUTO_REUSE,
                             if_use_decoder=if_use_decoder,
                             embedding_mixup=mixup_embedding,
+                            embedding_mixup_v1=None,
                             **kargs)
             (mixup_masked_lm_loss,
             mixup_masked_lm_example_loss, 
             mixup_masked_lm_log_probs,
             mixup_masked_lm_mask) = masked_lm_fn(
                                             model_config, 
-                                            model.get_sequence_output(output_type=return_type), 
+                                            model_mixup.get_sequence_output(output_type=return_type), 
                                             embedding_table,
                                             masked_lm_positions, 
                                             masked_lm_ids, 

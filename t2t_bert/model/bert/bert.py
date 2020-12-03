@@ -225,6 +225,11 @@ class Bert(object):
 					embedding_seq_output = self.embedding_output
 					tf.logging.info("****** self-embedding_seq_output *******")
 
+				embedding_mixup = kargs.get('embedding_mixup_v1', None)
+				if embedding_mixup is not None:
+					embedding_seq_output = embedding_mixup
+					tf.logging.info("****** embedding_mixup _output *******")
+
 				if kargs.get("reuse_mask", False):
 					dropout_name = self.config.get("scope", "bert") + "/encoder"
 					tf.logging.info("****** reuse mask: %s *******" % (dropout_name))
