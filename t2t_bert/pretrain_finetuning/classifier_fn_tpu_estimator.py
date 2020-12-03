@@ -81,6 +81,14 @@ def train_metric_fn(masked_lm_example_loss, masked_lm_log_probs,
         "valid_position":tf.reduce_sum(masked_lm_weights)
         }
 
+def kl_divergence_with_logit(q_logit, p_logit):
+    # [batch_size, classes]
+    label_mask = tf.expand_dims(label_mask, axis=-1)
+
+    qlogq = tf.reduce_sum(tf.exp(q_logit) * q_logit, -1)
+    qlogp = tf.reduce_sum(tf.exp(q_logit) * p_logit, -1)
+    return qlogq - qlogp
+
 def classifier_model_fn_builder(
                         model_config,
                         num_labels,
@@ -401,7 +409,7 @@ def classifier_model_fn_builder(
 
         if kargs.get("apply_mixup_embedding", "mixup_embed") == 'mixup_embed':
             embedding_table = (model.get_embedding_table())
-            original_embedding = (model.get_embedding_output())
+            original_embedding = tf.identity(model.get_embedding_output())
             feature_shape = bert_utils.get_shape_list(original_embedding, expected_rank=[2,3])
             batch_size = feature_shape[0]
             sampled_feature, positive_ids = mixup_represt_learning._sample_positive(original_embedding, batch_size)
@@ -430,12 +438,15 @@ def classifier_model_fn_builder(
                                             discriminator_mode=discriminator_mode,
                                             loss_converage=loss_converage)
 
-            kl_div_a = -tf.exp(tf.stop_gradient(tf.identity(pre_masked_lm_log_probs))) * mixup_masked_lm_log_probs
+            kl_div_a = kl_divergence_with_logit(tf.stop_gradient(mixup_masked_lm_log_probs),
+                                    pre_masked_lm_log_probs)
+            kl_div_b = kl_divergence_with_logit(tf.stop_gradient(pre_masked_lm_log_probs),
+                                    mixup_masked_lm_log_probs)
+            
             numerator_a = tf.reduce_sum(mixup_masked_lm_mask[:, None] * kl_div_a)
             denominator_a = tf.reduce_sum(mixup_masked_lm_mask[:, None]) + 1e-5
             kl_div_loss_a = numerator_a / denominator_a
 
-            kl_div_b = -tf.exp(tf.stop_gradient(tf.identity(mixup_masked_lm_log_probs))) * pre_masked_lm_log_probs
             numerator_b = tf.reduce_sum(mixup_masked_lm_mask[:, None] * kl_div_b)
             denominator_b = tf.reduce_sum(mixup_masked_lm_mask[:, None]) + 1e-5
             kl_div_loss_b = numerator_b / denominator_b
