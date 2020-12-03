@@ -83,7 +83,9 @@ def train_metric_fn(masked_lm_example_loss, masked_lm_log_probs,
 
 def kl_divergence_with_logit(q_logit, p_logit):
     # [batch_size, classes]
-    label_mask = tf.expand_dims(label_mask, axis=-1)
+
+    tf.logging.info(q_logit)
+    tf.logging.info(p_logit)
 
     qlogq = tf.reduce_sum(tf.exp(q_logit) * q_logit, -1)
     qlogp = tf.reduce_sum(tf.exp(q_logit) * p_logit, -1)
@@ -442,7 +444,7 @@ def classifier_model_fn_builder(
                                     pre_masked_lm_log_probs)
             kl_div_b = kl_divergence_with_logit(tf.stop_gradient(pre_masked_lm_log_probs),
                                     mixup_masked_lm_log_probs)
-            
+
             numerator_a = tf.reduce_sum(mixup_masked_lm_mask[:, None] * kl_div_a)
             denominator_a = tf.reduce_sum(mixup_masked_lm_mask[:, None]) + 1e-5
             kl_div_loss_a = numerator_a / denominator_a
