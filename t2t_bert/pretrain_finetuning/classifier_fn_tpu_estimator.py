@@ -399,7 +399,7 @@ def classifier_model_fn_builder(
             loss += nsp_loss
 
         if kargs.get("apply_mixup_embedding", "mixup_embed") == 'mixup_embed':
-            original_embedding = tf.identity(model.get_embedding_output)
+            original_embedding = tf.identity(model.get_embedding_output())
             feature_shape = bert_utils.get_shape_list(original_embedding, expected_rank=[2,3])
             batch_size = feature_shape[0]
             sampled_feature, positive_ids = mixup_represt_learning._sample_positive(original_embedding, batch_size)
