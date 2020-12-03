@@ -82,6 +82,7 @@ def bert_encoder(model_config, features, labels,
 						embedding_seq_adv=kargs.get('embedding_seq_adv', None),
 						stop_gradient=kargs.get("stop_gradient", False),
 						reuse_mask=kargs.get("reuse_mask", True),
+						embedding_mixup=kargs.get("embedding_mixup", None),
 						emb_adv_pos=kargs.get('emb_adv_pos', "emb_adv_post"))
 	model.build_encoder(input_ids,
 						input_mask,

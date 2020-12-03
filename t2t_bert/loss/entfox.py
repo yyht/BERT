@@ -1,5 +1,9 @@
 import tensorflow as tf
 
+"""
+https://gist.github.com/justheuristic/60167e77a95221586be315ae527c3cbd
+"""
+
 def entmax15(inputs, axis=-1):
     """
     Entmax 1.5 implementation, heavily inspired by

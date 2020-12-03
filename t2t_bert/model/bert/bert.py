@@ -4,8 +4,7 @@ from utils.bert import bert_utils
 from utils.bert import bert_modules
 from utils.bert import hard_attention_modules
 from utils.bert import conv_bert_modules
-import copy
-
+import copy 
 
 class Bert(object):
 	"""
@@ -44,6 +43,8 @@ class Bert(object):
 		embedding_seq_adv = kargs.get('embedding_seq_adv', None)
 		print(embedding_seq_adv, "==embedding-adv")
 
+		embedding_mixup = kargs.get('embedding_mixup', None)
+
 		with tf.variable_scope(embedding_scope, reuse=reuse):
 			with tf.variable_scope("embeddings"):
 				# Perform embedding lookup on the word ids.
@@ -60,7 +61,14 @@ class Bert(object):
 				# 	tf.logging.info(" add word pertubation for robust learning ")
 
 				input_shape = bert_utils.get_shape_list(input_ids, expected_rank=[2,3])
-				if len(input_shape) == 3:
+				
+				embedding_flag = True
+				if embedding_mixup is not None:
+					self.embedding_output_word = tf.identity(embedding_mixup)
+					embedding_flag = False
+					tf.logging.info("****** outer-mixup-embedding_seq_output *******")
+				
+				if len(input_shape) == 3 and embedding_flag: 
 					tf.logging.info("****** 3D embedding matmul *******")
 					(self.embedding_output_word, self.embedding_table) = bert_modules.gumbel_embedding_lookup(
 							input_ids=input_ids,

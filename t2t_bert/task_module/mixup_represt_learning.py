@@ -111,7 +111,11 @@ def _sample_positive(features, batch_size):
   # batch_idx = tf.expand_dims(tf.cast(tf.range(batch_size), tf.int32), axis=-1)
   # gather_index = tf.concat([batch_idx, positive_ids[:, None]], axis=-1)
   # sampled_feature = tf.gather_nd(features, gather_index)
-  sampled_feature = tf.gather_nd(features, positive_ids[:, None])
+  feature_shape = bert_utils.get_shape_list(features, expected_rank=[2,3])
+  if len(feature_shape) == 2:
+    sampled_feature = tf.gather_nd(features, positive_ids[:, None])
+  elif len(feature_shape) == 3:
+    sampled_feature = tf.gather_nd(features, positive_ids[:, None, None])
   return sampled_feature, positive_ids
 
 def my_contrastive_loss(hidden,
