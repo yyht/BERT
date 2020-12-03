@@ -430,12 +430,12 @@ def classifier_model_fn_builder(
                                             discriminator_mode=discriminator_mode,
                                             loss_converage=loss_converage)
 
-            kl_div_a = tf.exp(tf.stop_gradient(tf.identity(pre_masked_lm_log_probs))) * mixup_masked_lm_log_probs
+            kl_div_a = -tf.exp(tf.stop_gradient(tf.identity(pre_masked_lm_log_probs))) * mixup_masked_lm_log_probs
             numerator_a = tf.reduce_sum(mixup_masked_lm_mask[:, None] * kl_div_a)
             denominator_a = tf.reduce_sum(mixup_masked_lm_mask[:, None]) + 1e-5
             kl_div_loss_a = numerator_a / denominator_a
 
-            kl_div_b = tf.exp(tf.stop_gradient(tf.identity(mixup_masked_lm_log_probs))) * pre_masked_lm_log_probs
+            kl_div_b = -tf.exp(tf.stop_gradient(tf.identity(mixup_masked_lm_log_probs))) * pre_masked_lm_log_probs
             numerator_b = tf.reduce_sum(mixup_masked_lm_mask[:, None] * kl_div_b)
             denominator_b = tf.reduce_sum(mixup_masked_lm_mask[:, None]) + 1e-5
             kl_div_loss_b = numerator_b / denominator_b
