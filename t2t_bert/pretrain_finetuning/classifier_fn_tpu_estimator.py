@@ -27,6 +27,7 @@ from utils.sampling_utils.glancing_sampling_utils import glance_sample
 from task_module import mixup_represt_learning
 
 from task_module import model_utils
+from utils.bert import bert_utils
 # from utils.adversarial_utils import adversarial_utils
 
 def train_metric_fn(masked_lm_example_loss, masked_lm_log_probs, 
