@@ -398,7 +398,7 @@ def classifier_model_fn_builder(
 		if 'label' in model_features:
 			loss += nsp_loss
 
-		if kargs.get("apply_mixup_embedding", "none") == 'mixup_embed':
+		if kargs.get("apply_mixup_embedding", "mixup_embed") == 'mixup_embed':
 			original_embedding = tf.identity(model.get_embedding_output)
 			feature_shape = bert_utils.get_shape_list(original_embedding, expected_rank=[2,3])
 			batch_size = feature_shape[0]
@@ -428,12 +428,12 @@ def classifier_model_fn_builder(
 											discriminator_mode=discriminator_mode,
 											loss_converage=loss_converage)
 
-			kl_div_a = tf.exp(pre_masked_lm_log_probs) * mixup_masked_lm_log_probs
+			kl_div_a = tf.exp(tf.stop_gradients(pre_masked_lm_log_probs)) * mixup_masked_lm_log_probs
 			numerator_a = tf.reduce_sum(mixup_masked_lm_mask * kl_div_a)
 			denominator_a = tf.reduce_sum(mixup_masked_lm_mask) + 1e-5
 			kl_div_loss_a = numerator_a / denominator_a
 
-			kl_div_b = tf.exp(mixup_masked_lm_log_probs) * pre_masked_lm_log_probs
+			kl_div_b = tf.exp(tf.stop_gradients(mixup_masked_lm_log_probs)) * pre_masked_lm_log_probs
 			numerator_b = tf.reduce_sum(mixup_masked_lm_mask * kl_div_b)
 			denominator_b = tf.reduce_sum(mixup_masked_lm_mask) + 1e-5
 			kl_div_loss_b = numerator_b / denominator_b
