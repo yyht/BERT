@@ -412,7 +412,7 @@ def classifier_model_fn_builder(
         if 'label' in model_features:
             loss += nsp_loss
 
-        if kargs.get("apply_mixup_embedding", "mixup_embed") == 'mixup_embed':
+        if kargs.get("apply_mixup_embedding", "none") == 'mixup_embed':
             embedding_table = tf.identity(model.get_embedding_table())
             original_embedding = tf.identity(model.get_embedding_output())
             feature_shape = bert_utils.get_shape_list(original_embedding, expected_rank=[2,3])
