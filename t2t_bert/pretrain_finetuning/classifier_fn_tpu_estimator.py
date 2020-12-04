@@ -354,7 +354,7 @@ def classifier_model_fn_builder(
                                             masked_lm_weights,
                                             reuse=tf.AUTO_REUSE,
                                             embedding_projection=model.get_embedding_projection_table(),
-                                            pretrain_loss_type="normal", #"normal",
+                                            pretrain_loss_type="entmax", #"normal",
                                             discriminator_mode=discriminator_mode,
                                             loss_converage=loss_converage)
             tf.logging.info("*** apply bert-like mlm loss ***")
