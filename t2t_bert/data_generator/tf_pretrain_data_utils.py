@@ -770,7 +770,7 @@ def input_fn_builder(
                         batch_size=batch_size,
                         num_parallel_batches=num_cpu_threads,
                         drop_remainder=True))
-        # d = d.apply(tf.data.experimental.ignore_errors())
+        d = d.apply(tf.data.experimental.ignore_errors())
         return d
 
     return input_fn
