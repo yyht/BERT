@@ -16,6 +16,7 @@ from utils.bert import layer_norm_utils
 from utils.bert import dropout_utils
 from utils.attention_selection import attention_selection_utils
 from utils.conv_utils import dynamic_conv_kernel
+from loss.entfox import entmax15
 
 # from utils.bert.efficient_multihead_attention import efficient_attention_layer
 
@@ -742,7 +743,15 @@ def attention_layer(from_tensor,
 	# Normalize the attention scores to probabilities.
 	# `attention_probs` = [B, N, F, T]
 	# attention_probs = tf.nn.softmax(attention_scores)
-	attention_probs = tf.exp(tf.nn.log_softmax(attention_scores))
+	if kargs.get('softmax_type', "normal") == 'normal':
+		attention_probs = tf.exp(tf.nn.log_softmax(attention_scores))
+		tf.logging.info("** attention-score using normal **")
+	elif kargs.get('softmax_type', "normal") == 'entmax15':
+		attention_probs = entmax15(attention_scores, axis=-1)
+		tf.logging.info("** attention-score using entmax15 **")
+	else:
+		attention_probs = tf.exp(tf.nn.log_softmax(attention_scores))
+		tf.logging.info("** attention-score using normal **")
 
 	# This is actually dropping out entire tokens to attend to, which might
 	# seem a bit unusual, but is taken from the original Transformer paper.
@@ -1280,7 +1289,8 @@ def transformer_model(input_tensor,
 							attention_fixed_size=attention_fixed_size,
 							dropout_name=attention_dropout_name,
 							structural_attentions=structural_attentions_args,
-							is_training=is_training)
+							is_training=is_training,
+							softmax_type=kargs.get('softmax_type', 'normal'))
 					attention_heads.append(attention_head)
 					all_attention_scores.append(attention_scores)
 					all_value_outputs.append(value_layer)

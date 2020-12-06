@@ -262,7 +262,8 @@ class Bert(object):
                       	conv_type=self.config.get('conv_type', "noconv"),
                       	from_tensor_mask=input_mask,
                     	to_tensor_mask=input_mask,
-                    	conv_method=self.config.get('conv_method', "dot"))
+                    	conv_method=self.config.get('conv_method', "dot"),
+                    	softmax_type=self.config.get('softmax_type', 'normal'))
 
 	def build_pooler(self, *args,**kargs):
 		reuse = kargs["reuse"]
