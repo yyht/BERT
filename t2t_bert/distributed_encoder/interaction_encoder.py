@@ -228,8 +228,8 @@ def bert_interaction_encoder(model_config, features, labels,
 		input_ids_a_repres = tf.layers.dense(
 						input_ids_a_repres,
 						128,
-						use_bias=True,
-						activation=tf.tanh,
+						use_bias=False,
+						activation=None,
 						kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
 
 	model.build_embedder(input_ids_b, 
@@ -255,13 +255,15 @@ def bert_interaction_encoder(model_config, features, labels,
 		input_ids_b_repres = tf.layers.dense(
 						input_ids_b_repres,
 						128,
-						use_bias=True,
-						activation=tf.tanh,
+						use_bias=False,
+						activation=None,
 						kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
 
-	concat_repres = tf.concat([input_ids_a_repres, input_ids_b_repres, 
-								tf.abs(input_ids_a_repres-input_ids_b_repres),
-								input_ids_a_repres*input_ids_b_repres],
+	input_ids_a_repres_norm = tf.nn.l2_normalize(input_ids_a_repres+1e-20, axis=-1)
+	input_ids_b_repres_norm = tf.nn.l2_normalize(input_ids_b_repres+1e-20, axis=-1)
+	concat_repres = tf.concat([input_ids_a_repres_norm, input_ids_b_repres_norm, 
+								tf.abs(input_ids_a_repres_norm-input_ids_b_repres_norm),
+								input_ids_a_repres_norm*input_ids_b_repres_norm],
 								axis=-1)
 
 	feature = {

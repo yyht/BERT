@@ -1,4 +1,5 @@
-import tensorflow.compat.v1 as tf
+# import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from tensorflow.python.tpu import tpu_function  # pylint: disable=g-direct-tensorflow-import
 
 BATCH_NORM_EPSILON = 1e-5

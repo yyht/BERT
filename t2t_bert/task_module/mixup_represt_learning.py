@@ -10,7 +10,7 @@ import re
 import six
 import tensorflow as tf
 from loss import loss_utils
-from task_module.global_batch_norm import batch_norm_relu 
+# from task_module.global_batch_norm import batch_norm_relu 
 
 try:
   from task_module.contrastive_utils import add_contrastive_loss as simlr_contrastive_loss_fn
@@ -49,8 +49,8 @@ def linear_layer(FLAGS, x,
         units=num_classes,
         use_bias=use_bias and not use_bn,
         kernel_initializer=tf.random_normal_initializer(stddev=.01))
-    if use_bn:
-      x = batch_norm_relu(FLAGS, x, is_training, relu=False, center=use_bias)
+    # if use_bn:
+    #   x = batch_norm_relu(FLAGS, x, is_training, relu=False, center=use_bias)
     x = tf.identity(x, '%s_out' % name)
   return x
 

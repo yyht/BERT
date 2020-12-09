@@ -47,8 +47,8 @@ def model_fn_builder(
 			sentence_pres = tf.layers.dense(
 						sentence_pres,
 						128,
-						use_bias=True,
-						activation=tf.tanh,
+						use_bias=False,
+						activation=None,
 						kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
 
 			# sentence_pres = tf.layers.dense(
