@@ -86,7 +86,7 @@ def data_interface_server(FLAGS):
 	elif FLAGS.model_type in ["textcnn", "textlstm"]:
 		receiver_tensors = {
 				"input_ids_a":
-						tf.placeholder(tf.int32, [None, FLAGS.max_length], name='input_ids_a'),
+						tf.placeholder(tf.int32, [None, None], name='input_ids_a'),
 				"label_ids":
 						tf.placeholder(tf.int32, [None], name='label_ids')
 			}
