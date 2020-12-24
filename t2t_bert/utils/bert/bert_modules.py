@@ -739,7 +739,11 @@ def attention_layer(from_tensor,
 			# Since we are adding it to the raw scores before the softmax, this is
 			# effectively the same as removing these entirely.
 			attention_scores += adder
-
+			if if_pre_attention_scores:
+				if pre_attention_scores:
+					tf.logging.info("== apply pre_attention_scores ==")
+					attention_scores += pre_attention_scores
+				
 	# Normalize the attention scores to probabilities.
 	# `attention_probs` = [B, N, F, T]
 	# attention_probs = tf.nn.softmax(attention_scores)
@@ -1256,6 +1260,8 @@ def transformer_model(input_tensor,
 	all_attention_scores = []
 	all_value_outputs = []
 
+	attention_scores = None
+
 	for layer_idx in range(num_hidden_layers):
 		with tf.variable_scope("layer_%d" % layer_idx):
 			layer_input = prev_output
@@ -1290,7 +1296,9 @@ def transformer_model(input_tensor,
 							dropout_name=attention_dropout_name,
 							structural_attentions=structural_attentions_args,
 							is_training=is_training,
-							softmax_type=kargs.get('softmax_type', 'normal'))
+							softmax_type=kargs.get('softmax_type', 'normal'),
+							pre_attention_scores=attention_scores,
+							if_pre_attention_scores=kargs.get('if_pre_attention_scores', False))
 					attention_heads.append(attention_head)
 					all_attention_scores.append(attention_scores)
 					all_value_outputs.append(value_layer)

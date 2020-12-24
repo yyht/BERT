@@ -1,13 +1,13 @@
 nohup python ./t2t_bert/distributed_bin/tpu_train_eval_api.py \
 	--buckets "gs://yyht_source/pretrain" \
-	--config_file "./data/roberta_zh_l12/bert_congit_xtiny.json" \
+	--config_file "./data/roberta_zh_l12/bert_config_tiny_informer.json" \
 	--init_checkpoint "model/tiny/bert_tiny_with_single_random_adam_decay_40_mixed_mask/model.ckpt-1145800" \
 	--vocab_file "./data/chinese_L-12_H-768_A-12/vocab.txt" \
 	--label_id "./data/lcqmc/label_dict.json" \
 	--max_length 512 \
 	--train_file "data_single_hard_gan/chunk_0.tfrecords,data_single_hard_gan/chunk_1.tfrecords,data_single_hard_gan/chunk_2.tfrecords,data_single_hard_gan/chunk_3.tfrecords,data_single_hard_gan/chunk_4.tfrecords,data_single_hard_gan/chunk_5.tfrecords,data_single_hard_gan/chunk_6.tfrecords,data_single_hard_gan/chunk_7.tfrecords,data_single_hard_gan/chunk_8.tfrecords,data_single_hard_gan/chunk_9.tfrecords,data_single_hard_gan/chunk_10.tfrecords,data_single_hard_gan/chunk_11.tfrecords,data_single_hard_gan/chunk_12.tfrecords,data_single_hard_gan/chunk_13.tfrecords,data_single_hard_gan/chunk_14.tfrecords,data_single_hard_gan/chunk_15.tfrecords,data_single_hard_gan/chunk_16.tfrecords,data_single_hard_gan/chunk_17.tfrecords" \
 	--dev_file "data_single_hard_gan/chunk_18.tfrecords,data_single_hard_gan/chunk_19.tfrecords" \
-	--model_output "model/tiny/roberta_tiny_50G_whole_xtiny" \
+	--model_output "model/tiny/roberta_tiny_50G_whole_informer" \
 	--epoch 10 \
 	--train_file_path "chinese_simplified_whole_sentence_v3_32/chinese_simplified_whole_sentence_file.txt" \
 	--num_classes 2 \
