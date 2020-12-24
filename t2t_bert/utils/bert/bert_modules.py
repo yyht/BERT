@@ -740,9 +740,9 @@ def attention_layer(from_tensor,
 			# effectively the same as removing these entirely.
 			attention_scores += adder
 			if kargs.get('if_pre_attention_scores', False):
-				if pre_attention_scores:
+				if kargs.get('pre_attention_scores', None):
 					tf.logging.info("== apply pre_attention_scores ==")
-					attention_scores += pre_attention_scores
+					attention_scores += kargs.get('pre_attention_scores', None)
 
 	# Normalize the attention scores to probabilities.
 	# `attention_probs` = [B, N, F, T]
