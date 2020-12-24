@@ -739,11 +739,11 @@ def attention_layer(from_tensor,
 			# Since we are adding it to the raw scores before the softmax, this is
 			# effectively the same as removing these entirely.
 			attention_scores += adder
-			if if_pre_attention_scores:
+			if kargs.get('if_pre_attention_scores', False):
 				if pre_attention_scores:
 					tf.logging.info("== apply pre_attention_scores ==")
 					attention_scores += pre_attention_scores
-				
+
 	# Normalize the attention scores to probabilities.
 	# `attention_probs` = [B, N, F, T]
 	# attention_probs = tf.nn.softmax(attention_scores)
