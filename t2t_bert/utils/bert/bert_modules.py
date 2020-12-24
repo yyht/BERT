@@ -740,7 +740,7 @@ def attention_layer(from_tensor,
 			# effectively the same as removing these entirely.
 			attention_scores += adder
 			if kargs.get('if_pre_attention_scores', False):
-				if kargs.get('pre_attention_scores', None):
+				if kargs.get('pre_attention_scores', None) is not None:
 					tf.logging.info("== apply pre_attention_scores ==")
 					attention_scores += kargs.get('pre_attention_scores', None)
 
