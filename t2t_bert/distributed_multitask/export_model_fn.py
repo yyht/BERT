@@ -115,13 +115,13 @@ def model_fn_builder(
 										mode=tf.estimator.ModeKeys.PREDICT,
 										predictions={
 													'sentence_pres':l2_sentence_pres,
-													# "before_l2":sentence_pres
+													"before_l2":sentence_pres
 										},
 										export_outputs={
 											"output":tf.estimator.export.PredictOutput(
 														{
 															'sentence_pres':l2_sentence_pres,
-															# "before_l2":sentence_pres
+															"before_l2":sentence_pres
 														}
 													)
 										}

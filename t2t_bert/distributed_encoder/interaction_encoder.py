@@ -228,7 +228,7 @@ def bert_interaction_encoder(model_config, features, labels,
 		input_ids_a_repres = tf.layers.dense(
 						input_ids_a_repres,
 						128,
-						use_bias=False,
+						use_bias=True,
 						activation=tf.tanh,
 						kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
 
@@ -255,7 +255,7 @@ def bert_interaction_encoder(model_config, features, labels,
 		input_ids_b_repres = tf.layers.dense(
 						input_ids_b_repres,
 						128,
-						use_bias=False,
+						use_bias=True,
 						activation=tf.tanh,
 						kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
 

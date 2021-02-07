@@ -95,6 +95,7 @@
     "padding":"SAME",
     "embedding_dropout":0.0,
     "cnn_type":"light_dgcnn",
+    "layer_wise_pos":false,
 
     "output_folder_name":"textcnn",
     "with_target":false,

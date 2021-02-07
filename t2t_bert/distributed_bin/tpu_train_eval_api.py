@@ -435,7 +435,7 @@ def main(_):
 
 	is_per_host = tf.contrib.tpu.InputPipelineConfig.PER_HOST_V2
 	run_config = tf.contrib.tpu.RunConfig(
-	  keep_checkpoint_max=100, # 10
+	  keep_checkpoint_max=10, # 10
 	  cluster=tpu_cluster_resolver,
 	  master=FLAGS.master,
 	  model_dir=checkpoint_dir,
