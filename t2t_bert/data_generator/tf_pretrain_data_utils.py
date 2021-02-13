@@ -682,8 +682,7 @@ def _decode_record(FLAGS, record, num_predict,
                 "===infilling shape=== vs tgt shape===", 
                 tgt_shape)
 
-        example['infilling_pad_mask'] = 1.0 - tf.cast(pad_mask, tf.float32)
-        example["pad_mask"] = text_infilling_mask_from_ids
+        example["infilled_pad_mask"] = 1.0 - tf.cast(pad_mask, tf.float32)
         example['infilled_input'] = text_infilling_ids
         # example["pad_mask"] *= text_infilling_mask
         # example["masked_mask"] = tf.cast(tf.logical_or(tf.cast(example["masked_mask"], tf.bool), 
