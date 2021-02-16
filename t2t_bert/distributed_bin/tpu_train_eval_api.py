@@ -27,6 +27,7 @@ sys.path.extend([bert_path, t2t_bert_path])
 print(sys.path)
 
 import tensorflow as tf
+tf.disable_v2_behavior()
 from pretrain_finetuning import train_eval_tpu_estimator
 from pretrain_finetuning import train_eval_gpu_electra_estimator
 
@@ -396,21 +397,22 @@ def main(_):
 
 	init_checkpoint = os.path.join(FLAGS.buckets, FLAGS.init_checkpoint)
 	train_file = []
-	# try:
-	with tf.gfile.GFile(os.path.join(FLAGS.buckets, FLAGS.train_file_path), "r") as reader:
-		for index, line in enumerate(reader):
-			content = line.strip()
-			train_file_path = os.path.join(FLAGS.buckets, content)
-			if 'tfrecord' in train_file_path:
-				tf.logging.info("** train file:%s **"%(train_file_path))
-				train_file.append(train_file_path)
-	# print(train_file)
-	# train_file = [train_file[0]]
-	# except:
-	# 	for file in FLAGS.train_file.split(","):
-	# 		train_file_path = os.path.join(FLAGS.buckets, file)
-	# 		train_file.append(train_file_path)
-	# 	print(train_file_path)
+	try:
+		with tf.gfile.GFile(os.path.join(FLAGS.buckets, FLAGS.train_file_path), "r") as reader:
+			for index, line in enumerate(reader):
+				content = line.strip()
+				train_file_path = os.path.join(FLAGS.buckets, content)
+				if 'tfrecord' in train_file_path:
+					tf.logging.info("** train file:%s **"%(train_file_path))
+					train_file.append(train_file_path)
+		print(train_file)
+		train_file = [train_file[0]]
+	except:
+		for file in FLAGS.train_file.split(","):
+			train_file_path = os.path.join(FLAGS.buckets, file)
+			tf.logging.info("** train file:%s **"%(train_file_path))
+			train_file.append(train_file_path)
+
 	random.shuffle(train_file)
 
 	tf.logging.info("** total data file:%s **"%(str(len(train_file))))
