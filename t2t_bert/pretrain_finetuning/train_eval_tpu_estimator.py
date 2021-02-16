@@ -186,7 +186,7 @@ def train_eval_fn(FLAGS,
 										truncate_seq=data_config.truncate_seq, 
 										use_bfloat16=data_config.use_bfloat16,
 										stride=data_config.stride,
-										input_type="normal")
+										input_type="gatedcnn")
 			estimator.train(input_fn=input_features, max_steps=num_train_steps)
 		else:
 			tf.logging.info("***** Running evaluation *****")
