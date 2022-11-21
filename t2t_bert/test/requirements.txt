@@ -1,5 +1,5 @@
 six
-tensorflow-gpu==1.8.0
+tensorflow-gpu==2.9.3
 bunch
 jieba
 sentencepiece
